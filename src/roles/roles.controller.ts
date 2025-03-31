@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto'; 
 
@@ -9,5 +9,10 @@ export class RolesController {
   @Post('role/add')
   async addRole(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.addRole(createRoleDto);
+  }
+
+  @Get('list')
+  async getRoles(){
+    return this.rolesService.getRoles()
   }
 }

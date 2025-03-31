@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { Roles } from 'src/models/model.roles';
+import { Responder } from 'src/helpers/helpers.all';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
+import { ResponseServer } from 'src/interface/interface.response';
 
 @Injectable()
 export class RolesService {
@@ -10,21 +13,34 @@ export class RolesService {
         private readonly rolesModel: typeof Roles,
     ) { }
 
-    async addRole(createRoleDto: CreateRoleDto): Promise<Roles> {
+    async addRole(createRoleDto: CreateRoleDto): Promise<ResponseServer> {
         const { role, description } = createRoleDto;
-
         return this.rolesModel.create({
             role,
             description,
             status: 1
-        });
+        }, {
+            raw: true
+        })
+            .then(role => {
+                return Responder({ status: HttpStatusCode.Created, data: role })
+            })
+            .catch(err => {
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err });
+            })
     }
 
-    // async getRoles(): Promise<Roles> {
-    //     return this.rolesModel.findAll({
-    //         where: {
-    //             status: 1
-    //         }
-    //     })
-    // }
+    async getRoles(): Promise<ResponseServer> {
+        return this.rolesModel.findAll({
+            where: {
+                status: 1
+            }
+        })
+            .then(list => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } })
+            })
+            .catch(err => {
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
+    }
 }

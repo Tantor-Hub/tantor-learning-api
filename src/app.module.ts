@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './services/app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -8,6 +8,8 @@ import { Users } from './models/model.users';
 import { Roles } from './models/model.roles';
 import { HasRoles } from './models/model.userhasroles';
 import { RolesModule } from './roles/roles.module';
+import { Sequelize } from 'sequelize-typescript';
+import { log } from 'console';
 
 @Module({
   imports: [
@@ -39,7 +41,8 @@ import { RolesModule } from './roles/roles.module';
           min: 0,
           acquire: 1000000,
           idle: 200000
-        }
+        },
+        models: [Users, Roles, HasRoles]
       }),
     }),
     SequelizeModule.forFeature([Users, Roles, HasRoles]),
@@ -49,4 +52,9 @@ import { RolesModule } from './roles/roles.module';
   providers: [AppService],
 })
 
-export class AppModule { }
+export class AppModule implements OnModuleInit {
+  constructor(private readonly sequelize: Sequelize) { }
+  async onModuleInit() {
+    await this.sequelize.sync();
+  }
+}
