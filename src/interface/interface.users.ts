@@ -1,0 +1,11 @@
+export interface IUsers {
+    id?: number,
+    uuid?: string,
+    fs_name: string,
+    ls_name: string,
+    nick_name?: string,
+    email: string,
+    phone?: string,
+    password: string,
+    verification_code?: string
+}
