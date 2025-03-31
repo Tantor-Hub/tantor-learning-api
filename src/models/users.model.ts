@@ -1,7 +1,7 @@
 import { Table, Column, Model, DataType } from 'sequelize-typescript';
 import { IUsers } from 'src/interface/interface.users';
 
-@Table({ tableName: '__tbl_users', timestamps: true })
+@Table({ tableName: '__tbl_users', timestamps: true, })
 export class Users extends Model<IUsers> {
 
     @Column({ type: DataType.STRING, allowNull: false, unique: true, autoIncrement: true })
@@ -25,7 +25,10 @@ export class Users extends Model<IUsers> {
     @Column({ type: DataType.STRING, allowNull: false })
     password: string;
 
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({ type: DataType.STRING, allowNull: true })
     verification_code: string;
+
+    @Column({ type: DataType.DATE, allowNull: true })
+    last_login: string;
 
 }
