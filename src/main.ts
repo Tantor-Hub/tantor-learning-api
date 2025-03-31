@@ -1,17 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
 
-const {TANTORPORT} = process.env;
-
-const tantorAPP = async () =>{
-  const runOn = TANTORPORT ?? 3000;
+async function tantorAPP() {
   const app = await NestFactory.create(AppModule);
+  
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('TANTORPORT', 3000);
+  app.setGlobalPrefix('/api/');
 
-  await app.listen(runOn, () => {
-    log("---------------------------------------")
-    log("::: TANTOR APP [STATUS:RUNNING]:", runOn)
-    log("---------------------------------------")
+  await app.listen(port, () => {
+    log("---------------------------------------");
+    log(`::: TANTOR APP [STATUS:RUNNING] ON PORT: ${port}`);
+    log("---------------------------------------");
   });
 }
+
 tantorAPP();
