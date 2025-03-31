@@ -6,11 +6,11 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly configService: ConfigService){}
+  constructor(private readonly configService: ConfigService) { }
 
   getFallBackEndPoint(): ResponseServer {
     const appName = this.configService.get<string>('APPNAME', 'DefaultAppName');
     const appOwner = this.configService.get<string>('APPOWNER', 'DefaultOwner');
-    return Responder({status: HttpStatusCode.Ok, data: {appOwner, appName}})
+    return Responder({ status: HttpStatusCode.Ok, data: { appOwner, appName } })
   }
 }
