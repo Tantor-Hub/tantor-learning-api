@@ -13,7 +13,6 @@ export class AppService {
   getFallBackEndPoint(): ResponseServer {
     const appName = this.configService.get<string>('APPNAME', 'DefaultAppName');
     const appOwner = this.configService.get<string>('APPOWNER', 'DefaultOwner');
-    
     return Responder({status: HttpStatusCode.Ok, data: {appOwner, appName}})
   }
 }
