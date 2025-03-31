@@ -4,8 +4,6 @@ import { HttpStatusCode } from '../config/statuscodes.config';
 import { Responder } from 'src/helpers/helpers.all';
 import { ConfigService } from '@nestjs/config';
 
-const { APPNAME, APPOWNER} = process.env;
-
 @Injectable()
 export class AppService {
   constructor(private readonly configService: ConfigService){}
