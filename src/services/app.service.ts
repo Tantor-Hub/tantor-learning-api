@@ -2,12 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { ResponseServer } from '../interface/interface.response';
 import { HttpStatusCode } from '../config/statuscodes.config';
 import { Responder } from 'src/helpers/helpers.all';
+import { ConfigService } from '@nestjs/config';
 
-const {TANTORPORT, APPNAME, APPOWNER} = process.env;
+const { APPNAME, APPOWNER} = process.env;
 
 @Injectable()
 export class AppService {
+  constructor(private readonly configService: ConfigService){}
+
   getFallBackEndPoint(): ResponseServer {
-    return Responder({status: HttpStatusCode.Ok, data: {appOwner: APPOWNER, appName: APPNAME}})
+    const appName = this.configService.get<string>('APPNAME', 'DefaultAppName');
+    const appOwner = this.configService.get<string>('APPOWNER', 'DefaultOwner');
+    
+    return Responder({status: HttpStatusCode.Ok, data: {appOwner, appName}})
   }
 }

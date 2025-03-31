@@ -4,8 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
 
 async function tantorAPP() {
-  const app = await NestFactory.create(AppModule);
   
+  const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>('TANTORPORT', 3000);
   app.setGlobalPrefix('/api/');
