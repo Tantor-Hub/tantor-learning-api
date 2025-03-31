@@ -11,4 +11,5 @@ export class Roles extends Model<IRoles> {
 
     @Column({ type: DataType.STRING, allowNull: true,})
     description: string;
+    
 }
