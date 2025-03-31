@@ -1,5 +1,5 @@
 import { log } from "console";
-import { DatabaseConfig } from "src/interface/interface.bd";
+import { DatabaseConfig } from "src/interface/interface.databases";
 
 const config: DatabaseConfig = {
     APP_BD_DIALECT: process.env.APP_BD_DIALECT || 'postgres',
