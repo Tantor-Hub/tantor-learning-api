@@ -9,7 +9,10 @@ export class Roles extends Model<IRoles> {
     @Column({ type: DataType.STRING, allowNull: false, unique: true })
     role: string;
 
-    @Column({ type: DataType.STRING, allowNull: true,})
+    @Column({ type: DataType.STRING, allowNull: true, })
     description: string;
-    
+
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
+    status: number
+
 }

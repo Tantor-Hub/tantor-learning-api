@@ -1,4 +1,6 @@
-export interface IUsers {
+import { IGlobale } from "./interface.globale";
+
+export interface IUsers extends IGlobale{
     id?: number,
     uuid?: string,
     fs_name: string,

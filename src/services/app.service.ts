@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ResponseServer } from '../interface/interface.response';
-import { HttpStatusCode } from '../config/statuscodes.config';
+import { HttpStatusCode } from '../config/config.statuscodes';
 import { Responder } from 'src/helpers/helpers.all';
 import { ConfigService } from '@nestjs/config';
 

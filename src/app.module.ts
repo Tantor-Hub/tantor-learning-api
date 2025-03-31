@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './services/app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
-import databaseConfig from './config/database.config';
+import databaseConfig from './config/config.database';
 import { Users } from './models/model.users';
 import { Roles } from './models/model.roles';
 import { HasRoles } from './models/model.userhasroles';
