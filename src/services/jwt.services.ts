@@ -14,7 +14,7 @@ import { AuthService } from './password.service';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('APPJWTTOKEN', 'TANTORSERVICEJWT'),
-        signOptions: { expiresIn: '1h' },
+        signOptions: { expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h') },
       }),
     }),
   ],
