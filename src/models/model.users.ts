@@ -4,7 +4,7 @@ import { IUsers } from 'src/interface/interface.users';
 @Table({ tableName: '__tbl_users', timestamps: true, })
 export class Users extends Model<IUsers> {
 
-    @Column({ type: DataType.STRING, allowNull: false, unique: true, autoIncrement: true })
+    @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
     id: string;
 
     @Column({ type: DataType.STRING, allowNull: false })

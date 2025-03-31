@@ -4,6 +4,9 @@ import { AppService } from './services/app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import databaseConfig from './config/database.config';
+import { Users } from './models/model.users';
+import { Roles } from './models/model.roles';
+import { HasRoles } from './models/model.userhasroles';
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import databaseConfig from './config/database.config';
         synchronize: true,
       }),
     }),
+    SequelizeModule.forFeature([Users, Roles, HasRoles]),
   ],
   controllers: [AppController],
   providers: [AppService],
