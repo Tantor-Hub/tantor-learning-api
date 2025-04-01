@@ -26,7 +26,7 @@ export const HttpStatusMessages: any = {
     401: "Non autorisé",
     402: "Paiement requis",
     403: "Interdit",
-    404: "Non trouvé",
+    404: "Ressource non trouvée sur ce serveur ",
     405: "Méthode non autorisée",
     406: "Non acceptable",
     407: "Authentification proxy requise",
