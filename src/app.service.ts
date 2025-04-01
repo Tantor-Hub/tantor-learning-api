@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ResponseServer } from './interface/interface.response';
 import { HttpStatusCode } from './config/config.statuscodes';
-import { Responder } from 'src/helpers/helpers.all';
+import { Responder } from 'src/strategy/strategy.responder';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

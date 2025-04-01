@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { Roles } from 'src/models/model.roles';
-import { Responder } from 'src/helpers/helpers.all';
+import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { ResponseServer } from 'src/interface/interface.response';
 

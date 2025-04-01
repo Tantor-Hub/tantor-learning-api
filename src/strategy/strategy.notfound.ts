@@ -1,7 +1,7 @@
 import { Catch, ExceptionFilter, ArgumentsHost } from '@nestjs/common';
 import { Response } from 'express';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
-import { Responder } from 'src/helpers/helpers.all';
+import { Responder } from 'src/strategy/strategy.responder';
 
 @Catch()
 export class NotFoundFilter implements ExceptionFilter {
