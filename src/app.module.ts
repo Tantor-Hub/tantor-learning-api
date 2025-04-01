@@ -9,7 +9,6 @@ import { Roles } from './models/model.roles';
 import { HasRoles } from './models/model.userhasroles';
 import { RolesModule } from './roles/roles.module';
 import { Sequelize } from 'sequelize-typescript';
-import { log } from 'console';
 
 @Module({
   imports: [
