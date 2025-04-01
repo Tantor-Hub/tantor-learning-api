@@ -48,7 +48,6 @@ import { UsersModule } from './users/users.module';
     SequelizeModule.forFeature([Users, Roles, HasRoles]),
     RolesModule,
     UsersModule,
-    
   ],
   controllers: [AppController],
   providers: [AppService],

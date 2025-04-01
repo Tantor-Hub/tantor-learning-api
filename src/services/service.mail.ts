@@ -10,15 +10,18 @@ export class MailService {
         this.transporter = nodemailer.createTransport({
             host: this.configService.get<string>('APPSMTPHOST'),
             port: this.configService.get<number>('APPSMTPPORT'),
-            secure: this.configService.get<boolean>('APPSMTPSECURE'),
+            secure: false, // this.configService.get<boolean>('APPSMTPSECURE'),
             auth: {
                 user: this.configService.get<string>('APPSMTPUSER'),
                 pass: this.configService.get<string>('APPSMTPPASS'),
             },
+            tls: {
+                rejectUnauthorized: false
+            }
         });
     }
 
-    async sendMail(to: string, subject: string, content: string): Promise<{ code: number, message: string, data: any }> {
+    async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<{ code: number, message: string, data: any }> {
         return new Promise(async (resolve, reject) => {
             const mailOptions = {
                 from: `"${this.configService.get<string>('APPNAME')}" <${this.configService.get<string>('APPSMTPUSER')}>`,
@@ -34,5 +37,5 @@ export class MailService {
                 return reject({ code: 500, message: 'Erreur', data: error });
             }
         })
-    }
+    };
 }
