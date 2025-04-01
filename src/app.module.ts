@@ -10,6 +10,8 @@ import { HasRoles } from './models/model.userhasroles';
 import { RolesModule } from './roles/roles.module';
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
+import { HasrolesService } from './hasroles/hasroles.service';
+import { HasrolesModule } from './hasroles/hasroles.module';
 
 @Module({
   imports: [
@@ -48,9 +50,10 @@ import { UsersModule } from './users/users.module';
     SequelizeModule.forFeature([Users, Roles, HasRoles]),
     RolesModule,
     UsersModule,
+    HasrolesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, HasrolesService],
 })
 
 export class AppModule implements OnModuleInit {
