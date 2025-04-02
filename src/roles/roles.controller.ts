@@ -21,6 +21,7 @@ export class RolesController {
 
   @Get('list')
   async getRoles() {
+    
     // this.mailService.sendMail({
     //   to: 'davidmened@gmail.com',
     //   content: "Bonjour papa David Test SMTP",
