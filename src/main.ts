@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
 import { NotFoundFilter } from './strategy/strategy.notfound';
-import { ValidationPipe, BadRequestException } from '@nestjs/common';
+import { ValidationPipe, BadRequestException, NotFoundException } from '@nestjs/common';
 import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
 
@@ -17,6 +17,15 @@ async function tantorAPP() {
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
     exceptionFactory: (errors) => {
+      if (errors.length === 0) {
+        return new NotFoundException({
+          ...Responder({
+            status: HttpStatusCode.NotFound,
+            data: {}
+          })
+        });
+      }
+
       return new BadRequestException({
         ...Responder({
           status: HttpStatusCode.BadRequest, data: errors.map(err => ({
@@ -27,6 +36,7 @@ async function tantorAPP() {
       });
     }
   }));
+
   // app.useGlobalFilters(new NotFoundFilter());
 
   await app.listen(port, () => {
