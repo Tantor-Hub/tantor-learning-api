@@ -35,4 +35,10 @@ export class Users extends Model<IUsers> {
     @Column({ type: DataType.DATE, allowNull: true })
     last_login: string;
 
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
+    is_verified: number
+
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
+    status: number
+
 }

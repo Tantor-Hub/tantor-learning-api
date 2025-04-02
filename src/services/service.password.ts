@@ -15,3 +15,4 @@ export class AuthService {
         return await bcrypt.compare(password, hash);
     }
 }
+

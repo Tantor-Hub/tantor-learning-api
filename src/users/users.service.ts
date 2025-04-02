@@ -46,6 +46,8 @@ export class UsersService {
             nick_name,
             phone,
             uuid: 'uuid',
+            verification_code: '',
+            is_verified: 0,
             status: 1
         })
             .then(strudent => {

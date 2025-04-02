@@ -9,5 +9,6 @@ export interface IUsers extends IGlobale{
     email: string,
     phone?: string,
     password: string,
-    verification_code?: string
+    verification_code?: string,
+    is_verified: number
 }
