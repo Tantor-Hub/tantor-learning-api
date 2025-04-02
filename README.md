@@ -4,34 +4,36 @@ Defines the features and requirements for the development of the online platform
 
 ## How to run the app locally
 
-Clone the project
+### 1 Clone the project
 
 ```bash
-  git clone https://github.com/Tantor-Hub/
+git clone https://github.com/Tantor-Hub/to-be-defined
 ```
 
-Go to the project directory
+### 2 Go to the project directory
 
 ```bash
-  cd Tantor-Learning-frontend
+cd Tantor-Learning-frontend
 ```
 
-Install dependencies
+### 3 Install dependencies
 
 ```bash
-  yarn 
+yarn
 ```
 
-Start the server in watch mode
+### 4 Start the server
+
+in watch mode
 
 ```bash
-  yarn start:dev
+yarn start:dev
 ```
 
 Or run just the commande
 
 ```bash
-  yarn run start
+yarn run start
 ```
 
 ## How to build for deployement
