@@ -11,9 +11,9 @@ import { SignInStudentDto } from './dto/signin-student.dto';
 export class UsersController {
     constructor(
         private readonly userService: UsersService,
-        private mailService: MailService,
-        private allServices: AllSercices,
-        private cryptoService: CryptoService
+        private readonly mailService: MailService,
+        private readonly allServices: AllSercices,
+        private readonly cryptoService: CryptoService
     ) { }
 
     @Get("list")
@@ -26,7 +26,7 @@ export class UsersController {
         return this.userService.registerAsStudent(createUserDto, this.mailService, this.allServices, this.cryptoService);
     }
 
-    @Post("user/sign")
+    @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
         return this.userService.signInAsStudent(signInStudentDto, this.mailService, this.allServices, this.cryptoService)
     }
