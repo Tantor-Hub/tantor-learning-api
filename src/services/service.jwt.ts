@@ -1,25 +1,26 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtStrategy } from 'src/strategy/strategy.jwt';
-import { CryptoService } from './service.crypto';
+import { JwtService as NestJwtService } from '@nestjs/jwt';
 
-@Module({
-  imports: [
-    ConfigModule,
-    PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('APPJWTTOKEN', 'TANTORSERVICEJWT'),
-        signOptions: { expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h') },
-      }),
-    }),
-  ],
-  providers: [CryptoService, JwtStrategy],
-  exports: [CryptoService],
-})
+export class JwtService {
+  constructor(
+    private readonly jwtService: NestJwtService,
+    private readonly configService: ConfigService,
+  ) { }
 
-export class JwtAsModule {};
+  async signPayload(payload: any): Promise<string> {
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('APPJWTTOKEN'),
+      expiresIn: this.configService.get<string>('APPJWTMAXLIFE', '1h'),
+    });
+  }
+
+  async verifyToken(token: string): Promise<any> {
+    try {
+      return await this.jwtService.verifyAsync(token, {
+        secret: this.configService.get<string>('APPJWTTOKEN'),
+      });
+    } catch (error) {
+      return null
+    }
+  }
+}

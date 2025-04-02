@@ -52,22 +52,22 @@ export class UsersService {
 
         return Responder({ status: 400, data: { verif_code, hashed_password, ...createUserDto } })
 
-        return this.userModel.create({
-            email,
-            fs_name,
-            ls_name,
-            password,
-            nick_name,
-            phone: email,
-            uuid: 'uuid',
-            verification_code: '',
-            is_verified: 0,
-            status: 1
-        })
-            .then(strudent => {
-                if (strudent instanceof Users) return Responder({ status: HttpStatusCode.Created, data: {} })
-                else return Responder({ status: 400, data: {} })
-            })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
+        // return this.userModel.create({
+        //     email,
+        //     fs_name,
+        //     ls_name,
+        //     password,
+        //     nick_name,
+        //     phone: email,
+        //     uuid: 'uuid',
+        //     verification_code: '',
+        //     is_verified: 0,
+        //     status: 1
+        // })
+        //     .then(strudent => {
+        //         if (strudent instanceof Users) return Responder({ status: HttpStatusCode.Created, data: {} })
+        //         else return Responder({ status: 400, data: {} })
+        //     })
+        //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
     }
 }
