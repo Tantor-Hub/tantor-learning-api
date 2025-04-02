@@ -1,7 +1,8 @@
 import { Table, Column, Model, DataType } from 'sequelize-typescript';
+import { tables } from 'src/config/config.tablesname';
 import { IUsers } from 'src/interface/interface.users';
 
-@Table({ tableName: '__tbl_users', timestamps: true, })
+@Table({ tableName: tables['users'], timestamps: true, })
 export class Users extends Model<IUsers> {
 
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })

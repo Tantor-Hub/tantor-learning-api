@@ -4,22 +4,30 @@ import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
 import { NotFoundFilter } from './strategy/strategy.notfound';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
+import { HttpStatusCode } from './config/config.statuscodes';
+import { Responder } from './strategy/strategy.responder';
 
 async function tantorAPP() {
 
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>('TANTORPORT', 3000);
+
   app.setGlobalPrefix('/api/');
-  app.useGlobalFilters(new NotFoundFilter());
   app.useGlobalPipes(new ValidationPipe({
+    transform: true,
     exceptionFactory: (errors) => {
-      return new BadRequestException(errors.map(err => ({
-        field: err.property,
-        errors: Object.values(err.constraints || {})
-      })));
+      return new BadRequestException({
+        ...Responder({
+          status: HttpStatusCode.BadRequest, data: errors.map(err => ({
+            field: err.property,
+            errors: Object.values(err.constraints || {})
+          }))
+        })
+      });
     }
   }));
+  // app.useGlobalFilters(new NotFoundFilter());
 
   await app.listen(port, () => {
     log("---------------------------------------");

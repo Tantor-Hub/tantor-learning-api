@@ -24,10 +24,11 @@ export class UsersService {
     async getAllUsers(): Promise<ResponseServer> {
         return this.userModel.findAll({
             where: {
-                status: 1
+                // status: 1
             }
         })
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
     async registerAsStudent(createUserDto: CreateUserDto): Promise<ResponseServer> {
