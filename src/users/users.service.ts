@@ -10,6 +10,7 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from '../services/service.crypto';
+import { SignInStudentDto } from './dto/signin-student.dto';
 
 @Injectable()
 export class UsersService {
@@ -35,6 +36,10 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
+    async signInAsStudent(signInStudentDto: SignInStudentDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService): Promise<ResponseServer> {
+        return Responder({ status: 200, data: signInStudentDto })
+    }
+
     async registerAsStudent(createUserDto: CreateUserDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService): Promise<ResponseServer> {
         const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
@@ -43,7 +48,9 @@ export class UsersService {
         }
 
         const verif_code = allService.randomLongNumber({ length: 6 })
-        const hashed_password = ''
+        const hashed_password = await cryptoService.hashPassword(password)
+
+        return Responder({ status: 400, data: { verif_code, hashed_password, ...createUserDto } })
 
         return this.userModel.create({
             email,

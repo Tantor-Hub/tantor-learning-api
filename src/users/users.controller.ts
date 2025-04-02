@@ -5,6 +5,7 @@ import { MailService } from 'src/services/service.mail';
 import { AllSercices } from 'src/services/serices.all';
 import { log } from 'console';
 import { CryptoService } from 'src/services/service.crypto';
+import { SignInStudentDto } from './dto/signin-student.dto';
 
 @Controller('users')
 export class UsersController {
@@ -23,5 +24,10 @@ export class UsersController {
     @Post('user/signup')
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsStudent(createUserDto, this.mailService, this.allServices, this.cryptoService);
+    }
+
+    @Post("user/sign")
+    async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
+        return this.userService.signInAsStudent(signInStudentDto, this.mailService, this.allServices, this.cryptoService)
     }
 }
