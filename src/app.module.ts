@@ -58,4 +58,4 @@ export class AppModule implements OnModuleInit {
   async onModuleInit() {
     await this.sequelize.sync();
   }
-}
+};

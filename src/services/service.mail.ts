@@ -23,14 +23,13 @@ export class MailService {
 
     async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<{ code: number, message: string, data: any }> {
         return new Promise(async (resolve, reject) => {
-            const mailOptions = {
-                from: `"${this.configService.get<string>('APPNAME')}" <${this.configService.get<string>('APPSMTPUSER')}>`,
-                to,
-                subject: subject || 'Configuration',
-                html: content,
-            };
-
             try {
+                const mailOptions = {
+                    from: `"${this.configService.get<string>('APPNAME')}" <${this.configService.get<string>('APPSMTPUSER')}>`,
+                    to,
+                    subject: subject || 'Configuration',
+                    html: content,
+                };
                 const info = await this.transporter.sendMail(mailOptions);
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
