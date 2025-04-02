@@ -9,29 +9,29 @@ import { log } from 'console';
 export class RolesController {
   constructor(private readonly rolesService: RolesService, private mailService: MailService) { }
 
+  @Put('role/attribute')
+  async attributeRole(@Body() attributeToUserDto: AttributeRoleDto) {
+    return this.rolesService.attributeRole(attributeToUserDto);
+  }
+
   @Post('role/add')
   async addRole(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.addRole(createRoleDto);
   }
 
-  @Put('role/attribute')
-  async attributeRole(@Body() attributeToUser: AttributeRoleDto) {
-    return this.attributeRole(attributeToUser)
-  }
-
   @Get('list')
   async getRoles() {
-    this.mailService.sendMail({
-      to: 'davidmened@gmail.com',
-      content: "Bonjour papa David Test SMTP",
-      subject: "Greetings"
-    })
-    .then(mail => {
-      log(mail)
-    })
-    .catch(err => {
-      log(err)
-    })
+    // this.mailService.sendMail({
+    //   to: 'davidmened@gmail.com',
+    //   content: "Bonjour papa David Test SMTP",
+    //   subject: "Greetings"
+    // })
+    // .then(mail => {
+    //   log(mail)
+    // })
+    // .catch(err => {
+    //   log(err)
+    // })
     return this.rolesService.getRoles()
   }
 }
