@@ -7,10 +7,11 @@ import { HasRoles } from 'src/models/model.userhasroles';
 import { MailService } from 'src/services/service.mail';
 import { Users } from 'src/models/model.users';
 import { AllSercices } from 'src/services/serices.all';
+import { CryptoService } from 'src/services/service.crypto';
 
 @Module({
   imports: [SequelizeModule.forFeature([Roles, HasRoles, Users])],
   controllers: [UsersController],
-  providers: [UsersService, MailService, AllSercices],
+  providers: [UsersService, MailService, AllSercices, CryptoService],
 })
 export class UsersModule { }

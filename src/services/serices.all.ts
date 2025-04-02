@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import randomstring from 'randomstring';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AllSercices {
@@ -66,4 +67,8 @@ export class AllSercices {
         const len = Number.isInteger(length) && length > 0 ? length : 6;
         return Array.from({ length: len }, () => Math.floor(Math.random() * 10)).join('');
     };
+
+    generateUuid(): string {
+        return uuidv4();
+    }
 }

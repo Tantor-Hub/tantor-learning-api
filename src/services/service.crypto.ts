@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class AuthService {
+export class CryptoService {
     constructor(private readonly configService: ConfigService) { }
     private readonly saltRounds = this.configService.get<number>('APPSALTLENGTH', 10);
 

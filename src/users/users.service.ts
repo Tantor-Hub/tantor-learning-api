@@ -7,6 +7,9 @@ import { Roles } from 'src/models/model.roles';
 import { HasRoles } from 'src/models/model.userhasroles';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
+import { AllSercices } from 'src/services/serices.all';
+import { MailService } from 'src/services/service.mail';
+import { CryptoService } from '../services/service.crypto';
 
 @Injectable()
 export class UsersService {
@@ -18,7 +21,8 @@ export class UsersService {
         private readonly rolesModel: typeof Roles,
 
         @InjectModel(HasRoles)
-        private readonly hasRoleModel: typeof HasRoles
+        private readonly hasRoleModel: typeof HasRoles,
+
     ) { }
 
     async getAllUsers(): Promise<ResponseServer> {
@@ -31,12 +35,15 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
-    async registerAsStudent(createUserDto: CreateUserDto): Promise<ResponseServer> {
+    async registerAsStudent(createUserDto: CreateUserDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService): Promise<ResponseServer> {
         const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
             return Responder({ status: HttpStatusCode.Conflict, data: null })
         }
+
+        const verif_code = allService.randomLongNumber({ length: 6 })
+        const hashed_password = ''
 
         return this.userModel.create({
             email,
@@ -44,7 +51,7 @@ export class UsersService {
             ls_name,
             password,
             nick_name,
-            phone,
+            phone: email,
             uuid: 'uuid',
             verification_code: '',
             is_verified: 0,
@@ -52,8 +59,8 @@ export class UsersService {
         })
             .then(strudent => {
                 if (strudent instanceof Users) return Responder({ status: HttpStatusCode.Created, data: {} })
-                else return Responder({ status: 400, data: null })
+                else return Responder({ status: 400, data: {} })
             })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
     }
 }

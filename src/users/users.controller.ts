@@ -4,13 +4,15 @@ import { CreateUserDto } from './dto/create-student.dto';
 import { MailService } from 'src/services/service.mail';
 import { AllSercices } from 'src/services/serices.all';
 import { log } from 'console';
+import { CryptoService } from 'src/services/service.crypto';
 
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly userService: UsersService,
         private mailService: MailService,
-        private allServices: AllSercices
+        private allServices: AllSercices,
+        private cryptoService: CryptoService
     ) { }
 
     @Get("list")
@@ -20,7 +22,6 @@ export class UsersController {
 
     @Post('user/signup')
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
-        log("We are over here David Maene == >", createUserDto)
-        return this.userService.registerAsStudent(createUserDto);
+        return this.userService.registerAsStudent(createUserDto, this.mailService, this.allServices, this.cryptoService);
     }
 }

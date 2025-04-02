@@ -3,7 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from 'src/strategy/strategy.jwt';
-import { AuthService } from './service.password';
+import { CryptoService } from './service.crypto';
 
 @Module({
   imports: [
@@ -18,8 +18,8 @@ import { AuthService } from './service.password';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [CryptoService, JwtStrategy],
+  exports: [CryptoService],
 })
 
-export class AuthModule {};
+export class JwtAsModule {};
