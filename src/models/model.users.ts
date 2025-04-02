@@ -7,6 +7,9 @@ export class Users extends Model<IUsers> {
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
     id: string;
 
+    @Column({ type: DataType.UUID, allowNull: false, unique: true })
+    uuid: string;
+
     @Column({ type: DataType.STRING, allowNull: false })
     fs_name: string;
 
