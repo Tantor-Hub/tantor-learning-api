@@ -6,9 +6,7 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 
 @Controller('users')
 export class UsersController {
-    constructor(
-        private readonly userService: UsersService,
-    ) { }
+    constructor(private readonly userService: UsersService) { }
 
     @Get("list")
     async getAllUsers() {

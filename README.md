@@ -44,6 +44,20 @@ In the root of the project run
 yarn run build
 ```
 
+## How to Kill the process if is running in the background
+
+On Windows
+
+```bash
+netstat -ano | findstr :3737
+```
+
+Then
+
+```bash
+taskkill /PID <PID> /F
+```
+
 ## Tech Stack
 
 NestJS, SequelizeORM, postgreSQL
