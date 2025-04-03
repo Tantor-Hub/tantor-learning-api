@@ -11,9 +11,10 @@ import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from '../services/service.crypto';
 import { SignInStudentDto } from './dto/signin-student.dto';
-import { JwtService } from 'src/services/service.jwt';
+// import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
@@ -27,6 +28,11 @@ export class UsersService {
         @InjectModel(HasRoles)
         private readonly hasRoleModel: typeof HasRoles,
 
+        private readonly jwtService: JwtService,
+        private readonly mailService: MailService,
+        private readonly allService: AllSercices,
+        private readonly cryptoService: CryptoService
+
     ) { }
 
     async getAllUsers(): Promise<ResponseServer> {
@@ -39,36 +45,34 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
-    async signInAsStudent(signInStudentDto: SignInStudentDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService, jwtService: JwtService): Promise<ResponseServer> {
+    async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
         return Responder({ status: 200, data: signInStudentDto })
     }
 
-    async registerAsStudent(createUserDto: CreateUserDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService, jwtService: JwtService): Promise<ResponseServer> {
+    async registerAsStudent(createUserDto: CreateUserDto): Promise<ResponseServer> {
         const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
             return Responder({ status: HttpStatusCode.Conflict, data: null })
         }
 
-        const verif_code = allService.randomLongNumber({ length: 6 })
-        const hashed_password = await cryptoService.hashPassword(password)
-        const uuid_user = allService.generateUuid()
+        const verif_code = this.allService.randomLongNumber({ length: 6 })
+        const hashed_password = await this.cryptoService.hashPassword(password)
+        const uuid_user = this.allService.generateUuid()
 
-        return jwtService.signPayload({
+        return this.jwtService.signAsync({
             id_user: 1,
             roles_user: [2, 3, 1],
             uuid_user: uuid_user,
             level_indicator: 1
         })
-            .then(({ code, data, message }) => {
-                return Responder({ status: 400, data: { data, verif_code, hashed_password, ...createUserDto } })
+            .then((string) => {
+                return Responder({ status: 400, data: { string } })
             })
             .catch(err => {
                 log(err)
                 return Responder({ status: 500, data: err })
             })
-
-
 
         // return this.userModel.create({
         //     email,

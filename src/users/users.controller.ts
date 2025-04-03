@@ -24,11 +24,11 @@ export class UsersController {
 
     @Post('user/signup')
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
-        return this.userService.registerAsStudent(createUserDto, this.mailService, this.allServices, this.cryptoService, this.jwtService);
+        return this.userService.registerAsStudent(createUserDto);
     }
 
     @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
-        return this.userService.signInAsStudent(signInStudentDto, this.mailService, this.allServices, this.cryptoService, this.jwtService)
+        return this.userService.signInAsStudent(signInStudentDto)
     }
 }

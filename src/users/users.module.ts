@@ -9,9 +9,24 @@ import { Users } from 'src/models/model.users';
 import { AllSercices } from 'src/services/serices.all';
 import { CryptoService } from 'src/services/service.crypto';
 import { JwtService } from 'src/services/service.jwt';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Roles, HasRoles, Users])],
+  imports: [
+    SequelizeModule.forFeature([Roles, HasRoles, Users]),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule], // Assure-toi que ConfigModule est importé
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('APPJWTTOKEN', 'defaultSecret'),
+        signOptions: {
+          expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h'),
+        },
+      }),
+    }),
+  ],
   controllers: [UsersController],
   providers: [UsersService, MailService, AllSercices, CryptoService, JwtService],
 })
