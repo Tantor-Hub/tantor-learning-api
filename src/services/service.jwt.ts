@@ -4,6 +4,7 @@ import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { IMicroServices } from 'src/interface/interface.servicesinternesresponses';
 import { AllSercices } from './serices.all';
+import { log } from 'console';
 
 @Injectable()
 export class JwtService {
@@ -12,9 +13,7 @@ export class JwtService {
     private readonly jwtService: NestJwtService,
     private readonly configService: ConfigService,
     private readonly allServices: AllSercices
-  ) {
-    this.round = (this.configService.get<string>('APPROUNDENCRYPT') || 7) as number
-  }
+  ) { this.round = (this.configService.get<string>('APPROUNDENCRYPT') || 7) as number }
 
   async signinPayload(payload: IJwtSignin): Promise<IMicroServices> {
     return new Promise((resolve, reject) => {
@@ -44,8 +43,10 @@ export class JwtService {
   }
 
   async decryptWithRound(string: string): Promise<string> {
-    let result = this.allServices.base64Decode(string)
-    for (let index = 0; index < this.round; index++) result = this.allServices.base64Decode(string)
+    let result = this.allServices.base64Decode(string);
+    for (let index = 0; index < this.round; index++) {
+      result = this.allServices.base64Decode(result);
+    }
     return result;
   }
 
@@ -56,13 +57,26 @@ export class JwtService {
       try {
         resolve({
           code: 200,
-          message: "SignedIn with status successfuly",
-          data: { hashed, cleared, roud: this.round }
+          message: "SignedIn with status [OK]",
+          data: { hashed, cleared }
         });
       } catch (error) {
         reject({ code: 500, message: "Unable to signIn", data: error })
       }
     })
+  }
+
+  async verifyTokenWithRound(token: string): Promise<any> {
+    try {
+      const cleared = await this.decryptWithRound(token)
+      const decrypted = await this.jwtService.verifyAsync(cleared, {
+        secret: this.configService.get<string>('APPJWTTOKEN'),
+      });
+      log("[ Cleared is ]", decrypted, cleared)
+      return decrypted
+    } catch (error) {
+      return null
+    }
   }
 
   async verifyToken(token: string): Promise<any> {

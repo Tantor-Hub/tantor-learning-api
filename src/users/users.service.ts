@@ -14,7 +14,6 @@ import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
-// import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
@@ -62,9 +61,9 @@ export class UsersService {
 
         return this.jwtService.signinPayloadAndEncrypt({
             id_user: 1,
-            roles_user: [2, 3, 1],
+            roles_user: [2],
             uuid_user: uuid_user,
-            level_indicator: 1
+            level_indicator: 90
         })
             .then(async ({ code, data, message }) => {
                 return Responder({ status: HttpStatusCode.Ok, data })
