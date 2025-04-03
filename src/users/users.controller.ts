@@ -3,8 +3,8 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { MailService } from 'src/services/service.mail';
 import { AllSercices } from 'src/services/serices.all';
-import { log } from 'console';
 import { CryptoService } from 'src/services/service.crypto';
+import { JwtService } from 'src/services/service.jwt';
 import { SignInStudentDto } from './dto/signin-student.dto';
 
 @Controller('users')
@@ -13,7 +13,8 @@ export class UsersController {
         private readonly userService: UsersService,
         private readonly mailService: MailService,
         private readonly allServices: AllSercices,
-        private readonly cryptoService: CryptoService
+        private readonly cryptoService: CryptoService,
+        private readonly jwtService: JwtService
     ) { }
 
     @Get("list")
@@ -23,11 +24,11 @@ export class UsersController {
 
     @Post('user/signup')
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
-        return this.userService.registerAsStudent(createUserDto, this.mailService, this.allServices, this.cryptoService);
+        return this.userService.registerAsStudent(createUserDto, this.mailService, this.allServices, this.cryptoService, this.jwtService);
     }
 
     @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
-        return this.userService.signInAsStudent(signInStudentDto, this.mailService, this.allServices, this.cryptoService)
+        return this.userService.signInAsStudent(signInStudentDto, this.mailService, this.allServices, this.cryptoService, this.jwtService)
     }
 }

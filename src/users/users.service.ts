@@ -11,6 +11,9 @@ import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from '../services/service.crypto';
 import { SignInStudentDto } from './dto/signin-student.dto';
+import { JwtService } from 'src/services/service.jwt';
+import { log } from 'console';
+import { FindByEmailDto } from './dto/find-by-email.dto';
 
 @Injectable()
 export class UsersService {
@@ -36,11 +39,11 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
-    async signInAsStudent(signInStudentDto: SignInStudentDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService): Promise<ResponseServer> {
+    async signInAsStudent(signInStudentDto: SignInStudentDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService, jwtService: JwtService): Promise<ResponseServer> {
         return Responder({ status: 200, data: signInStudentDto })
     }
 
-    async registerAsStudent(createUserDto: CreateUserDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService): Promise<ResponseServer> {
+    async registerAsStudent(createUserDto: CreateUserDto, mailService: MailService, allService: AllSercices, cryptoService: CryptoService, jwtService: JwtService): Promise<ResponseServer> {
         const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
@@ -49,8 +52,23 @@ export class UsersService {
 
         const verif_code = allService.randomLongNumber({ length: 6 })
         const hashed_password = await cryptoService.hashPassword(password)
+        const uuid_user = allService.generateUuid()
 
-        return Responder({ status: 400, data: { verif_code, hashed_password, ...createUserDto } })
+        return jwtService.signPayload({
+            id_user: 1,
+            roles_user: [2, 3, 1],
+            uuid_user: uuid_user,
+            level_indicator: 1
+        })
+            .then(({ code, data, message }) => {
+                return Responder({ status: 400, data: { data, verif_code, hashed_password, ...createUserDto } })
+            })
+            .catch(err => {
+                log(err)
+                return Responder({ status: 500, data: err })
+            })
+
+
 
         // return this.userModel.create({
         //     email,
@@ -69,5 +87,9 @@ export class UsersService {
         //         else return Responder({ status: 400, data: {} })
         //     })
         //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
+    }
+
+    async findByEmail(email: string, mailService?: MailService, allService?: AllSercices, cryptoService?: CryptoService, jwtService?: JwtService): Promise<ResponseServer> {
+        return Responder({ status: HttpStatusCode.Ok, data: {} })
     }
 }
