@@ -1,29 +1,30 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, HttpException } from '@nestjs/common';
 import { Request } from 'express';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
+import { HttpStatusMessages } from 'src/config/config.statusmessages';
 import { JwtService } from 'src/services/service.jwt';
+import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
 
 @Injectable()
 export class JwtAuthGuardAsStudent implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+    constructor(private readonly jwtService: JwtService) { }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers.authorization;
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const request = context.switchToHttp().getRequest<Request>();
+        const authHeader = request.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('No token provided');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new CustomUnauthorizedException("Aucune clé d'authentification n'a éte fournie");
+        }
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = await this.jwtService.verifyToken(token);
+            if (!decoded) new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
+
+            request.user = decoded;
+            return true;
+        } catch (error) {
+            throw new CustomUnauthorizedException("Aucune clé d'authentification n'a éte fournie");
+        }
     }
-
-    const token = authHeader.split(' ')[1]; // Récupérer le token après "Bearer "
-
-    try {
-      const decoded = await this.jwtService.verifyToken(token);
-      if (!decoded) throw new UnauthorizedException('Invalid token');
-
-      request.user = decoded; // Injecte l'utilisateur décodé dans la requête
-      return true;
-    } catch (error) {
-      throw new UnauthorizedException('Unauthorized');
-    }
-  }
 }
