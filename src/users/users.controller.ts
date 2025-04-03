@@ -1,20 +1,13 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
-import { MailService } from 'src/services/service.mail';
-import { AllSercices } from 'src/services/serices.all';
-import { CryptoService } from 'src/services/service.crypto';
-import { JwtService } from 'src/services/service.jwt';
 import { SignInStudentDto } from './dto/signin-student.dto';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly userService: UsersService,
-        private readonly mailService: MailService,
-        private readonly allServices: AllSercices,
-        private readonly cryptoService: CryptoService,
-        private readonly jwtService: JwtService
     ) { }
 
     @Get("list")
@@ -23,6 +16,7 @@ export class UsersController {
     }
 
     @Post('user/signup')
+    @UseGuards(JwtAuthGuardAsStudent)
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsStudent(createUserDto);
     }
