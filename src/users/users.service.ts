@@ -11,10 +11,10 @@ import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from '../services/service.crypto';
 import { SignInStudentDto } from './dto/signin-student.dto';
-// import { JwtService } from 'src/services/service.jwt';
+import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
-import { JwtService } from '@nestjs/jwt';
+// import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
@@ -60,37 +60,35 @@ export class UsersService {
         const hashed_password = await this.cryptoService.hashPassword(password)
         const uuid_user = this.allService.generateUuid()
 
-        return this.jwtService.signAsync({
+        return this.jwtService.signinPayloadAndEncrypt({
             id_user: 1,
             roles_user: [2, 3, 1],
             uuid_user: uuid_user,
             level_indicator: 1
         })
-            .then((string) => {
-                return Responder({ status: 400, data: { string } })
+            .then(async ({ code, data, message }) => {
+                return Responder({ status: HttpStatusCode.Ok, data })
+                // return this.userModel.create({
+                //     email,
+                //     fs_name,
+                //     ls_name,
+                //     password,
+                //     nick_name,
+                //     phone: email,
+                //     uuid: 'uuid',
+                //     verification_code: '',
+                //     is_verified: 0,
+                //     status: 1
+                // })
+                //     .then(strudent => {
+                //         if (strudent instanceof Users) return Responder({ status: HttpStatusCode.Created, data: {} })
+                //         else return Responder({ status: 400, data: {} })
+                //     })
+                //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
             })
             .catch(err => {
-                log(err)
                 return Responder({ status: 500, data: err })
             })
-
-        // return this.userModel.create({
-        //     email,
-        //     fs_name,
-        //     ls_name,
-        //     password,
-        //     nick_name,
-        //     phone: email,
-        //     uuid: 'uuid',
-        //     verification_code: '',
-        //     is_verified: 0,
-        //     status: 1
-        // })
-        //     .then(strudent => {
-        //         if (strudent instanceof Users) return Responder({ status: HttpStatusCode.Created, data: {} })
-        //         else return Responder({ status: 400, data: {} })
-        //     })
-        //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
     }
 
     async findByEmail(email: string, mailService?: MailService, allService?: AllSercices, cryptoService?: CryptoService, jwtService?: JwtService): Promise<ResponseServer> {

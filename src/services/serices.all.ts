@@ -70,5 +70,13 @@ export class AllSercices {
 
     generateUuid(): string {
         return uuidv4();
-    }
+    };
+
+    base64Econde(str: string): string {
+        return Buffer.from(str, 'utf-8').toString('base64');
+    };
+
+    base64Decode(str: string): string {
+        return Buffer.from(str, 'base64').toString('utf-8');
+    };
 }

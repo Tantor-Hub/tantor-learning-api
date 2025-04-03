@@ -17,7 +17,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     SequelizeModule.forFeature([Roles, HasRoles, Users]),
     ConfigModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule], // Assure-toi que ConfigModule est importé
+      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('APPJWTTOKEN', 'defaultSecret'),
