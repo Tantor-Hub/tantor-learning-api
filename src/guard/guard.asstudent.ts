@@ -1,7 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, HttpException } from '@nestjs/common';
 import { Request } from 'express';
-import { HttpStatusCode } from 'src/config/config.statuscodes';
-import { HttpStatusMessages } from 'src/config/config.statusmessages';
 import { JwtService } from 'src/services/service.jwt';
 import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
 
