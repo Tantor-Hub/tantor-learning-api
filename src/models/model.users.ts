@@ -41,4 +41,9 @@ export class Users extends Model<IUsers> {
     @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
     status: number
 
+    @Column({ type: DataType.STRING, allowNull: true, unique: true })
+    num_record: number
+
+    @Column({ type: DataType.STRING, allowNull: true, unique: true })
+    avatar?: string
 }

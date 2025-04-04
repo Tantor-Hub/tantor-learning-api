@@ -12,11 +12,11 @@ export class HasRoles extends Model<IUserHasRoles> {
 
     @ForeignKey(() => Users)
     @Column({ allowNull: false })
-    id_user: number;
+    UserId: number;
 
     @ForeignKey(() => Roles)
     @Column({ allowNull: false })
-    id_role: number;
+    RoleId: number;
 
     @ForeignKey(() => Roles)
     @Column({ allowNull: false })

@@ -53,12 +53,12 @@ export class RolesService {
         const { id_role, id_user, description } = createRoleDto
         return this.hasRoleModel.findOrCreate({
             where: {
-                id_role,
-                id_user,
+                RoleId: id_role,
+                UserId: id_user,
             },
             defaults: {
-                id_role,
-                id_user,
+                RoleId: id_role,
+                UserId: id_user,
                 status: 1
             }
         })

@@ -15,6 +15,7 @@ import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
 import { Op } from 'sequelize';
+import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 
 @Injectable()
 export class UsersService {
@@ -59,6 +60,24 @@ export class UsersService {
     }
 
     async getAllUsers(): Promise<ResponseServer> {
+
+        Users.belongsToMany(Roles, { through: HasRoles });
+        return this.userModel.findAll({
+            include: [
+                {
+                    model: Roles,
+                    required: true
+                }
+            ],
+            where: {
+                status: 1
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async getAllUsersByRole(getUserByRoleDto: GetUserByRoleDto): Promise<ResponseServer> {
         return this.userModel.findAll({
             where: {
                 // status: 1
@@ -89,7 +108,7 @@ export class UsersService {
                                 level_indicator: 90
                             })
                                 .then(async ({ code, data, message }) => {
-                                    return Responder({ status: HttpStatusCode.Ok})
+                                    return Responder({ status: HttpStatusCode.Ok })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
@@ -103,7 +122,7 @@ export class UsersService {
                             verification_code: verif_code
                         })
                             .then(_ => {
-                                
+
                                 const newInstance = student.toJSON();
 
                                 delete (newInstance as any).password;
@@ -153,8 +172,8 @@ export class UsersService {
                 if (student instanceof Users) {
                     const { id: as_id_user, email } = student?.toJSON()
                     return this.hasRoleModel.create({
-                        id_role: 2, // this Means Student Or Stageaire
-                        id_user: as_id_user as number,
+                        RoleId: 2, // this Means Student Or Stageaire
+                        UserId: as_id_user as number,
                         status: 1
                     })
                         .then(hasrole => {
