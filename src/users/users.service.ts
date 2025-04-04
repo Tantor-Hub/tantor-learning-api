@@ -89,7 +89,7 @@ export class UsersService {
                                 level_indicator: 90
                             })
                                 .then(async ({ code, data, message }) => {
-                                    return Responder({ status: HttpStatusCode.Ok, })
+                                    return Responder({ status: HttpStatusCode.Ok})
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
@@ -105,11 +105,14 @@ export class UsersService {
                             .then(_ => {
                                 
                                 const newInstance = student.toJSON();
-                                
+
                                 delete (newInstance as any).password;
                                 delete (newInstance as any).verification_code;
                                 delete (newInstance as any).last_login;
-                                delete (newInstance as any).status
+                                delete (newInstance as any).status;
+                                delete (newInstance as any).is_verified;
+                                delete (newInstance as any).createdAt;
+                                delete (newInstance as any).updatedAt;
 
                                 this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
                                 return Responder({ status: HttpStatusCode.Unauthorized, data: { message: `Compte non vérifié | a verification code was sent to the user ::: [${email}]`, user: newInstance } })

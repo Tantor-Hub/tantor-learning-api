@@ -6,6 +6,7 @@ import { NotFoundFilter } from './strategy/strategy.notfound';
 import { ValidationPipe, BadRequestException, NotFoundException } from '@nestjs/common';
 import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
+import { ResponseInterceptor } from './strategy/strategy.responseinterceptor';
 
 async function tantorAPP() {
 
@@ -36,7 +37,7 @@ async function tantorAPP() {
       });
     }
   }));
-
+  app.useGlobalInterceptors(new ResponseInterceptor());
   // app.useGlobalFilters(new NotFoundFilter());
 
   await app.listen(port, () => {
