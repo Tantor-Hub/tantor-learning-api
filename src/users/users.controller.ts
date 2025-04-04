@@ -8,13 +8,10 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 export class UsersController {
     constructor(private readonly userService: UsersService) { }
 
-    @Get("list")
-    async getAllUsers() {
-        return this.userService.getAllUsers()
-    }
+    // # Auth routes for student 
 
     @Post('user/signup')
-    @UseGuards(JwtAuthGuardAsStudent)
+    // @UseGuards(JwtAuthGuardAsStudent)
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsStudent(createUserDto);
     }
@@ -22,5 +19,12 @@ export class UsersController {
     @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
         return this.userService.signInAsStudent(signInStudentDto)
+    }
+
+    // # Other routes
+
+    @Get("list")
+    async getAllUsers() {
+        return this.userService.getAllUsers()
     }
 }

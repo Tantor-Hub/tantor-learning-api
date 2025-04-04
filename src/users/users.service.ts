@@ -45,7 +45,16 @@ export class UsersService {
     }
 
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
-        return Responder({ status: 200, data: signInStudentDto })
+        return this.mailService.sendMail({
+            content: "Bonjour David Maene",
+            to: "davidmened@gmail.com",
+            subject: "Greetings"
+        })
+            .then(({ code, data, message }) => {
+                log(data)
+                return Responder({ status: 200, data: signInStudentDto })
+            })
+            .catch(err => Responder({ status: 500, data: err }))
     }
 
     async registerAsStudent(createUserDto: CreateUserDto): Promise<ResponseServer> {

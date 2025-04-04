@@ -30,7 +30,7 @@ in watch mode
 yarn start:dev
 ```
 
-Or run just the commande
+Or run just the command
 
 ```bash
 yarn run start
@@ -44,7 +44,7 @@ In the root of the project run
 yarn run build
 ```
 
-## How to Kill the process if is running in the background
+## How to Kill the process if running in the background
 
 On Windows
 
