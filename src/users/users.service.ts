@@ -14,6 +14,7 @@ import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class UsersService {
@@ -33,21 +34,28 @@ export class UsersService {
         private readonly cryptoService: CryptoService,
     ) { }
 
-    async onWelcomeNewStudent({ to, otp, nom, postnom }): Promise<void> {
+    async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
+        if (all && all === true) {
+            this.mailService.sendMail({
+                content: this.mailService.templates({ as: 'welcome', nom, postnom }),
+                to,
+                subject: "Félicitations"
+            })
+                .then(({ code, data, message }) => { })
+                .catch(err => { })
 
-        this.mailService.sendMail({
-            content: this.mailService.templates({ as: 'welcome', nom, postnom }),
-            to,
-            subject: "Félicitations"
-        })
-            .then(({ code, data, message }) => { })
-            .catch(err => { })
-
-        this.mailService.sendMail({
-            content: this.mailService.templates({ as: 'otp', nom, postnom, code: otp }),
-            to,
-            subject: "Code de vérification"
-        })
+            this.mailService.sendMail({
+                content: this.mailService.templates({ as: 'otp', nom, postnom, code: otp }),
+                to,
+                subject: "Code de vérification"
+            })
+        } else {
+            this.mailService.sendMail({
+                content: this.mailService.templates({ as: 'otp', nom, postnom, code: otp }),
+                to,
+                subject: "Code de vérification"
+            })
+        }
     }
 
     async getAllUsers(): Promise<ResponseServer> {
@@ -61,16 +69,58 @@ export class UsersService {
     }
 
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
-        return this.mailService.sendMail({
-            content: this.mailService.templates({ as: 'welcome', nom: "David", postnom: "Maene" }),
-            to: "davidmened@gmail.com",
-            subject: "Greetings"
+        const { user_name, password } = signInStudentDto
+        return this.userModel.findOne({
+            where: {
+                status: 1,
+                [Op.or]: [{ email: user_name }, { nick_name: user_name }],
+            }
         })
-            .then(({ code, data, message }) => {
-                log(data)
-                return Responder({ status: 200, data: signInStudentDto })
+            .then(async student => {
+                if (student instanceof Users) {
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id } = student?.toJSON()
+                    if (is_verified === 1) {
+                        const matched = await this.cryptoService.comparePassword(password, as_hashed_password);
+                        if (matched) {
+                            return this.jwtService.signinPayloadAndEncrypt({
+                                id_user: id as number,
+                                roles_user: [2],
+                                uuid_user: uuid as string,
+                                level_indicator: 90
+                            })
+                                .then(async ({ code, data, message }) => {
+                                    return Responder({ status: HttpStatusCode.Ok, })
+                                })
+                                .catch(err => {
+                                    return Responder({ status: 500, data: err })
+                                })
+                        } else {
+                            return Responder({ status: HttpStatusCode.Forbidden, data: null })
+                        }
+                    } else {
+                        const verif_code = this.allService.randomLongNumber({ length: 6 })
+                        return student.update({
+                            verification_code: verif_code
+                        })
+                            .then(_ => {
+                                
+                                const newInstance = student.toJSON();
+                                
+                                delete (newInstance as any).password;
+                                delete (newInstance as any).verification_code;
+                                delete (newInstance as any).last_login;
+                                delete (newInstance as any).status
+
+                                this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
+                                return Responder({ status: HttpStatusCode.Unauthorized, data: { message: `Compte non vérifié | a verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                            })
+                            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                    }
+                } else {
+                    return Responder({ status: HttpStatusCode.Forbidden, data: null })
+                }
             })
-            .catch(err => Responder({ status: 500, data: err }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
     async registerAsStudent(createUserDto: CreateUserDto): Promise<ResponseServer> {
@@ -106,8 +156,8 @@ export class UsersService {
                     })
                         .then(hasrole => {
                             if (hasrole instanceof HasRoles) {
-                                this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name })
-                                return Responder({ status: HttpStatusCode.Created, data: `A vérification code was sent to the user ::: [${email}]` })
+                                this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
+                                return Responder({ status: HttpStatusCode.Created, data: `A verification code was sent to the user ::: [${email}]` })
                             } else {
                                 return Responder({ status: HttpStatusCode.BadRequest })
                             }
@@ -116,6 +166,10 @@ export class UsersService {
                 } else return Responder({ status: HttpStatusCode.BadRequest, data: {} })
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async resentVerificationCode(): Promise<ResponseServer> {
+        return Responder({ status: HttpStatusCode.BadGateway, })
     }
 
     async findByEmail(email: string, mailService?: MailService, allService?: AllSercices, cryptoService?: CryptoService, jwtService?: JwtService): Promise<ResponseServer> {
