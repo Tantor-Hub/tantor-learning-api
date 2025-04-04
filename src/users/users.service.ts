@@ -30,9 +30,25 @@ export class UsersService {
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
         private readonly allService: AllSercices,
-        private readonly cryptoService: CryptoService
-
+        private readonly cryptoService: CryptoService,
     ) { }
+
+    async onWelcomeNewStudent({ to, otp, nom, postnom }): Promise<void> {
+
+        this.mailService.sendMail({
+            content: this.mailService.templates({ as: 'welcome', nom, postnom }),
+            to,
+            subject: "Félicitations"
+        })
+            .then(({ code, data, message }) => { })
+            .catch(err => { })
+
+        this.mailService.sendMail({
+            content: this.mailService.templates({ as: 'otp', nom, postnom, code: otp }),
+            to,
+            subject: "Code de vérification"
+        })
+    }
 
     async getAllUsers(): Promise<ResponseServer> {
         return this.userModel.findAll({
@@ -46,7 +62,7 @@ export class UsersService {
 
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
         return this.mailService.sendMail({
-            content: "Bonjour David Maene",
+            content: this.mailService.templates({ as: 'welcome', nom: "David", postnom: "Maene" }),
             to: "davidmened@gmail.com",
             subject: "Greetings"
         })
@@ -68,35 +84,38 @@ export class UsersService {
         const hashed_password = await this.cryptoService.hashPassword(password)
         const uuid_user = this.allService.generateUuid()
 
-        return this.jwtService.signinPayloadAndEncrypt({
-            id_user: 1,
-            roles_user: [2],
-            uuid_user: uuid_user,
-            level_indicator: 90
+        return this.userModel.create({
+            email,
+            fs_name,
+            ls_name,
+            password: hashed_password,
+            nick_name,
+            phone: email,
+            uuid: uuid_user,
+            verification_code: verif_code,
+            is_verified: 0,
+            status: 1
         })
-            .then(async ({ code, data, message }) => {
-                return Responder({ status: HttpStatusCode.Ok, data })
-                // return this.userModel.create({
-                //     email,
-                //     fs_name,
-                //     ls_name,
-                //     password,
-                //     nick_name,
-                //     phone: email,
-                //     uuid: 'uuid',
-                //     verification_code: '',
-                //     is_verified: 0,
-                //     status: 1
-                // })
-                //     .then(strudent => {
-                //         if (strudent instanceof Users) return Responder({ status: HttpStatusCode.Created, data: {} })
-                //         else return Responder({ status: 400, data: {} })
-                //     })
-                //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err, }))
+            .then(student => {
+                if (student instanceof Users) {
+                    const { id: as_id_user, email } = student?.toJSON()
+                    return this.hasRoleModel.create({
+                        id_role: 2, // this Means Student Or Stageaire
+                        id_user: as_id_user as number,
+                        status: 1
+                    })
+                        .then(hasrole => {
+                            if (hasrole instanceof HasRoles) {
+                                this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name })
+                                return Responder({ status: HttpStatusCode.Created, data: `A vérification code was sent to the user ::: [${email}]` })
+                            } else {
+                                return Responder({ status: HttpStatusCode.BadRequest })
+                            }
+                        })
+                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                } else return Responder({ status: HttpStatusCode.BadRequest, data: {} })
             })
-            .catch(err => {
-                return Responder({ status: 500, data: err })
-            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
     async findByEmail(email: string, mailService?: MailService, allService?: AllSercices, cryptoService?: CryptoService, jwtService?: JwtService): Promise<ResponseServer> {
