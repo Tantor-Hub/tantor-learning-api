@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
-import { VerifyAsStudentDto } from 'src/roles/dto/verify-student.dto';
+import { VerifyAsStudentDto } from './dto/verify-student.dto';
 
 @Controller('users')
 export class UsersController {

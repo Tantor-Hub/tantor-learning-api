@@ -13,4 +13,5 @@ export interface IUsers extends IGlobale {
     password: string,
     verification_code?: string,
     is_verified: number,
+    roles?: number[]
 }

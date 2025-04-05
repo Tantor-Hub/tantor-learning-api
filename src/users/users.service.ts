@@ -16,7 +16,8 @@ import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
 import { Op } from 'sequelize';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
-import { VerifyAsStudentDto } from '../roles/dto/verify-student.dto';
+import { VerifyAsStudentDto } from './dto/verify-student.dto';
+import { ResentCodeDto } from './dto/resent-code.dto';
 
 @Injectable()
 export class UsersService {
@@ -105,13 +106,13 @@ export class UsersService {
         })
             .then(async student => {
                 if (student instanceof Users) {
-                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id } = student?.toJSON()
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, roles } = student?.toJSON()
                     if (is_verified === 1) {
                         const matched = await this.cryptoService.comparePassword(password, as_hashed_password);
                         if (matched) {
                             return this.jwtService.signinPayloadAndEncrypt({
                                 id_user: id as number,
-                                roles_user: [2],
+                                roles_user: [...roles as any],
                                 uuid_user: uuid as string,
                                 level_indicator: 90
                             })
@@ -220,46 +221,52 @@ export class UsersService {
             })
     }
 
-    async resentVerificationCode(): Promise<ResponseServer> {
+    async resentVerificationCode(resentCodeDto: ResentCodeDto): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.BadGateway, })
     }
 
     async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
-        const { uuid_user, verication_code } = verifyAsStudentDto
+        const { email_user, verication_code } = verifyAsStudentDto
         return this.userModel.findOne({
+            attributes: {
+                exclude: ['password']
+            },
             where: {
                 status: 1,
-                uuid: uuid_user
+                email: email_user
                 // [Op.or]: [{ id: uuid_user }, { uuid: uuid_user }],
             }
         })
             .then(async student => {
-                log(student)
+                log(student?.toJSON())
                 if (student instanceof Users) {
-                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code } = student?.toJSON()
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
                     if (is_verified === 0) {
                         if (as_code?.toString() === verication_code.toString()) {
                             return this.jwtService.signinPayloadAndEncrypt({
                                 id_user: id as number,
-                                roles_user: [2],
+                                roles_user: [...roles as any],
                                 uuid_user: uuid as string,
                                 level_indicator: 90
                             })
                                 .then(async ({ code, data, message }) => {
                                     const { cleared, hashed } = data
+                                    student.update({
+                                        is_verified: 1
+                                    })
                                     return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
                                 })
                         } else {
-                            return Responder({status: HttpStatusCode.Forbidden, data: `Le code de vérification est invalide`})
+                            return Responder({ status: HttpStatusCode.Forbidden, data: `Le code de vérification est invalide` })
                         }
                     } else {
-                        return Responder({ status: HttpStatusCode.NotModified, data: `User still verified ::: [${email}]` })
+                        return Responder({ status: HttpStatusCode.BadRequest, data: `User still verified ::: [${email}]` })
                     }
                 } else {
-                    return Responder({ status: HttpStatusCode.NotFound, data: null })
+                    return Responder({ status: HttpStatusCode.NotFound, data: `${email_user} n'est pas reconnu !` })
                 }
             })
             .catch(err => Responder({ status: HttpStatusCode.NotFound, data: err }))
