@@ -363,6 +363,14 @@ export class UsersService {
             return Responder({ status: HttpStatusCode.NotAcceptable, data: "Le body de la requete ne peut etre vide" })
         }
 
+        delete (profile as any).password;
+        delete (profile as any).avatar;
+        delete (profile as any).verification_code;
+        delete (profile as any).is_verified;
+        delete (profile as any).last_login;
+        delete (profile as any).id;
+        delete (profile as any).roles;
+
         return this.userModel.findOne({
             include: [
                 {
