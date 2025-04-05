@@ -357,6 +357,41 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
+    async updateUserProfile(user: IJwtSignin, profile: any, req: Request): Promise<ResponseServer> {
+        const { id_user, roles_user, uuid_user, level_indicator } = user
+        if (Object.keys(profile as {}).length <= 0) {
+            return Responder({ status: HttpStatusCode.NotAcceptable, data: "Le body de la requete ne peut etre vide" })
+        }
+
+        return this.userModel.findOne({
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
+            attributes: {
+                exclude: ['password', 'verification_code', 'is_verified', 'last_login']
+            },
+            where: {
+                status: 1,
+                id: id_user
+            }
+        })
+            .then(async student => {
+                if (student instanceof Users) {
+                    student.update({ ...profile })
+                    return Responder({ status: HttpStatusCode.Ok, data: student })
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: null })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
     async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
 
         const { id_user, roles_user, uuid_user, level_indicator } = user
