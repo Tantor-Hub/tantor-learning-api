@@ -18,8 +18,6 @@ import { Op } from 'sequelize';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
-import { Request } from 'express';
-import { User } from '../strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
@@ -332,11 +330,35 @@ export class UsersService {
     }
 
     async findByEmail(findByEmailDto: FindByEmailDto): Promise<ResponseServer> {
-        return Responder({ status: HttpStatusCode.Ok, data: {} })
+        const { email } = findByEmailDto
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
+        return this.userModel.findOne({
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
+            attributes: {
+                exclude: ['password', 'verification_code', 'is_verified', 'last_login']
+            },
+            where: {
+                status: 1,
+                email: email
+            }
+        })
+            .then(async student => {
+                return Responder({ status: HttpStatusCode.Ok, data: student })
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
     async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
-        
+
         const { id_user, roles_user, uuid_user, level_indicator } = user
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
