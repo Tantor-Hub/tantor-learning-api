@@ -1,6 +1,8 @@
-import { Table, Column, Model, DataType } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IUsers } from 'src/interface/interface.users';
+import { HasRoles } from './model.userhasroles';
+import { Roles } from './model.roles';
 
 @Table({ tableName: tables['users'], timestamps: true, })
 export class Users extends Model<IUsers> {
@@ -42,8 +44,14 @@ export class Users extends Model<IUsers> {
     status: number
 
     @Column({ type: DataType.STRING, allowNull: true, unique: true })
-    num_record: number
+    num_record: string
 
     @Column({ type: DataType.STRING, allowNull: true, unique: true })
-    avatar?: string
+    avatar?: string;
+
+    @HasMany(() => HasRoles)
+    hasRoles: HasRoles[];
+
+    @BelongsToMany(() => Roles, () => HasRoles)
+    roles: Roles[];
 }

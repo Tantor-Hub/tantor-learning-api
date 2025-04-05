@@ -16,6 +16,7 @@ import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
 import { Op } from 'sequelize';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
+import { VerifyAsStudentDto } from '../roles/dto/verify-student.dto';
 
 @Injectable()
 export class UsersService {
@@ -61,14 +62,21 @@ export class UsersService {
 
     async getAllUsers(): Promise<ResponseServer> {
 
-        Users.belongsToMany(Roles, { through: HasRoles });
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Roles.belongsToMany(Users, { through: HasRoles });
         return this.userModel.findAll({
             include: [
                 {
                     model: Roles,
-                    required: true
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
                 }
             ],
+            attributes: {
+                exclude: ['password', 'verification_code', 'status', 'is_verified']
+            },
             where: {
                 status: 1
             }
@@ -108,7 +116,8 @@ export class UsersService {
                                 level_indicator: 90
                             })
                                 .then(async ({ code, data, message }) => {
-                                    return Responder({ status: HttpStatusCode.Ok })
+                                    const { cleared, hashed } = data
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
@@ -149,14 +158,16 @@ export class UsersService {
         const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
-            return Responder({ status: HttpStatusCode.Conflict, data: null })
+            return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
         }
 
         const verif_code = this.allService.randomLongNumber({ length: 6 })
+        const num_record = this.allService.randomLongNumber({ length: 6 })
         const hashed_password = await this.cryptoService.hashPassword(password)
         const uuid_user = this.allService.generateUuid()
 
         return this.userModel.create({
+            num_record: num_record,
             email,
             fs_name,
             ls_name,
@@ -172,29 +183,89 @@ export class UsersService {
                 if (student instanceof Users) {
                     const { id: as_id_user, email } = student?.toJSON()
                     return this.hasRoleModel.create({
-                        RoleId: 2, // this Means Student Or Stageaire
+                        RoleId: 4, // this Means Student Or Stagiaire
                         UserId: as_id_user as number,
                         status: 1
                     })
                         .then(hasrole => {
                             if (hasrole instanceof HasRoles) {
                                 this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
-                                return Responder({ status: HttpStatusCode.Created, data: `A verification code was sent to the user ::: [${email}]` })
+                                const newInstance = student.toJSON();
+
+                                delete (newInstance as any).password;
+                                delete (newInstance as any).verification_code;
+                                delete (newInstance as any).last_login;
+                                delete (newInstance as any).status;
+                                delete (newInstance as any).is_verified;
+                                delete (newInstance as any).createdAt;
+                                delete (newInstance as any).updatedAt;
+
+                                return Responder({ status: HttpStatusCode.Created, data: { message: `A verification code was sent to the user ::: [${email}]`, user: newInstance } })
                             } else {
                                 return Responder({ status: HttpStatusCode.BadRequest })
                             }
                         })
-                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-                } else return Responder({ status: HttpStatusCode.BadRequest, data: {} })
+                        .catch(err => {
+                            log(err)
+                            return Responder({ status: HttpStatusCode.Conflict, data: err })
+                        })
+                } else {
+                    log("You are here ")
+                    return Responder({ status: HttpStatusCode.BadRequest, data: {} })
+                }
             })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            .catch(err => {
+                log(err)
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
     }
 
     async resentVerificationCode(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.BadGateway, })
     }
 
-    async findByEmail(email: string, mailService?: MailService, allService?: AllSercices, cryptoService?: CryptoService, jwtService?: JwtService): Promise<ResponseServer> {
+    async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
+        const { uuid_user, verication_code } = verifyAsStudentDto
+        return this.userModel.findOne({
+            where: {
+                status: 1,
+                uuid: uuid_user
+                // [Op.or]: [{ id: uuid_user }, { uuid: uuid_user }],
+            }
+        })
+            .then(async student => {
+                log(student)
+                if (student instanceof Users) {
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code } = student?.toJSON()
+                    if (is_verified === 0) {
+                        if (as_code?.toString() === verication_code.toString()) {
+                            return this.jwtService.signinPayloadAndEncrypt({
+                                id_user: id as number,
+                                roles_user: [2],
+                                uuid_user: uuid as string,
+                                level_indicator: 90
+                            })
+                                .then(async ({ code, data, message }) => {
+                                    const { cleared, hashed } = data
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
+                                })
+                                .catch(err => {
+                                    return Responder({ status: 500, data: err })
+                                })
+                        } else {
+                            return Responder({status: HttpStatusCode.Forbidden, data: `Le code de vérification est invalide`})
+                        }
+                    } else {
+                        return Responder({ status: HttpStatusCode.NotModified, data: `User still verified ::: [${email}]` })
+                    }
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: null })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.NotFound, data: err }))
+    }
+
+    async findByEmail(email: string): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: {} })
     }
 }

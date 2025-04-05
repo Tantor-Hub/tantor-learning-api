@@ -3,7 +3,7 @@ import { IGlobale } from "./interface.globale";
 export interface IUsers extends IGlobale {
     id?: number,
     uuid?: string,
-    num_record?: number,
+    num_record?: string,
     avatar?: string,
     fs_name: string,
     ls_name: string,

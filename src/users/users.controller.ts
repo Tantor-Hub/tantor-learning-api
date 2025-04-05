@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
+import { VerifyAsStudentDto } from 'src/roles/dto/verify-student.dto';
 
 @Controller('users')
 export class UsersController {
@@ -20,6 +21,11 @@ export class UsersController {
     @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
         return this.userService.signInAsStudent(signInStudentDto)
+    }
+
+    @Put("user/verify")
+    async verifyAsStudent(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
+        return this.userService.verifyAsStudent(verifyAsStudentDto)
     }
 
     // # Other routes

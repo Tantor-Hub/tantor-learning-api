@@ -18,7 +18,6 @@ export class HasRoles extends Model<IUserHasRoles> {
     @Column({ allowNull: false })
     RoleId: number;
 
-    @ForeignKey(() => Roles)
     @Column({ allowNull: false })
     status?: number;
 }

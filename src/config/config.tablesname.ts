@@ -1,6 +1,8 @@
+const table_prefix = "___tbl_tantor_";
+
 export enum tables {
-    users = "__tbl_tantor_users",
-    roles = "__tbl_tantor_roles",
-    hasroles = "__tbl_tantor_hasroles",
-    cours = "__tbl_tantor_cours"
+    users = `${table_prefix}users`,
+    roles = `${table_prefix}roles`,
+    hasroles = `${table_prefix}hasroles`,
+    cours = `${table_prefix}cours`
 }
