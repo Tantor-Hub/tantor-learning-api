@@ -72,7 +72,6 @@ export class JwtService {
       const decrypted = await this.jwtService.verifyAsync(cleared, {
         secret: this.configService.get<string>('APPJWTTOKEN'),
       });
-      log("[ Cleared is ]", decrypted, cleared)
       return decrypted
     } catch (error) {
       return null

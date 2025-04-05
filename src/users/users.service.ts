@@ -18,6 +18,9 @@ import { Op } from 'sequelize';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
+import { Request } from 'express';
+import { User } from '../strategy/strategy.globaluser';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +39,10 @@ export class UsersService {
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,
     ) { }
+
+    private formatRoles(roles: any[]): number[] {
+        return roles.map(role => role?.id)
+    }
 
     async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
         if (all && all === true) {
@@ -64,7 +71,6 @@ export class UsersService {
     async getAllUsers(): Promise<ResponseServer> {
 
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
-        // Roles.belongsToMany(Users, { through: HasRoles });
         return this.userModel.findAll({
             include: [
                 {
@@ -98,7 +104,18 @@ export class UsersService {
 
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
         const { user_name, password } = signInStudentDto
+
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
         return this.userModel.findOne({
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
             where: {
                 status: 1,
                 [Op.or]: [{ email: user_name }, { nick_name: user_name }],
@@ -107,12 +124,14 @@ export class UsersService {
             .then(async student => {
                 if (student instanceof Users) {
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, roles } = student?.toJSON()
+                    const _roles = this.formatRoles(roles as any)
+
                     if (is_verified === 1) {
                         const matched = await this.cryptoService.comparePassword(password, as_hashed_password);
                         if (matched) {
                             return this.jwtService.signinPayloadAndEncrypt({
                                 id_user: id as number,
-                                roles_user: [...roles as any],
+                                roles_user: _roles,
                                 uuid_user: uuid as string,
                                 level_indicator: 90
                             })
@@ -222,6 +241,7 @@ export class UsersService {
     }
 
     async resentVerificationCode(resentCodeDto: ResentCodeDto): Promise<ResponseServer> {
+
         const { user_email } = resentCodeDto
         const verif_code = this.allService.randomLongNumber({ length: 6 })
 
@@ -232,7 +252,6 @@ export class UsersService {
             where: {
                 status: 1,
                 email: user_email
-                // [Op.or]: [{ id: uuid_user }, { uuid: uuid_user }],
             }
         })
             .then(async student => {
@@ -242,7 +261,7 @@ export class UsersService {
                     await student.update({
                         verification_code: verif_code
                     })
-                    return Responder({ status: HttpStatusCode.Ok, data: { message: `Un nouveau code de vérification a été envoyé à ${email}`, user: { fs_name, ls_name, email, nick_name} } })
+                    return Responder({ status: HttpStatusCode.Ok, data: { message: `Un nouveau code de vérification a été envoyé à ${email}`, user: { fs_name, ls_name, email, nick_name } } })
                 } else {
                     return Responder({ status: HttpStatusCode.NotFound, data: `${user_email} n'est pas reconnu !` })
                 }
@@ -251,25 +270,39 @@ export class UsersService {
     }
 
     async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
+
         const { email_user, verication_code } = verifyAsStudentDto
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         return this.userModel.findOne({
             attributes: {
                 exclude: ['password']
             },
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
             where: {
                 status: 1,
                 email: email_user
-                // [Op.or]: [{ id: uuid_user }, { uuid: uuid_user }],
             }
         })
             .then(async student => {
                 if (student instanceof Users) {
+
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
+                    const _roles = this.formatRoles(roles as any)
+
                     if (is_verified === 0) {
                         if (as_code?.toString() === verication_code.toString()) {
                             return this.jwtService.signinPayloadAndEncrypt({
                                 id_user: id as number,
-                                roles_user: [...roles as any],
+                                roles_user: [..._roles],
                                 uuid_user: uuid as string,
                                 level_indicator: 90
                             })
@@ -293,10 +326,41 @@ export class UsersService {
                     return Responder({ status: HttpStatusCode.NotFound, data: `${email_user} n'est pas reconnu !` })
                 }
             })
-            .catch(err => Responder({ status: HttpStatusCode.NotFound, data: err }))
+            .catch(err => {
+                return Responder({ status: HttpStatusCode.NotFound, data: err })
+            })
     }
 
-    async findByEmail(email: string): Promise<ResponseServer> {
+    async findByEmail(findByEmailDto: FindByEmailDto): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: {} })
+    }
+
+    async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
+        
+        const { id_user, roles_user, uuid_user, level_indicator } = user
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
+        return this.userModel.findOne({
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
+            attributes: {
+                exclude: ['password', 'verification_code', 'is_verified', 'last_login']
+            },
+            where: {
+                status: 1,
+                id: id_user
+            }
+        })
+            .then(async student => {
+                return Responder({ status: HttpStatusCode.Ok, data: student })
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 }

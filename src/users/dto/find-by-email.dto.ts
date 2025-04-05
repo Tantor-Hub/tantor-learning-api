@@ -1,6 +1,6 @@
 import { IsEmail } from "class-validator";
 
 export class FindByEmailDto {
-    @IsEmail({  })
+    @IsEmail()
     email: string
 }

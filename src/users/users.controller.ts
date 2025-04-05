@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
@@ -6,6 +6,8 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
+import { FindByEmailDto } from './dto/find-by-email.dto';
+import { User } from 'src/strategy/strategy.globaluser';
 
 @Controller('users')
 export class UsersController {
@@ -14,7 +16,6 @@ export class UsersController {
     // # Auth routes for student 
 
     @Post('user/signup')
-    // @UseGuards(JwtAuthGuardAsStudent)
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsStudent(createUserDto);
     }
@@ -34,14 +35,25 @@ export class UsersController {
         return this.userService.resentVerificationCode(resentCodeDto)
     }
 
+    @Get("user/profile")
+    @UseGuards(JwtAuthGuardAsStudent)
+
+    async profileAsStudent(@User() user) {
+        return this.userService.profileAsStudent(user)
+    }
+
     // # Other routes
+
+    @Put("user/:email")
+    async findByEmail(@Param() findByEmailDto: FindByEmailDto) {
+        return this.userService.findByEmail(findByEmailDto,)
+    }
 
     @Get("listall")
     async getAllUsers() {
         return this.userService.getAllUsers()
     }
 
-    
     // @Get("list/by/role:idrole")
     // async getAllUsersByRole() {
     //     return this.userService.getAllUsersByRole(@Body('idrole') getUserByRoleDto: GetUserByRoleDto)
