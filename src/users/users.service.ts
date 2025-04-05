@@ -163,7 +163,7 @@ export class UsersService {
         }
 
         const verif_code = this.allService.randomLongNumber({ length: 6 })
-        const num_record = this.allService.randomLongNumber({ length: 6 })
+        const num_record = this.allService.randomLongNumber({ length: 8 })
         const hashed_password = await this.cryptoService.hashPassword(password)
         const uuid_user = this.allService.generateUuid()
 
@@ -222,7 +222,32 @@ export class UsersService {
     }
 
     async resentVerificationCode(resentCodeDto: ResentCodeDto): Promise<ResponseServer> {
-        return Responder({ status: HttpStatusCode.BadGateway, })
+        const { user_email } = resentCodeDto
+        const verif_code = this.allService.randomLongNumber({ length: 6 })
+
+        return this.userModel.findOne({
+            attributes: {
+                exclude: ['password']
+            },
+            where: {
+                status: 1,
+                email: user_email
+                // [Op.or]: [{ id: uuid_user }, { uuid: uuid_user }],
+            }
+        })
+            .then(async student => {
+                if (student instanceof Users) {
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
+                    this.onWelcomeNewStudent({ to: user_email, nom: fs_name, postnom: ls_name, all: false, otp: verif_code })
+                    await student.update({
+                        verification_code: verif_code
+                    })
+                    return Responder({ status: HttpStatusCode.Ok, data: { message: `Un nouveau code de vérification a été envoyé à ${email}`, user: { fs_name, ls_name, email, nick_name} } })
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: `${user_email} n'est pas reconnu !` })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.NotFound, data: err }))
     }
 
     async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
@@ -238,7 +263,6 @@ export class UsersService {
             }
         })
             .then(async student => {
-                log(student?.toJSON())
                 if (student instanceof Users) {
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
                     if (is_verified === 0) {

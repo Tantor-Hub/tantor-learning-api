@@ -5,6 +5,7 @@ import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
+import { ResentCodeDto } from './dto/resent-code.dto';
 
 @Controller('users')
 export class UsersController {
@@ -26,6 +27,11 @@ export class UsersController {
     @Put("user/verify")
     async verifyAsStudent(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
         return this.userService.verifyAsStudent(verifyAsStudentDto)
+    }
+
+    @Put("user/resendcode")
+    async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
+        return this.userService.resentVerificationCode(resentCodeDto)
     }
 
     // # Other routes
