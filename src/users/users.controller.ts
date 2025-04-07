@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Request, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Req, Request, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
@@ -10,6 +10,7 @@ import { FindByEmailDto } from './dto/find-by-email.dto';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('users')
 export class UsersController {
@@ -48,6 +49,16 @@ export class UsersController {
     @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 10_000_000 } }))
     async updateProfileAsStudent(@User() user: IJwtSignin, @Body() profile: any, @Request() req: Request) {
         return this.userService.updateUserProfile(user, profile, req)
+    }
+
+    @Get('user/authwithgoogle')
+    @UseGuards(AuthGuard('google'))
+    async googleAuth(@Req() req) { }
+
+    @Get('/auth/google/callback')
+    @UseGuards(AuthGuard('google'))
+    async googleAuthRedirect(@Req() req: any) {
+        return this.userService.authWithGoogle(req.user)
     }
 
     // # Other routes

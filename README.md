@@ -7,7 +7,7 @@ Defines the features and requirements for the development of the online platform
 ### 1 Clone the project
 
 ```bash
-git clone https://github.com/Tantor-Hub/to-be-defined
+git clone git@github.com:Tantor-Hub/TantorLegal.git
 ```
 
 ### 2 Go to the project directory
@@ -61,3 +61,7 @@ taskkill /PID <PID> /F
 ## Tech Stack
 
 NestJS, SequelizeORM, postgreSQL
+
+## Documentation link
+
+```https://documenter.getpostman.com/view/14319426/2sB2cVeh52```

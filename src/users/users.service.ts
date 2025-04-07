@@ -19,6 +19,8 @@ import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +38,7 @@ export class UsersService {
         private readonly mailService: MailService,
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,
+        private readonly configService: ConfigService
     ) { }
 
     private formatRoles(roles: any[]): number[] {
@@ -228,7 +231,6 @@ export class UsersService {
                             return Responder({ status: HttpStatusCode.Conflict, data: err })
                         })
                 } else {
-                    log("You are here ")
                     return Responder({ status: HttpStatusCode.BadRequest, data: {} })
                 }
             })
@@ -427,5 +429,115 @@ export class UsersService {
                 return Responder({ status: HttpStatusCode.Ok, data: student })
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async authWithGoogle(user: IAuthWithGoogle): Promise<ResponseServer> {
+        const { email, firstName, lastName, picture, accessToken } = user;
+
+        const verif_code = this.allService.randomLongNumber({ length: 6 })
+        const num_record = this.allService.randomLongNumber({ length: 8 })
+        const hashed_password = await this.cryptoService.hashPassword((this.configService.get<string>('DEFAULTUSERPASSWORD') || '').concat(num_record) as string)
+        const uuid_user = this.allService.generateUuid()
+
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        return this.userModel.findOrCreate({
+            where: {
+                email
+            },
+            include: [
+                {
+                    model: Roles,
+                    required: false,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
+            defaults: {
+                email,
+                ls_name: lastName,
+                fs_name: firstName,
+                is_verified: 0,
+                password: hashed_password,
+                avatar: picture,
+                nick_name: firstName,
+                num_record: num_record,
+                phone: email,
+                uuid: uuid_user,
+                verification_code: verif_code
+            }
+        })
+            .then(([student, isNewStudent]) => {
+                const { id: as_id_user, email, fs_name, ls_name, roles, uuid, is_verified } = student?.toJSON()
+                if (isNewStudent) {
+                    return this.hasRoleModel.create({
+                        RoleId: 4, // this Means Student Or Stagiaire
+                        UserId: as_id_user as number,
+                        status: 1
+                    })
+                        .then(hasrole => {
+                            if (hasrole instanceof HasRoles) {
+                                this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
+                                const newInstance = student.toJSON();
+
+                                delete (newInstance as any).password;
+                                delete (newInstance as any).verification_code;
+                                delete (newInstance as any).last_login;
+                                delete (newInstance as any).status;
+                                delete (newInstance as any).is_verified;
+                                delete (newInstance as any).createdAt;
+                                delete (newInstance as any).updatedAt;
+
+                                return Responder({ status: HttpStatusCode.Created, data: { message: `A verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                            } else {
+                                return Responder({ status: HttpStatusCode.BadRequest })
+                            }
+                        })
+                        .catch(err => {
+                            return Responder({ status: HttpStatusCode.Conflict, data: err })
+                        })
+                } else {
+                    if (is_verified === 1) {
+                        const _roles = this.formatRoles(roles as any)
+                        return this.jwtService.signinPayloadAndEncrypt({
+                            id_user: as_id_user as number,
+                            roles_user: _roles,
+                            uuid_user: uuid as string,
+                            level_indicator: 90
+                        })
+                            .then(async ({ code, data, message }) => {
+                                const { cleared, hashed } = data
+                                return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
+                            })
+                            .catch(err => {
+                                return Responder({ status: 500, data: err })
+                            })
+                    } else {
+                        const verif_code = this.allService.randomLongNumber({ length: 6 })
+                        return student.update({
+                            verification_code: verif_code
+                        })
+                            .then(_ => {
+
+                                const newInstance = student.toJSON();
+
+                                delete (newInstance as any).password;
+                                delete (newInstance as any).verification_code;
+                                delete (newInstance as any).last_login;
+                                delete (newInstance as any).status;
+                                delete (newInstance as any).is_verified;
+                                delete (newInstance as any).createdAt;
+                                delete (newInstance as any).updatedAt;
+
+                                this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
+                                return Responder({ status: HttpStatusCode.Unauthorized, data: { message: `Compte non vérifié | a verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                            })
+                            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                    }
+                }
+            })
+            .catch(err => {
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
     }
 }
