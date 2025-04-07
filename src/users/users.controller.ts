@@ -11,7 +11,6 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
-import { log } from 'console';
 
 @Controller('users')
 export class UsersController {
@@ -58,9 +57,8 @@ export class UsersController {
 
     @Get('/auth/google/callback')
     @UseGuards(AuthGuard('google'))
-    async googleAuthRedirect(@Req() req) {
-        log("On Auth with google", req.user)
-        return req.user;
+    async googleAuthRedirect(@Req() req: any) {
+        return this.userService.authWithGoogle(req.user)
     }
 
     // # Other routes
