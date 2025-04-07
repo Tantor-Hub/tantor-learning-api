@@ -428,4 +428,8 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
+
+    async authWithGoogle(): Promise<ResponseServer> {
+        return {} as any
+    }
 }
