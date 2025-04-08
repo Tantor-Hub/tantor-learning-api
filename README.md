@@ -7,13 +7,13 @@ Defines the features and requirements for the development of the online platform
 ### 1 Clone the project
 
 ```bash
-git clone git@github.com:Tantor-Hub/TantorLegal.git
+git clone git@github.com:Tantor-Hub/TantorLegal.git Tantor-Learning-backend
 ```
 
 ### 2 Go to the project directory
 
 ```bash
-cd Tantor-Learning-frontend
+cd Tantor-Learning-backend
 ```
 
 ### 3 Install dependencies
