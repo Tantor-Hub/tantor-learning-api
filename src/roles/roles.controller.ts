@@ -5,37 +5,27 @@ import { AttributeRoleDto } from './dto/attribute-role.dto';
 import { MailService } from 'src/services/service.mail';
 import { log } from 'console';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
+import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService, private mailService: MailService) { }
 
   @Put('role/attribute')
-  // @UseGuards(JwtAuthGuardAsManagerSystem)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   async attributeRole(@Body() attributeToUserDto: AttributeRoleDto) {
     return this.rolesService.attributeRole(attributeToUserDto);
   }
 
   @Post('role/add')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   async addRole(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.addRole(createRoleDto);
   }
 
   @Get('list')
-  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @UseGuards(JwtAuthGuardAsFormateur)
   async getRoles() {
-    
-    // this.mailService.sendMail({
-    //   to: 'davidmened@gmail.com',
-    //   content: "Bonjour papa David Test SMTP",
-    //   subject: "Greetings"
-    // })
-    // .then(mail => {
-    //   log(mail)
-    // })
-    // .catch(err => {
-    //   log(err)
-    // })
     return this.rolesService.getRoles()
   }
 }
