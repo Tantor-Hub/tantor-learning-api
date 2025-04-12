@@ -11,7 +11,7 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService, private mailService: MailService) { }
 
   @Put('role/attribute')
-
+  // @UseGuards(JwtAuthGuardAsManagerSystem)
   async attributeRole(@Body() attributeToUserDto: AttributeRoleDto) {
     return this.rolesService.attributeRole(attributeToUserDto);
   }

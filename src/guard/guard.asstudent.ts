@@ -28,7 +28,7 @@ export class JwtAuthGuardAsStudent implements CanActivate {
             const decoded = await this.jwtService.verifyTokenWithRound(token);
             if (!decoded) throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
             const { roles_user, level_indicator } = decoded
-            if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user }) && this.accessLevel === level_indicator) {
+            if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user })) {
                 request.user = decoded;
                 return true
             } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");

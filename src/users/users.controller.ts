@@ -11,6 +11,7 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 
 @Controller('users')
 export class UsersController {
@@ -64,11 +65,13 @@ export class UsersController {
     // # Other routes
 
     @Get("user/:email")
+    @UseGuards(JwtAuthGuardAsFormateur)
     async findByEmail(@Param() findByEmailDto: FindByEmailDto) {
         return this.userService.findByEmail(findByEmailDto,)
     }
 
     @Get("listall")
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllUsers() {
         return this.userService.getAllUsers()
     }

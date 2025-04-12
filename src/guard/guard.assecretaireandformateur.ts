@@ -1,6 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { log } from 'console';
 import { Request } from 'express';
+import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
 
@@ -11,7 +13,7 @@ export class JwtAuthGuardAsFormateur implements CanActivate {
     allowedTo: number[] = [1, 2, 3];
     accessLevel: number = 92; // c'est à dire que le niveau pour les utilisateurs admins
 
-    constructor(private readonly jwtService: JwtService, private configService: ConfigService) {
+    constructor(private readonly jwtService: JwtService, private configService: ConfigService, private readonly allSercices: AllSercices) {
         this.keyname = (this.configService.get<string>('APPKEYAPINAME')) as string
     }
 
@@ -25,11 +27,14 @@ export class JwtAuthGuardAsFormateur implements CanActivate {
         try {
             const decoded = await this.jwtService.verifyTokenWithRound(token);
             if (!decoded) throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
-
-            request.user = decoded;
-            return true;
+            const { roles_user, level_indicator } = decoded
+            log(decoded)
+            if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user }) && this.accessLevel === level_indicator) {
+                request.user = decoded;
+                return true
+            } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
         } catch (error) {
-            throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
+            throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
         }
     }
 }

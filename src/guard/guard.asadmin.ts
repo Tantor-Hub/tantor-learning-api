@@ -2,17 +2,22 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, HttpE
 import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
 import { Request } from 'express';
+import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
 
 @Injectable()
 export class JwtAuthGuardAsManagerSystem implements CanActivate {
-    
+
     keyname: string;
     allowedTo: number[] = [1];
     accessLevel: number = 91; // c'est à dire que le niveau pour les utilisateurs admins
 
-    constructor(private readonly jwtService: JwtService, private configService: ConfigService) {
+    constructor(
+        private readonly jwtService: JwtService,
+        private configService: ConfigService,
+        private readonly allSercices: AllSercices
+    ) {
         this.keyname = (this.configService.get<string>('APPKEYAPINAME')) as string
     }
 
@@ -26,11 +31,13 @@ export class JwtAuthGuardAsManagerSystem implements CanActivate {
         try {
             const decoded = await this.jwtService.verifyTokenWithRound(token);
             if (!decoded) throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
-
-            request.user = decoded;
-            return true;
+            const { roles_user, level_indicator } = decoded
+            if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user })) {
+                request.user = decoded;
+                return true
+            } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
         } catch (error) {
-            throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
+            throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
         }
     }
 }
