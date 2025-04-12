@@ -10,7 +10,7 @@ export class GoogleDriveService {
 
   constructor() {
     const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, '../../config/google-service-account.json'), // Ton fichier JSON de clé privée
+      keyFile: path.join(__dirname, '../../config/google-service-account.json'),
       scopes: ['https://www.googleapis.com/auth/drive'],
     });
 
@@ -22,7 +22,7 @@ export class GoogleDriveService {
 
     const fileMetadata = {
       name: originalname,
-      parents: ['TA_FOLDER_ID_ICI'], // Optionnel: ID du dossier Drive où tu veux stocker
+      parents: ['Tantor-Learning'],
     };
 
     const media = {
@@ -36,6 +36,6 @@ export class GoogleDriveService {
       fields: 'id, name, webViewLink, webContentLink',
     });
 
-    return response.data; // Contient les liens vers ton fichier
+    return response.data;
   }
 }

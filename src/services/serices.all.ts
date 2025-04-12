@@ -82,5 +82,10 @@ export class AllSercices {
 
     now(): number {
         return Date.now()
+    };
+
+    checkIntersection({ arr_a, arr_b }: { arr_a: number[], arr_b: number[] }): boolean {
+        const intersection = arr_a.filter(value => arr_b.includes(value));
+        return intersection.length > 0 ? true : false;
     }
 }
