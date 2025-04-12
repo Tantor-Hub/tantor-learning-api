@@ -53,8 +53,10 @@ export class JwtService {
   async signinPayloadAndEncrypt(payload: IJwtSignin): Promise<IMicroServices> {
     return new Promise(async (resolve, reject) => {
       const hashed = await this.encryptWithRound(payload)
-      const refresh = await this.encryptWithRound(payload, true)
       const cleared = await this.decryptWithRound(hashed)
+      // delete payload.level_indicator
+      // delete (payload as any).uuid_user
+      const refresh = await this.encryptWithRound(payload, true)
       try {
         resolve({
           code: 200,

@@ -21,6 +21,7 @@ import { ResentCodeDto } from './dto/resent-code.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Injectable()
 export class UsersService {
@@ -328,6 +329,34 @@ export class UsersService {
             })
             .catch(err => {
                 return Responder({ status: HttpStatusCode.NotFound, data: err })
+            })
+    }
+
+    async refreshTokenUser(refreshTokenDto: RefreshTokenDto): Promise<ResponseServer> {
+        const { refresh_token } = refreshTokenDto
+        return this.jwtService.verifyRefreshToken(refresh_token)
+            .then(_ => {
+                if (_ && _ !== null) {
+
+                    delete _.iat;
+                    delete _.exp;
+
+                    return this.jwtService.refreshTokens(_)
+                        .then(({ code, data, message }) => {
+                            if (code === 200) {
+                                const { hashed, refresh, cleared } = data
+                                return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh } })
+                            } else {
+                                return Responder({ status: HttpStatusCode.InternalServerError, data: _ })
+                            }
+                        })
+                        .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+                } else {
+                    return Responder({ status: HttpStatusCode.Unauthorized, data: "La clé de rafreshissement a aussi expirée !" })
+                }
+            })
+            .catch(_ => {
+                return Responder({ status: HttpStatusCode.Unauthorized, data: "La clé de rafreshissement a aussi expirée !" })
             })
     }
 

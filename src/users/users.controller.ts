@@ -12,6 +12,7 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('users')
 export class UsersController {
@@ -32,6 +33,11 @@ export class UsersController {
     @Put("user/verify")
     async verifyAsStudent(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
         return this.userService.verifyAsStudent(verifyAsStudentDto)
+    }
+
+    @Put("user/refresh")
+    async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+        return this.userService.refreshTokenUser(refreshTokenDto)
     }
 
     @Put("user/resendcode")
