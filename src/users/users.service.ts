@@ -137,8 +137,8 @@ export class UsersService {
                                 level_indicator: 90
                             })
                                 .then(async ({ code, data, message }) => {
-                                    const { cleared, hashed } = data
-                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
+                                    const { cleared, hashed, refresh } = data
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: student.toJSON() } })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
