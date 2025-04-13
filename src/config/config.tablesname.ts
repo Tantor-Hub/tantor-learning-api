@@ -4,5 +4,6 @@ export enum tables {
     users = `${table_prefix}users`,
     roles = `${table_prefix}roles`,
     hasroles = `${table_prefix}hasroles`,
-    cours = `${table_prefix}cours`
+    cours = `${table_prefix}cours`,
+    categories = `${table_prefix}categories`,
 }

@@ -299,6 +299,7 @@ export class UsersService {
 
                                         return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: newInstance } })
                                     })
+
                                     .catch(err => {
                                         return Responder({ status: 500, data: err })
                                     })

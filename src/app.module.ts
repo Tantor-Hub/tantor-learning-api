@@ -11,6 +11,7 @@ import { RolesModule } from './roles/roles.module';
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
 import { FormationsModule } from './formations/formations.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { FormationsModule } from './formations/formations.module';
     RolesModule,
     UsersModule,
     FormationsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
