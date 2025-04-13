@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { log } from 'console';
 
 @Controller('users')
 export class UsersController {
@@ -43,6 +44,7 @@ export class UsersController {
 
     @Put("user/resendcode")
     async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
+        log("You are here ==> ")
         return this.userService.resentVerificationCode(resentCodeDto)
     }
 

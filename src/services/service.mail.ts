@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { AllSercices } from './serices.all';
 import { IAliasMail } from 'src/interface/interface.aliastemplatemail';
+import { log } from 'console';
 
 @Injectable()
 export class MailService {
@@ -36,7 +37,7 @@ export class MailService {
         const appname = this.configService.get<string>('APPNAME')
         const appowner = this.configService.get<string>('APPOWNER')
         const url = this.baseURL;
-        
+
         switch (as) {
             case 'otp':
                 return (`
@@ -107,7 +108,7 @@ export class MailService {
                 <body>
                 <div class="content">
                 <p>Bonjour <strong>${nom}</strong>,</p>
-                <p>Nous avons reçu une démande de renvoie de code de verification. voici votre de vérification</p>
+                <p>Nous avons reçu une démande de renvoie de code de vérification. voici votre de vérification</p>
         
                 <div class="info">
                 <div class="footer">
@@ -187,7 +188,8 @@ export class MailService {
             padding: 10px 15px;
             font-size: 16px;
             color: #ffffff;
-            background-color: #4CAF50;
+            background-color: #${color};
+            width: 100%;
             text-decoration: none;
             border-radius: 5px;
             margin: 10px 0;
@@ -202,7 +204,7 @@ export class MailService {
         </div>
         <div class="content">
         <p>Bonjour <span class="highlight">${this.allSercices.capitalizeWords({ text: nom })}</span>,</p>
-        <p>Nous sommes ravis de vous accueillir sur <strong>Tantor E-Learning</strong>, votre plateforme d'apprentissage en ligne.</p>
+        <p>Nous sommes ravis de vous accueillir sur <strong>${appname}</strong>, votre plateforme d'apprentissage en ligne.</p>
         <p>Chez <strong>Tantor E-Learning</strong>, nous croyons que l'accès à la connaissance ne doit pas être limité par le temps ou l'espace. C'est pourquoi nous avons conçu une plateforme intuitive et riche en contenus de qualité pour vous accompagner dans votre apprentissage.</p>
         <p>Pourquoi lire et apprendre en ligne ? Voici quelques avantages :</p>
         <ul>
@@ -242,6 +244,7 @@ export class MailService {
                     html: content,
                 };
                 const info = await this.transporter.sendMail(mailOptions);
+                log("[ Status Mail ]", info.messageId);
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
                 return reject({ code: 500, message: 'Erreur', data: error });
