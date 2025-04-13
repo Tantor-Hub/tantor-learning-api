@@ -1,6 +1,6 @@
-import { IsEmail } from "class-validator";
+import { IsEmail, IsString } from "class-validator";
 
 export class ResentCodeDto {
-    @IsEmail()
+    @IsString()
     user_email: string
 }

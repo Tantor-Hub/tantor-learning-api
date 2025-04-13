@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -43,6 +44,16 @@ export class UsersController {
     @Put("user/resendcode")
     async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
         return this.userService.resentVerificationCode(resentCodeDto)
+    }
+
+    @Put("user/forgotenpassword")
+    async askForResetPassword(@Body() resentCodeDto: ResentCodeDto) {
+        return this.userService.resentVerificationCode(resentCodeDto)
+    }
+
+    @Put("user/resetpassword")
+    async setNewPassword(@Body() resentCodeDto: ResetPasswordDto) {
+        return this.userService.setNewPassword(resentCodeDto)
     }
 
     @Get("user/profile")

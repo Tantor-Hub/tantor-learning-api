@@ -22,6 +22,7 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -145,7 +146,7 @@ export class UsersService {
                                     return Responder({ status: 500, data: err })
                                 })
                         } else {
-                            return Responder({ status: HttpStatusCode.Forbidden, data: null })
+                            return Responder({ status: HttpStatusCode.Forbidden, data: "Mot de passe ou nom d'utilisateur incorrect !" })
                         }
                     } else {
                         const verif_code = this.allService.randomLongNumber({ length: 6 })
@@ -241,6 +242,78 @@ export class UsersService {
             })
     }
 
+    async setNewPassword(resetPasswordDto: ResetPasswordDto): Promise<ResponseServer> {
+        const { new_password, repet_new_password, user_name, verification_code, description } = resetPasswordDto
+
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        return this.userModel.findOne({
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
+            attributes: {
+                exclude: ['password']
+            },
+            where: {
+                status: 1,
+                [Op.or]: [{ email: user_name }, { nick_name: user_name }]
+            }
+        })
+            .then(async student => {
+                if (student instanceof Users) {
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
+                    if (as_code === verification_code) {
+                        if (repet_new_password && repet_new_password.length > 0) {
+                            if (new_password !== repet_new_password) return Responder({ status: HttpStatusCode.BadRequest, data: "Les deux mot de passe ne sont pas identiques !" })
+                        }
+
+                        const hashed_password = await this.cryptoService.hashPassword(new_password)
+                        const _roles = this.formatRoles(roles as any)
+
+                        return student.update({
+                            password: hashed_password
+                        })
+                            .then(_ => {
+                                return this.jwtService.signinPayloadAndEncrypt({
+                                    id_user: id as number,
+                                    roles_user: _roles,
+                                    uuid_user: uuid as string,
+                                    level_indicator: 90
+                                })
+                                    .then(async ({ code, data, message }) => {
+                                        const { cleared, hashed, refresh } = data
+                                        const newInstance = student.toJSON();
+
+                                        delete (newInstance as any).password;
+                                        delete (newInstance as any).verification_code;
+                                        delete (newInstance as any).last_login;
+                                        delete (newInstance as any).status;
+                                        delete (newInstance as any).is_verified;
+                                        delete (newInstance as any).createdAt;
+                                        delete (newInstance as any).updatedAt;
+
+                                        return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: newInstance } })
+                                    })
+                                    .catch(err => {
+                                        return Responder({ status: 500, data: err })
+                                    })
+                            })
+                            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                    } else {
+                        return Responder({ status: HttpStatusCode.Forbidden, data: `Le code de vérification envoyé n'est pas correct !` })
+                    }
+                } else {
+                    return Responder({ status: HttpStatusCode.Forbidden, data: null })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
     async resentVerificationCode(resentCodeDto: ResentCodeDto): Promise<ResponseServer> {
 
         const { user_email } = resentCodeDto
@@ -252,13 +325,13 @@ export class UsersService {
             },
             where: {
                 status: 1,
-                email: user_email
+                [Op.or]: [{ email: user_email }, { nick_name: user_email }]
             }
         })
             .then(async student => {
                 if (student instanceof Users) {
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
-                    this.onWelcomeNewStudent({ to: user_email, nom: fs_name, postnom: ls_name, all: false, otp: verif_code })
+                    this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, all: false, otp: verif_code })
                     await student.update({
                         verification_code: verif_code
                     })
