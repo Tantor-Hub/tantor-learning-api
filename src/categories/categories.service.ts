@@ -49,4 +49,5 @@ export class CategoriesService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
+
 }
