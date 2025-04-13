@@ -29,7 +29,6 @@ export class CategoriesService {
         @InjectModel(Categories)
         private readonly categoriesModel: typeof Categories,
 
-        private readonly jwtService: JwtService,
         private readonly mailService: MailService,
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,

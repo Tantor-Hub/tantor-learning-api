@@ -48,11 +48,11 @@ import { Categories } from './models/model.categoriesformations';
         models: [Users, Roles, HasRoles]
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories]),
     RolesModule,
     UsersModule,
     FormationsModule,
-    // CategoriesModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,15 +6,16 @@ import { Roles } from 'src/models/model.roles';
 import { HasRoles } from 'src/models/model.userhasroles';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { JwtModule, JwtService } from '@nestjs/jwt';
-import { RolesController } from 'src/roles/roles.controller';
 import { RolesService } from 'src/roles/roles.service';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from 'src/services/service.crypto';
 import { AllSercices } from 'src/services/serices.all';
+import { Users } from 'src/models/model.users';
+import { Categories } from 'src/models/model.categoriesformations';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles]),
+    SequelizeModule.forFeature([Roles, HasRoles, Users, Categories]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -26,7 +27,7 @@ import { AllSercices } from 'src/services/serices.all';
       }),
     }),
   ],
-  controllers: [CategoriesController, RolesController],
-  providers: [CategoriesService, RolesService, MailService, CryptoService, AllSercices, JwtService]
+  controllers: [CategoriesController],
+  providers: [CategoriesService, RolesService, MailService, CryptoService, AllSercices]
 })
-export class CategoriesModule {}
+export class CategoriesModule { }
