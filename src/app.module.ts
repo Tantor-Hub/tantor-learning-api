@@ -10,6 +10,7 @@ import { HasRoles } from './models/model.userhasroles';
 import { RolesModule } from './roles/roles.module';
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
+import { FormationsModule } from './formations/formations.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { UsersModule } from './users/users.module';
     SequelizeModule.forFeature([Users, Roles, HasRoles]),
     RolesModule,
     UsersModule,
+    FormationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
