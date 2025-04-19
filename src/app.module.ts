@@ -13,6 +13,8 @@ import { UsersModule } from './users/users.module';
 import { FormationsModule } from './formations/formations.module';
 import { CategoriesModule } from './categories/categories.module';
 import { Categories } from './models/model.categoriesformations';
+import { Formations } from './models/model.formations';
+import { Thematiques } from './models/model.groupeformations';
 
 @Module({
   imports: [
@@ -48,7 +50,7 @@ import { Categories } from './models/model.categoriesformations';
         models: [Users, Roles, HasRoles]
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques]),
     RolesModule,
     UsersModule,
     FormationsModule,

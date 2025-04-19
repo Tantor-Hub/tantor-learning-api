@@ -10,4 +10,9 @@ export class FormationsController {
     async getTypesFormations() {
         return this.formationsService.getTypesFormations()
     }
+
+    @Get('list')
+    async getAllFormations(){
+        return this.formationsService.gatAllFormations()
+    }
 }
