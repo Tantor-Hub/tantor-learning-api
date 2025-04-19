@@ -15,6 +15,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { Categories } from './models/model.categoriesformations';
 import { Formations } from './models/model.formations';
 import { Thematiques } from './models/model.groupeformations';
+import { log } from 'console';
 
 @Module({
   imports: [
@@ -63,6 +64,12 @@ import { Thematiques } from './models/model.groupeformations';
 export class AppModule implements OnModuleInit {
   constructor(private readonly sequelize: Sequelize) { }
   async onModuleInit() {
-    await this.sequelize.sync({ alter: true });
+    this.sequelize.sync({ alter: true })
+      .then(_ => {
+        
+      })
+      .catch(_ => {
+        log("[ Error ] on forcing migration ", _)
+      })
   }
 };

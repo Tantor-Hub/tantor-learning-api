@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FormationsService } from './formations.service';
-import { log } from 'console';
 import { CreateFormationDto } from './dto/create-formation.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from 'src/services/service.googledrive';
