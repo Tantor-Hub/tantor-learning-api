@@ -9,6 +9,7 @@ import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
 import { tables } from 'src/config/config.tablesname';
 import { IFormation } from 'src/interface/interface.formations';
+import { Thematiques } from './model.groupeformations';
 
 @Table({ tableName: tables['fromations'] })
 export class Formations extends Model<IFormation> {
@@ -42,6 +43,13 @@ export class Formations extends Model<IFormation> {
         allowNull: false,
     })
     id_category: number;
+
+    @ForeignKey(() => Thematiques)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_thematic: number;
 
     @ForeignKey(() => Users)
     @Column({
@@ -79,4 +87,11 @@ export class Formations extends Model<IFormation> {
         allowNull: false,
     })
     prix: number;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true,
+        defaultValue: 1
+    })
+    status?: number
 }
