@@ -63,7 +63,7 @@ export class RolesService {
             }
         })
             .then(([record, isNewRecord]) => {
-                return Responder({ status: HttpStatusCode.InternalServerError, data: record })
+                return Responder({ status: HttpStatusCode.Created, data: record })
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }

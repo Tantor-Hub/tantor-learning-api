@@ -3,7 +3,6 @@ import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { AttributeRoleDto } from './dto/attribute-role.dto';
 import { MailService } from 'src/services/service.mail';
-import { log } from 'console';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 
