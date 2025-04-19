@@ -13,8 +13,7 @@ export class Categories extends Model<ICategorieFormations> {
     @Column({
         type: DataType.STRING,
         allowNull: false,
-        unique: true,
-        defaultValue: 'onLine'
+        unique: true
     })
     category: string;
 

@@ -40,7 +40,7 @@ export class CreateFormationDto {
     @IsOptional()
     end_on?: string
 
-    @IsString()
+    @IsNumberString()
     @IsOptional()
-    id_formateur?: string
+    id_formateur?: number
 };

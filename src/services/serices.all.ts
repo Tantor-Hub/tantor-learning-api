@@ -80,6 +80,11 @@ export class AllSercices {
         return Buffer.from(str, 'base64').toString('utf-8');
     };
 
+    parseDate(date: string): Date | null {
+        const parsed = new Date(date);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
     now(): number {
         return Date.now()
     };

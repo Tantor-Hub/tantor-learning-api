@@ -63,6 +63,6 @@ import { Thematiques } from './models/model.groupeformations';
 export class AppModule implements OnModuleInit {
   constructor(private readonly sequelize: Sequelize) { }
   async onModuleInit() {
-    await this.sequelize.sync();
+    await this.sequelize.sync({ alter: true });
   }
 };

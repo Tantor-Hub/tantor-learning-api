@@ -72,13 +72,13 @@ export class Formations extends Model<IFormation> {
 
     @Column({
         type: DataType.DATE,
-        allowNull: false,
+        allowNull: true,
     })
     start_on: Date | string | any;
 
     @Column({
         type: DataType.DATE,
-        allowNull: false,
+        allowNull: true,
     })
     end_on: Date | string | any;
 
