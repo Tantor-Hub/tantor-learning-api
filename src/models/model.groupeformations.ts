@@ -9,7 +9,7 @@ export class Thematiques extends Model<IGroupeFormations> {
     id: number;
 
     @Column({ type: DataType.STRING, allowNull: false, unique: true })
-    thematique: string;
+    thematic: string;
 
     @Column({ type: DataType.STRING, allowNull: true, })
     description: string;
