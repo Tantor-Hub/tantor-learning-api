@@ -4,7 +4,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 @Controller('categories')
 export class CategoriesController {
 
-    @Post("categories/category/add")
+    @Post("category/add")
     async addCategory(@Body() createCategoryDto: CreateCategoryDto) {
 
     }

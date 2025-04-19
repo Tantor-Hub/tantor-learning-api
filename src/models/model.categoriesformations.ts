@@ -2,6 +2,7 @@ import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
 import { IRoles } from '../interface/interface.roles';
 import { tables } from 'src/config/config.tablesname';
 import { ICategorieFormations } from 'src/interface/interface.categoriesformations';
+import { typeFormations } from 'src/utils/utiles.typesformations';
 
 @Table({ tableName: tables['categories'], timestamps: false })
 export class Categories extends Model<ICategorieFormations> {
@@ -9,7 +10,7 @@ export class Categories extends Model<ICategorieFormations> {
     id: number;
 
     @Column({
-        type: DataType.ENUM('onLine', 'visioConference', 'presentiel', 'hybride'),
+        type: DataType.STRING,
         allowNull: false,
         unique: true,
         defaultValue: 'onLine'

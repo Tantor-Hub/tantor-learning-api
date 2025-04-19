@@ -6,7 +6,7 @@ export class FormationsController {
 
     constructor(private readonly formationsService: FormationsService){}
 
-    @Get('/formations/types')
+    @Get('types')
     async getTypesFormations() {
         return this.formationsService.getTypesFormations()
     }
