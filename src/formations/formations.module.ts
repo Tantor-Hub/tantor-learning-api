@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Formations } from 'src/models/model.formations';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
@@ -22,6 +23,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [FormationsController],
-  providers: [FormationsService],
+  providers: [FormationsService, GoogleDriveService],
 })
 export class FormationsModule { }

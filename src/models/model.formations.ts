@@ -56,7 +56,7 @@ export class Formations extends Model<IFormation> {
         type: DataType.INTEGER,
         allowNull: false,
     })
-    id_formateur: number;
+    id_formateur: number | null;
 
     @Column({
         type: DataType.TEXT,
@@ -74,13 +74,13 @@ export class Formations extends Model<IFormation> {
         type: DataType.DATE,
         allowNull: false,
     })
-    start_on: Date;
+    start_on: Date | string | any;
 
     @Column({
         type: DataType.DATE,
         allowNull: false,
     })
-    end_on: Date;
+    end_on: Date | string | any;
 
     @Column({
         type: DataType.FLOAT,

@@ -1,0 +1,14 @@
+{
+    "type": "service_account",
+    "project_id": "tantor-e-learning",
+    "private_key_id": "e84b5938605d9833898b408e22f431a9fde49a9e",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDBwtngjCNBXqD0\nObsSzEI3uqLahdEufE0PklKUJ3ltXsmgWWgFyFfqWv9QtcmsNu/UCAaqT8ZdAbSA\nXoG3rfTXoau0+X6djXDUJ7bbXg5WFqXVFbinNr+ywCK1eRFQkYaKzOJ1HYy+5+6A\nUHd/DmyS4TbaOwxzW+be/YTo2SeposyexsG3myPbmn99HSv1at8E8p9iouDDonJJ\nZ9WQpUwCh1T47WySqyE4K+wclE5+su+mE69tL+x5br2LsMdQ5yKTgB8KfHb3MV7x\ngryCZF+MzAIma1mkjaZ7fnRJfyVnrQewnm5tWuf8839aUdc7HJLBnXL9RtwEWbkr\nKx7cQPDdAgMBAAECggEACdQ1Ejd5qFzBBHKTQ1JaP5J3pWcpY9bJX/NXvg08kyg+\nSSSP6s8taoWAMxttpg9JXjOkBuqyENC/0803flZUN8YLPEx1uE9O/GwhUgJ07rgK\nZINMESttUQd/Gz6PestPDGZ1TGSZ2atRRXAPh8H3DwJesnZRXN66GPC6V8eARBIX\n371B2htbvN0rUoA/Uk9gZyivUaiwxzb50KDw65quryB0gHdhtobGnam2ZDIlog/I\n7/x5Hs0uN0tt8smxKaY5WAdWE5fPaSP6AlEhYFAF3oRU7t1nAWWx8jOpsO+VCSQj\nC20ftFty5mMMi/55PjuYva/WEYIUiLB674VFixllsQKBgQD3XBiKbsDQ/ZVgi8oA\nFZZA55UxXifpMUE88BkYaJL9WptuKgpxjWG4FN3aBZDjHGk/CjoSX6XUME/JriKs\nBlAnyb2IWpdVzgnEGWGHdnnXu44P3K0MWLIL7Zoql7U0xsDW1maVSItCXe3GoHl2\n5gB/9Of6QtYOtDg84YLdVcXd2QKBgQDIh3k66gts/jcBUk5fTwJXdfONBg7lj2U/\nsqase04UJcYfBvReoen0BPqEXvh/gSJhHqX5XA927O+Tjh1WhQtpCdokzbRPBT2x\nibC6WE/al/lW9KqjK9jh1FeSOYaj/gu1rfdiwGLSBtPnsfNi70i84Tl5s+we6qNr\nk+llfwQUpQKBgQDARegVgu2CBfsc5swHsL/wh5KioyumydCKC5+WJ4NKSCnVQfyI\nM3un2SBxni33O1hb1hk5uvttqnf6rs7opKedpeUbnj9QRS22LnxvDZq8JF/S2Jfy\npucO+owBW5dRBMVUuadXluIYnmZ7JLYFw9bTn4zKLTWyjEfCmxBb95YsUQKBgQCD\n/W/VUHIe1qFb9FHzt+yhptidbWxmu2D4cV31z9+PsWFb0NcOZuK4JILEmEJWoqf/\nZw32ORtQuxnidLto1H+zLrHwYZmaHagC8M9riG9fQYL0Mm0So+zIkFznuYee77vD\nZPOdg2ZIOghGzEGYUEn/UPvk2IHFw8m3KI+Kp/UGpQKBgQDWx6FKMYIQcKTXPVUT\nAgfcmxn+AR/h0KD8Dd2vjTlTDleW7/U27gfvqDwZpdVPiLjI0kKf7nrEPXp0PWtk\nM80IEG+JMeq+UmbOuAF+qi5XLhI0IZvDu8YBaY6Bf2tBHLs9tzeN6hUZy4S7ENoz\nu+0c3qiMauFBcomH0D83ArjJXw==\n-----END PRIVATE KEY-----\n",
+    "client_email": "tantor-drive@tantor-e-learning.iam.gserviceaccount.com",
+    "client_id": "110240635616771034252",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/tantor-drive%40tantor-e-learning.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+  }
+  

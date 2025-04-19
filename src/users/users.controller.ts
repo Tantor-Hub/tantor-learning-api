@@ -3,7 +3,6 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
-import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { FindByEmailDto } from './dto/find-by-email.dto';
@@ -14,13 +13,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { log } from 'console';
 
 @Controller('users')
 export class UsersController {
     constructor(private readonly userService: UsersService) { }
-
-    // # Auth routes for student 
 
     @Post('user/signup')
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
@@ -44,7 +40,6 @@ export class UsersController {
 
     @Put("user/resendcode")
     async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
-        log("You are here ==> ")
         return this.userService.resentVerificationCode(resentCodeDto)
     }
 
@@ -80,8 +75,6 @@ export class UsersController {
     async googleAuthRedirect(@Req() req: any) {
         return this.userService.authWithGoogle(req.user)
     }
-
-    // # Other routes
 
     @Get("user/:email")
     @UseGuards(JwtAuthGuardAsFormateur)
