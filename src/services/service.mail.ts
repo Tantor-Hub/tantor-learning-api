@@ -22,7 +22,7 @@ export class MailService {
         //     host: this.configService.get<string>('APPSMTPHOST'),
         //     port: this.configService.get<number>('APPSMTPPORT'),
         //     secure: false, // this.configService.get<boolean>('APPSMTPSECURE'),
-        //     auth: {
+        //     auth: {  
         //         user: this.configService.get<string>('APPSMTPUSER'),
         //         pass: this.configService.get<string>('APPSMTPPASS'),
         //     },
