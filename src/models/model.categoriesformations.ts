@@ -2,7 +2,6 @@ import { Table, Column, Model, DataType, HasMany, ForeignKey } from 'sequelize-t
 import { IRoles } from '../interface/interface.roles';
 import { tables } from 'src/config/config.tablesname';
 import { ICategorieFormations } from 'src/interface/interface.categoriesformations';
-import { typeFormations } from 'src/utils/utiles.typesformations';
 import { Thematiques } from './model.groupeformations';
 
 @Table({ tableName: tables['categories'], timestamps: false })
