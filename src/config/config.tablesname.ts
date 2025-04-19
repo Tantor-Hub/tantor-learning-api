@@ -6,4 +6,6 @@ export enum tables {
     hasroles = `${table_prefix}hasroles`,
     cours = `${table_prefix}cours`,
     categories = `${table_prefix}categories`,
+    groupefromations = `${table_prefix}groupesfromations`,
+    fromations = `${table_prefix}formations`
 }

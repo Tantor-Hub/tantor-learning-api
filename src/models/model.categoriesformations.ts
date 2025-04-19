@@ -1,8 +1,9 @@
-import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, ForeignKey } from 'sequelize-typescript';
 import { IRoles } from '../interface/interface.roles';
 import { tables } from 'src/config/config.tablesname';
 import { ICategorieFormations } from 'src/interface/interface.categoriesformations';
 import { typeFormations } from 'src/utils/utiles.typesformations';
+import { Thematiques } from './model.groupeformations';
 
 @Table({ tableName: tables['categories'], timestamps: false })
 export class Categories extends Model<ICategorieFormations> {
@@ -19,6 +20,10 @@ export class Categories extends Model<ICategorieFormations> {
 
     @Column({ type: DataType.STRING, allowNull: true, })
     description?: string;
+
+    @ForeignKey(() => Thematiques)
+    @Column({ allowNull: false })
+    ThematicId: number;
 
     @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
     status: number
