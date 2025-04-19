@@ -14,7 +14,6 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { CreateThematicFormationDto } from './dto/create-thematic.dto';
 import { Thematiques } from 'src/models/model.groupeformations';
-import { log } from 'console';
 
 @Injectable()
 export class CategoriesService {
@@ -57,7 +56,6 @@ export class CategoriesService {
 
     async createThematic(createCategoryDto: CreateThematicFormationDto): Promise<ResponseServer> {
         const { thematic, description } = createCategoryDto;
-        log(createCategoryDto)
         return this.thematicModel.create({
             thematic,
             description,
@@ -68,7 +66,6 @@ export class CategoriesService {
                 else return Responder({ status: HttpStatusCode.BadRequest, data: null })
             })
             .catch(err => {
-                log(err)
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
     }
