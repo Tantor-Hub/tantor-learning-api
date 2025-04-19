@@ -1,5 +1,4 @@
 import { Table, Column, Model, DataType, HasMany, ForeignKey } from 'sequelize-typescript';
-import { IRoles } from '../interface/interface.roles';
 import { tables } from 'src/config/config.tablesname';
 import { ICategorieFormations } from 'src/interface/interface.categoriesformations';
 import { Thematiques } from './model.groupeformations';
