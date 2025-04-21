@@ -7,6 +7,7 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { typeFormations } from 'src/utils/utiles.typesformations';
 import { CreateFormationDto } from './dto/create-formation.dto';
 import { AllSercices } from '../services/serices.all';
+import { MailService } from '../services/service.mail';
 
 @Injectable()
 export class FormationsService {
@@ -14,8 +15,8 @@ export class FormationsService {
     constructor(
         @InjectModel(Formations)
         private readonly formationModel: typeof Formations,
-
-        private readonly allServices: AllSercices
+        private readonly allServices: AllSercices,
+        private readonly mailService: MailService
     ) { }
 
     async createNewFormation(createFormationDto: CreateFormationDto): Promise<ResponseServer> {

@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { AllSercices } from 'src/services/serices.all';
+import { MailService } from 'src/services/service.mail';
 
 @Module({
   imports: [
@@ -24,6 +25,6 @@ import { AllSercices } from 'src/services/serices.all';
     }),
   ],
   controllers: [FormationsController],
-  providers: [FormationsService, GoogleDriveService, AllSercices],
+  providers: [FormationsService, GoogleDriveService, AllSercices, MailService],
 })
 export class FormationsModule { }

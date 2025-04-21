@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { AllSercices } from './serices.all';
-import { IAliasMail } from 'src/interface/interface.aliastemplatemail';
 import { log } from 'console';
 
 @Injectable()
@@ -18,18 +17,6 @@ export class MailService {
             },
         });
         this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
-        // this.transporter = nodemailer.createTransport({
-        //     host: this.configService.get<string>('APPSMTPHOST'),
-        //     port: this.configService.get<number>('APPSMTPPORT'),
-        //     secure: false, // this.configService.get<boolean>('APPSMTPSECURE'),
-        //     auth: {  
-        //         user: this.configService.get<string>('APPSMTPUSER'),
-        //         pass: this.configService.get<string>('APPSMTPPASS'),
-        //     },
-        //     tls: {
-        //         rejectUnauthorized: false
-        //     }
-        // });
     }
 
     templates({ as, nom, postnom, cours, dateOn, prixCours, code }: { as: string, nom?: string, postnom?: string, cours?: string, dateOn?: string, prixCours?: string, code?: string }): string {
@@ -227,6 +214,9 @@ export class MailService {
 </body>
 </html>
     `)
+                break;
+            case 'addformationtoenseignant':
+                return ""
                 break;
             default:
                 return this.configService.get<string>('APPSMTPUSER') || ""
