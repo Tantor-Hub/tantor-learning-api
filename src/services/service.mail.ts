@@ -222,7 +222,7 @@ export class MailService {
                 return this.configService.get<string>('APPSMTPUSER') || ""
                 break;
         }
-    }
+    };
 
     async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<{ code: number, message: string, data: any }> {
         return new Promise(async (resolve, reject) => {

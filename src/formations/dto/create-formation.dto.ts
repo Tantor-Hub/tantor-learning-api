@@ -34,7 +34,7 @@ export class CreateFormationDto {
 
     @IsString()
     @IsOptional()
-    start_on?: string
+    start_on?: string;
 
     @IsString()
     @IsOptional()

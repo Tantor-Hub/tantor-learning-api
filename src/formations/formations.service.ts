@@ -96,5 +96,4 @@ export class FormationsService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
 }
