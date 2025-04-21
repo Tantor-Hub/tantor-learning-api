@@ -4,7 +4,6 @@ import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { IMicroServices } from 'src/interface/interface.servicesinternesresponses';
 import { AllSercices } from './serices.all';
-import { log } from 'console';
 
 @Injectable()
 export class JwtService {
