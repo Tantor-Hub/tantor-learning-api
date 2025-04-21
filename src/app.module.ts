@@ -10,6 +10,12 @@ import { HasRoles } from './models/model.userhasroles';
 import { RolesModule } from './roles/roles.module';
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
+import { FormationsModule } from './formations/formations.module';
+import { CategoriesModule } from './categories/categories.module';
+import { Categories } from './models/model.categoriesformations';
+import { Formations } from './models/model.formations';
+import { Thematiques } from './models/model.groupeformations';
+import { log } from 'console';
 
 @Module({
   imports: [
@@ -45,9 +51,11 @@ import { UsersModule } from './users/users.module';
         models: [Users, Roles, HasRoles]
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques]),
     RolesModule,
     UsersModule,
+    FormationsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -56,6 +64,12 @@ import { UsersModule } from './users/users.module';
 export class AppModule implements OnModuleInit {
   constructor(private readonly sequelize: Sequelize) { }
   async onModuleInit() {
-    await this.sequelize.sync();
+    this.sequelize.sync({ alter: true })
+      .then(_ => {
+        
+      })
+      .catch(_ => {
+        log("[ Error ] on forcing migration ", _)
+      })
   }
 };

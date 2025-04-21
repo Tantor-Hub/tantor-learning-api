@@ -80,7 +80,17 @@ export class AllSercices {
         return Buffer.from(str, 'base64').toString('utf-8');
     };
 
+    parseDate(date: string): Date | null {
+        const parsed = new Date(date);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
     now(): number {
         return Date.now()
+    };
+
+    checkIntersection({ arr_a, arr_b }: { arr_a: number[], arr_b: number[] }): boolean {
+        const intersection = arr_a.filter(value => arr_b.includes(value));
+        return intersection.length > 0 ? true : false;
     }
 }

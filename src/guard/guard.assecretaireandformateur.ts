@@ -2,16 +2,16 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, HttpE
 import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
 import { Request } from 'express';
+import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
-import { AllSercices } from '../services/serices.all';
 
 @Injectable()
-export class JwtAuthGuardAsStudent implements CanActivate {
+export class JwtAuthGuardAsFormateur implements CanActivate {
 
     keyname: string;
-    allowedTo: number[] = [4];
-    accessLevel: number = 90; // c'est à dire que le niveau pour les utilisateurs
+    allowedTo: number[] = [1, 2, 3];
+    accessLevel: number = 92; // c'est à dire que le niveau pour les utilisateurs admins
 
     constructor(private readonly jwtService: JwtService, private configService: ConfigService, private readonly allSercices: AllSercices) {
         this.keyname = (this.configService.get<string>('APPKEYAPINAME')) as string

@@ -32,10 +32,10 @@ export class JwtService {
     })
   }
 
-  async encryptWithRound(payload: IJwtSignin): Promise<string> {
+  async encryptWithRound(payload: IJwtSignin, isRefres?: boolean): Promise<string> {
     const signature = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('APPJWTTOKEN'),
-      expiresIn: this.configService.get<string>('APPJWTMAXLIFE', '1h'),
+      secret: isRefres ? this.configService.get<string>('APPJWTREFRESHTOKEN') : this.configService.get<string>('APPJWTTOKEN'),
+      expiresIn: isRefres ? this.configService.get<string>('APPJWTREFRESHLIFE', '1h') : this.configService.get<string>('APPJWTMAXLIFE', '1h'),
     });
     let hashed = this.allServices.base64Econde(signature)
     for (let index = 0; index < this.round; index++) hashed = this.allServices.base64Econde(hashed)
@@ -54,11 +54,14 @@ export class JwtService {
     return new Promise(async (resolve, reject) => {
       const hashed = await this.encryptWithRound(payload)
       const cleared = await this.decryptWithRound(hashed)
+      // delete payload.level_indicator
+      // delete (payload as any).uuid_user
+      const refresh = await this.encryptWithRound(payload, true)
       try {
         resolve({
           code: 200,
           message: "SignedIn with status [OK]",
-          data: { hashed, cleared }
+          data: { hashed, refresh, cleared }
         });
       } catch (error) {
         reject({ code: 500, message: "Unable to signIn", data: error })
@@ -86,5 +89,25 @@ export class JwtService {
     } catch (error) {
       return null
     }
+  }
+
+  async verifyRefreshToken(token: string): Promise<any> {
+    try {
+      const cleared = await this.decryptWithRound(token)
+      const decrypted = await this.jwtService.verifyAsync(cleared, {
+        secret: this.configService.get<string>('APPJWTREFRESHTOKEN'),
+      });
+      return decrypted
+    } catch (error) {
+      return null
+    }
+  }
+
+  async refreshTokens(payload: IJwtSignin): Promise<IMicroServices> {
+    return new Promise((resolve, reject) => {
+      this.signinPayloadAndEncrypt(payload)
+        .then(_ => resolve(_))
+        .catch(_ => reject(_))
+    });
   }
 }

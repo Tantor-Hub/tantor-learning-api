@@ -3,7 +3,6 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
-import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { FindByEmailDto } from './dto/find-by-email.dto';
@@ -11,12 +10,13 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('users')
 export class UsersController {
     constructor(private readonly userService: UsersService) { }
-
-    // # Auth routes for student 
 
     @Post('user/signup')
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
@@ -33,9 +33,24 @@ export class UsersController {
         return this.userService.verifyAsStudent(verifyAsStudentDto)
     }
 
+    @Put("user/refresh")
+    async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+        return this.userService.refreshTokenUser(refreshTokenDto)
+    }
+
     @Put("user/resendcode")
     async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
         return this.userService.resentVerificationCode(resentCodeDto)
+    }
+
+    @Put("user/forgotenpassword")
+    async askForResetPassword(@Body() resentCodeDto: ResentCodeDto) {
+        return this.userService.resentVerificationCode(resentCodeDto)
+    }
+
+    @Put("user/resetpassword")
+    async setNewPassword(@Body() resentCodeDto: ResetPasswordDto) {
+        return this.userService.setNewPassword(resentCodeDto)
     }
 
     @Get("user/profile")
@@ -61,14 +76,14 @@ export class UsersController {
         return this.userService.authWithGoogle(req.user)
     }
 
-    // # Other routes
-
     @Get("user/:email")
+    @UseGuards(JwtAuthGuardAsFormateur)
     async findByEmail(@Param() findByEmailDto: FindByEmailDto) {
         return this.userService.findByEmail(findByEmailDto,)
     }
 
     @Get("listall")
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllUsers() {
         return this.userService.getAllUsers()
     }
