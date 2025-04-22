@@ -1,4 +1,15 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 
 @Controller('sessions')
-export class SessionsController {}
+export class SessionsController {
+
+    @Get('list')
+    async getListSessions() {
+
+    }
+
+    @Post('session/add')
+    async addNewSession() {
+
+    }
+}
