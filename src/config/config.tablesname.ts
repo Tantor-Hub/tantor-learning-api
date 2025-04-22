@@ -7,5 +7,6 @@ export enum tables {
     cours = `${table_prefix}cours`,
     categories = `${table_prefix}categoriesformations`,
     groupefromations = `${table_prefix}thematicsformations`,
-    fromations = `${table_prefix}formationsascours`
+    fromations = `${table_prefix}formationsascours`,
+    sessions = `${table_prefix}sessions`
 }

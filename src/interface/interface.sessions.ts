@@ -1,11 +1,8 @@
 import { IGlobale } from "./interface.globale";
 
-export interface IFormation extends IGlobale {
-    titre: string;
-    sous_titre: string;
-    id_category: number;
-    id_thematic: number;
-    
+export interface ISession extends IGlobale {
+    id_formation: number;
+    designation?: string // as SESSION JJMMAAAA-JJMMAAAA 
     type_formation?: 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
     piece_jointe?: string; // optionnel
     id_formateur?: number;
@@ -13,5 +10,5 @@ export interface IFormation extends IGlobale {
     duree?: string;
     start_on?: Date;
     end_on?: Date;
-    prix?: number;
+    prix?: number; // les prix sont en Euro
 }

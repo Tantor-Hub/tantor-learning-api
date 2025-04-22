@@ -14,6 +14,7 @@ async function tantorAPP() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('TANTORPORT', 3000);
 
+  app.enableCors();
   app.setGlobalPrefix('/api/');
   app.useGlobalPipes(new ValidationPipe({
     transform: true,

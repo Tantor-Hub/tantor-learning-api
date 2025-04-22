@@ -16,6 +16,8 @@ import { Categories } from './models/model.categoriesformations';
 import { Formations } from './models/model.formations';
 import { Thematiques } from './models/model.groupeformations';
 import { log } from 'console';
+import { SessionsModule } from './sessions/sessions.module';
+import { Sessions } from './models/model.sessions';
 
 @Module({
   imports: [
@@ -48,14 +50,15 @@ import { log } from 'console';
           acquire: 1000000,
           idle: 200000
         },
-        models: [Users, Roles, HasRoles]
+        models: [Users, Roles, HasRoles, Categories, Sessions]
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, Sessions]),
     RolesModule,
     UsersModule,
     FormationsModule,
     CategoriesModule,
+    SessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -69,7 +72,7 @@ export class AppModule implements OnModuleInit {
         
       })
       .catch(_ => {
-        log("[ Error ] on forcing migration ", _)
+        log("on forcing migration [ Error ] ", _)
       })
   }
 };
