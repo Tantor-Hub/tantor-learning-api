@@ -16,6 +16,7 @@ import { Categories } from './models/model.categoriesformations';
 import { Formations } from './models/model.formations';
 import { Thematiques } from './models/model.groupeformations';
 import { log } from 'console';
+import { SessionsModule } from './sessions/sessions.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { log } from 'console';
     UsersModule,
     FormationsModule,
     CategoriesModule,
+    SessionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
