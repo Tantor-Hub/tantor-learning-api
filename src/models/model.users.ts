@@ -25,8 +25,8 @@ export class Users extends Model<IUsers> {
     @Column({ type: DataType.STRING, allowNull: false, unique: true })
     email: string;
 
-    @Column({ type: DataType.STRING, allowNull: false })
-    phone: string;
+    @Column({ type: DataType.STRING, allowNull: false, unique: true })
+    phone?: string;
 
     @Column({ type: DataType.STRING, allowNull: false })
     password: string;

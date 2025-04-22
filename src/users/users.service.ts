@@ -27,6 +27,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @Injectable()
 export class UsersService {
     constructor(
+        
         @InjectModel(Users)
         private readonly userModel: typeof Users,
 
@@ -196,7 +197,6 @@ export class UsersService {
             ls_name,
             password: hashed_password,
             nick_name,
-            phone: email,
             uuid: uuid_user,
             verification_code: verif_code,
             is_verified: 0,
