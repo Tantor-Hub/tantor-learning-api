@@ -4,6 +4,7 @@ import { CreateFormationDto } from './dto/create-formation.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
+import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 
 @Controller('formations')
 export class FormationsController {
@@ -14,7 +15,7 @@ export class FormationsController {
     ) { }
     
     @Post('formation/add')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async addNewFormation(@Body() createFormationDto: CreateFormationDto, @UploadedFile() file: Express.Multer.File,) {
         let piece_jointe: any = null;
@@ -27,31 +28,31 @@ export class FormationsController {
     }
 
     @Get('types')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getTypesFormations() {
         return this.formationsService.getTypesFormations()
     }
 
     @Get('list')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormations() {
         return this.formationsService.gatAllFormations()
     }
 
     @Get('list/bythematic/:idThematic')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormationsByThematic(@Param('idThematic', ParseIntPipe) idThematic: number) {
         return this.formationsService.gatAllFormationsByThematic(idThematic)
     }
 
     @Get('list/bycategory/:idCategory')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormationsByCategory(@Param('idCategory', ParseIntPipe) idCategory: number) {
         return this.formationsService.gatAllFormationsByCategory(idCategory)
     }
 
     @Get('list/by/:idThematic/:idCategory')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormationsByThematicAndCategory(@Param('idCategory', ParseIntPipe) idCategory: number, @Param('idThematic', ParseIntPipe) idThematic: number) {
         return this.formationsService.gatAllFormationsByThematicAndCategory(idThematic, idCategory)
     }

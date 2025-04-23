@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionsService } from './sessions.service';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
+import { UpdateSessionDto } from './dto/update-session.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -19,6 +20,12 @@ export class SessionsController {
         return this.sessionsService.listAllSession()
     }
 
+    @Put('session/update/:idSession')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async updateSession(@Body() UpdateSessionDto) {
+
+    }
+
     @Post('session/add')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -30,5 +37,20 @@ export class SessionsController {
             piece_jointe = link
         }
         return this.sessionsService.createSession({ ...createSessionDto, piece_jointe })
+    }
+
+    @Get('list/bythematic/:idThematic')
+    async getAllFormationsByThematic(@Param('idThematic', ParseIntPipe) idThematic: number) {
+        return this.sessionsService.gatAllSessionsByThematic(idThematic)
+    }
+
+    @Get('list/bycategory/:idCategory')
+    async getAllFormationsByCategory(@Param('idCategory', ParseIntPipe) idCategory: number) {
+        return this.sessionsService.gatAllSessionsByCategory(idCategory)
+    }
+
+    @Get('list/by/:idThematic/:idCategory')
+    async getAllFormationsByThematicAndCategory(@Param('idCategory', ParseIntPipe) idCategory: number, @Param('idThematic', ParseIntPipe) idThematic: number) {
+        return this.sessionsService.gatAllSessionsByThematicAndCategory(idThematic, idCategory)
     }
 }

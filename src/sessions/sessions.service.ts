@@ -12,7 +12,8 @@ import { FormateurHasSession } from 'src/models/model.formateurhassession';
 import { MailService } from '../services/service.mail';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
-import { log } from 'console';
+import { Categories } from 'src/models/model.categoriesformations';
+import { Thematiques } from 'src/models/model.groupeformations';
 
 @Injectable()
 export class SessionsService {
@@ -32,6 +33,12 @@ export class SessionsService {
 
         @InjectModel(HasRoles)
         private readonly hasRoleModel: typeof HasRoles,
+
+        @InjectModel(Categories)
+        private readonly categoryModel: typeof Categories,
+
+        @InjectModel(Thematiques)
+        private readonly thematicModel: typeof Thematiques,
 
         @InjectModel(FormateurHasSession)
         private readonly hasSessionFormateurModel: typeof FormateurHasSession,
@@ -129,7 +136,29 @@ export class SessionsService {
     }
 
     async listAllSession(): Promise<ResponseServer> {
+
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+
         return this.sessionModel.findAndCountAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                }
+            ],
             where: {
                 status: 1
             }
@@ -138,5 +167,102 @@ export class SessionsService {
                 return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+    async gatAllSessionsByThematic(idThematic: number): Promise<ResponseServer> {
+
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+        return this.sessionModel.findAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                }
+            ],
+            where: {
+                status: 1,
+                id_thematic: idThematic
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async gatAllSessionsByThematicAndCategory(idThematic: number, idCategory: number): Promise<ResponseServer> {
+
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+        return this.sessionModel.findAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                }
+            ],
+            where: {
+                status: 1,
+                id_thematic: idThematic,
+                id_category: idCategory
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async gatAllSessionsByCategory(idCategory: number): Promise<ResponseServer> {
+
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+        return this.sessionModel.findAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                }
+            ],
+            where: {
+                status: 1,
+                id_category: idCategory
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 }

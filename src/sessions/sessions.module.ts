@@ -14,10 +14,12 @@ import { Roles } from 'src/models/model.roles';
 import { FormateurHasSession } from 'src/models/model.formateurhassession';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
+import { Categories } from 'src/models/model.categoriesformations';
+import { Thematiques } from 'src/models/model.groupeformations';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations]),
+    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
