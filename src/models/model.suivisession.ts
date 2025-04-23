@@ -22,6 +22,9 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column(DataType.DATE)
     date_mise_a_jour?: Date;
 
+    @Column(DataType.STRING)
+    duree?: string;
+
     @Column({ type: DataType.INTEGER })
     id_formation: number;
 

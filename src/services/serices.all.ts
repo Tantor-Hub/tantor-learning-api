@@ -34,7 +34,7 @@ export class AllSercices {
         const minutes = totalMinutes % 60;
 
         const result = formatTexte
-            ? `${heures}h ${minutes}min (s) `
+            ? `${heures}h ${minutes}min`
             : { heures, minutes, totalMinutes };
 
         return {
