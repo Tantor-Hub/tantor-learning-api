@@ -1,12 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import randomstring from 'randomstring';
+import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AllSercices {
     constructor(private configService: ConfigService) { }
 
+    createDesignationSessionName = ({ start, end }: { start: string; end: string }, formatTexte = false): IInternalResponse => {
+        const dateDebut = new Date(start);
+        const dateFin = new Date(end);
+
+        if (isNaN(dateDebut.getTime()) || isNaN(dateFin.getTime())) {
+            return {
+                code: 400,
+                message: "Dates invalides",
+                data: {} as any
+            };
+        }
+
+        const differenceMs = dateFin.getTime() - dateDebut.getTime();
+        const totalMinutes = Math.floor(differenceMs / (1000 * 60));
+        const heures = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+
+        const result = formatTexte
+            ? `${heures}h ${minutes}min (s) `
+            : { heures, minutes, totalMinutes };
+
+        return {
+            code: 200,
+            message: "Durée calculée avec succès",
+            data: result
+        };
+    };
     groupArrayElementByColumn = ({ arr, columnName, convertColumn }): any[] => {
         const groups = new Map();
         arr.forEach((item: any) => {
