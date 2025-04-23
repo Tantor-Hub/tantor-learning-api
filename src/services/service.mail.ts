@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { AllSercices } from './serices.all';
 import { log } from 'console';
+import { IInternalResponse } from 'src/interface/interface.internalresponse';
 
 @Injectable()
 export class MailService {
@@ -224,7 +225,11 @@ export class MailService {
         }
     };
 
-    async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<{ code: number, message: string, data: any }> {
+    async onSendWithAttachement({ }): Promise<IInternalResponse> {
+        return {} as any
+    };
+
+    async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<IInternalResponse> {
         return new Promise(async (resolve, reject) => {
             try {
                 const mailOptions = {

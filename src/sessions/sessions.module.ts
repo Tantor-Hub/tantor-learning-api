@@ -6,13 +6,18 @@ import { MailService } from 'src/services/service.mail';
 import { AllSercices } from 'src/services/serices.all';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Sessions } from 'src/models/model.sessions';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { Users } from 'src/models/model.users';
+import { HasRoles } from 'src/models/model.userhasroles';
+import { Roles } from 'src/models/model.roles';
+import { FormateurHasSession } from 'src/models/model.formateurhassession';
+import { SessionSuivi } from 'src/models/model.suivisession';
+import { Formations } from 'src/models/model.formations';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Sessions]),
+    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

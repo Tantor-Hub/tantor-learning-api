@@ -1,16 +1,37 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsNumberString, IsDateString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsString, IsOptional, IsEnum, IsNumber, IsNumberString, IsDateString, IsInt, IsUUID, IsDate } from 'class-validator';
+import * as moment from 'moment';
 
 export class CreateSessionDto {
-    @IsString()
     @IsOptional()
-    titre: string;
+    @IsString()
+    designation?: string;
 
-    @IsString()
     @IsOptional()
-    sous_titre: string;
+    @IsNumberString()
+    id_controleur?: number;
+
+    @IsUUID()
+    @IsOptional()
+    uuid: string;
+
+    @IsOptional()
+    @IsNumberString()
+    id_superviseur?: number;
+
+    @IsOptional()
+    @IsDateString()
+    date_mise_a_jour?: Date;
 
     @IsNumberString()
     id_formation: number;
+
+    @IsOptional()
+    @IsString()
+    piece_jointe?: string;
+
+    @IsEnum(['onLine', 'visionConference', 'presentiel', 'hybride'])
+    type_formation: string;
 
     @IsNumberString()
     @IsOptional()
@@ -18,37 +39,21 @@ export class CreateSessionDto {
 
     @IsNumberString()
     @IsOptional()
-    id_formateur?: number;
-
-    @IsNumberString()
-    @IsOptional()
     id_thematic: number;
 
-    @IsEnum(['onLine', 'visioConference', 'presentiel', 'hybride'])
+    @IsDateString()
+    @Transform(({ value }) => moment(value, 'DD/MM/YYYY', true).isValid() ? moment(value, 'DD/MM/YYYY').toDate() : null)
+    date_session_debut: Date | string | any;
+
+    @IsDateString()
+    @Transform(({ value }) => moment(value, 'DD/MM/YYYY', true).isValid() ? moment(value, 'DD/MM/YYYY').toDate() : null)
+    date_session_fin: Date | string | any;
+
+    @IsString()
     @IsOptional()
-    type_formation: string;
+    description: string;
 
     @IsOptional()
-    @IsString()
-    description?: string;
-
-    @IsOptional()
-    @IsString()
-    lien_contenu?: string;
-
-    @IsOptional()
-    @IsString()
+    @IsNumberString()
     prix?: number;
-
-    @IsOptional()
-    @IsString()
-    duree?: string;
-
-    @IsDateString()
-    // @IsOptional()
-    start_on: string;
-
-    @IsDateString()
-    // @IsOptional()
-    end_on: string;
 };

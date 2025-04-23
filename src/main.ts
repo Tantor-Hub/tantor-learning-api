@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
-import { NotFoundFilter } from './strategy/strategy.notfound';
 import { ValidationPipe, BadRequestException, NotFoundException } from '@nestjs/common';
 import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
@@ -43,7 +42,6 @@ async function tantorAPP() {
     }
   }));
   app.useGlobalInterceptors(new ResponseInterceptor());
-  // app.useGlobalFilters(new NotFoundFilter());
 
   await app.listen(port, () => {
     log("---------------------------------------");

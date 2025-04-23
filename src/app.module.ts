@@ -17,7 +17,7 @@ import { Formations } from './models/model.formations';
 import { Thematiques } from './models/model.groupeformations';
 import { log } from 'console';
 import { SessionsModule } from './sessions/sessions.module';
-import { Sessions } from './models/model.sessions';
+import { SessionSuivi } from './models/model.suivisession';
 
 @Module({
   imports: [
@@ -50,10 +50,10 @@ import { Sessions } from './models/model.sessions';
           acquire: 1000000,
           idle: 200000
         },
-        models: [Users, Roles, HasRoles, Categories, Sessions]
+        models: [Users, Roles, HasRoles, Categories, SessionSuivi]
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, Sessions]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi]),
     RolesModule,
     UsersModule,
     FormationsModule,
