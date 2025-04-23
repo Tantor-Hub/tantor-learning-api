@@ -11,4 +11,6 @@ export interface ISession extends IGlobale {
     start_on?: Date;
     end_on?: Date;
     prix?: number; // les prix sont en Euro
+    id_category?: number
+    id_thematic?: number
 }
