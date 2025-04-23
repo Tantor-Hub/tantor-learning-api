@@ -4,6 +4,7 @@ import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionsService } from './sessions.service';
+import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 
 @Controller('sessions')
 export class SessionsController {
@@ -14,12 +15,12 @@ export class SessionsController {
     ) { }
 
     @Get('list')
-    async getListSessions() {
-
+    async getAllSessions() {
+        return this.sessionsService.listAllSession()
     }
 
     @Post('session/add')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async addNewSession(@Body() createSessionDto: CreateSessionDto, @UploadedFile() file: Express.Multer.File,) {
         let piece_jointe: any = null;
@@ -28,6 +29,6 @@ export class SessionsController {
             const { id, name, link, } = result
             piece_jointe = link
         }
-        return this.sessionsService.createSession(createSessionDto)
+        return this.sessionsService.createSession({ ...createSessionDto, piece_jointe })
     }
 }

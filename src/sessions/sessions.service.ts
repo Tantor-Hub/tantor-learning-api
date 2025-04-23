@@ -127,4 +127,16 @@ export class SessionsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
+
+    async listAllSession(): Promise<ResponseServer> {
+        return this.sessionModel.findAndCountAll({
+            where: {
+                status: 1
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
 }
