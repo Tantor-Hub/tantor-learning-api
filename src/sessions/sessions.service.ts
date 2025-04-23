@@ -14,6 +14,7 @@ import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
 import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
+import { UpdateSessionDto } from './dto/update-session.dto';
 
 @Injectable()
 export class SessionsService {
@@ -264,5 +265,37 @@ export class SessionsService {
         })
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async updateSession(updateSessionDto: UpdateSessionDto, idSession: number): Promise<ResponseServer> {
+        if (Object.keys(updateSessionDto).length <= 0) return Responder({ status: HttpStatusCode.BadRequest, data: "Le corps de cette requête ne devrait pas être vide !" })
+        return this.sessionModel.findOne({
+            where: {
+                id: idSession
+            }
+        })
+            .then(inst => {
+                if (inst instanceof SessionSuivi) {
+                    const { date_session_debut, date_session_fin, description, id_category, id_formation, id_thematic, type_formation, designation, id_controleur, id_superviseur, piece_jointe, prix } = updateSessionDto
+                    return inst.update({
+                       date_session_debut,
+                       date_session_fin,
+                       description,
+                       designation,
+                       id_category,
+                       id_controleur,
+                       id_formation,
+                       id_superviseur,
+                       id_thematic,
+                       piece_jointe,
+                       type_formation
+                    })
+                        .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
+                        .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: `La session n'a pas été retrouvée [id]:${idSession}` })
+                }
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 }

@@ -10,17 +10,9 @@ export class UpdateSessionDto {
     @IsNumberString()
     id_controleur?: number;
 
-    @IsUUID()
-    @IsOptional()
-    uuid: string;
-
     @IsOptional()
     @IsNumberString()
     id_superviseur?: number;
-
-    @IsOptional()
-    @IsDateString()
-    date_mise_a_jour?: Date;
 
     @IsNumberString()
     @IsOptional()
@@ -32,7 +24,7 @@ export class UpdateSessionDto {
 
     @IsEnum(['onLine', 'visionConference', 'presentiel', 'hybride'])
     @IsOptional()
-    type_formation: string;
+    type_formation: string | 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
 
     @IsNumberString()
     @IsOptional()

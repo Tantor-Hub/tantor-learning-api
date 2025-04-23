@@ -22,8 +22,15 @@ export class SessionsController {
 
     @Put('session/update/:idSession')
     @UseGuards(JwtAuthGuardAsFormateur)
-    async updateSession(@Body() UpdateSessionDto) {
-
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async updateSession(@Body() UpdateSessionDto, @Param('idSession', ParseIntPipe) idSession: number, @UploadedFile() file: Express.Multer.File,) {
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            const { id, name, link, } = result
+            piece_jointe = link
+        }
+        return this.sessionsService.updateSession({ ...UpdateSessionDto, piece_jointe }, idSession)
     }
 
     @Post('session/add')

@@ -3,7 +3,8 @@ import { IGlobale } from "./interface.globale";
 export interface ISessionSuivi extends IGlobale {
     uuid?: string;
     piece_jointe?: string;
-    type_formation?: 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
+    type_formation?: string;
+    // 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
     id_formation: number;
     id_category?: number;
     id_thematic?: number;
