@@ -278,17 +278,17 @@ export class SessionsService {
                 if (inst instanceof SessionSuivi) {
                     const { date_session_debut, date_session_fin, description, id_category, id_formation, id_thematic, type_formation, designation, id_controleur, id_superviseur, piece_jointe, prix } = updateSessionDto
                     return inst.update({
-                       date_session_debut,
-                       date_session_fin,
-                       description,
-                       designation,
-                       id_category,
-                       id_controleur,
-                       id_formation,
-                       id_superviseur,
-                       id_thematic,
-                       piece_jointe,
-                       type_formation
+                        date_session_debut,
+                        date_session_fin,
+                        description,
+                        designation,
+                        id_category,
+                        id_controleur,
+                        id_formation,
+                        id_superviseur,
+                        id_thematic,
+                        piece_jointe,
+                        type_formation
                     })
                         .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
                         .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
@@ -297,5 +297,25 @@ export class SessionsService {
                 }
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+    async deleteSession(idSession: number): Promise<ResponseServer> {
+        return this.sessionModel.findOne({
+            where: {
+                id: idSession
+            }
+        })
+            .then(inst => {
+                if (inst instanceof SessionSuivi) {
+                    return inst.update({
+                        status: 0
+                    })
+                        .then(_ => Responder({ status: HttpStatusCode.Ok, data: "Elément supprimé avec succès !" }))
+                        .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
+                } else {
+                    return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 }

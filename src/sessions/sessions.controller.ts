@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionsService } from './sessions.service';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
-import { UpdateSessionDto } from './dto/update-session.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -20,7 +19,13 @@ export class SessionsController {
         return this.sessionsService.listAllSession()
     }
 
-    @Put('session/update/:idSession')
+    @Delete('session/:idSession')
+    @UseGuards(JwtAuthGuardAsManagerSystem)
+    async deleteSession(@Param('idSession', ParseIntPipe) idSession: number,) {
+        return this.sessionsService.deleteSession(idSession)
+    }
+
+    @Put('session/:idSession')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async updateSession(@Body() UpdateSessionDto, @Param('idSession', ParseIntPipe) idSession: number, @UploadedFile() file: Express.Multer.File,) {
