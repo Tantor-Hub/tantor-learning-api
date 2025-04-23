@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, UploadedFile, UseInterceptors, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, UploadedFile, UseInterceptors, UseGuards, Delete } from '@nestjs/common';
 import { FormationsService } from './formations.service';
 import { CreateFormationDto } from './dto/create-formation.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -14,6 +14,12 @@ export class FormationsController {
         private readonly googleDriveService: GoogleDriveService
     ) { }
     
+    @Delete('formation/:idFormation')
+    @UseGuards(JwtAuthGuardAsManagerSystem)
+    async deleteSession(@Param('idFormation', ParseIntPipe) idFormation: number,) {
+        return this.formationsService.delete(idFormation)
+    }
+
     @Post('formation/add')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))

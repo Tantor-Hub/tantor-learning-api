@@ -5,6 +5,8 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionsService } from './sessions.service';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { User } from 'src/strategy/strategy.globaluser';
 
 @Controller('sessions')
 export class SessionsController {
@@ -13,6 +15,12 @@ export class SessionsController {
         private readonly googleDriveService: GoogleDriveService,
         private readonly sessionsService: SessionsService
     ) { }
+
+    @Post('session/apply')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async applyToSession(@User() user) {
+        return this.sessionsService.listAllSession()
+    }
 
     @Get('list')
     async getAllSessions() {

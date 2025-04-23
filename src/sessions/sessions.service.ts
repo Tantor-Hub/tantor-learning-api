@@ -15,6 +15,8 @@ import { Formations } from 'src/models/model.formations';
 import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
 import { UpdateSessionDto } from './dto/update-session.dto';
+import { ApplySessionDto } from './dto/apply-tosesssion.dto';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
 export class SessionsService {
@@ -47,6 +49,25 @@ export class SessionsService {
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService
     ) { }
+
+    async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
+        const { id_session } = applySessionDto;
+        const { id_user, level_indicator, roles_user } = user;
+
+        return this.sessionModel.findOne({
+            where: {
+                id: id_session
+            }
+        })
+            .then(inst => {
+                if (inst instanceof SessionSuivi) {
+                    return {} as any
+                } else {
+                    return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
 
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 

@@ -18,6 +18,7 @@ import { Thematiques } from './models/model.groupeformations';
 import { log } from 'console';
 import { SessionsModule } from './sessions/sessions.module';
 import { SessionSuivi } from './models/model.suivisession';
+import { WebrtcGateway } from './services/service.webrtc';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { SessionSuivi } from './models/model.suivisession';
     FormationsModule,
     CategoriesModule,
     SessionsModule,
+    WebrtcGateway
   ],
   controllers: [AppController],
   providers: [AppService],
