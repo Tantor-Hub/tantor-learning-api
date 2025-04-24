@@ -27,7 +27,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @Injectable()
 export class UsersService {
     constructor(
-        
+
         @InjectModel(Users)
         private readonly userModel: typeof Users,
 
@@ -195,6 +195,7 @@ export class UsersService {
             email,
             fs_name,
             ls_name,
+            phone: phone,
             password: hashed_password,
             nick_name,
             uuid: uuid_user,
@@ -238,6 +239,69 @@ export class UsersService {
             })
             .catch(err => {
                 log(err)
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
+    }
+
+    async registerAsNewUser(createUserDto: CreateUserDto): Promise<ResponseServer> {
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, id_role } = createUserDto
+        const existingUser = await this.userModel.findOne({ where: { email } });
+        if (existingUser) {
+            return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
+        }
+
+        const verif_code = this.allService.randomLongNumber({ length: 6 })
+        const num_record = this.allService.randomLongNumber({ length: 8 })
+        const hashed_password = await this.cryptoService.hashPassword(password)
+        const uuid_user = this.allService.generateUuid()
+
+        return this.userModel.create({
+            num_record: num_record,
+            email,
+            fs_name,
+            ls_name,
+            phone: phone,
+            password: hashed_password,
+            nick_name,
+            uuid: uuid_user,
+            verification_code: verif_code,
+            is_verified: id_role && id_role === 4 ? 0 : 1,
+            status: 1
+        })
+            .then(student => {
+                if (student instanceof Users) {
+                    const { id: as_id_user, email } = student?.toJSON()
+                    return this.hasRoleModel.create({
+                        RoleId: id_role || 2, // ie. sec. role
+                        UserId: as_id_user as number,
+                        status: 1
+                    })
+                        .then(hasrole => {
+                            if (hasrole instanceof HasRoles) {
+                                if (id_role && id_role === 4) this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true });
+                                const newInstance = student.toJSON();
+
+                                delete (newInstance as any).password;
+                                delete (newInstance as any).verification_code;
+                                delete (newInstance as any).last_login;
+                                delete (newInstance as any).status;
+                                delete (newInstance as any).is_verified;
+                                delete (newInstance as any).createdAt;
+                                delete (newInstance as any).updatedAt;
+
+                                return Responder({ status: HttpStatusCode.Created, data: { user: newInstance } })
+                            } else {
+                                return Responder({ status: HttpStatusCode.BadRequest })
+                            }
+                        })
+                        .catch(err => {
+                            return Responder({ status: HttpStatusCode.Conflict, data: err })
+                        })
+                } else {
+                    return Responder({ status: HttpStatusCode.BadRequest, data: {} })
+                }
+            })
+            .catch(err => {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
     }
