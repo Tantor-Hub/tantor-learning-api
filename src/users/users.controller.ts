@@ -23,19 +23,25 @@ export class UsersController {
         return this.userService.registerAsStudent(createUserDto);
     }
 
+    @Post('user/add')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async addNewSystemeUser(@Body() createUserDto: CreateUserDto){
+        return this.userService.registerAsNewUser(createUserDto);
+    }
+
     @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
-        return this.userService.signInAsStudent(signInStudentDto)
+        return this.userService.signInAsStudent(signInStudentDto);
     }
 
     @Put("user/verify")
     async verifyAsStudent(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
-        return this.userService.verifyAsStudent(verifyAsStudentDto)
+        return this.userService.verifyAsStudent(verifyAsStudentDto);
     }
 
     @Put("user/refresh")
     async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
-        return this.userService.refreshTokenUser(refreshTokenDto)
+        return this.userService.refreshTokenUser(refreshTokenDto);
     }
 
     @Put("user/resendcode")

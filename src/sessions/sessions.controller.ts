@@ -8,7 +8,7 @@ import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateu
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { MediasoupService } from '../services/service.mediasoup';
-import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
+import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { log } from 'console';
 
 @Controller('sessions')
@@ -23,7 +23,6 @@ export class SessionsController {
     @Get('rtpcapabilities')
     async getRtpCapabilities() {
         const router = this.mediasoupService.getRouter();
-        log("Capability is ==> ", router)
         if (!router) {
             throw new NotFoundException('Router not found');
         }
@@ -51,8 +50,9 @@ export class SessionsController {
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user) {
-        return this.sessionsService.listAllSession()
+    async applyToSession(@User() user, applySessionDto: ApplySessionDto) {
+        log(applySessionDto, user)
+        return this.sessionsService.applyToSession(applySessionDto, user)
     }
 
     @Get('list')
