@@ -6,6 +6,7 @@ import { ValidationPipe, BadRequestException, NotFoundException } from '@nestjs/
 import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
 import { ResponseInterceptor } from './strategy/strategy.responseinterceptor';
+import { MediasoupService } from './services/service.mediasoup';
 
 async function tantorAPP() {
 
@@ -41,6 +42,8 @@ async function tantorAPP() {
       });
     }
   }));
+  const mediasoupService = app.get(MediasoupService);
+  await mediasoupService.init();
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   await app.listen(port, () => {

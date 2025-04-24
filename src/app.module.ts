@@ -18,7 +18,8 @@ import { Thematiques } from './models/model.groupeformations';
 import { log } from 'console';
 import { SessionsModule } from './sessions/sessions.module';
 import { SessionSuivi } from './models/model.suivisession';
-import { WebrtcGateway } from './services/service.webrtc';
+import { WebrtcGatewayService } from './services/service.webrtc';
+import { MediasoupService } from './services/service.mediasoup';
 
 @Module({
   imports: [
@@ -49,7 +50,7 @@ import { WebrtcGateway } from './services/service.webrtc';
           max: 50,
           min: 0,
           acquire: 1000000,
-          idle: 200000
+          idle: 200000,
         },
         models: [Users, Roles, HasRoles, Categories, SessionSuivi]
       }),
@@ -60,10 +61,9 @@ import { WebrtcGateway } from './services/service.webrtc';
     FormationsModule,
     CategoriesModule,
     SessionsModule,
-    WebrtcGateway
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, MediasoupService, WebrtcGatewayService],
 })
 
 export class AppModule implements OnModuleInit {
@@ -71,7 +71,7 @@ export class AppModule implements OnModuleInit {
   async onModuleInit() {
     this.sequelize.sync({ alter: true })
       .then(_ => {
-        
+
       })
       .catch(_ => {
         log("on forcing migration [ Error ] ", _)

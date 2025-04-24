@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -7,14 +7,47 @@ import { SessionsService } from './sessions.service';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
+import { MediasoupService } from '../services/service.mediasoup';
+import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized';
+import { log } from 'console';
 
 @Controller('sessions')
 export class SessionsController {
 
     constructor(
         private readonly googleDriveService: GoogleDriveService,
-        private readonly sessionsService: SessionsService
+        private readonly sessionsService: SessionsService,
+        private readonly mediasoupService: MediasoupService
     ) { }
+
+    @Get('rtpcapabilities')
+    async getRtpCapabilities() {
+        const router = this.mediasoupService.getRouter();
+        log("Capability is ==> ", router)
+        if (!router) {
+            throw new NotFoundException('Router not found');
+        }
+        const rtpCapabilities = router.rtpCapabilities;
+        return rtpCapabilities;
+    }
+
+    @Post('sendtransport')
+    async createSendTransport(@Body() body: { clientId: string }) {
+        const transportOptions = await this.mediasoupService.createSendTransport(body.clientId);
+        return { transportOptions };
+    }
+
+    @Post('connecttransport')
+    async connectTransport(@Body() body: {
+        clientId: string;
+        dtlsParameters: any;
+        transportType: 'send' | 'recv';
+    }) {
+        const transport = this.mediasoupService.getTransport(body.clientId, body.transportType);
+        if (!transport) throw new Error('Transport not found');
+        await transport.connect({ dtlsParameters: body.dtlsParameters });
+        return { connected: true };
+    }
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)

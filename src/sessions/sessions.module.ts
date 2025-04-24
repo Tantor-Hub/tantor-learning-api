@@ -16,6 +16,7 @@ import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
 import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
+import { MediasoupService } from 'src/services/service.mediasoup';
 
 @Module({
   imports: [
@@ -33,6 +34,6 @@ import { Thematiques } from 'src/models/model.groupeformations';
     }),
   ],
   controllers: [SessionsController],
-  providers: [SessionsService, JwtService, GoogleDriveService, AllSercices, MailService,]
+  providers: [SessionsService, JwtService, GoogleDriveService, AllSercices, MailService, MediasoupService]
 })
 export class SessionsModule { }
