@@ -244,7 +244,7 @@ export class UsersService {
     }
 
     async registerAsNewUser(createUserDto: CreateUserDto): Promise<ResponseServer> {
-        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, id_role } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
             return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
@@ -265,20 +265,20 @@ export class UsersService {
             nick_name,
             uuid: uuid_user,
             verification_code: verif_code,
-            is_verified: 1,
+            is_verified: id_role && id_role === 4 ? 0 : 1,
             status: 1
         })
             .then(student => {
                 if (student instanceof Users) {
                     const { id: as_id_user, email } = student?.toJSON()
                     return this.hasRoleModel.create({
-                        RoleId: 2, // ie. sec. role
+                        RoleId: id_role || 2, // ie. sec. role
                         UserId: as_id_user as number,
                         status: 1
                     })
                         .then(hasrole => {
                             if (hasrole instanceof HasRoles) {
-                                // this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
+                                if (id_role && id_role === 4) this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true });
                                 const newInstance = student.toJSON();
 
                                 delete (newInstance as any).password;
@@ -295,7 +295,6 @@ export class UsersService {
                             }
                         })
                         .catch(err => {
-                            log(err)
                             return Responder({ status: HttpStatusCode.Conflict, data: err })
                         })
                 } else {
@@ -303,7 +302,6 @@ export class UsersService {
                 }
             })
             .catch(err => {
-                log(err)
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
     }
