@@ -10,6 +10,7 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { MediasoupService } from '../services/service.mediasoup';
 import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { log } from 'console';
+import { UpdateSessionDto } from './dto/update-session.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -19,6 +20,13 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
+
+    @Post('session/apply')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
+        log("Apply with ==>", applySessionDto, user)
+        return this.sessionsService.applyToSession(applySessionDto, user)
+    }
 
     @Get('rtpcapabilities')
     async getRtpCapabilities() {
@@ -48,13 +56,6 @@ export class SessionsController {
         return { connected: true };
     }
 
-    @Post('session/apply')
-    @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user, applySessionDto: ApplySessionDto) {
-        log(applySessionDto, user)
-        return this.sessionsService.applyToSession(applySessionDto, user)
-    }
-
     @Get('list')
     async getAllSessions() {
         return this.sessionsService.listAllSession()
@@ -69,14 +70,14 @@ export class SessionsController {
     @Put('session/:idSession')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
-    async updateSession(@Body() UpdateSessionDto, @Param('idSession', ParseIntPipe) idSession: number, @UploadedFile() file: Express.Multer.File,) {
+    async updateSession(@Body() updateSessionDto: UpdateSessionDto, @Param('idSession', ParseIntPipe) idSession: number, @UploadedFile() file: Express.Multer.File,) {
         let piece_jointe: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
             const { id, name, link, } = result
             piece_jointe = link
         }
-        return this.sessionsService.updateSession({ ...UpdateSessionDto, piece_jointe }, idSession)
+        return this.sessionsService.updateSession({ ...updateSessionDto, piece_jointe }, idSession)
     }
 
     @Post('session/add')

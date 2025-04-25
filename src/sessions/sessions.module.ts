@@ -17,10 +17,11 @@ import { Formations } from 'src/models/model.formations';
 import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
 import { MediasoupService } from 'src/services/service.mediasoup';
+import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques]),
+    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

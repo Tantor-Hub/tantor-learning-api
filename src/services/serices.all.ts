@@ -111,6 +111,9 @@ export class AllSercices {
     now(): number {
         return Date.now()
     };
+    nowDate(): string | Date {
+        return moment.utc().format('YYYY-MM-DDTHH:mm:ss'); 
+    }
     checkIntersection({ arr_a, arr_b }: { arr_a: number[], arr_b: number[] }): boolean {
         const intersection = arr_a.filter(value => arr_b.includes(value));
         return intersection.length > 0 ? true : false;
