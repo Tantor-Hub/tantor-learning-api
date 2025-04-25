@@ -8,6 +8,9 @@ import * as puppeteer from 'puppeteer';
 import * as Handlebars from 'handlebars';
 import { Buffer } from 'buffer';
 import { GoogleDriveService } from './service.googledrive';
+import * as fs from 'fs';
+import { join } from 'path';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 
 @Injectable()
 export class MailService {
@@ -28,18 +31,45 @@ export class MailService {
         this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
     }
 
-    async generatePdfFromHtml(templateHtml: string, variables: any): Promise<Buffer> {
-        const compiled = Handlebars.compile(templateHtml);
-        const htmlContent = compiled(variables);
+    async generateDocumentFromHtml(
+        htmlContent: string,
+        format: 'pdf' | 'docx' = 'pdf'
+    ): Promise<{ buffer: Buffer; mime: string; extension: string }> {
+        if (format === 'pdf') {
+            const browser = await puppeteer.launch({ headless: true });
+            const page = await browser.newPage();
+            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-        const browser = await puppeteer.launch({ headless: 'shell' });
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+            const pdfBuffer = await page.pdf({ format: 'A4' });
+            await browser.close();
 
-        const pdfBuffer = await page.pdf({ format: 'A4' });
-        await browser.close();
+            return {
+                buffer: Buffer.from(pdfBuffer),
+                mime: 'application/pdf',
+                extension: 'pdf',
+            };
+        }
 
-        return Buffer.from(pdfBuffer);
+        if (format === 'docx') {
+            const textOnly = htmlContent.replace(/<[^>]+>/g, '').trim();
+            const doc = new Document({
+                sections: [
+                    {
+                        children: [new Paragraph(textOnly)],
+                    },
+                ],
+            });
+
+            const docxBuffer = await Packer.toBuffer(doc);
+
+            return {
+                buffer: docxBuffer,
+                mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                extension: 'docx',
+            };
+        }
+
+        throw new Error(`Format ${format} non supporté`);
     }
 
     templates({ as, nom, postnom, cours, dateOn, prixCours, code }: { as: string, nom?: string, postnom?: string, cours?: string, dateOn?: string, prixCours?: string, code?: string }): string {
@@ -247,116 +277,6 @@ export class MailService {
         }
     };
 
-    TWelcomeOnSession({ nom, postnom, session, formation_name }): string {
-        const color = this.configService.get<string>('APPPRIMARYCOLOR');
-        const appname = this.configService.get<string>('APPNAME');
-        const appowner = this.configService.get<string>('APPOWNER');
-        const url = this.baseURL;
-
-        return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                background-color: #f9f9f9;
-                margin: 0;
-                padding: 0;
-                color: #333;
-            }
-            .email-container {
-                max-width: 600px;
-                margin: 20px auto;
-                background: #ffffff;
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-                background-color: #${color};
-                padding: 20px;
-                color: #ffffff;
-                text-align: center;
-            }
-            .header h1 {
-                margin: 0;
-                font-size: 24px;
-            }
-            .content {
-                padding: 20px;
-            }
-            .content p {
-                margin: 10px 0;
-            }
-            .content .highlight {
-                font-weight: bold;
-                color: #${color};
-            }
-            .content ul {
-                padding-left: 20px;
-            }
-            .footer {
-                background: #f1f1f1;
-                padding: 20px;
-                text-align: center;
-                font-size: 14px;
-                color: #666;
-            }
-            .footer p {
-                margin: 5px 0;
-            }
-            .button {
-                display: inline-block;
-                padding: 10px 15px;
-                font-size: 16px;
-                color: #ffffff;
-                background-color: #${color};
-                width: 100%;
-                text-decoration: none;
-                border-radius: 5px;
-                margin: 10px 0;
-                text-align: center;
-            }
-        </style>
-        <title>Bienvenue à votre session de formation</title>
-    </head>
-    <body>
-        <div class="email-container">
-            <div class="header">
-                <h1>Bienvenue ${this.allSercices.capitalizeWords({ text: nom })} ${this.allSercices.capitalizeWords({ text: postnom })} !</h1>
-            </div>
-            <div class="content">
-                <p>Bonjour <span class="highlight">${this.allSercices.capitalizeWords({ text: nom })}</span>,</p>
-                <p>Nous avons le plaisir de vous confirmer votre inscription à la session <strong>${session}</strong> pour la formation <strong>${formation_name}</strong> sur <strong>${appname}</strong>.</p>
-                <p>Nous sommes impatients de vous accompagner dans cette nouvelle aventure d’apprentissage.</p>
-                <p>Voici ce que vous réserve cette formation :</p>
-                <ul>
-                    <li>Accès en ligne 24h/24 à votre contenu pédagogique.</li>
-                    <li>Des supports variés : vidéos, quiz, études de cas, exercices pratiques.</li>
-                    <li>Un accompagnement personnalisé par nos formateurs.</li>
-                    <li>Suivi de votre progression et obtention de votre certificat de réussite.</li>
-                </ul>
-                <p>Nous vous invitons à vous connecter dès maintenant pour préparer votre session :</p>
-                <a href="${url}" class="button">Accéder à votre espace de formation</a>
-            </div>
-            <div class="footer">
-                <p>Cordialement,</p>
-                <p><strong>${appowner} (${appname})</strong></p>
-                <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
-            </div>
-        </div>
-    </body>
-    </html>
-        `;
-    };
-
-    async onSendWithAttachement({ }): Promise<IInternalResponse> {
-        return {} as any
-    };
-
     async sendMail({ to, subject, content, attachments }: { to: string, subject: string, content: string, attachments?: any[] }): Promise<IInternalResponse> {
         return new Promise(async (resolve, reject) => {
             try {
@@ -365,12 +285,54 @@ export class MailService {
                     to,
                     subject: subject || 'Configuration',
                     html: content,
+                    attachments
                 };
                 const info = await this.transporter.sendMail(mailOptions);
+                log("[ Status Mail ]: ", info.messageId)
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
                 return reject({ code: 500, message: 'Erreur', data: error });
             }
         })
     };
+
+    async onWelcomeToSessionStudent({ to, session_name, formation_name, fullname, asAttachement }:
+        { to: string, session_name?: string, formation_name?: string, fullname?: string, asAttachement?: boolean }):
+        Promise<IInternalResponse> {
+        try {
+
+            const appname = this.configService.get<string>('APPNAME')
+            const appowner = this.configService.get<string>('APPOWNER')
+            const brut = join(__dirname, '../../src', 'templates', 'template.welcomenewsession.html');
+            const html = fs.readFileSync(brut, "utf8");
+            const template = Handlebars.compile(html);
+            const content = template({
+                fullname,
+                session_name,
+                formation_name,
+                appowner,
+                appname
+            });
+            let attachement: any = null;
+            if (asAttachement && asAttachement === true) {
+                const { buffer, extension, mime } = await this.generateDocumentFromHtml(content, 'pdf')
+                attachement = {
+                    filename: `${session_name}-${fullname}.${extension}`,
+                    content: buffer,
+                    contentType: mime,
+                }
+            }
+            return this.sendMail({
+                to,
+                content,
+                subject: `Inscription réussie à la formation ${formation_name} | ${session_name}`,
+                attachments:
+                    asAttachement ?
+                        [attachement]
+                        : undefined
+            })
+        } catch (error) {
+            return { code: 500, message: "Error occured", data: error }
+        }
+    }
 }

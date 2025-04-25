@@ -43,7 +43,6 @@ export class SessionsController {
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
     async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
-        log("Apply with ==>", applySessionDto, user)
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
 
