@@ -21,6 +21,12 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Get('mylist')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async getAllSessionsByOwner(@User() user,) {
+        return this.sessionsService.listAllSessionsByOwn(user)
+    }
+
     @Get('listprestations')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListePrestations() {

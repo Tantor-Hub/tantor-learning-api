@@ -27,33 +27,33 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @ForeignKey(() => Users)
     id_stagiaire: number;
 
-    @Column({ type: DataType.INTEGER })
-    controleur: number;
+    // @Column({ type: DataType.INTEGER })
+    // controleur: number;
 
-    @Column({ type: DataType.STRING, unique: false })
-    numero_stagiaire: string;
+    // @Column({ type: DataType.STRING, unique: false })
+    // numero_stagiaire: string;
 
-    @Column({ type: DataType.STRING, allowNull: true })
-    type_prestation: string;
+    // @Column({ type: DataType.STRING, allowNull: true })
+    // type_prestation: string;
 
-    @Column({ type: DataType.DATE, allowNull: true })
-    date_relance: Date;
+    // @Column({ type: DataType.DATE, allowNull: true })
+    // date_relance: Date;
 
-    @Column({ type: DataType.STRING, allowNull: true })
-    moyen_relance: string;
+    // @Column({ type: DataType.STRING, allowNull: true })
+    // moyen_relance: string;
 
-    @Column({ type: DataType.TEXT, allowNull: true })
-    reponse_detaillee: string;
+    // @Column({ type: DataType.TEXT, allowNull: true })
+    // reponse_detaillee: string;
 
-    @Column({ type: DataType.BOOLEAN, allowNull: true })
-    action_a_reprendre: boolean;
+    // @Column({ type: DataType.BOOLEAN, allowNull: true })
+    // action_a_reprendre: boolean;
 
-    @Column({ type: DataType.BOOLEAN, allowNull: true })
-    supervision: boolean;
+    // @Column({ type: DataType.BOOLEAN, allowNull: true })
+    // supervision: boolean;
 
-    @Column({ type: DataType.DATE, allowNull: true })
-    date_supervision: Date;
+    // @Column({ type: DataType.DATE, allowNull: true })
+    // date_supervision: Date;
 
-    @Column({ type: DataType.TEXT, allowNull: true })
-    commentaires: string;
+    // @Column({ type: DataType.TEXT, allowNull: true })
+    // commentaires: string;
 }

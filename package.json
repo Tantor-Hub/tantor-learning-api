@@ -51,6 +51,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.14.1",
     "pg-hstore": "^2.3.4",
     "puppeteer": "^24.7.2",
