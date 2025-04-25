@@ -27,6 +27,12 @@ export class SessionsController {
         return this.sessionsService.getListePrestation()
     }
 
+    @Get('listrelances')
+    @UseGuards(JwtAuthGuardAsManagerSystem)
+    async getListeRelances() {
+        return this.sessionsService.getListeRealnce()
+    }
+
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
     async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {

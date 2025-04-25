@@ -7,11 +7,11 @@ import { SessionSuivi } from './model.suivisession';
 @Table({ tableName: tables['statgiairehassession'], timestamps: true })
 export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
 
-    @Column({ type: DataType.INTEGER })
-    id_controleur: number;
+    @Column({ type: DataType.INTEGER, allowNull: true })
+    id_controleur?: number;
 
-    @Column({ type: DataType.INTEGER })
-    id_superviseur: number;
+    @Column({ type: DataType.INTEGER, allowNull: true })
+    id_superviseur?: number;
 
     @Column({ type: DataType.DATE })
     date_mise_a_jour: Date;
@@ -30,7 +30,7 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @Column({ type: DataType.INTEGER })
     controleur: number;
 
-    @Column({ type: DataType.STRING, unique: true })
+    @Column({ type: DataType.STRING, unique: false })
     numero_stagiaire: string;
 
     @Column({ type: DataType.STRING, allowNull: true })

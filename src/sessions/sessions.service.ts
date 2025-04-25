@@ -19,6 +19,7 @@ import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { typesprestations } from 'src/utils/utiles.typesprestation';
+import { typesrelances } from 'src/utils/utiles.typerelances';
 
 @Injectable()
 export class SessionsService {
@@ -57,6 +58,11 @@ export class SessionsService {
 
     async getListePrestation(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesprestations.length, list: typesprestations } })
+    }
+
+
+    async getListeRealnce(): Promise<ResponseServer> {
+        return Responder({ status: HttpStatusCode.Ok, data: { length: typesrelances.length, list: typesrelances } })
     }
 
     async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
