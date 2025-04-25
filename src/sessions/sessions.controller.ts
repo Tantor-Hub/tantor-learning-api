@@ -21,6 +21,12 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Get('listprestations')
+    @UseGuards(JwtAuthGuardAsManagerSystem)
+    async getListePrestations() {
+        return this.sessionsService.getListePrestation()
+    }
+
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
     async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
