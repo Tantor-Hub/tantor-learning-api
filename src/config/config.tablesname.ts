@@ -8,5 +8,8 @@ export enum tables {
     categories = `${table_prefix}categoriesformations`,
     groupefromations = `${table_prefix}thematicsformations`,
     fromations = `${table_prefix}formationsascours`,
-    sessions = `${table_prefix}sessions`
+    sessions = `${table_prefix}sessions`,
+    formateurhassession = `${table_prefix}formathassession`,
+    sessionsuivi = `${table_prefix}suivisessions`,
+    statgiairehassession = `${table_prefix}staghassessions`
 }

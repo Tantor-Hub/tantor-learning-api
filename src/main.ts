@@ -2,11 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { log } from 'console';
-import { NotFoundFilter } from './strategy/strategy.notfound';
 import { ValidationPipe, BadRequestException, NotFoundException } from '@nestjs/common';
 import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
 import { ResponseInterceptor } from './strategy/strategy.responseinterceptor';
+import { MediasoupService } from './services/service.mediasoup';
 
 async function tantorAPP() {
 
@@ -42,8 +42,9 @@ async function tantorAPP() {
       });
     }
   }));
+  const mediasoupService = app.get(MediasoupService);
+  await mediasoupService.init();
   app.useGlobalInterceptors(new ResponseInterceptor());
-  // app.useGlobalFilters(new NotFoundFilter());
 
   await app.listen(port, () => {
     log("---------------------------------------");

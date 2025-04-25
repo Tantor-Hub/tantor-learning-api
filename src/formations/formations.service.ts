@@ -19,6 +19,26 @@ export class FormationsService {
         private readonly mailService: MailService
     ) { }
 
+    async delete(idSession: number): Promise<ResponseServer> {
+        return this.formationModel.findOne({
+            where: {
+                id: idSession
+            }
+        })
+            .then(inst => {
+                if (inst instanceof Formations) {
+                    return inst.update({
+                        status: 0
+                    })
+                        .then(_ => Responder({ status: HttpStatusCode.Ok, data: "Elément supprimé avec succès !" }))
+                        .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
+                } else {
+                    return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
     async createNewFormation(createFormationDto: CreateFormationDto): Promise<ResponseServer> {
         const { id_category, sous_titre, titre, type_formation, description, lien_contenu, prix, id_thematic, end_on, start_on, id_formateur, duree } = createFormationDto;
 
