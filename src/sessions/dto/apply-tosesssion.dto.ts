@@ -2,15 +2,14 @@ import { IsString, IsOptional, IsEnum, IsNumber, IsNumberString, IsDateString, I
 
 export class ApplySessionDto {
     
-    @IsNumberString()
-    id_session: string;
+    @IsNumber()
+    id_session: number;
 
     @IsOptional()
-    @IsNumberString()
+    @IsNumber()
     id_user?: number;
 
     @IsOptional()
-    @IsNumberString()
+    @IsNumber()
     id_formation?: string;
-
 };

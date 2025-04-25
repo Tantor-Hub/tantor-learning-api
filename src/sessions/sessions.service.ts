@@ -17,6 +17,7 @@ import { Thematiques } from 'src/models/model.groupeformations';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 
 @Injectable()
 export class SessionsService {
@@ -43,6 +44,9 @@ export class SessionsService {
         @InjectModel(Thematiques)
         private readonly thematicModel: typeof Thematiques,
 
+        @InjectModel(StagiaireHasSession)
+        private readonly hasSessionStudentModel: typeof StagiaireHasSession,
+
         @InjectModel(FormateurHasSession)
         private readonly hasSessionFormateurModel: typeof FormateurHasSession,
 
@@ -53,20 +57,52 @@ export class SessionsService {
     async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
         const { id_session } = applySessionDto;
         const { id_user, level_indicator, roles_user } = user;
+        try {
+            const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
+            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
 
-        return this.sessionModel.findOne({
-            where: {
-                id: id_session
-            }
-        })
-            .then(inst => {
-                if (inst instanceof SessionSuivi) {
-                    return {} as any
-                } else {
-                    return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+            return this.sessionModel.findOne({
+                where: {
+                    id: id_session
                 }
             })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                .then(inst => {
+                    if (inst instanceof SessionSuivi) {
+
+                        const { id_formation, id_category, } = inst.toJSON()
+                        const { phone, email } = student.toJSON();
+
+                        return this.hasSessionStudentModel.findOrCreate({
+                            where: {
+                                id_sessionsuivi: id_session,
+                                id_stagiaire: id_user
+                            },
+                            defaults: {
+                                id_sessionsuivi: id_session,
+                                id_stagiaire: id_user,
+                                supervision: false,
+                                numero_stagiaire: phone || email,
+                                date_mise_a_jour: this.allServices.nowDate(),
+                                id_formation,
+                                status: 1
+                            }
+                        })
+                            .then(([record, isNew]) => {
+                                if (isNew) {
+                                    return {} as any
+                                } else {
+                                    return Responder({ status: HttpStatusCode.Created, data: record })
+                                }
+                            })
+                            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error: any) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
