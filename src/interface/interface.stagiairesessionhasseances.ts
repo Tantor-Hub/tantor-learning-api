@@ -10,7 +10,6 @@ export interface IStagiaireHasSessionSuiiviSeance extends IGlobale {
 
     seance_time?: number;
     date_supervision?: Date;
-    commentaires?: string;
     id_controleur?: number;
     id_superviseur?: number;
     type_prestation?: string;
