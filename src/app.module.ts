@@ -20,6 +20,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { SessionSuivi } from './models/model.suivisession';
 import { WebrtcGatewayService } from './services/service.webrtc';
 import { MediasoupService } from './services/service.mediasoup';
+import { GoogleDriveService } from './services/service.googledrive';
 
 @Module({
   imports: [
@@ -63,7 +64,7 @@ import { MediasoupService } from './services/service.mediasoup';
     SessionsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService],
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService],
 })
 
 export class AppModule implements OnModuleInit {

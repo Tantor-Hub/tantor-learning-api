@@ -22,15 +22,22 @@ export class SessionsController {
     ) { }
 
     @Get('listprestations')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getListePrestations() {
         return this.sessionsService.getListePrestation()
     }
 
     @Get('listrelances')
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getListeRelances() {
         return this.sessionsService.getListeRealnce()
+    }
+
+
+    @Get('listactions')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getListeActions() {
+        return this.sessionsService.getListeActions()
     }
 
     @Post('session/apply')

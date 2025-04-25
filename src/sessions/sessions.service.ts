@@ -20,6 +20,7 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { typesprestations } from 'src/utils/utiles.typesprestation';
 import { typesrelances } from 'src/utils/utiles.typerelances';
+import { typesactions } from 'src/utils/utiles.actionreprendre';
 
 @Injectable()
 export class SessionsService {
@@ -65,9 +66,13 @@ export class SessionsService {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesrelances.length, list: typesrelances } })
     }
 
+    async getListeActions(): Promise<ResponseServer> {
+        return Responder({ status: HttpStatusCode.Ok, data: { length: typesactions.length, list: typesactions } })
+    }
+
     async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
         const { id_session } = applySessionDto;
-        const { id_user, level_indicator, roles_user } = user;
+        const { id_user } = user;
         try {
             const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
             if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });

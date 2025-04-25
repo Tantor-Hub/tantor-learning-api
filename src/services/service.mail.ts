@@ -4,12 +4,20 @@ import * as nodemailer from 'nodemailer';
 import { AllSercices } from './serices.all';
 import { log } from 'console';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
+import * as puppeteer from 'puppeteer';
+import * as Handlebars from 'handlebars';
+import { Buffer } from 'buffer';
+import { GoogleDriveService } from './service.googledrive';
 
 @Injectable()
 export class MailService {
     private transporter: nodemailer.Transporter;
     private baseURL: string
-    constructor(private configService: ConfigService, private readonly allSercices: AllSercices) {
+    constructor(
+        private configService: ConfigService,
+        private readonly allSercices: AllSercices,
+        private readonly googleDriveService: GoogleDriveService
+    ) {
         this.transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
@@ -18,6 +26,20 @@ export class MailService {
             },
         });
         this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
+    }
+
+    async generatePdfFromHtml(templateHtml: string, variables: any): Promise<Buffer> {
+        const compiled = Handlebars.compile(templateHtml);
+        const htmlContent = compiled(variables);
+
+        const browser = await puppeteer.launch({ headless: 'shell' });
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({ format: 'A4' });
+        await browser.close();
+
+        return Buffer.from(pdfBuffer);
     }
 
     templates({ as, nom, postnom, cours, dateOn, prixCours, code }: { as: string, nom?: string, postnom?: string, cours?: string, dateOn?: string, prixCours?: string, code?: string }): string {
@@ -225,11 +247,117 @@ export class MailService {
         }
     };
 
+    TWelcomeOnSession({ nom, postnom, session, formation_name }): string {
+        const color = this.configService.get<string>('APPPRIMARYCOLOR');
+        const appname = this.configService.get<string>('APPNAME');
+        const appowner = this.configService.get<string>('APPOWNER');
+        const url = this.baseURL;
+
+        return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f9f9f9;
+                margin: 0;
+                padding: 0;
+                color: #333;
+            }
+            .email-container {
+                max-width: 600px;
+                margin: 20px auto;
+                background: #ffffff;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+                background-color: #${color};
+                padding: 20px;
+                color: #ffffff;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 24px;
+            }
+            .content {
+                padding: 20px;
+            }
+            .content p {
+                margin: 10px 0;
+            }
+            .content .highlight {
+                font-weight: bold;
+                color: #${color};
+            }
+            .content ul {
+                padding-left: 20px;
+            }
+            .footer {
+                background: #f1f1f1;
+                padding: 20px;
+                text-align: center;
+                font-size: 14px;
+                color: #666;
+            }
+            .footer p {
+                margin: 5px 0;
+            }
+            .button {
+                display: inline-block;
+                padding: 10px 15px;
+                font-size: 16px;
+                color: #ffffff;
+                background-color: #${color};
+                width: 100%;
+                text-decoration: none;
+                border-radius: 5px;
+                margin: 10px 0;
+                text-align: center;
+            }
+        </style>
+        <title>Bienvenue à votre session de formation</title>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <h1>Bienvenue ${this.allSercices.capitalizeWords({ text: nom })} ${this.allSercices.capitalizeWords({ text: postnom })} !</h1>
+            </div>
+            <div class="content">
+                <p>Bonjour <span class="highlight">${this.allSercices.capitalizeWords({ text: nom })}</span>,</p>
+                <p>Nous avons le plaisir de vous confirmer votre inscription à la session <strong>${session}</strong> pour la formation <strong>${formation_name}</strong> sur <strong>${appname}</strong>.</p>
+                <p>Nous sommes impatients de vous accompagner dans cette nouvelle aventure d’apprentissage.</p>
+                <p>Voici ce que vous réserve cette formation :</p>
+                <ul>
+                    <li>Accès en ligne 24h/24 à votre contenu pédagogique.</li>
+                    <li>Des supports variés : vidéos, quiz, études de cas, exercices pratiques.</li>
+                    <li>Un accompagnement personnalisé par nos formateurs.</li>
+                    <li>Suivi de votre progression et obtention de votre certificat de réussite.</li>
+                </ul>
+                <p>Nous vous invitons à vous connecter dès maintenant pour préparer votre session :</p>
+                <a href="${url}" class="button">Accéder à votre espace de formation</a>
+            </div>
+            <div class="footer">
+                <p>Cordialement,</p>
+                <p><strong>${appowner} (${appname})</strong></p>
+                <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+            </div>
+        </div>
+    </body>
+    </html>
+        `;
+    };
+
     async onSendWithAttachement({ }): Promise<IInternalResponse> {
         return {} as any
     };
 
-    async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<IInternalResponse> {
+    async sendMail({ to, subject, content, attachments }: { to: string, subject: string, content: string, attachments?: any[] }): Promise<IInternalResponse> {
         return new Promise(async (resolve, reject) => {
             try {
                 const mailOptions = {
@@ -239,7 +367,6 @@ export class MailService {
                     html: content,
                 };
                 const info = await this.transporter.sendMail(mailOptions);
-                log("[ Status Mail ]", info.messageId);
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
                 return reject({ code: 500, message: 'Erreur', data: error });

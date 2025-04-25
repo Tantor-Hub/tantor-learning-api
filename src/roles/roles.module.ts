@@ -10,6 +10,7 @@ import { AllSercices } from '../services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [RolesController],
-  providers: [RolesService, MailService, CryptoService, AllSercices, JwtService],
+  providers: [RolesService, MailService, CryptoService, AllSercices, JwtService, GoogleDriveService],
 })
 export class RolesModule { }

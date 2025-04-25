@@ -12,6 +12,7 @@ import { JwtService } from 'src/services/service.jwt';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
+import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
@@ -29,6 +30,6 @@ import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, MailService, AllSercices, CryptoService, JwtService, GoogleStrategy],
+  providers: [UsersService, MailService, AllSercices, CryptoService, JwtService, GoogleStrategy, GoogleDriveService],
 })
 export class UsersModule { }
