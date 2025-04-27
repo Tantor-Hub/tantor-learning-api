@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fiche d'Analyse du Besoin - Bilan de Compétences</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        line-height: 1.6;
+      }
+      h1,
+      h2 {
+        color: #004080;
+      }
+      .section {
+        margin-top: 30px;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+      }
+      input[type='text'],
+      input[type='date'],
+      input[type='email'],
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        box-sizing: border-box;
+      }
+      .footer {
+        background: #f1f1f1;
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+      }
+      .footer p {
+        margin: 5px 0;
+      }
+      .checkbox-group {
+        margin-top: 10px;
+      }
+      .signature {
+        margin-top: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FICHE D'ANALYSE DES BESOINS</h1>
+
+    <div class="section">
+      <h2>Identification du Bénéficiaire</h2>
+
+      <label>Nom et Prénom :</label>
+      <input type="text" name="nom_prenom" />
+
+      <label>Date de naissance :</label>
+      <input type="date" name="date_naissance" />
+
+      <label>Téléphone / Email :</label>
+      <input type="text" name="contact" />
+
+      <label>Statut :</label>
+      <div class="checkbox-group">
+        <label
+          ><input type="checkbox" name="statut" value="Salarié" />
+          Salarié(e)</label
+        >
+        <label
+          ><input type="checkbox" name="statut" value="Demandeur emploi" />
+          Demandeur d’emploi</label
+        >
+        <label
+          ><input type="checkbox" name="statut" value="Indépendant" />
+          Indépendant(e)</label
+        >
+        <label
+          ><input type="checkbox" name="statut" value="Etudiant" />
+          Étudiant(e)</label
+        >
+        <label
+          ><input type="checkbox" name="statut" value="Autre" /> Autre :</label
+        >
+        <input type="text" name="statut_autre" />
+      </div>
+
+      <label>Expérience professionnelle :</label>
+      <div class="checkbox-group">
+        <label
+          ><input type="checkbox" name="experience" value="Aucune" />
+          Aucune</label
+        >
+        <label
+          ><input type="checkbox" name="experience" value="Moins de 1 an" />
+          Moins de 1 an</label
+        >
+        <label
+          ><input type="checkbox" name="experience" value="1 à 3 ans" /> 1 à 3
+          ans</label
+        >
+        <label
+          ><input type="checkbox" name="experience" value="Plus de 3 ans" />
+          Plus de 3 ans</label
+        >
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Objectifs et Attentes du Bénéficiaire</h2>
+
+      <label>Pourquoi souhaitez-vous réaliser ce bilan de compétences :</label>
+      <div class="checkbox-group">
+        <label
+          ><input type="checkbox" name="objectif" value="Faire un point" />
+          Faire un point sur mes compétences</label
+        >
+        <label
+          ><input
+            type="checkbox"
+            name="objectif"
+            value="Identifier perspectives"
+          />
+          Identifier de nouvelles perspectives</label
+        >
+        <label
+          ><input type="checkbox" name="objectif" value="Changer métier" />
+          Changer de métier / me reconvertir</label
+        >
+        <label
+          ><input type="checkbox" name="objectif" value="Évolution carrière" />
+          Développer ma carrière</label
+        >
+        <label
+          ><input type="checkbox" name="objectif" value="Améliorer gestion" />
+          Améliorer ma gestion</label
+        >
+        <label
+          ><input type="checkbox" name="objectif" value="Autre" /> Autre
+          :</label
+        >
+        <input type="text" name="objectif_autre" />
+      </div>
+
+      <label>Quel est votre projet après ce bilan :</label>
+      <div class="checkbox-group">
+        <label
+          ><input
+            type="checkbox"
+            name="projet"
+            value="Formation complémentaire"
+          />
+          Suivre une formation complémentaire</label
+        >
+        <label
+          ><input type="checkbox" name="projet" value="Nouvel emploi" />
+          Postuler à un nouvel emploi</label
+        >
+        <label
+          ><input type="checkbox" name="projet" value="Créer entreprise" />
+          Créer ou reprendre une entreprise</label
+        >
+        <label
+          ><input type="checkbox" name="projet" value="Négocier évolution" />
+          Mieux négocier une évolution en interne</label
+        >
+        <label
+          ><input type="checkbox" name="projet" value="Autre" /> Autre :</label
+        >
+        <input type="text" name="projet_autre" />
+      </div>
+
+      <label>Avez-vous des attentes particulières :</label>
+      <div class="checkbox-group">
+        <label
+          ><input
+            type="checkbox"
+            name="attentes"
+            value="Accompagnement approfondi"
+          />
+          Accompagnement approfondi</label
+        >
+        <label
+          ><input
+            type="checkbox"
+            name="attentes"
+            value="Compétences personnelles"
+          />
+          Travail sur compétences personnelles</label
+        >
+        <label
+          ><input type="checkbox" name="attentes" value="Mise en relation" />
+          Mise en relation avec professionnels</label
+        >
+        <label
+          ><input type="checkbox" name="attentes" value="Autre" /> Autre
+          :</label
+        >
+        <input type="text" name="attentes_autre" />
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Thèmes à explorer durant le bilan de compétences</h2>
+
+      <label>Identification des compétences et savoir-faire :</label>
+      <select name="theme_competences">
+        <option value="1">1 - Peu important</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5 - Très important</option>
+      </select>
+
+      <label>Définition des motivations et valeurs professionnelles :</label>
+      <select name="theme_valeurs">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+
+      <label>Étude des perspectives d’évolution :</label>
+      <select name="theme_evolution">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+
+      <label>Analyse du marché du travail :</label>
+      <select name="theme_marche">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+
+      <label>Plan d'action et projet :</label>
+      <select name="theme_action">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h2>Contraintes et Freins Éventuels</h2>
+
+      <label>Obstacles éventuels :</label>
+      <div class="checkbox-group">
+        <label
+          ><input type="checkbox" name="freins" value="Manque de temps" />
+          Manque de temps</label
+        >
+        <label
+          ><input type="checkbox" name="freins" value="Difficulté financière" />
+          Difficulté financière</label
+        >
+        <label
+          ><input type="checkbox" name="freins" value="Manque de soutien" />
+          Manque de soutien</label
+        >
+        <label
+          ><input type="checkbox" name="freins" value="Autre" /> Autre :</label
+        >
+        <input type="text" name="freins_autre" />
+      </div>
+
+      <label>Disponibilité :</label>
+      <div class="checkbox-group">
+        <label
+          ><input type="checkbox" name="disponibilite" value="Journée" />
+          Journée</label
+        >
+        <label
+          ><input type="checkbox" name="disponibilite" value="Soirée" />
+          Soirée</label
+        >
+        <label
+          ><input type="checkbox" name="disponibilite" value="Week-end" />
+          Week-end</label
+        >
+      </div>
+
+      <label>Modalité d’accompagnement :</label>
+      <div class="checkbox-group">
+        <label
+          ><input type="checkbox" name="modalite" value="Présentiel" />
+          Présentiel</label
+        >
+        <label
+          ><input type="checkbox" name="modalite" value="Distanciel" />
+          Distanciel</label
+        >
+        <label
+          ><input type="checkbox" name="modalite" value="Mixte" /> Mixte</label
+        >
+      </div>
+
+      <label>Êtes-vous en situation de handicap ?</label>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="handicap" value="Oui" /> Oui</label>
+        <label><input type="checkbox" name="handicap" value="Non" /> Non</label>
+      </div>
+    </div>
+
+    <div class="signature">
+      <p><strong>Fait à :</strong> <input type="text" name="lieu" /></p>
+      <p><strong>Le :</strong> <input type="date" name="date_signature" /></p>
+      <p>
+        <strong>Signature du bénéficiaire :</strong>
+        ______________________________________
+      </p>
+      <p>
+        <strong>Signature du consultant :</strong>
+        ______________________________________
+      </p>
+    </div>
+    <div class="footer">
+      <p>Cordialement,</p>
+      <p><strong>{{appowner}} ({{appname}})</strong></p>
+      <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+    </div>
+  </body>
+</html>
