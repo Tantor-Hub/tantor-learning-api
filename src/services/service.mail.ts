@@ -283,12 +283,12 @@ export class MailService {
                 const mailOptions = {
                     from: `"${this.configService.get<string>('APPNAME')}" <${this.configService.get<string>('APPSMTPUSER')}>`,
                     to,
-                    subject: subject || 'Configuration',
+                    subject: (subject || 'Configuration').toUpperCase(),
                     html: content,
                     attachments
                 };
                 const info = await this.transporter.sendMail(mailOptions);
-                log("[ Status Mail ]: ", info.messageId)
+                log("[ Status Mail ] ", info.messageId)
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
                 return reject({ code: 500, message: 'Erreur', data: error });
@@ -303,19 +303,30 @@ export class MailService {
 
             const appname = this.configService.get<string>('APPNAME')
             const appowner = this.configService.get<string>('APPOWNER')
-            const brut = join(__dirname, '../../src', 'templates', 'template.welcomenewsession.html');
-            const html = fs.readFileSync(brut, "utf8");
-            const template = Handlebars.compile(html);
-            const content = template({
+            const brut_welcome = join(__dirname, '../../src', 'templates', 'template.welcomenewsession.html');
+            const brut_roi = join(__dirname, '../../src', 'templates', 'template.roi.html');
+
+            const html_welcome = fs.readFileSync(brut_welcome, "utf8");
+            const html_roi = fs.readFileSync(brut_roi, "utf8");
+            const template_welocme = Handlebars.compile(html_welcome);
+            const template_roi = Handlebars.compile(html_roi);
+
+            const content_welcome = template_welocme({
                 fullname,
                 session_name,
                 formation_name,
                 appowner,
                 appname
             });
+            const content_roi = template_roi({
+                fullname,
+                appowner,
+                appname
+            });
+
             let attachement: any = null;
             if (asAttachement && asAttachement === true) {
-                const { buffer, extension, mime } = await this.generateDocumentFromHtml(content, 'pdf')
+                const { buffer, extension, mime } = await this.generateDocumentFromHtml(content_welcome, 'pdf')
                 attachement = {
                     filename: `${session_name}-${fullname}.${extension}`,
                     content: buffer,
@@ -324,13 +335,29 @@ export class MailService {
             }
             return this.sendMail({
                 to,
-                content,
-                subject: `Inscription réussie à la formation ${formation_name} | ${session_name}`,
+                content: content_welcome,
+                subject: `Inscription réussie à la formation ${formation_name} | ${session_name}`.toUpperCase(),
                 attachments:
                     asAttachement ?
                         [attachement]
                         : undefined
             })
+                .then(async _ => {
+                    const { buffer, extension, mime } = await this.generateDocumentFromHtml(content_roi, 'pdf')
+                    return this.sendMail({
+                        to,
+                        content: content_roi,
+                        subject: "RÈGLEMENT INTÉRIEUR DU CENTRE DE FORMATION".toLowerCase(),
+                        attachments: [
+                            {
+                                filename: `règlement-d-ordre-intérieur-${session_name}-${fullname}.${extension}`,
+                                content: buffer,
+                                contentType: mime,
+                            }
+                        ]
+                    })
+                })
+                .catch(err => ({ code: 500, message: "Can not send roi message", data: err }))
         } catch (error) {
             return { code: 500, message: "Error occured", data: error }
         }

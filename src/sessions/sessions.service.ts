@@ -111,11 +111,12 @@ export class SessionsService {
             const { phone, email, fs_name, ls_name } = student.toJSON();
             const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
 
-            this.serviceMail.sendMail({
-                content: "Salut",
-                subject: "Docs",
+            this.serviceMail.onWelcomeToSessionStudent({
                 to: email,
-                attachments: [await this.docsService.generateROI({ fullname })]
+                asAttachement: true,
+                formation_name: "Testing formation",
+                fullname,
+                session_name: "Session testing"
             })
             return {} as any
             // SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
