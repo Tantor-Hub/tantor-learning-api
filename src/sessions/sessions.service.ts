@@ -21,7 +21,7 @@ import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { typesprestations } from 'src/utils/utiles.typesprestation';
 import { typesrelances } from 'src/utils/utiles.typerelances';
 import { typesactions } from 'src/utils/utiles.actionreprendre';
-import { log } from 'console';
+import { DocsService } from 'src/services/service.docs';
 
 @Injectable()
 export class SessionsService {
@@ -55,7 +55,9 @@ export class SessionsService {
         private readonly hasSessionFormateurModel: typeof FormateurHasSession,
 
         private readonly allServices: AllSercices,
-        private readonly serviceMail: MailService
+        private readonly serviceMail: MailService,
+        private readonly docsService: DocsService,
+
     ) { }
 
     async listAllSessionsByOwn(user: IJwtSignin): Promise<ResponseServer> {
@@ -71,9 +73,6 @@ export class SessionsService {
                 {
                     model: SessionSuivi,
                     required: true,
-                    // attributes: {
-                    //     exclude: ['']
-                    // }
                 },
                 {
                     model: Formations,
@@ -95,13 +94,86 @@ export class SessionsService {
             ],
             where: {
                 id_stagiaire: id_user,
-                // status: 1
             }
         })
             .then(({ count, rows }) => {
                 return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+    async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
+        const { id_session, id_formation, id_user: as_user_id } = applySessionDto;
+        const { id_user } = user;
+        try {
+            const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
+            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+            const { phone, email, fs_name, ls_name } = student.toJSON();
+            const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
+
+            this.serviceMail.sendMail({
+                content: "Salut",
+                subject: "Docs",
+                to: email,
+                attachments: [await this.docsService.generateROI({ fullname })]
+            })
+            return {} as any
+            // SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+            // return this.sessionModel.findOne({
+            //     include: [
+            //         {
+            //             model: Formations,
+            //             required: true
+            //         }
+            //     ],
+            //     where: {
+            //         id: id_session
+            //     }
+            // })
+            //     .then(inst => {
+            //         if (inst instanceof SessionSuivi) {
+
+            //             const { id_formation, id_category, designation, Formation } = inst.toJSON() as any
+            //             const { phone, email } = student.toJSON();
+            //             const { titre } = Formation
+
+            //             return this.hasSessionStudentModel.findOrCreate({
+            //                 where: {
+            //                     id_sessionsuivi: id_session,
+            //                     id_stagiaire: id_user
+            //                 },
+            //                 defaults: {
+            //                     id_sessionsuivi: id_session,
+            //                     id_stagiaire: id_user,
+            //                     supervision: false,
+            //                     numero_stagiaire: phone || email,
+            //                     date_mise_a_jour: this.allServices.nowDate(),
+            //                     id_formation,
+            //                 }
+            //             })
+            //                 .then(([record, isNew]) => {
+            //                     if (isNew) {
+            //                         this.serviceMail.onWelcomeToSessionStudent({
+            //                             to: email,
+            //                             formation_name: titre,
+            //                             fullname,
+            //                             session_name: designation,
+            //                             asAttachement: true
+            //                         })
+            //                         return Responder({ status: HttpStatusCode.Created, data: record })
+            //                     } else {
+            //                         return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
+            //                     }
+            //                 })
+            //                 .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+            //         } else {
+            //             return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+            //         }
+            //     })
+            //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error: any) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
     async getListePrestation(): Promise<ResponseServer> {
@@ -114,72 +186,6 @@ export class SessionsService {
 
     async getListeActions(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesactions.length, list: typesactions } })
-    }
-
-    async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
-        const { id_session, id_formation, id_user: as_user_id } = applySessionDto;
-        const { id_user } = user;
-        try {
-            const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
-            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
-            const { phone, email, fs_name, ls_name } = student.toJSON();
-
-            SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
-            return this.sessionModel.findOne({
-                include: [
-                    {
-                        model: Formations,
-                        required: true
-                    }
-                ],
-                where: {
-                    id: id_session
-                }
-            })
-                .then(inst => {
-                    if (inst instanceof SessionSuivi) {
-
-                        const { id_formation, id_category, designation, Formation } = inst.toJSON() as any
-                        const { phone, email } = student.toJSON();
-                        const { titre } = Formation
-
-                        return this.hasSessionStudentModel.findOrCreate({
-                            where: {
-                                id_sessionsuivi: id_session,
-                                id_stagiaire: id_user
-                            },
-                            defaults: {
-                                id_sessionsuivi: id_session,
-                                id_stagiaire: id_user,
-                                supervision: false,
-                                numero_stagiaire: phone || email,
-                                date_mise_a_jour: this.allServices.nowDate(),
-                                id_formation,
-                            }
-                        })
-                            .then(([record, isNew]) => {
-                                if (isNew) {
-                                    this.serviceMail.onWelcomeToSessionStudent({
-                                        to: email,
-                                        formation_name: titre,
-                                        fullname: this.allServices.fullName({ fs: fs_name, ls: ls_name }),
-                                        session_name: designation,
-                                        asAttachement: true
-                                    })
-                                    return Responder({ status: HttpStatusCode.Created, data: record })
-                                } else {
-                                    return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
-                                }
-                            })
-                            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
-                    } else {
-                        return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
-                    }
-                })
-                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-        } catch (error: any) {
-            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
-        }
     }
 
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {

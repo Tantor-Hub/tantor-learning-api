@@ -31,7 +31,7 @@ export class MailService {
         this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
     }
 
-    async generateDocumentFromHtml(
+    private async generateDocumentFromHtml(
         htmlContent: string,
         format: 'pdf' | 'docx' = 'pdf'
     ): Promise<{ buffer: Buffer; mime: string; extension: string }> {
