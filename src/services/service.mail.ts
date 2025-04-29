@@ -398,8 +398,8 @@ export class MailService {
                         attachments: [
                             {
                                 filename: `convention-${session_name}-${fullname}.${extension}`,
-                                content: anab.buffer,
-                                contentType: anab.mime,
+                                content: convention.buffer,
+                                contentType: convention.mime,
                             }
                         ]
                     })
@@ -411,8 +411,8 @@ export class MailService {
                         attachments: [
                             {
                                 filename: `analyse-des-besoins-${session_name}-${fullname}.${extension}`,
-                                content: convention.buffer,
-                                contentType: convention.mime,
+                                content: anab.buffer,
+                                contentType: anab.mime,
                             }
                         ]
                     })
