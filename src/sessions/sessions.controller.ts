@@ -9,7 +9,6 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { MediasoupService } from '../services/service.mediasoup';
 import { ApplySessionDto } from './dto/apply-tosesssion.dto';
-import { log } from 'console';
 import { UpdateSessionDto } from './dto/update-session.dto';
 
 @Controller('sessions')
@@ -21,11 +20,35 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Get('mylist')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async getAllSessionsByOwner(@User() user,) {
+        return this.sessionsService.listAllSessionsByOwn(user)
+    }
+
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
     async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
-        log("Apply with ==>", applySessionDto, user)
         return this.sessionsService.applyToSession(applySessionDto, user)
+    }
+
+    @Get('listprestations')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getListePrestations() {
+        return this.sessionsService.getListePrestation()
+    }
+
+    @Get('listrelances')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getListeRelances() {
+        return this.sessionsService.getListeRealnce()
+    }
+
+
+    @Get('listactions')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getListeActions() {
+        return this.sessionsService.getListeActions()
     }
 
     @Get('rtpcapabilities')

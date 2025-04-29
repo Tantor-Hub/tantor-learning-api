@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Suivi de la session - {{nom_session}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        color: #333;
+        margin: 40px;
+      }
+      h1 {
+        font-size: 20px;
+        color: #004080;
+      }
+      h2 {
+        font-size: 16px;
+        margin-top: 30px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .item {
+        margin: 5px 0;
+      }
+      .footer {
+        background: #f1f1f1;
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+      }
+      .footer p {
+        margin: 5px 0;
+      }
+      .ok {
+        color: green;
+      }
+      .missing {
+        color: red;
+      }
+      .welcome {
+        background-color: #e6f2ff;
+        padding: 15px;
+        border-left: 5px solid #007acc;
+        margin-bottom: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📋 Suivi de la session : {{nom_session}}</h1>
+
+    <div class="welcome">
+      Bonjour <strong>{{fullname}}</strong>,<br />
+      Bienvenue dans la session <strong>{{nom_session}}</strong> de la formation
+      <strong>{{formation}}</strong>. Nous vous souhaitons une excellente
+      expérience d'apprentissage.
+    </div>
+
+    <h2>🟦 Avant la formation</h2>
+    <div class="section">
+      <div class="item">✅ Carte d'identité</div>
+      <div class="item">✅ Contrat/Convention signé</div>
+      <div class="item">✅ Analyse du besoin</div>
+      <div class="item">✅ Convocation</div>
+    </div>
+
+    <h2>🟨 Pendant la formation</h2>
+    <div class="section">
+      <div class="item">✅ Emargement</div>
+      <div class="item">✅ Attestation</div>
+      <div class="item">✅ Certification</div>
+    </div>
+
+    <h2>🟩 Après la formation</h2>
+    <div class="section">
+      <div class="item">✅ Questionnaire de satisfaction</div>
+      <div class="item">✅ Paiement</div>
+      <div class="item">✅ Fiche contrôle finale</div>
+    </div>
+
+    <h2>⚠️ Réclamations et Sanctions</h2>
+    <div class="section">
+      <div class="item">Commentaires</div>
+      <div class="item">Preuves jointes</div>
+    </div>
+    <div class="footer">
+      <p>Cordialement,</p>
+      <p><strong>{{appowner}} ({{appname}})</strong></p>
+      <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+    </div>
+  </body>
+</html>

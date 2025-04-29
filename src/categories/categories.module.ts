@@ -14,6 +14,7 @@ import { Users } from 'src/models/model.users';
 import { Categories } from 'src/models/model.categoriesformations';
 import { JwtService } from 'src/services/service.jwt';
 import { Thematiques } from 'src/models/model.groupeformations';
+import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
@@ -30,6 +31,6 @@ import { Thematiques } from 'src/models/model.groupeformations';
     }),
   ],
   controllers: [CategoriesController],
-  providers: [CategoriesService, RolesService, MailService, CryptoService, AllSercices, JwtService]
+  providers: [CategoriesService, RolesService, MailService, CryptoService, AllSercices, JwtService, GoogleDriveService]
 })
 export class CategoriesModule { }

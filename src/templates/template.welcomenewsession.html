@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Suivi de la session - {{session_name}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        color: #333;
+        margin: 40px;
+      }
+      h1 {
+        font-size: 20px;
+        color: #004080;
+      }
+      h2 {
+        font-size: 16px;
+        margin-top: 30px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .item {
+        margin: 5px 0;
+      }
+      .footer {
+        background: #f1f1f1;
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+      }
+      .footer p {
+        margin: 5px 0;
+      }
+      .explain {
+        font-size: 11px;
+        color: #666;
+        margin-left: 15px;
+      }
+      .welcome {
+        background-color: #e6f2ff;
+        padding: 15px;
+        border-left: 5px solid #007acc;
+        margin-bottom: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📋 Inscription réussie à la formation : {{formation_name}} {{session_name}}</h1>
+
+    <div class="welcome">
+      Bonjour <strong>{{fullname}}</strong>,<br />
+      Bienvenue dans la session <strong>{{session_name}}</strong> de la formation
+      <strong>{{formation_name}}</strong>. Nous vous souhaitons une excellente
+      expérience d'apprentissage.
+    </div>
+
+    <h2>🟦 Avant la formation</h2>
+    <div class="section">
+      <div class="item">✅ Carte d'identité</div>
+      <div class="explain">
+        Vérification de l'identité du stagiaire (CNI, passeport, etc.).
+      </div>
+
+      <div class="item">✅ Contrat/Convention signé</div>
+      <div class="explain">
+        Contrat signé pour les particuliers ou convention pour les entreprises.
+      </div>
+
+      <div class="item">✅ Analyse du besoin</div>
+      <div class="explain">
+        Document rempli par le stagiaire pour définir ses besoins de formation.
+      </div>
+
+      <div class="item">✅ Convocation</div>
+      <div class="explain">
+        Document indiquant les dates et lieux de la session.
+      </div>
+    </div>
+
+    <h2>🟨 Pendant la formation</h2>
+    <div class="section">
+      <div class="item">✅ Emargement</div>
+      <div class="explain">
+        Feuilles de présence signées chaque demi-journée de formation.
+      </div>
+
+      <div class="item">✅ Attestation</div>
+      <div class="explain">
+        Attestation de participation délivrée par l’organisme.
+      </div>
+
+      <div class="item">✅ Certification</div>
+      <div class="explain">
+        Certificat final délivré si la formation est certifiante.
+      </div>
+    </div>
+
+    <h2>🟩 Après la formation</h2>
+    <div class="section">
+      <div class="item">✅ Questionnaire de satisfaction</div>
+      <div class="explain">
+        Retour du stagiaire sur la qualité de la formation.
+      </div>
+
+      <div class="item">✅ Paiement</div>
+      <div class="explain">
+        Preuve du paiement reçu (virement, chèque, etc.).
+      </div>
+
+      <div class="item">✅ Fiche contrôle finale</div>
+      <div class="explain">
+        Fiche synthétique pour attester du bon déroulement administratif.
+      </div>
+    </div>
+
+    <h2>⚠️ Réclamations et Sanctions</h2>
+    <div class="section">
+      <div class="item">Commentaires</div>
+      <div class="explain">
+        Observations ou signalements faits par le stagiaire ou l'équipe
+        pédagogique.
+      </div>
+
+      <div class="item">Preuves jointes</div>
+      <div class="explain">
+        Emails, SMS ou documents liés à des réclamations ou incidents.
+      </div>
+    </div>
+    <div class="footer">
+      <p>Cordialement,</p>
+      <p><strong>{{appowner}} ({{appname}})</strong></p>
+      <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+    </div>
+  </body>
+</html>

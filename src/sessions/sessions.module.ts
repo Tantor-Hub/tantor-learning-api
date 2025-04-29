@@ -18,6 +18,7 @@ import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
 import { MediasoupService } from 'src/services/service.mediasoup';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
+import { DocsService } from 'src/services/service.docs';
 
 @Module({
   imports: [
@@ -35,6 +36,6 @@ import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
     }),
   ],
   controllers: [SessionsController],
-  providers: [SessionsService, JwtService, GoogleDriveService, AllSercices, MailService, MediasoupService]
+  providers: [SessionsService, JwtService, GoogleDriveService, AllSercices, MailService, MediasoupService, DocsService]
 })
 export class SessionsModule { }

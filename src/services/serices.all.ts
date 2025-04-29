@@ -112,7 +112,7 @@ export class AllSercices {
         return Date.now()
     };
     nowDate(): string | Date {
-        return moment.utc().format('YYYY-MM-DDTHH:mm:ss'); 
+        return moment.utc().format('YYYY-MM-DDTHH:mm:ss');
     }
     checkIntersection({ arr_a, arr_b }: { arr_a: number[], arr_b: number[] }): boolean {
         const intersection = arr_a.filter(value => arr_b.includes(value));
@@ -121,4 +121,7 @@ export class AllSercices {
     createDesignationSessionName({ start, end }: { start: string, end: string }): string {
         return String(" SESSION : ").concat(start).concat(" - ").concat(end)
     };
+    fullName({ fs, ls }: { fs: string, ls?: string }): string {
+        return fs.concat(" ").concat(ls ?? "")
+    }
 }

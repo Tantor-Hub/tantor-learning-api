@@ -11,5 +11,10 @@ export enum tables {
     sessions = `${table_prefix}sessions`,
     formateurhassession = `${table_prefix}formathassession`,
     sessionsuivi = `${table_prefix}suivisessions`,
-    statgiairehassession = `${table_prefix}staghassessions`
+    statgiairehassession = `${table_prefix}staghassessions`,
+    statgiairehassessionhasseance = `${table_prefix}staghassessionshasseances`,
+    apres_formation_docs = `${table_prefix}docsapresformations`,
+    avant_formation_docs = `${table_prefix}docsavantformations`,
+    pendant_formation_docs = `${table_prefix}docspendantformations`,
+    reclamations_sanctions = `${table_prefix}docsreclamationformations`,
 }

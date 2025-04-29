@@ -4,12 +4,23 @@ import * as nodemailer from 'nodemailer';
 import { AllSercices } from './serices.all';
 import { log } from 'console';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
+import * as puppeteer from 'puppeteer';
+import * as Handlebars from 'handlebars';
+import { Buffer } from 'buffer';
+import { GoogleDriveService } from './service.googledrive';
+import * as fs from 'fs';
+import { join } from 'path';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 
 @Injectable()
 export class MailService {
     private transporter: nodemailer.Transporter;
     private baseURL: string
-    constructor(private configService: ConfigService, private readonly allSercices: AllSercices) {
+    constructor(
+        private configService: ConfigService,
+        private readonly allSercices: AllSercices,
+        private readonly googleDriveService: GoogleDriveService
+    ) {
         this.transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
@@ -18,6 +29,47 @@ export class MailService {
             },
         });
         this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
+    }
+
+    private async generateDocumentFromHtml(
+        htmlContent: string,
+        format: 'pdf' | 'docx' = 'pdf'
+    ): Promise<{ buffer: Buffer; mime: string; extension: string }> {
+        if (format === 'pdf') {
+            const browser = await puppeteer.launch({ headless: true });
+            const page = await browser.newPage();
+            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+            const pdfBuffer = await page.pdf({ format: 'A4' });
+            await browser.close();
+
+            return {
+                buffer: Buffer.from(pdfBuffer),
+                mime: 'application/pdf',
+                extension: 'pdf',
+            };
+        }
+
+        if (format === 'docx') {
+            const textOnly = htmlContent.replace(/<[^>]+>/g, '').trim();
+            const doc = new Document({
+                sections: [
+                    {
+                        children: [new Paragraph(textOnly)],
+                    },
+                ],
+            });
+
+            const docxBuffer = await Packer.toBuffer(doc);
+
+            return {
+                buffer: docxBuffer,
+                mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                extension: 'docx',
+            };
+        }
+
+        throw new Error(`Format ${format} non supporté`);
     }
 
     templates({ as, nom, postnom, cours, dateOn, prixCours, code }: { as: string, nom?: string, postnom?: string, cours?: string, dateOn?: string, prixCours?: string, code?: string }): string {
@@ -225,11 +277,7 @@ export class MailService {
         }
     };
 
-    async onSendWithAttachement({ }): Promise<IInternalResponse> {
-        return {} as any
-    };
-
-    async sendMail({ to, subject, content }: { to: string, subject: string, content: string }): Promise<IInternalResponse> {
+    async sendMail({ to, subject, content, attachments }: { to: string, subject: string, content: string, attachments?: any[] }): Promise<IInternalResponse> {
         return new Promise(async (resolve, reject) => {
             try {
                 const mailOptions = {
@@ -237,13 +285,54 @@ export class MailService {
                     to,
                     subject: subject || 'Configuration',
                     html: content,
+                    attachments
                 };
                 const info = await this.transporter.sendMail(mailOptions);
-                log("[ Status Mail ]", info.messageId);
+                log("[ Status Mail ]: ", info.messageId)
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
                 return reject({ code: 500, message: 'Erreur', data: error });
             }
         })
     };
+
+    async onWelcomeToSessionStudent({ to, session_name, formation_name, fullname, asAttachement }:
+        { to: string, session_name?: string, formation_name?: string, fullname?: string, asAttachement?: boolean }):
+        Promise<IInternalResponse> {
+        try {
+
+            const appname = this.configService.get<string>('APPNAME')
+            const appowner = this.configService.get<string>('APPOWNER')
+            const brut = join(__dirname, '../../src', 'templates', 'template.welcomenewsession.html');
+            const html = fs.readFileSync(brut, "utf8");
+            const template = Handlebars.compile(html);
+            const content = template({
+                fullname,
+                session_name,
+                formation_name,
+                appowner,
+                appname
+            });
+            let attachement: any = null;
+            if (asAttachement && asAttachement === true) {
+                const { buffer, extension, mime } = await this.generateDocumentFromHtml(content, 'pdf')
+                attachement = {
+                    filename: `${session_name}-${fullname}.${extension}`,
+                    content: buffer,
+                    contentType: mime,
+                }
+            }
+            return this.sendMail({
+                to,
+                content,
+                subject: `Inscription réussie à la formation ${formation_name} | ${session_name}`,
+                attachments:
+                    asAttachement ?
+                        [attachement]
+                        : undefined
+            })
+        } catch (error) {
+            return { code: 500, message: "Error occured", data: error }
+        }
+    }
 }
