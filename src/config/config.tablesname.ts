@@ -17,4 +17,5 @@ export enum tables {
     avant_formation_docs = `${table_prefix}docsavantformations`,
     pendant_formation_docs = `${table_prefix}docspendantformations`,
     reclamations_sanctions = `${table_prefix}docsreclamationformations`,
+    payementmethode = `${table_prefix}payementmethode`,
 }
