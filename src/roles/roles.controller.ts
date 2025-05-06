@@ -23,7 +23,7 @@ export class RolesController {
   }
 
   @Get('list')
-  @UseGuards(JwtAuthGuardAsFormateur)
+  // @UseGuards(JwtAuthGuardAsFormateur);
   async getRoles() {
     return this.rolesService.getRoles()
   }
