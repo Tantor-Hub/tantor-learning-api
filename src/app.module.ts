@@ -35,6 +35,7 @@ import { JwtService } from './services/service.jwt';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // envFilePath: '.env.production',
       load: [databaseConfig]
     }),
     SequelizeModule.forRootAsync({
@@ -42,8 +43,10 @@ import { JwtService } from './services/service.jwt';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         dialect: 'postgres',
-        url: configService.get<string>('database.host'),
-        username: configService.get<string>('database.username'),
+        url: 'postgresql://postgres:iZZcaUxykYDAKkVvYCIivHalCbPebRFK@caboose.proxy.rlwy.net:53988/__tantor__bd',
+        // configService.get<string>('database.host'),
+        username: 'postgres',
+        // configService.get<string>('database.username'),
         // port: configService.get<number>('database.port'),
         // password: configService.get<string>('database.password'),
         // database: configService.get<string>('database.database'),
