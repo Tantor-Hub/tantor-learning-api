@@ -83,13 +83,5 @@ import { JwtService } from './services/service.jwt';
 
 export class AppModule implements OnModuleInit {
   constructor(private readonly sequelize: Sequelize) { }
-  async onModuleInit() {
-    this.sequelize.sync({ alter: true })
-      .then(_ => {
-
-      })
-      .catch(_ => {
-        log("on forcing migration [ Error ] ", _)
-      })
-  }
+  async onModuleInit() { }
 };
