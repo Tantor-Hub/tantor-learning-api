@@ -47,7 +47,7 @@ import { JwtService } from './services/service.jwt';
         // port: configService.get<number>('database.port'),
         // password: configService.get<string>('database.password'),
         // database: configService.get<string>('database.database'),
-        autoLoadModels: true,
+        autoLoadModels: false,
         synchronize: true,
         dialectOptions: {
           require: true,
