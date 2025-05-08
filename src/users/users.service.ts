@@ -172,7 +172,7 @@ export class UsersService {
                             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
                     }
                 } else {
-                    return Responder({ status: HttpStatusCode.Forbidden, data: null })
+                    return Responder({ status: HttpStatusCode.Forbidden, data: "Mot de passe ou nom d'utilisateur incorrect !" })
                 }
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
