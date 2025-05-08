@@ -43,7 +43,7 @@ import { JwtService } from './services/service.jwt';
       useFactory: (configService: ConfigService) => ({
         dialect: 'postgres',
         url: configService.get<string>('database.host'),
-        port: configService.get<number>('database.port'),
+        // port: configService.get<number>('database.port'),
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
@@ -74,7 +74,7 @@ import { JwtService } from './services/service.jwt';
     CmsModule
   ],
   controllers: [AppController, CmsController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService],
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService]
 })
 
 export class AppModule implements OnModuleInit {
