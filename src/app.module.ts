@@ -43,12 +43,16 @@ import { JwtService } from './services/service.jwt';
       useFactory: (configService: ConfigService) => ({
         dialect: 'postgres',
         url: configService.get<string>('database.host'),
-        port: configService.get<number>('database.port'),
         username: configService.get<string>('database.username'),
-        password: configService.get<string>('database.password'),
-        database: configService.get<string>('database.database'),
+        // port: configService.get<number>('database.port'),
+        // password: configService.get<string>('database.password'),
+        // database: configService.get<string>('database.database'),
         autoLoadModels: true,
         synchronize: true,
+        dialectOptions: {
+          require: true,
+          rejectUnauthorized: false
+        },
         logging: false,
         retry: {
           match: [/Deadlock/i],
