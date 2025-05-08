@@ -15,7 +15,6 @@ import { CategoriesModule } from './categories/categories.module';
 import { Categories } from './models/model.categoriesformations';
 import { Formations } from './models/model.formations';
 import { Thematiques } from './models/model.groupeformations';
-import { log } from 'console';
 import { SessionsModule } from './sessions/sessions.module';
 import { SessionSuivi } from './models/model.suivisession';
 import { WebrtcGatewayService } from './services/service.webrtc';
@@ -30,6 +29,8 @@ import { AppInfos } from './models/model.appinfos';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { CryptoService } from './services/service.crypto';
 import { JwtService } from './services/service.jwt';
+import { Dialect } from 'sequelize';
+import { parse } from 'pg-connection-string';
 
 @Module({
   imports: [
@@ -41,32 +42,15 @@ import { JwtService } from './services/service.jwt';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        dialect: 'postgres',
-        url: configService.get<string>('database.host'),
+        dialect: 'postgres' as Dialect,
+        host: configService.get<string>('database.host'),
+        port: configService.get<number>('database.port'),
         username: configService.get<string>('database.username'),
-        // port: configService.get<number>('database.port'),
-        // password: configService.get<string>('database.password'),
-        // database: configService.get<string>('database.database'),
-        autoLoadModels: false,
+        password: configService.get<string>('database.password'),
+        database: configService.get<string>('database.database'),
+        autoLoadModels: true,
         synchronize: true,
-        dialectOptions: {
-          require: true,
-          rejectUnauthorized: false
-        },
-        logging: false,
-        retry: {
-          match: [/Deadlock/i],
-          max: 3,
-          backoffBase: 1000,
-          backoffExponent: 1.5
-        },
-        pool: {
-          max: 50,
-          min: 0,
-          acquire: 1000000,
-          idle: 200000,
-        },
-        models: [Users, Roles, HasRoles, Categories, SessionSuivi, AppInfos]
+        logging: false
       }),
     }),
     SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos]),
@@ -83,5 +67,20 @@ import { JwtService } from './services/service.jwt';
 
 export class AppModule implements OnModuleInit {
   constructor(private readonly sequelize: Sequelize) { }
-  async onModuleInit() { }
+
+  async onModuleInit() {
+    try {
+      await this.sequelize.authenticate();
+      await this.sequelize.sync({ alter: true, force: false, });
+
+      console.log('[Database] Connexion réussie');
+
+      const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
+      const models = Object.keys(this.sequelize.models);
+
+      console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName(), `[ modèles ] : `, models);
+    } catch (error) {
+      console.error('[ Database ] Échec de connexion : ', error.message);
+    }
+  }
 };

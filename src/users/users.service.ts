@@ -29,8 +29,10 @@ export class UsersService {
     constructor(
         @InjectModel(Users)
         private readonly userModel: typeof Users,
+
         @InjectModel(Roles)
         private readonly rolesModel: typeof Roles,
+
         @InjectModel(HasRoles)
         private readonly hasRoleModel: typeof HasRoles,
 
@@ -39,6 +41,7 @@ export class UsersService {
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,
         private readonly configService: ConfigService
+
     ) { }
 
     private formatRoles(roles: any[]): number[] {
@@ -105,7 +108,6 @@ export class UsersService {
 
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
         const { user_name, password } = signInStudentDto
-
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
         return this.userModel.findOne({
             include: [
@@ -119,7 +121,7 @@ export class UsersService {
             ],
             where: {
                 status: 1,
-                [Op.or]: [{ email: user_name }, { nick_name: user_name }],
+                [Op.or]: [{ email: user_name }, { nick_name: user_name }]
             }
         })
             .then(async student => {
