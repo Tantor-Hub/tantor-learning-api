@@ -42,8 +42,7 @@ import { JwtService } from './services/service.jwt';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         dialect: 'postgres',
-        // configService.get<string>('database.dialect') as 'postgres',
-        host: configService.get<string>('database.host'),
+        url: configService.get<string>('database.host'),
         port: configService.get<number>('database.port'),
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
@@ -72,7 +71,7 @@ import { JwtService } from './services/service.jwt';
     FormationsModule,
     CategoriesModule,
     SessionsModule,
-    CmsModule,
+    CmsModule
   ],
   controllers: [AppController, CmsController],
   providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService],

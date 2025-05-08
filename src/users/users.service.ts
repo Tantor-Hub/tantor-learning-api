@@ -26,14 +26,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class UsersService {
-    
     constructor(
         @InjectModel(Users)
         private readonly userModel: typeof Users,
-
         @InjectModel(Roles)
         private readonly rolesModel: typeof Roles,
-
         @InjectModel(HasRoles)
         private readonly hasRoleModel: typeof HasRoles,
 
