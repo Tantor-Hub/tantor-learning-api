@@ -30,7 +30,6 @@ import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { CryptoService } from './services/service.crypto';
 import { JwtService } from './services/service.jwt';
 import { Dialect } from 'sequelize';
-import { parse } from 'pg-connection-string';
 
 @Module({
   imports: [
