@@ -11,6 +11,7 @@ import { GoogleDriveService } from './service.googledrive';
 import * as fs from 'fs';
 import { join } from 'path';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import * as htmlDocx from 'html-docx-js';
 
 @Injectable()
 export class MailService {
@@ -283,18 +284,27 @@ export class MailService {
                 const mailOptions = {
                     from: `"${this.configService.get<string>('APPNAME')}" <${this.configService.get<string>('APPSMTPUSER')}>`,
                     to,
-                    subject: subject || 'Configuration',
+                    subject: (subject || 'Configuration').toUpperCase(),
                     html: content,
                     attachments
                 };
                 const info = await this.transporter.sendMail(mailOptions);
-                log("[ Status Mail ]: ", info.messageId)
+                log("[ Status Mail ] ", info.messageId)
                 return resolve({ code: 200, message: 'Email envoyé', data: info.messageId });
             } catch (error) {
                 return reject({ code: 500, message: 'Erreur', data: error });
             }
         })
     };
+
+    async generateDocxFromHtml(htmlContent: string): Promise<{ buffer: Buffer, mime: string, extension: string }> {
+        const docxBuffer = htmlDocx.asBlob(htmlContent) as Buffer;
+        return {
+            buffer: Buffer.from(docxBuffer),
+            mime: 'application/pdf',
+            extension: 'pdf',
+        };
+    }
 
     async onWelcomeToSessionStudent({ to, session_name, formation_name, fullname, asAttachement }:
         { to: string, session_name?: string, formation_name?: string, fullname?: string, asAttachement?: boolean }):
@@ -303,19 +313,50 @@ export class MailService {
 
             const appname = this.configService.get<string>('APPNAME')
             const appowner = this.configService.get<string>('APPOWNER')
-            const brut = join(__dirname, '../../src', 'templates', 'template.welcomenewsession.html');
-            const html = fs.readFileSync(brut, "utf8");
-            const template = Handlebars.compile(html);
-            const content = template({
+            const brut_welcome = join(__dirname, '../../src', 'templates', 'template.welcomenewsession.html');
+            const brut_roi = join(__dirname, '../../src', 'templates', 'template.roi.html');
+            const brut_anab = join(__dirname, '../../src', 'templates', 'template.analysedesbesoins.html');
+            const brut_convention = join(__dirname, '../../src', 'templates', 'template.conventiondeformation.html');
+
+            const html_convention = fs.readFileSync(brut_convention, "utf8");
+            const html_welcome = fs.readFileSync(brut_welcome, "utf8");
+            const html_anab = fs.readFileSync(brut_anab, "utf8");
+            const html_roi = fs.readFileSync(brut_roi, "utf8");
+
+            const template_welocme = Handlebars.compile(html_welcome);
+            const template_roi = Handlebars.compile(html_roi);
+            const template_anab = Handlebars.compile(html_anab);
+            const template_convention = Handlebars.compile(html_convention);
+
+            const content_welcome = template_welocme({
                 fullname,
                 session_name,
                 formation_name,
                 appowner,
                 appname
             });
+
+            const content_roi = template_roi({
+                fullname,
+                appowner,
+                appname
+            });
+
+            const content_convention = template_convention({
+                // fullname,
+                appowner,
+                appname
+            });
+
+            const content_anab = template_anab({
+                // fullname,
+                appowner,
+                appname
+            });
+
             let attachement: any = null;
             if (asAttachement && asAttachement === true) {
-                const { buffer, extension, mime } = await this.generateDocumentFromHtml(content, 'pdf')
+                const { buffer, extension, mime } = await this.generateDocumentFromHtml(content_welcome, 'pdf')
                 attachement = {
                     filename: `${session_name}-${fullname}.${extension}`,
                     content: buffer,
@@ -324,13 +365,61 @@ export class MailService {
             }
             return this.sendMail({
                 to,
-                content,
-                subject: `Inscription réussie à la formation ${formation_name} | ${session_name}`,
+                content: content_welcome,
+                subject: `Inscription réussie à la formation ${formation_name} | ${session_name}`.toUpperCase(),
                 attachments:
                     asAttachement ?
                         [attachement]
                         : undefined
             })
+                .then(async _ => {
+
+                    const { buffer, extension, mime } = await this.generateDocumentFromHtml(content_roi, 'pdf')
+                    const anab = await this.generateDocumentFromHtml(content_anab, 'pdf')
+                    const convention = await this.generateDocumentFromHtml(content_convention, 'pdf')
+
+                    this.sendMail({
+                        to,
+                        content: content_roi,
+                        subject: "RÈGLEMENT INTÉRIEUR DU CENTRE DE FORMATION".toLowerCase(),
+                        attachments: [
+                            {
+                                filename: `règlement-d-ordre-intérieur-${session_name}-${fullname}.${extension}`,
+                                content: buffer,
+                                contentType: mime,
+                            }
+                        ]
+                    })
+
+                    this.sendMail({
+                        to,
+                        content: content_convention,
+                        subject: "CONVENTION DE FORMATION PROFESSIONNELLE".toLowerCase(),
+                        attachments: [
+                            {
+                                filename: `convention-${session_name}-${fullname}.${extension}`,
+                                content: convention.buffer,
+                                contentType: convention.mime,
+                            }
+                        ]
+                    })
+
+                    this.sendMail({
+                        to,
+                        content: content_anab,
+                        subject: "QUESTIONNAIRE D’IDENTIFICATION DES BESOINS POUR LES PERSONNES EN SITUATION DE HANDICAP (PSH)".toLowerCase(),
+                        attachments: [
+                            {
+                                filename: `analyse-des-besoins-${session_name}-${fullname}.${extension}`,
+                                content: anab.buffer,
+                                contentType: anab.mime,
+                            }
+                        ]
+                    })
+
+                    return { code: 200, message: "Done", data: "This is " }
+                })
+                .catch(err => ({ code: 500, message: "Can not send roi message", data: err }))
         } catch (error) {
             return { code: 500, message: "Error occured", data: error }
         }

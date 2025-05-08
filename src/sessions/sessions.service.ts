@@ -111,66 +111,57 @@ export class SessionsService {
             const { phone, email, fs_name, ls_name } = student.toJSON();
             const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
 
-            this.serviceMail.sendMail({
-                content: "Salut",
-                subject: "Docs",
-                to: email,
-                attachments: [await this.docsService.generateROI({ fullname })]
+            SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+            return this.sessionModel.findOne({
+                include: [
+                    {
+                        model: Formations,
+                        required: true
+                    }
+                ],
+                where: {
+                    id: id_session
+                }
             })
-            return {} as any
-            // SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
-            // return this.sessionModel.findOne({
-            //     include: [
-            //         {
-            //             model: Formations,
-            //             required: true
-            //         }
-            //     ],
-            //     where: {
-            //         id: id_session
-            //     }
-            // })
-            //     .then(inst => {
-            //         if (inst instanceof SessionSuivi) {
+                .then(inst => {
+                    if (inst instanceof SessionSuivi) {
 
-            //             const { id_formation, id_category, designation, Formation } = inst.toJSON() as any
-            //             const { phone, email } = student.toJSON();
-            //             const { titre } = Formation
+                        const { id_formation, id_category, designation, Formation } = inst.toJSON() as any
+                        const { phone, email } = student.toJSON();
+                        const { titre } = Formation
 
-            //             return this.hasSessionStudentModel.findOrCreate({
-            //                 where: {
-            //                     id_sessionsuivi: id_session,
-            //                     id_stagiaire: id_user
-            //                 },
-            //                 defaults: {
-            //                     id_sessionsuivi: id_session,
-            //                     id_stagiaire: id_user,
-            //                     supervision: false,
-            //                     numero_stagiaire: phone || email,
-            //                     date_mise_a_jour: this.allServices.nowDate(),
-            //                     id_formation,
-            //                 }
-            //             })
-            //                 .then(([record, isNew]) => {
-            //                     if (isNew) {
-            //                         this.serviceMail.onWelcomeToSessionStudent({
-            //                             to: email,
-            //                             formation_name: titre,
-            //                             fullname,
-            //                             session_name: designation,
-            //                             asAttachement: true
-            //                         })
-            //                         return Responder({ status: HttpStatusCode.Created, data: record })
-            //                     } else {
-            //                         return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
-            //                     }
-            //                 })
-            //                 .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
-            //         } else {
-            //             return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
-            //         }
-            //     })
-            //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                        return this.hasSessionStudentModel.findOrCreate({
+                            where: {
+                                id_sessionsuivi: id_session,
+                                id_stagiaire: id_user
+                            },
+                            defaults: {
+                                id_sessionsuivi: id_session,
+                                id_stagiaire: id_user,
+                                date_mise_a_jour: this.allServices.nowDate(),
+                                id_formation,
+                            }
+                        })
+                            .then(([record, isNew]) => {
+                                if (isNew) {
+                                    this.serviceMail.onWelcomeToSessionStudent({
+                                        to: email,
+                                        formation_name: titre,
+                                        fullname,
+                                        session_name: designation,
+                                        asAttachement: true
+                                    })
+                                    return Responder({ status: HttpStatusCode.Created, data: record })
+                                } else {
+                                    return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
+                                }
+                            })
+                            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error: any) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }

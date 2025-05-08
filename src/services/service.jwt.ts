@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { IMicroServices } from 'src/interface/interface.servicesinternesresponses';

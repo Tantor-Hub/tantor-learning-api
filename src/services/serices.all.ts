@@ -123,5 +123,5 @@ export class AllSercices {
     };
     fullName({ fs, ls }: { fs: string, ls?: string }): string {
         return fs.concat(" ").concat(ls ?? "")
-    }
+    };
 }

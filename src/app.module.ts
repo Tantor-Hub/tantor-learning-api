@@ -22,6 +22,14 @@ import { WebrtcGatewayService } from './services/service.webrtc';
 import { MediasoupService } from './services/service.mediasoup';
 import { GoogleDriveService } from './services/service.googledrive';
 import { DocsService } from './services/service.docs';
+import { AllSercices } from './services/serices.all';
+import { CmsController } from './cms/cms.controller';
+import { CmsService } from './cms/cms.service';
+import { CmsModule } from './cms/cms.module';
+import { AppInfos } from './models/model.appinfos';
+import { JwtService as NestJwtService } from '@nestjs/jwt';
+import { CryptoService } from './services/service.crypto';
+import { JwtService } from './services/service.jwt';
 
 @Module({
   imports: [
@@ -54,18 +62,19 @@ import { DocsService } from './services/service.docs';
           acquire: 1000000,
           idle: 200000,
         },
-        models: [Users, Roles, HasRoles, Categories, SessionSuivi]
+        models: [Users, Roles, HasRoles, Categories, SessionSuivi, AppInfos]
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos]),
     RolesModule,
     UsersModule,
     FormationsModule,
     CategoriesModule,
     SessionsModule,
+    CmsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService],
+  controllers: [AppController, CmsController],
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService],
 })
 
 export class AppModule implements OnModuleInit {

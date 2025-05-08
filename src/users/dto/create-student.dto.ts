@@ -33,7 +33,7 @@ export class CreateUserDto {
     email: string;
 
     @IsOptional()
-    @IsPhoneNumber()
+    @IsString()
     phone?: string;
 
     @IsOptional()

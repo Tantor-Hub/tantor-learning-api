@@ -34,7 +34,6 @@ export class RolesService {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err });
             })
     }
-
     async getRoles(): Promise<ResponseServer> {
         return this.rolesModel.findAll({
             where: {
@@ -48,7 +47,6 @@ export class RolesService {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
     }
-
     async attributeRole(createRoleDto: AttributeRoleDto): Promise<ResponseServer> {
         const { id_role, id_user, description } = createRoleDto
         return this.hasRoleModel.findOrCreate({

@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Convention de Formation - TANTOR</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        line-height: 1.6;
+        color: #333;
+      }
+      .footer {
+        background: #f1f1f1;
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+      }
+      .footer p {
+        margin: 5px 0;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #004080;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+      }
+      input[type='text'],
+      input[type='date'],
+      input[type='email'],
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        box-sizing: border-box;
+      }
+      .section {
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CONVENTION DE FORMATION PROFESSIONNELLE</h1>
+    <p>
+      <em
+        >(Conformément aux articles L.6353-1 et suivants du Code du travail)</em
+      >
+    </p>
+
+    <div class="section">
+      <h2>ENTRE LES SOUSSIGNÉS</h2>
+
+      <h3>L’Organisme de Formation</h3>
+      <p><strong>TANTOR Business School</strong></p>
+      <p>Siège social : 48 rue du Bret, Pavillon 19, 38090 Villefontaine</p>
+      <p>SIRET : 952 066 298 00029</p>
+      <p>Représenté par : Karim Kalboussi, Président</p>
+
+      <h3>Et</h3>
+
+      <h3>L’Entreprise Bénéficiaire</h3>
+      <label>Raison sociale :</label
+      ><input type="text" name="raison_sociale" />
+      <label>Adresse du siège social :</label
+      ><input type="text" name="adresse_entreprise" /> <label>SIREET :</label
+      ><input type="text" name="siret_entreprise" /> <label>Téléphone :</label
+      ><input type="text" name="telephone_entreprise" /> <label>Email :</label
+      ><input type="email" name="email_entreprise" />
+      <label>Représenté par :</label
+      ><input type="text" name="representant_entreprise" />
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 1 – OBJET DE LA CONVENTION</h2>
+      <label>Intitulé de la formation :</label
+      ><input type="text" name="intitule_formation" />
+      <label>Objectifs de la formation :</label
+      ><textarea name="objectifs_formation"></textarea>
+
+      <label>Catégorie de formation :</label>
+      <div>
+        <label
+          ><input
+            type="checkbox"
+            name="categorie"
+            value="Action de formation professionnelle"
+          />
+          Action de formation professionnelle</label
+        >
+        <label
+          ><input type="checkbox" name="categorie" value="Action certifiante" />
+          Action de formation certifiante</label
+        >
+        <label
+          ><input type="checkbox" name="categorie" value="Autre" /> Autre
+          :</label
+        ><input type="text" name="categorie_autre" />
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 2 – ORGANISATION DE L’ACTION DE FORMATION</h2>
+      <label>Durée de la formation (heures) :</label
+      ><input type="text" name="duree_formation" />
+      <label>Effectif concerné (salariés) :</label
+      ><input type="text" name="effectif" /> <label>Lieu de formation :</label
+      ><input type="text" name="lieu_formation" />
+      <label>Dates et horaires :</label
+      ><input type="text" name="dates_horaires" />
+      <label>Nom du formateur :</label
+      ><input type="text" name="nom_formateur" />
+
+      <label>Modalités pédagogiques :</label>
+      <div>
+        <label
+          ><input type="checkbox" name="modalite" value="Présentiel" />
+          Présentiel</label
+        >
+        <label
+          ><input type="checkbox" name="modalite" value="À distance" /> À
+          distance</label
+        >
+        <label
+          ><input type="checkbox" name="modalite" value="Mixte" /> Mixte</label
+        >
+      </div>
+
+      <p>Les moyens pédagogiques utilisés comprennent :</p>
+      <ul>
+        <li>Alternance d’apports théoriques et pratiques</li>
+        <li>Utilisation de supports variés</li>
+        <li>Mise à disposition de documents pédagogiques adaptés</li>
+      </ul>
+
+      <p><em>Le programme détaillé de la formation figure en annexe.</em></p>
+
+      <h3>Liste des salariés bénéficiaires :</h3>
+      <textarea
+        name="liste_salaries"
+        placeholder="Nom / Prénom / Type de contrat / Temps de travail hebdomadaire"
+      ></textarea>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 3 – MODALITÉS D’ÉVALUATION</h2>
+      <p>À l'issue de la formation :</p>
+      <ul>
+        <li>Présence effective obligatoire</li>
+        <li>Participation active requise</li>
+        <li>Évaluation des acquis par tests ou mises en situation</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 4 – CONDITIONS FINANCIÈRES</h2>
+      <label>Coût total de la formation (€ TTC) :</label
+      ><input type="text" name="cout_total" />
+
+      <label>Modalités de paiement :</label>
+      <div>
+        <label
+          ><input type="checkbox" name="paiement" value="Acompte 30%" /> Acompte
+          de 30% à la signature</label
+        >
+        <label
+          ><input type="checkbox" name="paiement" value="Solde unique" /> Solde
+          en une fois</label
+        >
+        <label
+          ><input type="checkbox" name="paiement" value="Échelonnement" />
+          Échelonnement en 4 mensualités</label
+        >
+      </div>
+
+      <label>Mode de règlement :</label>
+      <div>
+        <label
+          ><input type="checkbox" name="reglement" value="Virement" /> Virement
+          bancaire</label
+        >
+        <label
+          ><input type="checkbox" name="reglement" value="Chèque" />
+          Chèque</label
+        >
+      </div>
+
+      <p>
+        En cas de financement OPCO, l'Entreprise doit gérer les démarches
+        administratives.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 5 – CONDITIONS D’ANNULATION OU DE REPORT</h2>
+      <p>
+        Annulation ou report possible en cas de force majeure ou nombre
+        insuffisant de participants.
+      </p>
+      <p>
+        Annulation par l'Entreprise : prévenir 10 jours avant, sinon 30% de
+        pénalité.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 6 – ENGAGEMENTS DES PARTIES</h2>
+      <p>
+        <strong>Organisme de Formation :</strong> assurer la qualité de la
+        formation et la remise des certificats.
+      </p>
+      <p>
+        <strong>Entreprise :</strong> garantir la présence des salariés et
+        régler la formation selon les conditions.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 7 – LITIGES ET DROIT APPLICABLE</h2>
+      <p>
+        En cas de différend, priorité au règlement amiable ; sinon juridiction
+        compétente : tribunaux de Vienne.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>ARTICLE 8 – ACCEPTATION DE LA CONVENTION</h2>
+      <p>Signature de la convention vaut acceptation.</p>
+
+      <label>Fait à :</label><input type="text" name="lieu_signature" />
+      <label>Le :</label><input type="date" name="date_signature" />
+
+      <h3>Pour l’Entreprise</h3>
+      <label>Nom du représentant :</label
+      ><input type="text" name="representant_entreprise_signature" />
+      <p>Signature et cachet :</p>
+
+      <h3>Pour l’Organisme de Formation – TANTOR</h3>
+      <p>Karim Kalboussi, Président</p>
+      <p>Signature et cachet :</p>
+    </div>
+    <div class="footer">
+      <p>Cordialement,</p>
+      <p><strong>{{appowner}} ({{appname}})</strong></p>
+      <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+    </div>
+  </body>
+</html>
