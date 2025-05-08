@@ -24,7 +24,7 @@ export class UsersController {
     }
 
     @Post('user/add')
-    // @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async addNewSystemeUser(@Body() createUserDto: CreateUserDto){
         return this.userService.registerAsNewUser(createUserDto);
     }
