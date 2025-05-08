@@ -18,9 +18,7 @@ export class CmsService {
 
     async onGetAppInfos(): Promise<ResponseServer> {
         return this.appInfosModel.findOne({
-            where: {
-                id: 1
-            }
+            where: { id: 1 }
         })
             .then(infos => Responder({ status: HttpStatusCode.Ok, data: infos }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))

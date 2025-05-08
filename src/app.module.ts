@@ -41,7 +41,8 @@ import { JwtService } from './services/service.jwt';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        dialect: configService.get<string>('database.dialect') as 'postgres',
+        dialect: 'postgres',
+        // configService.get<string>('database.dialect') as 'postgres',
         host: configService.get<string>('database.host'),
         port: configService.get<number>('database.port'),
         username: configService.get<string>('database.username'),
