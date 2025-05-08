@@ -62,6 +62,10 @@ taskkill /PID <PID> /F
 
 NestJS, SequelizeORM, postgreSQL
 
+## Mediasoup et webRTC
+
+"skipLibCheck": true, in tsconfig.js
+
 ## Documentation link
 
 ```https://documenter.getpostman.com/view/14319426/2sB2cVeh52```
