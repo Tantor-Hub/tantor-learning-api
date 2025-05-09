@@ -11,9 +11,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         super({
             clientID: '206461527600-ujrn9lcik17mab9q8qn76qs8bvto4piv.apps.googleusercontent.com',
             clientSecret: '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',
-            callbackURL: String("http://localhost:3737").concat('/api/users/auth/google/callback'),
+            callbackURL: String("https://tantor-learning.up.railway.app").concat('/api/users/auth/google/callback'),
             scope: ['email', 'profile'],
-        });
+        })
     }
 
     async validate(

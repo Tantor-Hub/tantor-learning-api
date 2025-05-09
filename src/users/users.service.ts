@@ -329,8 +329,8 @@ export class UsersService {
         })
             .then(async student => {
                 if (student instanceof Users) {
-                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
-                    if (as_code === verification_code) {
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles, can_update_password } = student?.toJSON()
+                    if (can_update_password === 1) {
                         if (repet_new_password && repet_new_password.length > 0) {
                             if (new_password !== repet_new_password) return Responder({ status: HttpStatusCode.BadRequest, data: "Les deux mot de passe ne sont pas identiques !" })
                         }
@@ -378,7 +378,7 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
-    async resentVerificationCode(resentCodeDto: ResentCodeDto): Promise<ResponseServer> {
+    async resentVerificationCode(resentCodeDto: ResentCodeDto, forgetPasswordCase: boolean = false): Promise<ResponseServer> {
 
         const { user_email } = resentCodeDto
         const verif_code = this.allService.randomLongNumber({ length: 6 })
@@ -405,6 +405,56 @@ export class UsersService {
                 }
             })
             .catch(err => Responder({ status: HttpStatusCode.NotFound, data: err }))
+    }
+
+    async verifyBeforeResetPassword(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
+
+        const { email_user, verication_code } = verifyAsStudentDto
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
+        return this.userModel.findOne({
+            attributes: {
+                exclude: ['password']
+            },
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: {
+                        exclude: ['status']
+                    }
+                }
+            ],
+            where: {
+                status: 1,
+                email: email_user
+            }
+        })
+            .then(async student => {
+                if (student instanceof Users) {
+
+                    const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
+                    const _roles = this.formatRoles(roles as any)
+                    if (1) {
+                        if (as_code?.toString() === verication_code.toString()) {
+                            student.update({
+                                can_update_password: 1,
+                                verification_code: '000000'
+                            })
+                            return Responder({ status: HttpStatusCode.Ok, data: "Le mot de passe peut maintenant etre modifier " })
+                        } else {
+                            return Responder({ status: HttpStatusCode.Forbidden, data: `Le code de vérification est invalide` })
+                        }
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: `User still verified ::: [${email}]` })
+                    }
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: `${email_user} n'est pas reconnu !` })
+                }
+            })
+            .catch(err => {
+                return Responder({ status: HttpStatusCode.NotFound, data: err })
+            })
     }
 
     async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
