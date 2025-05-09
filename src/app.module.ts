@@ -82,4 +82,4 @@ export class AppModule implements OnModuleInit {
       console.error('[ Database ] Échec de connexion : ', error.message);
     }
   }
-};
+}

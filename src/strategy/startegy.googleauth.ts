@@ -7,13 +7,13 @@ import { ConfigService } from '@nestjs/config';
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     constructor(private readonly configService: ConfigService) {
-
+        const { APPBASEURLBACK, GOOGLECLIENTID, GOOGLESECRET } = process.env
         super({
-            clientID: '206461527600-ujrn9lcik17mab9q8qn76qs8bvto4piv.apps.googleusercontent.com',
-            clientSecret: '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',
-            callbackURL: String("https://tantor-learning.up.railway.app").concat('/api/users/auth/google/callback'),
+            clientID: (GOOGLECLIENTID || '206461527600-ujrn9lcik17mab9q8qn76qs8bvto4piv.apps.googleusercontent.com') as string,
+            clientSecret: (GOOGLESECRET || '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') as string,
+            callbackURL: String('https://tantor-learning.up.railway.app').concat('/api/users/auth/google/callback'),
             scope: ['email', 'profile'],
-        })
+        });
     }
 
     async validate(
