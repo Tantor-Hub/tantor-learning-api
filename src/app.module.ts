@@ -60,7 +60,7 @@ import { Dialect } from 'sequelize';
     SessionsModule,
     CmsModule
   ],
-  controllers: [AppController, CmsController],
+  controllers: [AppController],
   providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService]
 })
 

@@ -23,6 +23,7 @@ export class CmsService {
             .then(infos => Responder({ status: HttpStatusCode.Ok, data: infos }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
+    
     async onAddAppInfos(createAppInfosDto: CreateAppInfosDto): Promise<ResponseServer> {
         const { adresse, contacts_numbers, email_contact, about_app } = createAppInfosDto
         return this.appInfosModel.findOrCreate({

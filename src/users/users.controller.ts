@@ -39,6 +39,11 @@ export class UsersController {
         return this.userService.verifyAsStudent(verifyAsStudentDto);
     }
 
+    @Put("user/verify-before-reset-password")
+    async verifyBeforeResetPassword(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
+        return this.userService.verifyBeforeResetPassword(verifyAsStudentDto);
+    }
+
     @Put("user/refresh")
     async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
         return this.userService.refreshTokenUser(refreshTokenDto);
@@ -89,7 +94,7 @@ export class UsersController {
     }
 
     @Get("listall")
-    // @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getAllUsers() {
         return this.userService.getAllUsers()
     }

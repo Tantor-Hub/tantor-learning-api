@@ -54,4 +54,7 @@ export class Users extends Model<IUsers> {
 
     @BelongsToMany(() => Roles, () => HasRoles)
     roles: Roles[];
+
+    @Column({ type: DataType.INTEGER, defaultValue: 0 })
+    can_update_password?: number
 }

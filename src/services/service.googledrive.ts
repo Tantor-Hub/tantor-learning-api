@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
-import { Readable } from 'stream';
 import * as path from 'path';
-import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -11,7 +9,6 @@ export class GoogleDriveService {
   private owner: string;
 
   constructor(private readonly configService: ConfigService) {
-
     const auth = new google.auth.GoogleAuth({
       keyFile: path.join(__dirname, '../../src/utils/utiles.googleservices.json'),
       scopes: ['https://www.googleapis.com/auth/drive'],
@@ -68,5 +65,4 @@ export class GoogleDriveService {
       link: response.data.webViewLink,
     };
   }
-
 }
