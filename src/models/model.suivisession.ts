@@ -25,6 +25,9 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column(DataType.STRING)
     duree?: string;
 
+    @Column(DataType.FLOAT)
+    progression?: number;
+
     @Column({ type: DataType.INTEGER })
     id_formation: number;
 

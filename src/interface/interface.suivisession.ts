@@ -8,6 +8,7 @@ export interface ISessionSuivi extends IGlobale {
     id_formation: number;
     id_category?: number;
     id_thematic?: number;
+    progression?: number;
 
     id_controleur?: number;
     id_superviseur?: number;

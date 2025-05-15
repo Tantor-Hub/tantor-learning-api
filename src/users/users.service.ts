@@ -26,6 +26,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { HomeWorks } from 'src/models/model.homeworks';
 import { IHomeWorks } from 'src/interface/interface.homework';
+import { Messages } from 'src/models/model.messages';
 
 @Injectable()
 export class UsersService {
@@ -45,6 +46,9 @@ export class UsersService {
         @InjectModel(HomeWorks)
         private readonly homeworkModel: typeof HomeWorks,
 
+        @InjectModel(Messages)
+        private readonly messagesModel: typeof Messages,
+
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
         private readonly allService: AllSercices,
@@ -62,7 +66,6 @@ export class UsersService {
 
             // card 2
             const enroledHomeworks = await this.homeworkModel.count({ where: { id_user, is_returned: 0 } })
-            const earlierHomeworks = await this.homeworkModel.count({ where: { id_user, is_returned: 0 } })
             const allPendingHomeworks = await this.homeworkModel.findAll({
                 where: {
                     id_user,
@@ -79,11 +82,30 @@ export class UsersService {
                 return acc;
             }, {} as Record<string, IHomeWorks[]>);
 
+            const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
+
             return Responder({
-                status: HttpStatusCode.Ok, data: [
+                status: HttpStatusCode.Ok,
+                data: [
                     {
                         enrolledCourses: enroledCours,
                         ongoingCourses: onGoingCours
+                    },
+                    {
+                        homework: enroledHomeworks,
+                        nextDelivery: {
+                            length: grouped,
+                            date: ''
+                        }
+                    },
+                    // {
+                    //     scoreOngoingSemester: number,
+                    //     totalOngoingSemester: number,
+                    //     scoreLastSemester: number,
+                    //     totalLastSemeter: number
+                    // },
+                    {
+                        unreadMessageNumber: unreadMessages
                     }
                 ]
             })

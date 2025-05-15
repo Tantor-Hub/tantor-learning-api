@@ -16,10 +16,11 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
 import { HomeWorks } from 'src/models/model.homeworks';
+import { Messages } from 'src/models/model.messages';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks]),
+    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks, Messages]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
