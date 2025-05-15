@@ -5,6 +5,6 @@ export interface ISeanceSession extends IGlobale {
     duree: number;
     seance_date_on: number;
     type_seance?: string;
-    id_formation?: string;
+    id_formation?: number;
     piece_jointe?: string;
 }

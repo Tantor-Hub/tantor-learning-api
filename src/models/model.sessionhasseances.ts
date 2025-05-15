@@ -47,7 +47,7 @@ import { Formations } from './model.formations';
       type: DataType.STRING,
       allowNull: true,
     })
-    id_formation?: string;
+    id_formation?: number;
   
     @Column({
       type: DataType.STRING,

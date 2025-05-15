@@ -8,11 +8,12 @@ export class AddSeanceSessionDto {
     @IsNumberString()
     duree: number;
 
-    @IsNumber()
+    @IsNumberString()
     seance_date_on: number;
 
     @IsOptional()
-    @IsNumber()
+    @IsString()
+    @IsEnum(['onLine', 'visionConference', 'presentiel', 'hybride'])
     type_seance: string;
 
     @IsOptional()
@@ -20,6 +21,6 @@ export class AddSeanceSessionDto {
     id_formation?: string;
 
     @IsOptional()
-    @IsNumber()
+    @IsString()
     piece_jointe: string;
 };

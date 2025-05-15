@@ -10,6 +10,7 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { MediasoupService } from '../services/service.mediasoup';
 import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
+import { AddSeanceSessionDto } from './dto/add-seances.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -118,6 +119,42 @@ export class SessionsController {
             }
         }
         return this.sessionsService.createSession({ ...createSessionDto, piece_jointe })
+    }
+
+    @Post('session/addseance')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async addNewSeanceSession(@Body() createSessionDto: AddSeanceSessionDto, @UploadedFile() file: Express.Multer.File,) {
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.createSeance({ ...createSessionDto, piece_jointe })
+    }
+
+    @Delete('session/addseance/:idSeance')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async deleteSeanceSession(@Param('idSeance', ParseIntPipe) idSeance: number) {
+        return this.sessionsService.deleteseance( idSeance)
+    }
+
+    @Put('session/addseance/:idSeance')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async updateSeanceSession(@Body() createSessionDto: any, @UploadedFile() file: Express.Multer.File, @Param('idSeance', ParseIntPipe) idSeance: number) {
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.updateSeance({ ...createSessionDto, piece_jointe }, idSeance)
     }
 
     @Get('list/bythematic/:idThematic')

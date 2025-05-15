@@ -187,19 +187,52 @@ export class SessionsService {
     async createSeance(addSeanceSessionDto: AddSeanceSessionDto): Promise<ResponseServer> {
         const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree } = addSeanceSessionDto
         try {
-            const session = this.sessionModel.findOne({ where: { id: id_session } })
-            if(!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            const session = await this.sessionModel.findOne({ where: { id: id_session } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            const { id_formation: as_id_formation } = session.toJSON()
             return this.seancesModel.create({
                 duree,
-                id_session,
+                id_session: id_session as number,
                 seance_date_on,
-                id_formation,
+                id_formation: as_id_formation,
                 piece_jointe,
+                type_seance
             })
-            .then(seance => {
-                return Responder({status: HttpStatusCode.Created, data: seance})
+                .then(seance => {
+                    return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async deleteseance(id_seance: number) {
+        try {
+            const session = await this.seancesModel.findOne({ where: { id: id_seance } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            return session.destroy()
+                .then(async (seance: any) => {
+                    return Responder({ status: HttpStatusCode.Ok, data: "Supprimé" })
+                })
+                .catch((err: any) => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async updateSeance(addSeanceSessionDto: any, id_seance: number): Promise<ResponseServer> {
+        const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree } = addSeanceSessionDto
+        try {
+            const session = await this.seancesModel.findOne({ where: { id: id_seance } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            return session.update({
+                ...addSeanceSessionDto
             })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                .then(async (seance: any) => {
+                    return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch((err: any) => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
