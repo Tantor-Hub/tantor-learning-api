@@ -10,10 +10,16 @@ import { JwtService } from 'src/services/service.jwt';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CryptoService } from 'src/services/service.crypto';
 import { MailService } from 'src/services/service.mail';
+import { UsersService } from 'src/users/users.service';
+import { Users } from 'src/models/model.users';
+import { Roles } from 'src/models/model.roles';
+import { HasRoles } from 'src/models/model.userhasroles';
+import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
+import { HomeWorks } from 'src/models/model.homeworks';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([AppInfos]),
+    SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeWorks]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -27,6 +33,6 @@ import { MailService } from 'src/services/service.mail';
     }),
   ],
   controllers: [CmsController],
-  providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService],
+  providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService],
 })
 export class CmsModule { }

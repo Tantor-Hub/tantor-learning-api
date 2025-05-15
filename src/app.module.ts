@@ -30,6 +30,9 @@ import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { CryptoService } from './services/service.crypto';
 import { JwtService } from './services/service.jwt';
 import { Dialect } from 'sequelize';
+import { StagiaireHasSession } from './models/model.stagiairehassession';
+import { StagiaireHasSessionSeances } from './models/model.stagiairesessionhasseances';
+import { log } from 'node:console';
 
 @Module({
   imports: [
@@ -52,7 +55,7 @@ import { Dialect } from 'sequelize';
         logging: false
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances]),
     RolesModule,
     UsersModule,
     FormationsModule,
@@ -70,14 +73,15 @@ export class AppModule implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.sequelize.authenticate();
-      await this.sequelize.sync({ alter: true, force: false, });
+      this.sequelize.sync({ alter: true, force: false, })
+        .then(_ => {
+          console.log('[Database] Connexion réussie');
+          const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
+          const models = Object.keys(this.sequelize.models);
+          // console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName());
+        })
+        .catch(err => log("[ DB Error ]", err))
 
-      console.log('[Database] Connexion réussie');
-
-      const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
-      const models = Object.keys(this.sequelize.models);
-
-      console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName(), `[ modèles ] : `, models);
     } catch (error) {
       console.error('[ Database ] Échec de connexion : ', error.message);
     }

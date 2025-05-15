@@ -19,6 +19,9 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @Column({ type: DataType.INTEGER })
     id_formation: number;
 
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
+    is_started: number;
+
     @Column({ type: DataType.INTEGER })
     @ForeignKey(() => SessionSuivi)
     id_sessionsuivi: number;

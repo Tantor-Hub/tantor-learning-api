@@ -13,10 +13,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
 import { GoogleDriveService } from 'src/services/service.googledrive';
+import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
+import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
+import { HomeWorks } from 'src/models/model.homeworks';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users]),
+    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

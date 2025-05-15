@@ -23,6 +23,9 @@ import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
+import { HomeWorks } from 'src/models/model.homeworks';
+import { IHomeWorks } from 'src/interface/interface.homework';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +39,12 @@ export class UsersService {
         @InjectModel(HasRoles)
         private readonly hasRoleModel: typeof HasRoles,
 
+        @InjectModel(StagiaireHasSession)
+        private readonly hasSessionModel: typeof StagiaireHasSession,
+
+        @InjectModel(HomeWorks)
+        private readonly homeworkModel: typeof HomeWorks,
+
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
         private readonly allService: AllSercices,
@@ -44,11 +53,51 @@ export class UsersService {
 
     ) { }
 
+    async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user, uuid_user, roles_user } = user
+        try {
+            // card 1
+            const enroledCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user } })
+            const onGoingCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user, is_started: 1 } })
+
+            // card 2
+            const enroledHomeworks = await this.homeworkModel.count({ where: { id_user, is_returned: 0 } })
+            const earlierHomeworks = await this.homeworkModel.count({ where: { id_user, is_returned: 0 } })
+            const allPendingHomeworks = await this.homeworkModel.findAll({
+                where: {
+                    id_user,
+                    is_returned: 0,
+                    date_de_remise: { [Op.gte]: new Date() },
+                },
+                order: [['date_de_remise', 'ASC']],
+            });
+
+            const grouped = allPendingHomeworks.reduce((acc, hw) => {
+                const date = new Date(hw.date_de_remise).toISOString().split('T')[0];
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(hw);
+                return acc;
+            }, {} as Record<string, IHomeWorks[]>);
+
+            return Responder({
+                status: HttpStatusCode.Ok, data: [
+                    {
+                        enrolledCourses: enroledCours,
+                        ongoingCourses: onGoingCours
+                    }
+                ]
+            })
+
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
     private formatRoles(roles: any[]): number[] {
         return roles.map(role => role?.id)
     }
 
-    async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
+    protected async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
         if (all && all === true) {
             this.mailService.sendMail({
                 content: this.mailService.templates({ as: 'welcome', nom, postnom }),
