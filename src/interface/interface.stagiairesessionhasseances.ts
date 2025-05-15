@@ -7,6 +7,7 @@ export interface IStagiaireHasSessionSuiiviSeance extends IGlobale {
     numero_stagiaire: string;
     date_mise_a_jour: string | Date;
     id_formation: number;
+    date_de_seance: number;
 
     seance_time?: number;
     date_supervision?: Date;

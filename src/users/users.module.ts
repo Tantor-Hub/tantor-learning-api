@@ -20,7 +20,7 @@ import { Messages } from 'src/models/model.messages';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks, Messages]),
+    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks, Messages, StagiaireHasSessionSeances]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

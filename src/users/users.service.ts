@@ -27,6 +27,7 @@ import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { HomeWorks } from 'src/models/model.homeworks';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
+import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
 
 @Injectable()
 export class UsersService {
@@ -48,6 +49,9 @@ export class UsersService {
 
         @InjectModel(Messages)
         private readonly messagesModel: typeof Messages,
+
+        @InjectModel(StagiaireHasSessionSeances)
+        private readonly hasseancesModel: typeof StagiaireHasSessionSeances,
 
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
@@ -84,6 +88,16 @@ export class UsersService {
 
             const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
 
+
+            const nextLivesSessions = await this.hasseancesModel.findAll({
+                where: {
+                    // id_stagiaire: id_user,
+                    // date_de_seance: {
+                    //     [Op.gte]: Date.now()
+                    // }
+                }
+            })
+
             return Responder({
                 status: HttpStatusCode.Ok,
                 data: [
@@ -97,6 +111,9 @@ export class UsersService {
                             length: grouped,
                             date: ''
                         }
+                    },
+                    {
+                        nextLivesSessions
                     },
                     // {
                     //     scoreOngoingSemester: number,

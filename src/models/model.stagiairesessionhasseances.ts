@@ -16,6 +16,9 @@ export class StagiaireHasSessionSeances extends Model<IStagiaireHasSessionSuiivi
     @Column({ type: DataType.DATE })
     date_mise_a_jour: Date;
 
+    @Column({ type: DataType.INTEGER }) // in unix c'est mieux
+    date_de_seance: number;
+
     @Column({ type: DataType.INTEGER })
     id_formation: number;
 

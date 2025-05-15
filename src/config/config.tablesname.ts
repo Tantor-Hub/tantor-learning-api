@@ -20,5 +20,6 @@ export enum tables {
     reclamations_sanctions = `${table_prefix}docsreclamationformations`,
     payementmethode = `${table_prefix}payementmethode`,
     homeworks = `${table_prefix}homeworks`,
-    messages = `${table_prefix}messages`
+    messages = `${table_prefix}messages`,
+    seancesessions = `${table_prefix}seancessessions`
 }

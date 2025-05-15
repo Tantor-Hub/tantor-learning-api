@@ -22,6 +22,8 @@ import { typesprestations } from 'src/utils/utiles.typesprestation';
 import { typesrelances } from 'src/utils/utiles.typerelances';
 import { typesactions } from 'src/utils/utiles.actionreprendre';
 import { DocsService } from 'src/services/service.docs';
+import { AddSeanceSessionDto } from './dto/add-seances.dto';
+import { SeanceSessions } from 'src/models/model.sessionhasseances';
 
 @Injectable()
 export class SessionsService {
@@ -47,6 +49,9 @@ export class SessionsService {
 
         @InjectModel(Thematiques)
         private readonly thematicModel: typeof Thematiques,
+
+        @InjectModel(SeanceSessions)
+        private readonly seancesModel: typeof SeanceSessions,
 
         @InjectModel(StagiaireHasSession)
         private readonly hasSessionStudentModel: typeof StagiaireHasSession,
@@ -177,6 +182,27 @@ export class SessionsService {
 
     async getListeActions(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesactions.length, list: typesactions } })
+    }
+
+    async createSeance(addSeanceSessionDto: AddSeanceSessionDto): Promise<ResponseServer> {
+        const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree } = addSeanceSessionDto
+        try {
+            const session = this.sessionModel.findOne({ where: { id: id_session } })
+            if(!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            return this.seancesModel.create({
+                duree,
+                id_session,
+                seance_date_on,
+                id_formation,
+                piece_jointe,
+            })
+            .then(seance => {
+                return Responder({status: HttpStatusCode.Created, data: seance})
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
