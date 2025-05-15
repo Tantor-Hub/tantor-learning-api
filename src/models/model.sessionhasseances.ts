@@ -44,7 +44,7 @@ import { Formations } from './model.formations';
   
     @ForeignKey(() => Formations)
     @Column({
-      type: DataType.STRING,
+      type: DataType.INTEGER,
       allowNull: true,
     })
     id_formation?: number;

@@ -17,10 +17,11 @@ import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
 import { HomeWorks } from 'src/models/model.homeworks';
 import { Messages } from 'src/models/model.messages';
+import { SeanceSessions } from 'src/models/model.sessionhasseances';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks, Messages, StagiaireHasSessionSeances]),
+    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks, Messages, StagiaireHasSessionSeances, SeanceSessions]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

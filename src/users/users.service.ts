@@ -28,6 +28,11 @@ import { HomeWorks } from 'src/models/model.homeworks';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
+import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { Formations } from 'src/models/model.formations';
+import { SessionSuivi } from 'src/models/model.suivisession';
+import { Categories } from 'src/models/model.categoriesformations';
+import { Thematiques } from 'src/models/model.groupeformations';
 
 @Injectable()
 export class UsersService {
@@ -50,8 +55,8 @@ export class UsersService {
         @InjectModel(Messages)
         private readonly messagesModel: typeof Messages,
 
-        @InjectModel(StagiaireHasSessionSeances)
-        private readonly hasseancesModel: typeof StagiaireHasSessionSeances,
+        @InjectModel(SeanceSessions)
+        private readonly hasseancesModel: typeof SeanceSessions,
 
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
@@ -64,6 +69,45 @@ export class UsersService {
     async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, uuid_user, roles_user } = user
         try {
+            // sesssions
+            StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+            StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+            Formations.belongsTo(Categories, { foreignKey: "id_category" })
+            Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+            const mylistsession = await this.hasSessionModel.findAll({
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                    },
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description'],
+                        include: [
+                            {
+                                model: Thematiques,
+                                required: true,
+                                attributes: ['id', 'thematic']
+                            },
+                            {
+                                model: Categories,
+                                required: true,
+                                attributes: ['id', 'category']
+                            }
+                        ]
+                    }
+                ],
+                where: {
+                    id_stagiaire: id_user
+                }
+            })
+
+            let mylistids = mylistsession.map(sess => {
+                return sess.toJSON().id
+            }).filter(id => id !== undefined)
+            log("IDS are ==> ", mylistids, Date.now())
             // card 1
             const enroledCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user } })
             const onGoingCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user, is_started: 1 } })
@@ -88,13 +132,14 @@ export class UsersService {
 
             const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
 
-
             const nextLivesSessions = await this.hasseancesModel.findAll({
                 where: {
-                    // id_stagiaire: id_user,
-                    // date_de_seance: {
-                    //     [Op.gte]: Date.now()
-                    // }
+                    id: {
+                        [Op.in]: [...mylistids]
+                    },
+                    seance_date_on: {
+                        [Op.gte]: Date.now()
+                    }
                 }
             })
 
