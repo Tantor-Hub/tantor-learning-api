@@ -4,6 +4,7 @@ import randomstring from 'randomstring';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import { v4 as uuidv4 } from 'uuid';
 import * as moment from 'moment';
+import { userColumns } from 'src/interface/interface.usercolomuns';
 
 @Injectable()
 export class AllSercices {
@@ -124,4 +125,13 @@ export class AllSercices {
     fullName({ fs, ls }: { fs: string, ls?: string }): string {
         return fs.concat(" ").concat(ls ?? "")
     };
+    filterUserFields(userInstance: Record<string, any>): Record<string, any> {
+        const userFields = userColumns;
+        return userFields.reduce((filtered, field) => {
+            if (field in userInstance) {
+                filtered[field] = userInstance[field];
+            }
+            return filtered;
+        }, {} as Record<string, any>);
+    }
 }

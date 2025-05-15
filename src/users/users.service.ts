@@ -140,7 +140,8 @@ export class UsersService {
                             })
                                 .then(async ({ code, data, message }) => {
                                     const { cleared, hashed, refresh } = data
-                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: student.toJSON() } })
+                                    const record = this.allService.filterUserFields(student.toJSON())
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: record } })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
@@ -666,7 +667,7 @@ export class UsersService {
                         model: Roles,
                         required: false,
                         attributes: {
-                            exclude: ['status']
+                            exclude: ['status', 'description']
                         }
                     }
                 ],
@@ -684,7 +685,7 @@ export class UsersService {
                     verification_code: verif_code
                 }
             })
-                .then(([student, isNewStudent]) => {
+                .then(async ([student, isNewStudent]) => {
                     const { id: as_id_user, email, fs_name, ls_name, roles, uuid, is_verified } = student?.toJSON()
                     if (isNewStudent) {
                         return this.hasRoleModel.create({
@@ -704,8 +705,8 @@ export class UsersService {
                                     delete (newInstance as any).is_verified;
                                     delete (newInstance as any).createdAt;
                                     delete (newInstance as any).updatedAt;
-
-                                    return Responder({ status: HttpStatusCode.Created, data: { message: `A verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                                    const record = this.allService.filterUserFields(newInstance)
+                                    return Responder({ status: HttpStatusCode.Created, data: { user: record } })
                                 } else {
                                     return Responder({ status: HttpStatusCode.BadRequest })
                                 }
