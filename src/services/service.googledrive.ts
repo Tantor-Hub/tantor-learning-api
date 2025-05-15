@@ -31,38 +31,42 @@ export class GoogleDriveService {
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file.buffer);
 
-    const response = await this.drive.files.create({
-      requestBody: fileMetadata,
-      media: {
-        mimeType: file.mimetype,
-        body: bufferStream,
-      },
-      fields: 'id, name, webViewLink',
-    });
+    try {
+      const response = await this.drive.files.create({
+        requestBody: fileMetadata,
+        media: {
+          mimeType: file.mimetype,
+          body: bufferStream,
+        },
+        fields: 'id, name, webViewLink',
+      });
 
-    const fileId = response.data.id;
+      const fileId = response.data.id;
 
-    await this.drive.permissions.create({
-      fileId,
-      requestBody: {
-        role: 'reader',
-        type: 'anyone',
-      },
-    });
+      await this.drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone',
+        },
+      });
 
-    await this.drive.permissions.create({
-      fileId,
-      requestBody: {
-        role: 'reader',
-        type: 'user',
-        emailAddress: this.owner,
-      },
-    });
+      await this.drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'reader',
+          type: 'user',
+          emailAddress: this.owner,
+        },
+      });
 
-    return {
-      id: fileId,
-      name: response.data.name,
-      link: response.data.webViewLink,
-    };
+      return {
+        id: fileId,
+        name: response.data.name,
+        link: response.data.webViewLink,
+      };
+    } catch (error) {
+      return null
+    }
   }
 }

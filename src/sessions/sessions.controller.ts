@@ -97,8 +97,10 @@ export class SessionsController {
         let piece_jointe: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
-            const { id, name, link, } = result
-            piece_jointe = link
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
         }
         return this.sessionsService.updateSession({ ...updateSessionDto, piece_jointe }, idSession)
     }
@@ -110,8 +112,10 @@ export class SessionsController {
         let piece_jointe: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
-            const { id, name, link, } = result
-            piece_jointe = link
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
         }
         return this.sessionsService.createSession({ ...createSessionDto, piece_jointe })
     }

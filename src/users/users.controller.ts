@@ -83,8 +83,10 @@ export class UsersController {
         let avatar: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
-            const { id, name, link, } = result
-            avatar = link
+            if (result) {
+                const { id, name, link, } = result
+                avatar = link
+            }
         }
         return this.userService.updateUserProfile(user, { ...profile, as_avatar: avatar }, req)
     }
