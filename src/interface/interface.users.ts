@@ -18,5 +18,6 @@ export interface IUsers extends IGlobale {
     can_update_password?: number,
     adresse_physique?: string,
     pays_residance?: string,
+    ville_residance?: string,
     num_piece_identite?: string
 }

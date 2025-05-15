@@ -55,6 +55,9 @@ export class Users extends Model<IUsers> {
     @Column({ type: DataType.STRING, allowNull: true })
     pays_residance?: string;
 
+    @Column({ type: DataType.STRING, allowNull: true })
+    ville_residance?: string;
+
     @Column({ type: DataType.STRING, allowNull: true, unique: true })
     num_piece_identite?: string;
 

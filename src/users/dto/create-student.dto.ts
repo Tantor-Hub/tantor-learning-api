@@ -39,4 +39,20 @@ export class CreateUserDto {
     @IsOptional()
     @IsString()
     verification_code?: string;
+
+    @IsOptional()
+    @IsString()
+    adresse_physique?: string;
+
+    @IsOptional()
+    @IsString()
+    pays_residance?: string;
+
+    @IsOptional()
+    @IsString()
+    ville_residance?: string;
+
+    @IsOptional()
+    @IsString()
+    num_piece_identite?: string;
 }

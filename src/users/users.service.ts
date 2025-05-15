@@ -81,7 +81,7 @@ export class UsersService {
                     model: Roles,
                     required: true,
                     attributes: {
-                        exclude: ['status']
+                        exclude: ['status', 'description']
                     }
                 }
             ],
@@ -115,7 +115,7 @@ export class UsersService {
                     model: Roles,
                     required: true,
                     attributes: {
-                        exclude: ['status']
+                        exclude: ['status', 'description']
                     }
                 }
             ],
@@ -571,7 +571,12 @@ export class UsersService {
             }
         })
             .then(async student => {
-                return Responder({ status: HttpStatusCode.Ok, data: student })
+                if (student instanceof Users) {
+                    const record = this.allService.filterUserFields(student.toJSON())
+                    return Responder({ status: HttpStatusCode.Ok, data: record })
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: student })
+                }
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
@@ -600,9 +605,6 @@ export class UsersService {
                     }
                 }
             ],
-            attributes: {
-                exclude: ['password', 'verification_code', 'is_verified', 'last_login']
-            },
             where: {
                 status: 1,
                 id: id_user
@@ -610,8 +612,9 @@ export class UsersService {
         })
             .then(async student => {
                 if (student instanceof Users) {
-                    student.update({ ...profile })
-                    return Responder({ status: HttpStatusCode.Ok, data: student })
+                    student.update({ ...profile, avatar: profile['as_avatar'] })
+                    const record = this.allService.filterUserFields(student.toJSON())
+                    return Responder({ status: HttpStatusCode.Ok, data: record })
                 } else {
                     return Responder({ status: HttpStatusCode.NotFound, data: null })
                 }
@@ -643,7 +646,10 @@ export class UsersService {
             }
         })
             .then(async student => {
-                return Responder({ status: HttpStatusCode.Ok, data: student })
+                if (student instanceof Users) {
+                    const record = this.allService.filterUserFields(student.toJSON())
+                    return Responder({ status: HttpStatusCode.Ok, data: record })
+                } else return Responder({ status: HttpStatusCode.NotFound, data: null })
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
@@ -725,7 +731,8 @@ export class UsersService {
                             })
                                 .then(async ({ code, data, message }) => {
                                     const { cleared, hashed } = data
-                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
+                                    const record = this.allService.filterUserFields(student.toJSON())
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: record } })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
@@ -748,7 +755,7 @@ export class UsersService {
                                     delete (newInstance as any).updatedAt;
 
                                     this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
-                                    return Responder({ status: HttpStatusCode.Unauthorized, data: { message: `Compte non vérifié | a verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                                    return Responder({ status: HttpStatusCode.Unauthorized, data: { user: newInstance } })
                                 })
                                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
                         }
@@ -758,7 +765,6 @@ export class UsersService {
                     return Responder({ status: HttpStatusCode.InternalServerError, data: err })
                 })
         } catch (error) {
-            log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
