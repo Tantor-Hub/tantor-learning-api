@@ -1,0 +1,1 @@
+export const userColumns: string[] = ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone', 'avatar', 'adresse_physique', 'pays_residance', 'ville_residance', 'num_piece_identite', 'createdAt', 'roles',]

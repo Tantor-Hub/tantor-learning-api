@@ -13,7 +13,7 @@ export class FormationsController {
         private readonly formationsService: FormationsService,
         private readonly googleDriveService: GoogleDriveService
     ) { }
-    
+
     @Delete('formation/:idFormation')
     @UseGuards(JwtAuthGuardAsManagerSystem)
     async deleteSession(@Param('idFormation', ParseIntPipe) idFormation: number,) {
@@ -27,8 +27,10 @@ export class FormationsController {
         let piece_jointe: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
-            const { id, name, link, } = result
-            piece_jointe = link
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
         }
         return this.formationsService.createNewFormation({ ...createFormationDto, lien_contenu: piece_jointe })
     }

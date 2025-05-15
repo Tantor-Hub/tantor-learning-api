@@ -81,7 +81,7 @@ export class UsersService {
                     model: Roles,
                     required: true,
                     attributes: {
-                        exclude: ['status']
+                        exclude: ['status', 'description']
                     }
                 }
             ],
@@ -115,7 +115,7 @@ export class UsersService {
                     model: Roles,
                     required: true,
                     attributes: {
-                        exclude: ['status']
+                        exclude: ['status', 'description']
                     }
                 }
             ],
@@ -140,7 +140,8 @@ export class UsersService {
                             })
                                 .then(async ({ code, data, message }) => {
                                     const { cleared, hashed, refresh } = data
-                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: student.toJSON() } })
+                                    const record = this.allService.filterUserFields(student.toJSON())
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, refresh_token: refresh, user: record } })
                                 })
                                 .catch(err => {
                                     return Responder({ status: 500, data: err })
@@ -570,7 +571,12 @@ export class UsersService {
             }
         })
             .then(async student => {
-                return Responder({ status: HttpStatusCode.Ok, data: student })
+                if (student instanceof Users) {
+                    const record = this.allService.filterUserFields(student.toJSON())
+                    return Responder({ status: HttpStatusCode.Ok, data: record })
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: student })
+                }
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
@@ -599,9 +605,6 @@ export class UsersService {
                     }
                 }
             ],
-            attributes: {
-                exclude: ['password', 'verification_code', 'is_verified', 'last_login']
-            },
             where: {
                 status: 1,
                 id: id_user
@@ -609,8 +612,9 @@ export class UsersService {
         })
             .then(async student => {
                 if (student instanceof Users) {
-                    student.update({ ...profile })
-                    return Responder({ status: HttpStatusCode.Ok, data: student })
+                    student.update({ ...profile, avatar: profile['as_avatar'] })
+                    const record = this.allService.filterUserFields(student.toJSON())
+                    return Responder({ status: HttpStatusCode.Ok, data: record })
                 } else {
                     return Responder({ status: HttpStatusCode.NotFound, data: null })
                 }
@@ -642,7 +646,10 @@ export class UsersService {
             }
         })
             .then(async student => {
-                return Responder({ status: HttpStatusCode.Ok, data: student })
+                if (student instanceof Users) {
+                    const record = this.allService.filterUserFields(student.toJSON())
+                    return Responder({ status: HttpStatusCode.Ok, data: record })
+                } else return Responder({ status: HttpStatusCode.NotFound, data: null })
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
@@ -655,105 +662,110 @@ export class UsersService {
         const hashed_password = await this.cryptoService.hashPassword((this.configService.get<string>('DEFAULTUSERPASSWORD') || '').concat(num_record) as string)
         const uuid_user = this.allService.generateUuid()
 
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
-        return this.userModel.findOrCreate({
-            where: {
-                email
-            },
-            include: [
-                {
-                    model: Roles,
-                    required: false,
-                    attributes: {
-                        exclude: ['status']
+        try {
+            Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+            return this.userModel.findOrCreate({
+                where: {
+                    email
+                },
+                include: [
+                    {
+                        model: Roles,
+                        required: false,
+                        attributes: {
+                            exclude: ['status', 'description']
+                        }
                     }
+                ],
+                defaults: {
+                    email,
+                    ls_name: lastName,
+                    fs_name: firstName,
+                    is_verified: 0,
+                    password: hashed_password,
+                    avatar: picture,
+                    nick_name: firstName,
+                    num_record: num_record,
+                    phone: email,
+                    uuid: uuid_user,
+                    verification_code: verif_code
                 }
-            ],
-            defaults: {
-                email,
-                ls_name: lastName,
-                fs_name: firstName,
-                is_verified: 0,
-                password: hashed_password,
-                avatar: picture,
-                nick_name: firstName,
-                num_record: num_record,
-                phone: email,
-                uuid: uuid_user,
-                verification_code: verif_code
-            }
-        })
-            .then(([student, isNewStudent]) => {
-                const { id: as_id_user, email, fs_name, ls_name, roles, uuid, is_verified } = student?.toJSON()
-                if (isNewStudent) {
-                    return this.hasRoleModel.create({
-                        RoleId: 4, // this Means Student Or Stagiaire
-                        UserId: as_id_user as number,
-                        status: 1
-                    })
-                        .then(hasrole => {
-                            if (hasrole instanceof HasRoles) {
-                                this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
-                                const newInstance = student.toJSON();
+            })
+                .then(async ([student, isNewStudent]) => {
+                    const { id: as_id_user, email, fs_name, ls_name, roles, uuid, is_verified } = student?.toJSON()
+                    if (isNewStudent) {
+                        return this.hasRoleModel.create({
+                            RoleId: 4, // this Means Student Or Stagiaire
+                            UserId: as_id_user as number,
+                            status: 1
+                        })
+                            .then(hasrole => {
+                                if (hasrole instanceof HasRoles) {
+                                    this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
+                                    const newInstance = student.toJSON();
 
-                                delete (newInstance as any).password;
-                                delete (newInstance as any).verification_code;
-                                delete (newInstance as any).last_login;
-                                delete (newInstance as any).status;
-                                delete (newInstance as any).is_verified;
-                                delete (newInstance as any).createdAt;
-                                delete (newInstance as any).updatedAt;
-
-                                return Responder({ status: HttpStatusCode.Created, data: { message: `A verification code was sent to the user ::: [${email}]`, user: newInstance } })
-                            } else {
-                                return Responder({ status: HttpStatusCode.BadRequest })
-                            }
-                        })
-                        .catch(err => {
-                            return Responder({ status: HttpStatusCode.Conflict, data: err })
-                        })
-                } else {
-                    if (is_verified === 1) {
-                        const _roles = this.formatRoles(roles as any)
-                        return this.jwtService.signinPayloadAndEncrypt({
-                            id_user: as_id_user as number,
-                            roles_user: _roles,
-                            uuid_user: uuid as string,
-                            level_indicator: 90
-                        })
-                            .then(async ({ code, data, message }) => {
-                                const { cleared, hashed } = data
-                                return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: student.toJSON() } })
+                                    delete (newInstance as any).password;
+                                    delete (newInstance as any).verification_code;
+                                    delete (newInstance as any).last_login;
+                                    delete (newInstance as any).status;
+                                    delete (newInstance as any).is_verified;
+                                    delete (newInstance as any).createdAt;
+                                    delete (newInstance as any).updatedAt;
+                                    const record = this.allService.filterUserFields(newInstance)
+                                    return Responder({ status: HttpStatusCode.Created, data: { user: record } })
+                                } else {
+                                    return Responder({ status: HttpStatusCode.BadRequest })
+                                }
                             })
                             .catch(err => {
-                                return Responder({ status: 500, data: err })
+                                return Responder({ status: HttpStatusCode.Conflict, data: err })
                             })
                     } else {
-                        const verif_code = this.allService.randomLongNumber({ length: 6 })
-                        return student.update({
-                            verification_code: verif_code
-                        })
-                            .then(_ => {
-
-                                const newInstance = student.toJSON();
-
-                                delete (newInstance as any).password;
-                                delete (newInstance as any).verification_code;
-                                delete (newInstance as any).last_login;
-                                delete (newInstance as any).status;
-                                delete (newInstance as any).is_verified;
-                                delete (newInstance as any).createdAt;
-                                delete (newInstance as any).updatedAt;
-
-                                this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
-                                return Responder({ status: HttpStatusCode.Unauthorized, data: { message: `Compte non vérifié | a verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                        if (is_verified === 1) {
+                            const _roles = this.formatRoles(roles as any)
+                            return this.jwtService.signinPayloadAndEncrypt({
+                                id_user: as_id_user as number,
+                                roles_user: _roles,
+                                uuid_user: uuid as string,
+                                level_indicator: 90
                             })
-                            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                                .then(async ({ code, data, message }) => {
+                                    const { cleared, hashed } = data
+                                    const record = this.allService.filterUserFields(student.toJSON())
+                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: record } })
+                                })
+                                .catch(err => {
+                                    return Responder({ status: 500, data: err })
+                                })
+                        } else {
+                            const verif_code = this.allService.randomLongNumber({ length: 6 })
+                            return student.update({
+                                verification_code: verif_code
+                            })
+                                .then(_ => {
+
+                                    const newInstance = student.toJSON();
+
+                                    delete (newInstance as any).password;
+                                    delete (newInstance as any).verification_code;
+                                    delete (newInstance as any).last_login;
+                                    delete (newInstance as any).status;
+                                    delete (newInstance as any).is_verified;
+                                    delete (newInstance as any).createdAt;
+                                    delete (newInstance as any).updatedAt;
+
+                                    this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
+                                    return Responder({ status: HttpStatusCode.Unauthorized, data: { user: newInstance } })
+                                })
+                                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                        }
                     }
-                }
-            })
-            .catch(err => {
-                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
-            })
+                })
+                .catch(err => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 }
