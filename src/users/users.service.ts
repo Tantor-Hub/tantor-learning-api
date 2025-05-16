@@ -33,6 +33,7 @@ import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+import { Sequelize } from 'sequelize-typescript';
 
 @Injectable()
 export class UsersService {
@@ -68,6 +69,89 @@ export class UsersService {
         private readonly configService: ConfigService
 
     ) { }
+
+    async loadPerformances(user: IJwtSignin){
+        const { id_user, roles_user, level_indicator } = user
+        try {
+            
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async loadScores(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user, roles_user, level_indicator } = user
+
+        try {
+            const getSemesterScores = async (id_user: number): Promise<{
+                scoreOngoingSemester: number,
+                totalOngoingSemester: number,
+                scoreLastSemester: number,
+                totalLastSemeter: number
+            }> => {
+                const now = new Date();
+                const currentMonth = now.getMonth() + 1;
+
+                let semesterStart: Date, semesterEnd: Date;
+                let lastSemesterStart: Date, lastSemesterEnd: Date;
+
+                if (currentMonth <= 6) {
+                    // S1 actuel (janv-juin), S2 précédent (juil-déc de l'année précédente)
+                    semesterStart = new Date(now.getFullYear(), 0, 1);
+                    semesterEnd = new Date(now.getFullYear(), 5, 30);
+                    lastSemesterStart = new Date(now.getFullYear() - 1, 6, 1);
+                    lastSemesterEnd = new Date(now.getFullYear() - 1, 11, 31);
+                } else {
+                    // S2 actuel (juil-déc), S1 précédent (janv-juin de la même année)
+                    semesterStart = new Date(now.getFullYear(), 6, 1);
+                    semesterEnd = new Date(now.getFullYear(), 11, 31);
+                    lastSemesterStart = new Date(now.getFullYear(), 0, 1);
+                    lastSemesterEnd = new Date(now.getFullYear(), 5, 30);
+                }
+
+                let [ongoing, last] = await Promise.all([
+                    this.hashomeworkModel.findAll({
+                        where: {
+                            id_user,
+                            date_de_creation: {
+                                [Op.between]: [semesterStart, semesterEnd],
+                            },
+                        },
+                        attributes: [
+                            [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
+                            [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
+                        ],
+                        raw: true,
+                    }) as any,
+                    this.hashomeworkModel.findAll({
+                        where: {
+                            id_user,
+                            date_de_creation: {
+                                [Op.between]: [lastSemesterStart, lastSemesterEnd],
+                            },
+                        },
+                        attributes: [
+                            [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
+                            [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
+                        ],
+                        raw: true,
+                    }) as any,
+                ])
+
+                return {
+                    scoreOngoingSemester: Number(ongoing[0]?.score || 0),
+                    totalOngoingSemester: Number(ongoing[0]?.total || 0),
+                    scoreLastSemester: Number(last[0]?.score || 0),
+                    totalLastSemeter: Number(last[0]?.total || 0),
+                };
+            }
+            
+            const resul = await getSemesterScores(id_user)
+            return Responder({ status: HttpStatusCode.Ok, data: resul })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
 
     async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, uuid_user, roles_user } = user
@@ -195,7 +279,7 @@ export class UsersService {
             //         date: Object.keys(grouped).length ? this.allService.unixToDate({ stringUnix: Object.keys(grouped)[0] }) : null
             //     }
             // })
-            
+
             return Responder({
                 status: HttpStatusCode.Ok,
                 data: [

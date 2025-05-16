@@ -33,4 +33,16 @@ export class CmsController {
     async onLoadNextLivesSessions(@User() user: IJwtSignin) {
         return this.usersService.loadStudentNextLiveSession(user)
     }
+
+    @Get('/dashboard/averages')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async onLoadScores(@User() user: IJwtSignin){
+        return this.usersService.loadScores(user)
+    }
+
+    @Get('/dashboard/performances')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async onLoadScoresPerformances(@User() user: IJwtSignin){
+        return this.usersService.loadPerformances(user)
+    }
 }
