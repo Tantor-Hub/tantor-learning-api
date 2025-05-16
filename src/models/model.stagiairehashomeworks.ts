@@ -55,4 +55,14 @@ export class StagiaireHasHomeWork extends Model<IHomeWorks> {
     @Default(0)
     @Column(DataType.INTEGER)
     is_returned!: number;
+
+    @AllowNull(false)
+    @Default(0)
+    @Column(DataType.FLOAT)
+    score!: number;
+
+    @AllowNull(false)
+    @Default(0)
+    @Column(DataType.FLOAT)
+    score_on!: number;
 }

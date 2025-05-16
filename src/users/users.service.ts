@@ -182,14 +182,20 @@ export class UsersService {
             });
 
             const grouped = allPendingHomeworks.reduce((acc, hw) => {
-                const date = new Date(hw.date_de_remise).toISOString().split('T')[0];
+                const date = (hw.date_de_remise);
                 if (!acc[date]) acc[date] = [];
                 acc[date].push(hw);
                 return acc;
             }, {} as Record<string, IHomeWorks[]>);
 
             const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
-
+            // const as_groupe = Object.keys(grouped).map(key => {
+            //     return {
+            //         length: Object.keys(grouped).length,
+            //         date: Object.keys(grouped).length ? this.allService.unixToDate({ stringUnix: Object.keys(grouped)[0] }) : null
+            //     }
+            // })
+            
             return Responder({
                 status: HttpStatusCode.Ok,
                 data: [
@@ -200,8 +206,8 @@ export class UsersService {
                     {
                         homework: enroledHomeworks,
                         nextDelivery: {
-                            length: grouped,
-                            date: ''
+                            length: Object.keys(grouped).length,
+                            date: Object.keys(grouped).length ? this.allService.unixToDate({ stringUnix: Object.keys(grouped)[0] }) : null
                         }
                     },
                     // {
@@ -220,7 +226,7 @@ export class UsersService {
             log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
-    } 
+    }
 
     protected async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
         if (all && all === true) {

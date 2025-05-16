@@ -70,8 +70,7 @@ export class SessionsService {
 
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
-        private readonly docsService: DocsService,
-
+        private readonly docsService: DocsService
     ) { }
 
     async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
@@ -99,7 +98,9 @@ export class SessionsService {
                             id_user: id,
                             id_formation: as_id_formation,
                             piece_jointe,
-                            is_returned: 0
+                            is_returned: 0,
+                            score: Number(score) as number,
+                            score_on: 0
                         })
                     })
                     return Responder({ status: HttpStatusCode.Created, data: seance })
