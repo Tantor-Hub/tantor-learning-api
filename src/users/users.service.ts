@@ -24,15 +24,15 @@ import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
-import { HomeWorks } from 'src/models/model.homeworks';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
-import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
 import { Formations } from 'src/models/model.formations';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { Categories } from 'src/models/model.categoriesformations';
 import { Thematiques } from 'src/models/model.groupeformations';
+import { HomeworksSession } from 'src/models/model.homework';
+import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 
 @Injectable()
 export class UsersService {
@@ -49,8 +49,11 @@ export class UsersService {
         @InjectModel(StagiaireHasSession)
         private readonly hasSessionModel: typeof StagiaireHasSession,
 
-        @InjectModel(HomeWorks)
-        private readonly homeworkModel: typeof HomeWorks,
+        @InjectModel(HomeworksSession)
+        private readonly homeworkModel: typeof HomeworksSession,
+
+        @InjectModel(StagiaireHasHomeWork)
+        private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
 
         @InjectModel(Messages)
         private readonly messagesModel: typeof Messages,
@@ -168,12 +171,12 @@ export class UsersService {
             const onGoingCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user, is_started: 1 } })
 
             // card 2
-            const enroledHomeworks = await this.homeworkModel.count({ where: { id_user, is_returned: 0 } })
-            const allPendingHomeworks = await this.homeworkModel.findAll({
+            const enroledHomeworks = await this.hashomeworkModel.count({ where: { id_user, is_returned: 0 } })
+            const allPendingHomeworks = await this.hashomeworkModel.findAll({
                 where: {
                     id_user,
                     is_returned: 0,
-                    date_de_remise: { [Op.gte]: new Date() },
+                    date_de_remise: { [Op.gte]: (Date.now() / 1000) },
                 },
                 order: [['date_de_remise', 'ASC']],
             });
@@ -217,11 +220,7 @@ export class UsersService {
             log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
-    }
-
-    private formatRoles(roles: any[]): number[] {
-        return roles.map(role => role?.id)
-    }
+    } 
 
     protected async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
         if (all && all === true) {
@@ -302,7 +301,7 @@ export class UsersService {
             .then(async student => {
                 if (student instanceof Users) {
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, roles } = student?.toJSON()
-                    const _roles = this.formatRoles(roles as any)
+                    const _roles = this.allService.formatRoles(roles as any)
 
                     if (is_verified === 1) {
                         const matched = await this.cryptoService.comparePassword(password, as_hashed_password);
@@ -512,7 +511,7 @@ export class UsersService {
                         }
 
                         const hashed_password = await this.cryptoService.hashPassword(new_password)
-                        const _roles = this.formatRoles(roles as any)
+                        const _roles = this.allService.formatRoles(roles as any)
 
                         return student.update({
                             password: hashed_password
@@ -610,7 +609,7 @@ export class UsersService {
                 if (student instanceof Users) {
 
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
-                    const _roles = this.formatRoles(roles as any)
+                    const _roles = this.allService.formatRoles(roles as any)
                     if (1) {
                         if (as_code?.toString() === verication_code.toString()) {
                             student.update({
@@ -660,7 +659,7 @@ export class UsersService {
                 if (student instanceof Users) {
 
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
-                    const _roles = this.formatRoles(roles as any)
+                    const _roles = this.allService.formatRoles(roles as any)
 
                     if (is_verified === 0) {
                         if (as_code?.toString() === verication_code.toString()) {
@@ -897,7 +896,7 @@ export class UsersService {
                             })
                     } else {
                         if (is_verified === 1) {
-                            const _roles = this.formatRoles(roles as any)
+                            const _roles = this.allService.formatRoles(roles as any)
                             return this.jwtService.signinPayloadAndEncrypt({
                                 id_user: as_id_user as number,
                                 roles_user: _roles,

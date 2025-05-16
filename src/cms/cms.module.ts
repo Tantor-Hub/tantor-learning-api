@@ -15,14 +15,15 @@ import { Users } from 'src/models/model.users';
 import { Roles } from 'src/models/model.roles';
 import { HasRoles } from 'src/models/model.userhasroles';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
-import { HomeWorks } from 'src/models/model.homeworks';
 import { Messages } from 'src/models/model.messages';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { HomeworksSession } from 'src/models/model.homework';
+import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeWorks, Messages, StagiaireHasSessionSeances, SeanceSessions]),
+    SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

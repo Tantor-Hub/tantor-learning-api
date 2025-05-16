@@ -20,10 +20,11 @@ import { MediasoupService } from 'src/services/service.mediasoup';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { DocsService } from 'src/services/service.docs';
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { HomeworksSession } from 'src/models/model.homework';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions]),
+    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

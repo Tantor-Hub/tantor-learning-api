@@ -18,7 +18,7 @@ import { tables } from 'src/config/config.tablesname';
 @Table({
     tableName: tables['homeworks'], timestamps: true,
 })
-export class HomeWorks extends Model<IHomeWorks> {
+export class StagiaireHasHomeWork extends Model<IHomeWorks> {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)

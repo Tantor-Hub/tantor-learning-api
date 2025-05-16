@@ -136,5 +136,8 @@ export class AllSercices {
             }
             return filtered;
         }, {} as Record<string, any>);
+    };
+    formatRoles(roles: any[]): number[] {
+        return roles.map(role => role?.id)
     }
 }

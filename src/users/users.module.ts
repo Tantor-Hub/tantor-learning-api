@@ -15,13 +15,14 @@ import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
-import { HomeWorks } from 'src/models/model.homeworks';
 import { Messages } from 'src/models/model.messages';
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { HomeworksSession } from 'src/models/model.homework';
+import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeWorks, Messages, StagiaireHasSessionSeances, SeanceSessions]),
+    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

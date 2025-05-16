@@ -24,6 +24,8 @@ import { typesactions } from 'src/utils/utiles.actionreprendre';
 import { DocsService } from 'src/services/service.docs';
 import { AddSeanceSessionDto } from './dto/add-seances.dto';
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { AddHomeworkSessionDto } from './dto/add-homework.dto';
+import { HomeworksSession } from 'src/models/model.homework';
 
 @Injectable()
 export class SessionsService {
@@ -59,11 +61,36 @@ export class SessionsService {
         @InjectModel(FormateurHasSession)
         private readonly hasSessionFormateurModel: typeof FormateurHasSession,
 
+        @InjectModel(HomeworksSession)
+        private readonly homeworkModel: typeof HomeworksSession,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
         private readonly docsService: DocsService,
 
     ) { }
+
+
+    async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
+        const { id_session, piece_jointe, id_formation, homework_date_on } = addSeanceSessionDto
+        try {
+            const session = await this.sessionModel.findOne({ where: { id: id_session } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            const { id_formation: as_id_formation } = session.toJSON()
+            return this.homeworkModel.create({
+                id_session: id_session as number,
+                homework_date_on: Number(homework_date_on) as number,
+                id_formation: as_id_formation,
+                piece_jointe,
+            })
+                .then(seance => {
+                    return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
 
     async listAllSessionsByOwn(user: IJwtSignin): Promise<ResponseServer> {
 

@@ -136,6 +136,21 @@ export class SessionsController {
         return this.sessionsService.createSeance({ ...createSessionDto, piece_jointe })
     }
 
+    @Post('session/addhomework')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async addNewHomeworkSession(@Body() createSessionDto: AddSeanceSessionDto, @UploadedFile() file: Express.Multer.File,) {
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.createSeance({ ...createSessionDto, piece_jointe })
+    }
+
     @Delete('session/addseance/:idSeance')
     @UseGuards(JwtAuthGuardAsFormateur)
     async deleteSeanceSession(@Param('idSeance', ParseIntPipe) idSeance: number) {
