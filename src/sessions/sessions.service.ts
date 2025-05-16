@@ -26,6 +26,7 @@ import { AddSeanceSessionDto } from './dto/add-seances.dto';
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
 import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 import { HomeworksSession } from 'src/models/model.homework';
+import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 
 @Injectable()
 export class SessionsService {
@@ -64,6 +65,9 @@ export class SessionsService {
         @InjectModel(HomeworksSession)
         private readonly homeworkModel: typeof HomeworksSession,
 
+        @InjectModel(StagiaireHasHomeWork)
+        private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
         private readonly docsService: DocsService,
@@ -75,6 +79,9 @@ export class SessionsService {
         try {
             const session = await this.sessionModel.findOne({ where: { id: id_session } })
             if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            const allConcernedStudent = await this.hasSessionStudentModel.findAll({ where: { id_sessionsuivi: id_session } })
+            const studentsIds = allConcernedStudent.map(s => (s.toJSON()['id_stagiaire']));
+
             const { id_formation: as_id_formation } = session.toJSON()
             return this.homeworkModel.create({
                 id_session: id_session as number,
@@ -84,6 +91,17 @@ export class SessionsService {
                 score: Number(score) as number
             })
                 .then(seance => {
+                    studentsIds.forEach(id => {
+                        this.hashomeworkModel.create({
+                            date_de_creation: new Date(),
+                            date_de_remise: homework_date_on,
+                            id_session,
+                            id_user: id,
+                            id_formation: as_id_formation,
+                            piece_jointe,
+                            is_returned: 0
+                        })
+                    })
                     return Responder({ status: HttpStatusCode.Created, data: seance })
                 })
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))

@@ -44,8 +44,8 @@ export class StagiaireHasHomeWork extends Model<IHomeWorks> {
     date_de_creation!: Date;
 
     @AllowNull(false)
-    @Column(DataType.DATE)
-    date_de_remise!: Date;
+    @Column(DataType.BIGINT)
+    date_de_remise!: number;
 
     @AllowNull(true)
     @Column(DataType.STRING)
