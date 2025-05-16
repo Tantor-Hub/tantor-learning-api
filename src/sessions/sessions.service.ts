@@ -70,9 +70,8 @@ export class SessionsService {
 
     ) { }
 
-
     async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
-        const { id_session, piece_jointe, id_formation, homework_date_on } = addSeanceSessionDto
+        const { id_session, piece_jointe, id_formation, homework_date_on, score } = addSeanceSessionDto
         try {
             const session = await this.sessionModel.findOne({ where: { id: id_session } })
             if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
@@ -82,6 +81,7 @@ export class SessionsService {
                 homework_date_on: Number(homework_date_on) as number,
                 id_formation: as_id_formation,
                 piece_jointe,
+                score: Number(score) as number
             })
                 .then(seance => {
                     return Responder({ status: HttpStatusCode.Created, data: seance })

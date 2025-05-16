@@ -11,6 +11,7 @@ import { MediasoupService } from '../services/service.mediasoup';
 import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { AddSeanceSessionDto } from './dto/add-seances.dto';
+import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -20,6 +21,21 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
+
+    @Post('session/addhomework')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async addNewHomeWorkSession(@Body() createSessionDto: AddHomeworkSessionDto, @UploadedFile() file: Express.Multer.File) {
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.createHomework({ ...createSessionDto, piece_jointe })
+    }
 
     @Get('mylist')
     @UseGuards(JwtAuthGuardAsStudent)
@@ -154,7 +170,7 @@ export class SessionsController {
     @Delete('session/addseance/:idSeance')
     @UseGuards(JwtAuthGuardAsFormateur)
     async deleteSeanceSession(@Param('idSeance', ParseIntPipe) idSeance: number) {
-        return this.sessionsService.deleteseance( idSeance)
+        return this.sessionsService.deleteseance(idSeance)
     }
 
     @Put('session/addseance/:idSeance')

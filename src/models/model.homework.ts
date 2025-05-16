@@ -15,6 +15,12 @@ export class HomeworksSession extends Model<IHomeworksSessions> {
     id_session: number;
 
     @Column({
+        type: DataType.FLOAT,
+        allowNull: false,
+    })
+    score: number;
+
+    @Column({
         type: DataType.BIGINT,
         allowNull: false,
         get() {

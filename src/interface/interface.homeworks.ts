@@ -5,4 +5,5 @@ export interface IHomeworksSessions extends IGlobale {
     homework_date_on: number;
     id_formation?: number;
     piece_jointe?: string;
+    score: number
 }

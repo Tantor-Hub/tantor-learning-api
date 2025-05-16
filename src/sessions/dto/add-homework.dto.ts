@@ -15,4 +15,7 @@ export class AddHomeworkSessionDto {
     @IsOptional()
     @IsString()
     piece_jointe: string;
+
+    @IsNumberString()
+    score: string;
 };
