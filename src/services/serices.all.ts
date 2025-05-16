@@ -17,6 +17,9 @@ export class AllSercices {
         }
         return date.format('DD/MM/YYYY');
     };
+    unixToDate({ stringUnix }: { stringUnix: string | number }): string {
+        return moment.unix(Number(stringUnix)).format('YYYY-MM-DD HH:mm:ss');
+    };
     calcHoursBetweenDates = ({ start, end }: { start: string; end: string }, formatTexte = false): IInternalResponse => {
         const dateDebut = new Date(start);
         const dateFin = new Date(end);

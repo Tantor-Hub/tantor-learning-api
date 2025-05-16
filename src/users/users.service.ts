@@ -132,14 +132,31 @@ export class UsersService {
 
             const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
 
+            SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" })
+            SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
             const nextLivesSessions = await this.hasseancesModel.findAll({
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['id', 'designation'],
+                    },
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    }
+                ],
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt']
+                },
                 where: {
                     id: {
                         [Op.in]: [...mylistids]
                     },
-                    seance_date_on: {
-                        [Op.gte]: Date.now()
-                    }
+                    // seance_date_on: {
+                    //     [Op.gte]: Date.now()
+                    // }
                 }
             })
 
@@ -158,7 +175,15 @@ export class UsersService {
                         }
                     },
                     {
-                        nextLivesSessions
+                        nextLivesSessions: nextLivesSessions.map(sessionLive => {
+                            const { seance_date_on } = sessionLive.toJSON()
+                            const ins = sessionLive?.toJSON()
+                            delete (ins as any).seance_date_on;
+                            return {
+                                date: this.allService.unixToDate({ stringUnix: seance_date_on }),
+                                ...ins
+                            }
+                        })
                     },
                     // {
                     //     scoreOngoingSemester: number,
