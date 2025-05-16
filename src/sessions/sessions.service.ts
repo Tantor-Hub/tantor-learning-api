@@ -193,7 +193,7 @@ export class SessionsService {
             return this.seancesModel.create({
                 duree,
                 id_session: id_session as number,
-                seance_date_on: Number(seance_date_on),
+                seance_date_on: Number(seance_date_on) as number,
                 id_formation: as_id_formation,
                 piece_jointe,
                 type_seance

@@ -22,9 +22,15 @@ export class CmsController {
         return this.cmsService.onAddAppInfos(createAppInfosDto)
     }
 
-    @Get('dashboard/student')
+    @Get('dashboard/cards')
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadStudentDashboard(@User() user: IJwtSignin) {
         return this.usersService.loadStudentDashboard(user)
+    }
+
+    @Get('dashboard/nextlivessessions')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async onLoadNextLivesSessions(@User() user: IJwtSignin) {
+        return this.usersService.loadStudentNextLiveSession(user)
     }
 }

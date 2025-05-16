@@ -66,14 +66,18 @@ export class UsersService {
 
     ) { }
 
-    async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
+    async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, uuid_user, roles_user } = user
         try {
-            // sesssions
             StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
             StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
             Formations.belongsTo(Categories, { foreignKey: "id_category" })
             Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+            SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" });
+            SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
+
+            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
 
             const mylistsession = await this.hasSessionModel.findAll({
                 include: [
@@ -107,7 +111,58 @@ export class UsersService {
             let mylistids = mylistsession.map(sess => {
                 return sess.toJSON().id
             }).filter(id => id !== undefined)
-            log("IDS are ==> ", mylistids, Date.now())
+
+            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
+            const nextLivesSessions = await this.hasseancesModel.findAll({
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['id', 'designation', 'id_superviseur'],
+                        include: [
+                            {
+                                model: Users,
+                                required: false
+                            }
+                        ]
+                    },
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    }
+                ],
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt']
+                },
+                where: {
+                    id: {
+                        [Op.in]: [...mylistids]
+                    },
+                    seance_date_on: {
+                        [Op.gte]: (Date.now() / 1000)
+                    }
+                }
+            })
+            return Responder({
+                status: HttpStatusCode.Ok, data: nextLivesSessions.map(sessionLive => {
+                    const { seance_date_on } = sessionLive.toJSON()
+                    const ins = sessionLive?.toJSON()
+                    delete (ins as any).seance_date_on;
+                    return {
+                        date: this.allService.unixToDate({ stringUnix: seance_date_on }),
+                        ...ins
+                    }
+                })
+            })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user, uuid_user, roles_user } = user
+        try {
             // card 1
             const enroledCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user } })
             const onGoingCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user, is_started: 1 } })
@@ -132,34 +187,6 @@ export class UsersService {
 
             const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
 
-            SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" })
-            SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
-            const nextLivesSessions = await this.hasseancesModel.findAll({
-                include: [
-                    {
-                        model: SessionSuivi,
-                        required: true,
-                        attributes: ['id', 'designation'],
-                    },
-                    {
-                        model: Formations,
-                        required: true,
-                        attributes: ['id', 'titre', 'sous_titre', 'description'],
-                    }
-                ],
-                attributes: {
-                    exclude: ['createdAt', 'updatedAt']
-                },
-                where: {
-                    id: {
-                        [Op.in]: [...mylistids]
-                    },
-                    // seance_date_on: {
-                    //     [Op.gte]: Date.now()
-                    // }
-                }
-            })
-
             return Responder({
                 status: HttpStatusCode.Ok,
                 data: [
@@ -174,17 +201,6 @@ export class UsersService {
                             date: ''
                         }
                     },
-                    {
-                        nextLivesSessions: nextLivesSessions.map(sessionLive => {
-                            const { seance_date_on } = sessionLive.toJSON()
-                            const ins = sessionLive?.toJSON()
-                            delete (ins as any).seance_date_on;
-                            return {
-                                date: this.allService.unixToDate({ stringUnix: seance_date_on }),
-                                ...ins
-                            }
-                        })
-                    },
                     // {
                     //     scoreOngoingSemester: number,
                     //     totalOngoingSemester: number,
@@ -198,6 +214,7 @@ export class UsersService {
             })
 
         } catch (error) {
+            log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
