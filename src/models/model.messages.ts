@@ -83,7 +83,7 @@ export class Messages extends Model<IMessages> {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        defaultValue: 0,
+        defaultValue: 1,
     })
-    status?: number // 0: sent 1: received 3: archived 4: deleted
+    status?: number // 1: alive 2: archived 3: deleted
 }

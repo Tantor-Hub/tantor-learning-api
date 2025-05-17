@@ -16,6 +16,7 @@ import { Messages } from 'src/models/model.messages';
 import { Op } from 'sequelize';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { CreateMessageDto } from './dto/send-message.dto';
+import { Users } from 'src/models/model.users';
 import { log } from 'console';
 
 @Injectable()
@@ -48,6 +49,7 @@ export class CmsService {
                 piece_jointe: piece_jointe || null,
                 is_replied_to,
                 subject,
+                thread
             })
                 .then(me => Responder({ status: HttpStatusCode.Created, data: me }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
@@ -59,12 +61,27 @@ export class CmsService {
     async getAllMessagesByGroupe(user: IJwtSignin, groupe: string): Promise<ResponseServer> {
         const { id_user } = user
         if (Object.keys(typeMessages).indexOf(groupe) === -1) return Responder({ status: HttpStatusCode.BadRequest, data: "Key groupe n'a pas été retrouvé" })
+
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
+        log(clause)
         return this.messageModel.findAndCountAll({
-            where: {
-                [Op.or]: {
-                    id_user_sender: id_user,
-                    id_user_receiver: id_user,
+            include: [
+                {
+                    model: Users,
+                    required: true,
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone']
                 }
+            ],
+            attributes: {
+                exclude: ['createdAt', 'updatedAt']
+            },
+            where: {
+                ...clause
+                // [Op.or]: {
+                //     id_user_sender: id_user,
+                //     id_user_receiver: id_user,
+                // }
             }
         })
             .then(({ rows, count }) => {
