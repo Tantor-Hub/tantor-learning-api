@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { CmsService } from './cms.service';
 import { CreateAppInfosDto } from './dto/create-infos.dto';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
@@ -29,6 +29,18 @@ export class CmsController {
     @UseGuards(JwtAuthGuard)
     async messagesListAll(@User() user) {
         return this.cmsService.getAllMessages(user)
+    }
+
+    @Put("messages/message/archive/:idmessage")
+    @UseGuards(JwtAuthGuard)
+    async onArchiveMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
+        return this.cmsService.archiveMessage(user, idmessage)
+    }
+
+    @Delete("messages/message/delete/:idmessage")
+    @UseGuards(JwtAuthGuard)
+    async onDeleteMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
+        return this.cmsService.deleteMessage(user, idmessage)
     }
 
     @Post('messages/message/send')
@@ -85,12 +97,5 @@ export class CmsController {
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadScoresPerformances(@User() user: IJwtSignin) {
         return this.usersService.loadPerformances(user)
-    }
-
-    @Get('/messages/list')
-    @UseGuards(JwtAuthGuard)
-    async onMessages(@User() user: IJwtSignin) {
-
-        // return this.cmsService.loadPerformances(user)
     }
 }

@@ -17,7 +17,6 @@ import { Op } from 'sequelize';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { CreateMessageDto } from './dto/send-message.dto';
 import { Users } from 'src/models/model.users';
-import { log } from 'console';
 
 @Injectable()
 export class CmsService {
@@ -36,9 +35,39 @@ export class CmsService {
         private readonly configService: ConfigService
     ) { }
 
+
+    async archiveMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
+        return this.messageModel.update({
+            status: 3
+        },
+            {
+                where: {
+                    id: id_message,
+                    id_user_sender: user.id_user
+                }
+            })
+            .then(_ => Responder({ status: HttpStatusCode.Ok, data: null }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async deleteMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
+        return this.messageModel.update({
+            status: 3
+        },
+            {
+                where: {
+                    id: id_message,
+                    id_user_sender: user.id_user
+                }
+            })
+            .then(_ => Responder({ status: HttpStatusCode.Ok, data: null }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
     async sendMessage(user: IJwtSignin, createMessageDto: CreateMessageDto): Promise<ResponseServer> {
         const { id_user } = user;
         const { content, date_d_envoie, id_user_receiver, id_user_sender, date_de_lecture, is_readed, is_replied_to, piece_jointe, subject, thread } = createMessageDto
+        const newThread = this.allSercices.randomLongNumber({ length: 10 })
         try {
             return this.messageModel.create({
                 content,
@@ -49,7 +78,7 @@ export class CmsService {
                 piece_jointe: piece_jointe || null,
                 is_replied_to,
                 subject,
-                thread
+                thread: thread || newThread
             })
                 .then(me => Responder({ status: HttpStatusCode.Created, data: me }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
@@ -64,8 +93,8 @@ export class CmsService {
 
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
-        log(clause)
         return this.messageModel.findAndCountAll({
+            order: [["id", "DESC"]],
             include: [
                 {
                     model: Users,
@@ -78,10 +107,6 @@ export class CmsService {
             },
             where: {
                 ...clause
-                // [Op.or]: {
-                //     id_user_sender: id_user,
-                //     id_user_receiver: id_user,
-                // }
             }
         })
             .then(({ rows, count }) => {
@@ -92,8 +117,23 @@ export class CmsService {
 
     async getAllMessages(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         return this.messageModel.findAndCountAll({
+            order: [["id", "DESC"]],
+            include: [
+                {
+                    model: Users,
+                    required: true,
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone']
+                }
+            ],
+            attributes: {
+                exclude: ['createdAt', 'updatedAt']
+            },
             where: {
+                status: {
+                    [Op.lt]: 3
+                },
                 [Op.or]: {
                     id_user_sender: id_user,
                     id_user_receiver: id_user,
