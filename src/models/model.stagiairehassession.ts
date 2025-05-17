@@ -34,10 +34,6 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @ForeignKey(() => Users)
     id_stagiaire: number;
 
-    @Column({ type: DataType.FLOAT })
-    @ForeignKey(() => Users)
-    total_score: number;
-
     @Column({ type: DataType.INTEGER })
     status: number
 
@@ -70,5 +66,4 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
 
     // @Column({ type: DataType.TEXT, allowNull: true })
     // commentaires: string;
-    
 }

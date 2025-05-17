@@ -50,47 +50,4 @@ export class Formations extends Model<IFormation> {
         defaultValue: 1
     })
     status?: number
-
-    // @ForeignKey(() => Users)
-    // @Column({
-    //     type: DataType.INTEGER,
-    //     allowNull: false,
-    // })
-    // id_formateur: number | null;
-
-    // @Column({
-    //     type: DataType.STRING,
-    //     allowNull: true,
-    // })
-    // piece_jointe: string;
-
-    // @Column({
-    //     type: DataType.ENUM('onLine', 'visionConference', 'presentiel', 'hybride'),
-    //     allowNull: false,
-    // })
-    // type_formation: string;
-
-    // @Column({
-    //     type: DataType.STRING,
-    //     allowNull: false,
-    // })
-    // duree: string;
-
-    // @Column({
-    //     type: DataType.DATE,
-    //     allowNull: true,
-    // })
-    // start_on: Date | string | any;
-
-    // @Column({
-    //     type: DataType.DATE,
-    //     allowNull: true,
-    // })
-    // end_on: Date | string | any;
-
-    // @Column({
-    //     type: DataType.FLOAT,
-    //     allowNull: false,
-    // })
-    // prix: number;
 }

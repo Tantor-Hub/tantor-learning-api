@@ -74,6 +74,13 @@ export class Messages extends Model<IMessages> {
     })
     is_replied_to?: number | null
 
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    })
+    status?: number
+
     @CreatedAt
     createdAt: Date;
 

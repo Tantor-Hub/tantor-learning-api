@@ -21,6 +21,13 @@ export class HomeworksSession extends Model<IHomeworksSessions> {
     score: number;
 
     @Column({
+        type: DataType.FLOAT,
+        allowNull: false,
+        defaultValue: 0.0
+    })
+    total_score: number;
+
+    @Column({
         type: DataType.BIGINT,
         allowNull: false,
         get() {

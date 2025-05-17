@@ -6,6 +6,7 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { UsersService } from '../users/users.service';
+import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 
 @Controller('cms')
 export class CmsController {
@@ -44,5 +45,12 @@ export class CmsController {
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadScoresPerformances(@User() user: IJwtSignin){
         return this.usersService.loadPerformances(user)
+    }
+
+    @Get('/messages/list')
+    @UseGuards(JwtAuthGuard)
+    async onMessages(@User() user: IJwtSignin){
+        
+        // return this.cmsService.loadPerformances(user)
     }
 }
