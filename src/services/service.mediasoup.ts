@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { log } from 'console';
 import * as mediasoup from 'mediasoup';
 
 @Injectable()

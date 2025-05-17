@@ -5,6 +5,8 @@ import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import { v4 as uuidv4 } from 'uuid';
 import * as moment from 'moment';
 import { userColumns } from 'src/interface/interface.usercolomuns';
+import { typeMessages } from 'src/utils/utiles.messagestypes';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class AllSercices {
@@ -139,5 +141,57 @@ export class AllSercices {
     };
     formatRoles(roles: any[]): number[] {
         return roles.map(role => role?.id)
-    }
+    };
+    buildClauseMessage(groupe: number, id_user: number): any {
+        typeMessages
+        // 1: alive 2: archived 3: deleted
+        switch (groupe) {
+            case 1:
+                return {
+                    id_user_sender: id_user,
+                    status: 1
+                }
+            case 2:
+                return {
+                    [Op.or]: {
+                        id_user_sender: id_user,
+                        id_user_receiver: id_user,
+                    },
+                    status: 2,
+                }
+            case 3:
+                return {
+                    id_user_receiver: id_user,
+                    status: 1
+                }
+            case 4:
+                return {
+                    [Op.or]: {
+                        id_user_sender: id_user,
+                        id_user_receiver: id_user,
+                    },
+                    status: 3
+                }
+            case 5:
+                return {
+                    [Op.or]: {
+                        id_user_sender: id_user,
+                        id_user_receiver: id_user,
+                    },
+                    status: {
+                        [Op.in]: [1, 2, 3, 4, 5]
+                    }
+                }
+            default:
+                return {
+                    [Op.or]: {
+                        id_user_sender: id_user,
+                        id_user_receiver: id_user,
+                    },
+                    status: {
+                        [Op.in]: [1, 2, 3, 4, 5]
+                    }
+                }
+        }
+    };
 }

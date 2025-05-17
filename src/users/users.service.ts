@@ -432,7 +432,7 @@ export class UsersService {
                                 delete (newInstance as any).updatedAt;
 
                                 this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
-                                return Responder({ status: HttpStatusCode.Unauthorized, data: { message: `Compte non vérifié | a verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                                return Responder({ status: HttpStatusCode.Unauthorized, data: null })
                             })
                             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
                     }

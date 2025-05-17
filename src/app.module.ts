@@ -33,6 +33,9 @@ import { Dialect } from 'sequelize';
 import { StagiaireHasSession } from './models/model.stagiairehassession';
 import { StagiaireHasSessionSeances } from './models/model.stagiairesessionhasseances';
 import { log } from 'node:console';
+import { Contacts } from './models/model.contactform';
+import { MailService } from './services/service.mail';
+import { Messages } from './models/model.messages';
 
 @Module({
   imports: [
@@ -55,7 +58,7 @@ import { log } from 'node:console';
         logging: false
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances, Contacts, Messages]),
     RolesModule,
     UsersModule,
     FormationsModule,
@@ -64,7 +67,7 @@ import { log } from 'node:console';
     CmsModule
   ],
   controllers: [AppController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService]
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService]
 })
 
 export class AppModule implements OnModuleInit {

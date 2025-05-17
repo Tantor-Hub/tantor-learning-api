@@ -20,10 +20,11 @@ import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhas
 import { SeanceSessions } from 'src/models/model.sessionhasseances';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+import { Contacts } from 'src/models/model.contactform';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork]),
+    SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -37,6 +38,6 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
     }),
   ],
   controllers: [CmsController],
-  providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService],
+  providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService, MailService],
 })
 export class CmsModule { }

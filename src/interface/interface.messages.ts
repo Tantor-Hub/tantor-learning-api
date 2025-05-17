@@ -6,8 +6,9 @@ export interface IMessages extends IGlobale {
     is_replied_to?: number | null
     subject?: string,
     content: string,
-    date_d_envoie: string | Date,
-    date_de_lecture: string | Date,
-    piece_jointe: string[],
-    is_readed: number
+    date_d_envoie?: string | Date,
+    date_de_lecture?: string | Date,
+    piece_jointe?: string | null,
+    is_readed: number,
+    thread?: string
 }

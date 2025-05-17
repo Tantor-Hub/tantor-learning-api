@@ -7,6 +7,7 @@ export class ResetPasswordDto {
 
     @IsString()
     @IsNotEmpty()
+    @IsOptional()
     verification_code: string;
 
     @IsString()
