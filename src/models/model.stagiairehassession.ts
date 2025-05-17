@@ -38,6 +38,9 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @ForeignKey(() => Users)
     total_score: number;
 
+    @Column({ type: DataType.INTEGER })
+    status: number
+
     // @Column({ type: DataType.INTEGER })
     // controleur: number;
 
@@ -67,4 +70,5 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
 
     // @Column({ type: DataType.TEXT, allowNull: true })
     // commentaires: string;
+    
 }

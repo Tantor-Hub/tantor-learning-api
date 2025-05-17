@@ -488,8 +488,8 @@ export class UsersService {
                                 delete (newInstance as any).is_verified;
                                 delete (newInstance as any).createdAt;
                                 delete (newInstance as any).updatedAt;
-
-                                return Responder({ status: HttpStatusCode.Created, data: { message: `A verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                                const record = this.allService.filterUserFields(newInstance)
+                                return Responder({ status: HttpStatusCode.Created, data: { user: record } })
                             } else {
                                 return Responder({ status: HttpStatusCode.BadRequest })
                             }
@@ -557,7 +557,7 @@ export class UsersService {
                                                 link: `https://tantor-learning-frontend-eight.vercel.app/auth/magic-link?email=${email}&verify=${hashed}`,
                                                 role: as_role
                                             })
-                                            return Responder({ status: HttpStatusCode.Created, data: hashed })
+                                            return Responder({ status: HttpStatusCode.Created, data: "Magic link envoyé avec succès !" })
                                         })
                                         .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
                                 } else return Responder({ status: HttpStatusCode.BadRequest, data: null })
@@ -619,7 +619,8 @@ export class UsersService {
                                 delete (newInstance as any).createdAt;
                                 delete (newInstance as any).updatedAt;
 
-                                return Responder({ status: HttpStatusCode.Created, data: { user: newInstance } })
+                                const record = this.allService.filterUserFields(newInstance)
+                                return Responder({ status: HttpStatusCode.Created, data: { user: record } })
                             } else {
                                 return Responder({ status: HttpStatusCode.BadRequest })
                             }

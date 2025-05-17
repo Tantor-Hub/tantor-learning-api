@@ -27,6 +27,8 @@ import { SeanceSessions } from 'src/models/model.sessionhasseances';
 import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+import { Op } from 'sequelize';
+import { log } from 'console';
 
 @Injectable()
 export class SessionsService {
@@ -372,6 +374,53 @@ export class SessionsService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
+    async listAllSessionByKeyword(user: IJwtSignin, keyword: string): Promise<ResponseServer> {
+
+        const { id_user } = user
+        StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        Formations.belongsTo(Categories, { foreignKey: "id_category" })
+        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: SessionSuivi,
+                    required: true,
+                },
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    where: {
+                        titre: {
+                            [Op.like]: `%${keyword}`
+                        }
+                    },
+                    include: [
+                        {
+                            model: Thematiques,
+                            required: true,
+                            attributes: ['id', 'thematic']
+                        },
+                        {
+                            model: Categories,
+                            required: true,
+                            attributes: ['id', 'category']
+                        }
+                    ]
+                }
+            ],
+            where: {
+                id_stagiaire: id_user,
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
     async listAllSession(): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
@@ -406,28 +455,35 @@ export class SessionsService {
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 
-    async listAllSessionByGroupe(user: IJwtSignin, igroupe: 'active' | 'upcoming' | 'completed'): Promise<ResponseServer> {
+    async listAllSessionByGroupe(user: IJwtSignin, group: 'active' | 'upcoming' | 'completed'): Promise<ResponseServer> {
         const { id_user } = user
-        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
-        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+        StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        Formations.belongsTo(Categories, { foreignKey: "id_category" })
+        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" });
 
         return this.hasSessionStudentModel.findAndCountAll({
             include: [
                 {
+                    model: SessionSuivi,
+                    required: true,
+                },
+                {
                     model: Formations,
                     required: true,
-                    attributes: ['id', 'titre', 'sous_titre', 'description']
-                },
-                {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
-                },
-                {
-                    model: Categories,
-                    required: true,
-                    attributes: ['id', 'category']
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    include: [
+                        {
+                            model: Thematiques,
+                            required: true,
+                            attributes: ['id', 'thematic']
+                        },
+                        {
+                            model: Categories,
+                            required: true,
+                            attributes: ['id', 'category']
+                        }
+                    ]
                 }
             ],
             where: {
@@ -438,9 +494,11 @@ export class SessionsService {
             .then(({ count, rows }) => {
                 return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
             })
-            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+            .catch(_ => {
+                log(_)
+                return Responder({ status: HttpStatusCode.InternalServerError, data: _ })
+            })
     }
-
 
     async gatAllSessionsByThematic(idThematic: number): Promise<ResponseServer> {
 

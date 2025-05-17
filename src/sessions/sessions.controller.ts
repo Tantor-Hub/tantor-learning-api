@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -12,6 +12,8 @@ import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { AddSeanceSessionDto } from './dto/add-seances.dto';
 import { AddHomeworkSessionDto } from './dto/add-homework.dto';
+import { Responder } from 'src/strategy/strategy.responder';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
 
 @Controller('sessions')
 export class SessionsController {
@@ -22,10 +24,17 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
-    @Get('list/groupe/:group')
+    @Get('list/bygroups/:group')
     @UseGuards(JwtAuthGuardAsStudent)
     async getAllSessionsByGroupe(@User() user, @Param('group') group: 'active' | 'upcoming' | 'completed') {
         return this.sessionsService.listAllSessionByGroupe(user, group);
+    }
+
+    @Get('list/bykeyword')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async getAllSessionsByKeyword(@User() user, @Query('keyword') keyword: string) {
+        if (!keyword) return Responder({ status: HttpStatusCode.BadRequest, data: "Le mot de recherche n'est pas envoyé dans la requete !" })
+        return this.sessionsService.listAllSessionByKeyword(user, keyword);
     }
 
     @Post('session/addhomework')
