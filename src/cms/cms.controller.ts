@@ -11,6 +11,8 @@ import { CreateContactDto } from './dto/contact-form.dto';
 import { CreateMessageDto } from './dto/send-message.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from '../services/service.googledrive';
+import { CreateEvenementDto } from './dto/create-planing.dto';
+import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 
 @Controller('cms')
 export class CmsController {
@@ -23,6 +25,24 @@ export class CmsController {
     @Post('contactus')
     async onContactForm(@Body() form: CreateContactDto) {
         return this.cmsService.onContactForm(form)
+    }
+
+    @Get('events/e/list')
+    @UseGuards(JwtAuthGuard)
+    async getMyPlaning( @User() user: IJwtSignin) {
+        return this.cmsService.myListAsStudent(user)
+    }
+
+    @Get('events/a/list')
+    @UseGuards(JwtAuthGuard)
+    async getMyPlaningAsManager( @User() user: IJwtSignin) {
+        return this.cmsService.myListAsFormateur(user)
+    }
+
+    @Post('events/event/add')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async onCreateEvent(@Body() form: CreateEvenementDto, @User() user: IJwtSignin) {
+        return this.cmsService.addPlaning(form, user)
     }
 
     @Get('messages/list')

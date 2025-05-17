@@ -9,5 +9,5 @@ export class ReclamationsSanctions extends Model<ReclamationsSanctions> {
   suivi_id: number;
 
   @Column commentaires: string;
-  @Column preuves: string; // URLs ou références aux pièces jointes
+  @Column preuves: string;
 }

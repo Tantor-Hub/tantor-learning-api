@@ -19,6 +19,7 @@ import { CreateMessageDto } from './dto/send-message.dto';
 import { Users } from 'src/models/model.users';
 import { CreateEvenementDto } from './dto/create-planing.dto';
 import { Planings } from 'src/models/model.planings';
+import { log } from 'console';
 
 @Injectable()
 export class CmsService {
@@ -40,18 +41,66 @@ export class CmsService {
         private readonly configService: ConfigService
     ) { }
 
-    async addPlaning(user: IJwtSignin, planing: CreateEvenementDto): Promise<ResponseServer> {
+    async myListAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user } = user
+        Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
+        return this.planingModel.findAll({
+            include: [
+                {
+                    model: Users,
+                    as: 'Concerned',
+                    attributes: ['id', 'fs_name', 'ls_name'],
+                    required: false
+                }
+            ],
+            where: {
+                status: 1,
+                createdBy: id_user
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async myListAsStudent(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user } = user
+        Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Creator" })
+        return this.planingModel.findAll({
+            include: [
+                {
+                    model: Users,
+                    as: 'Creator',
+                    attributes: ['id', 'fs_name', 'ls_name']
+                }
+            ],
+            where: {
+                status: 1,
+                [Op.or]: [
+                    { id_cibling: id_user },
+                    { id_cibling: null }
+                ]
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async addPlaning(planing: CreateEvenementDto, user: IJwtSignin,): Promise<ResponseServer> {
         const { description, titre, id_cibling, type } = planing;
+        const on = this.allSercices.dateToUnixOnly(new Date())
         try {
             return this.planingModel.create({
                 description,
                 titre,
                 type,
-                id_cibling
+                id_cibling,
+                createdBy: user.id_user,
+                planning_date_on: on
             })
                 .then(plan => Responder({ status: HttpStatusCode.Created, data: plan }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {
+            log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
@@ -147,15 +196,23 @@ export class CmsService {
         const { id_user } = user
         if (Object.keys(typeMessages).indexOf(groupe) === -1) return Responder({ status: HttpStatusCode.BadRequest, data: "Key groupe n'a pas été retrouvé" })
 
-        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
         const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
             include: [
                 {
                     model: Users,
-                    required: true,
-                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone']
+                    as: 'Sender',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
+                },
+                {
+                    model: Users,
+                    as: 'Receiver',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
                 }
             ],
             attributes: {
@@ -173,14 +230,22 @@ export class CmsService {
 
     async getAllMessages(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
-        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
             include: [
                 {
                     model: Users,
-                    required: true,
-                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone']
+                    as: 'Sender',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
+                },
+                {
+                    model: Users,
+                    as: 'Receiver',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
                 }
             ],
             attributes: {
