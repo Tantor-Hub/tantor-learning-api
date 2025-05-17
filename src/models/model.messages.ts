@@ -55,10 +55,10 @@ export class Messages extends Model<IMessages> {
     date_de_lecture: Date;
 
     @Column({
-        type: DataType.ARRAY(DataType.STRING),
+        type: DataType.STRING,
         allowNull: true,
     })
-    piece_jointe: string[];
+    piece_jointe?: string;
 
     @Column({
         type: DataType.INTEGER,
@@ -72,7 +72,13 @@ export class Messages extends Model<IMessages> {
         allowNull: false,
         defaultValue: 0,
     })
-    is_replied_to?: number | null
+    is_replied_to?: number
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true,
+    })
+    thread?: string
 
     @Column({
         type: DataType.INTEGER,
@@ -80,10 +86,4 @@ export class Messages extends Model<IMessages> {
         defaultValue: 0,
     })
     status?: number // 0: sent 1: received 3: archived 4: deleted
-
-    @CreatedAt
-    createdAt: Date;
-
-    @UpdatedAt
-    updatedAt: Date;
 }

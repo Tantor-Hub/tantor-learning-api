@@ -35,6 +35,7 @@ import { StagiaireHasSessionSeances } from './models/model.stagiairesessionhasse
 import { log } from 'node:console';
 import { Contacts } from './models/model.contactform';
 import { MailService } from './services/service.mail';
+import { Messages } from './models/model.messages';
 
 @Module({
   imports: [
@@ -57,7 +58,7 @@ import { MailService } from './services/service.mail';
         logging: false
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances, Contacts]),
+    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances, Contacts, Messages]),
     RolesModule,
     UsersModule,
     FormationsModule,

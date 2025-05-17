@@ -11,7 +11,7 @@ import { IContact } from 'src/interface/interface.contactform';
 export class Contacts extends Model<IContact> {
     @Column({
         type: DataType.STRING,
-        allowNull: false,
+        allowNull: false
     })
     from_name: string;
 

@@ -14,6 +14,9 @@ import { ConfigService } from '@nestjs/config';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { Messages } from 'src/models/model.messages';
 import { Op } from 'sequelize';
+import { typeMessages } from 'src/utils/utiles.messagestypes';
+import { CreateMessageDto } from './dto/send-message.dto';
+import { log } from 'console';
 
 @Injectable()
 export class CmsService {
@@ -26,11 +29,49 @@ export class CmsService {
         @InjectModel(Contacts)
         private readonly contactModel: typeof Contacts,
 
-        @InjectModel(Contacts)
+        @InjectModel(Messages)
         private readonly messageModel: typeof Messages,
 
         private readonly configService: ConfigService
     ) { }
+
+    async sendMessage(user: IJwtSignin, createMessageDto: CreateMessageDto): Promise<ResponseServer> {
+        const { id_user } = user;
+        const { content, date_d_envoie, id_user_receiver, id_user_sender, date_de_lecture, is_readed, is_replied_to, piece_jointe, subject, thread } = createMessageDto
+        try {
+            return this.messageModel.create({
+                content,
+                date_d_envoie: this.allSercices.nowDate(),
+                id_user_sender: id_user,
+                id_user_receiver: id_user_receiver || 0,
+                is_readed: 0,
+                piece_jointe: piece_jointe || null,
+                is_replied_to,
+                subject,
+            })
+                .then(me => Responder({ status: HttpStatusCode.Created, data: me }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async getAllMessagesByGroupe(user: IJwtSignin, groupe: string): Promise<ResponseServer> {
+        const { id_user } = user
+        if (Object.keys(typeMessages).indexOf(groupe) === -1) return Responder({ status: HttpStatusCode.BadRequest, data: "Key groupe n'a pas été retrouvé" })
+        return this.messageModel.findAndCountAll({
+            where: {
+                [Op.or]: {
+                    id_user_sender: id_user,
+                    id_user_receiver: id_user,
+                }
+            }
+        })
+            .then(({ rows, count }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
 
     async getAllMessages(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
@@ -38,7 +79,7 @@ export class CmsService {
             where: {
                 [Op.or]: {
                     id_user_sender: id_user,
-                    id_user_receiver: id_user
+                    id_user_receiver: id_user,
                 }
             }
         })
