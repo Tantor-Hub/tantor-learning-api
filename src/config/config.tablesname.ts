@@ -10,6 +10,7 @@ export enum tables {
     groupefromations = `${table_prefix}thematicsformations`,
     fromations = `${table_prefix}formationsascours`,
     sessions = `${table_prefix}sessions`,
+    contacts = `${table_prefix}contacts`,
     formateurhassession = `${table_prefix}formathassession`,
     sessionsuivi = `${table_prefix}suivisessions`,
     statgiairehassession = `${table_prefix}staghassessions`,

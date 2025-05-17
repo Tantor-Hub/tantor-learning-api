@@ -79,7 +79,7 @@ export class Messages extends Model<IMessages> {
         allowNull: false,
         defaultValue: 0,
     })
-    status?: number
+    status?: number // 0: sent 1: received 3: archived 4: deleted
 
     @CreatedAt
     createdAt: Date;
