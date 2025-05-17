@@ -23,6 +23,18 @@ import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
+import { IHomeWorks } from 'src/interface/interface.homework';
+import { Messages } from 'src/models/model.messages';
+import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { Formations } from 'src/models/model.formations';
+import { SessionSuivi } from 'src/models/model.suivisession';
+import { Categories } from 'src/models/model.categoriesformations';
+import { Thematiques } from 'src/models/model.groupeformations';
+import { HomeworksSession } from 'src/models/model.homework';
+import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+import { Sequelize } from 'sequelize-typescript';
+import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +48,21 @@ export class UsersService {
         @InjectModel(HasRoles)
         private readonly hasRoleModel: typeof HasRoles,
 
+        @InjectModel(StagiaireHasSession)
+        private readonly hasSessionModel: typeof StagiaireHasSession,
+
+        @InjectModel(HomeworksSession)
+        private readonly homeworkModel: typeof HomeworksSession,
+
+        @InjectModel(StagiaireHasHomeWork)
+        private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
+
+        @InjectModel(Messages)
+        private readonly messagesModel: typeof Messages,
+
+        @InjectModel(SeanceSessions)
+        private readonly hasseancesModel: typeof SeanceSessions,
+
         private readonly jwtService: JwtService,
         private readonly mailService: MailService,
         private readonly allService: AllSercices,
@@ -44,11 +71,249 @@ export class UsersService {
 
     ) { }
 
-    private formatRoles(roles: any[]): number[] {
-        return roles.map(role => role?.id)
+    async loadPerformances(user: IJwtSignin) {
+        const { id_user, roles_user, level_indicator } = user
+        try {
+
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
-    async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
+    async loadScores(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user, roles_user, level_indicator } = user
+
+        try {
+            const getSemesterScores = async (id_user: number): Promise<{
+                scoreOngoingSemester: number,
+                totalOngoingSemester: number,
+                scoreLastSemester: number,
+                totalLastSemeter: number
+            }> => {
+                const now = new Date();
+                const currentMonth = now.getMonth() + 1;
+
+                let semesterStart: Date, semesterEnd: Date;
+                let lastSemesterStart: Date, lastSemesterEnd: Date;
+
+                if (currentMonth <= 6) {
+                    // S1 actuel (janv-juin), S2 précédent (juil-déc de l'année précédente)
+                    semesterStart = new Date(now.getFullYear(), 0, 1);
+                    semesterEnd = new Date(now.getFullYear(), 5, 30);
+                    lastSemesterStart = new Date(now.getFullYear() - 1, 6, 1);
+                    lastSemesterEnd = new Date(now.getFullYear() - 1, 11, 31);
+                } else {
+                    // S2 actuel (juil-déc), S1 précédent (janv-juin de la même année)
+                    semesterStart = new Date(now.getFullYear(), 6, 1);
+                    semesterEnd = new Date(now.getFullYear(), 11, 31);
+                    lastSemesterStart = new Date(now.getFullYear(), 0, 1);
+                    lastSemesterEnd = new Date(now.getFullYear(), 5, 30);
+                }
+
+                let [ongoing, last] = await Promise.all([
+                    this.hashomeworkModel.findAll({
+                        where: {
+                            id_user,
+                            date_de_creation: {
+                                [Op.between]: [semesterStart, semesterEnd],
+                            },
+                        },
+                        attributes: [
+                            [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
+                            [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
+                        ],
+                        raw: true,
+                    }) as any,
+                    this.hashomeworkModel.findAll({
+                        where: {
+                            id_user,
+                            date_de_creation: {
+                                [Op.between]: [lastSemesterStart, lastSemesterEnd],
+                            },
+                        },
+                        attributes: [
+                            [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
+                            [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
+                        ],
+                        raw: true,
+                    }) as any,
+                ])
+
+                return {
+                    scoreOngoingSemester: Number(ongoing[0]?.score || 0),
+                    totalOngoingSemester: Number(ongoing[0]?.total || 0),
+                    scoreLastSemester: Number(last[0]?.score || 0),
+                    totalLastSemeter: Number(last[0]?.total || 0),
+                };
+            }
+
+            const resul = await getSemesterScores(id_user)
+            return Responder({ status: HttpStatusCode.Ok, data: resul })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user, uuid_user, roles_user } = user
+        try {
+            StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+            StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+            Formations.belongsTo(Categories, { foreignKey: "id_category" })
+            Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+            SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" });
+            SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
+
+            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
+
+            const mylistsession = await this.hasSessionModel.findAll({
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                    },
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description'],
+                        include: [
+                            {
+                                model: Thematiques,
+                                required: true,
+                                attributes: ['id', 'thematic']
+                            },
+                            {
+                                model: Categories,
+                                required: true,
+                                attributes: ['id', 'category']
+                            }
+                        ]
+                    }
+                ],
+                where: {
+                    id_stagiaire: id_user
+                }
+            })
+
+            let mylistids = mylistsession.map(sess => {
+                return sess.toJSON().id
+            }).filter(id => id !== undefined)
+
+            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
+            const nextLivesSessions = await this.hasseancesModel.findAll({
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['id', 'designation', 'id_superviseur'],
+                        include: [
+                            {
+                                model: Users,
+                                required: false
+                            }
+                        ]
+                    },
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    }
+                ],
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt']
+                },
+                where: {
+                    id: {
+                        [Op.in]: [...mylistids]
+                    },
+                    seance_date_on: {
+                        [Op.gte]: (Date.now() / 1000)
+                    }
+                }
+            })
+            return Responder({
+                status: HttpStatusCode.Ok, data: nextLivesSessions.map(sessionLive => {
+                    const { seance_date_on } = sessionLive.toJSON()
+                    const ins = sessionLive?.toJSON()
+                    delete (ins as any).seance_date_on;
+                    return {
+                        date: this.allService.unixToDate({ stringUnix: seance_date_on }),
+                        ...ins
+                    }
+                })
+            })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
+        const { id_user, uuid_user, roles_user } = user
+        try {
+            // card 1
+            const enroledCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user } })
+            const onGoingCours = await this.hasSessionModel.count({ where: { id_stagiaire: id_user, is_started: 1 } })
+
+            // card 2
+            const enroledHomeworks = await this.hashomeworkModel.count({ where: { id_user, is_returned: 0 } })
+            const allPendingHomeworks = await this.hashomeworkModel.findAll({
+                where: {
+                    id_user,
+                    is_returned: 0,
+                    date_de_remise: { [Op.gte]: (Date.now() / 1000) },
+                },
+                order: [['date_de_remise', 'ASC']],
+            });
+
+            const grouped = allPendingHomeworks.reduce((acc, hw) => {
+                const date = (hw.date_de_remise);
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(hw);
+                return acc;
+            }, {} as Record<string, IHomeWorks[]>);
+
+            const unreadMessages = await this.messagesModel.count({ where: { id_user_receiver: id_user, is_readed: 0 } })
+            // const as_groupe = Object.keys(grouped).map(key => {
+            //     return {
+            //         length: Object.keys(grouped).length,
+            //         date: Object.keys(grouped).length ? this.allService.unixToDate({ stringUnix: Object.keys(grouped)[0] }) : null
+            //     }
+            // })
+
+            return Responder({
+                status: HttpStatusCode.Ok,
+                data: [
+                    {
+                        enrolledCourses: enroledCours,
+                        ongoingCourses: onGoingCours
+                    },
+                    {
+                        homework: enroledHomeworks,
+                        nextDelivery: {
+                            length: Object.keys(grouped).length,
+                            date: Object.keys(grouped).length ? this.allService.unixToDate({ stringUnix: Object.keys(grouped)[0] }) : null
+                        }
+                    },
+                    // {
+                    //     scoreOngoingSemester: number,
+                    //     totalOngoingSemester: number,
+                    //     scoreLastSemester: number,
+                    //     totalLastSemeter: number
+                    // },
+                    {
+                        unreadMessageNumber: unreadMessages
+                    }
+                ]
+            })
+
+        } catch (error) {
+            log(error)
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    protected async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
         if (all && all === true) {
             this.mailService.sendMail({
                 content: this.mailService.templates({ as: 'welcome', nom, postnom }),
@@ -127,7 +392,7 @@ export class UsersService {
             .then(async student => {
                 if (student instanceof Users) {
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, roles } = student?.toJSON()
-                    const _roles = this.formatRoles(roles as any)
+                    const _roles = this.allService.formatRoles(roles as any)
 
                     if (is_verified === 1) {
                         const matched = await this.cryptoService.comparePassword(password, as_hashed_password);
@@ -223,8 +488,8 @@ export class UsersService {
                                 delete (newInstance as any).is_verified;
                                 delete (newInstance as any).createdAt;
                                 delete (newInstance as any).updatedAt;
-
-                                return Responder({ status: HttpStatusCode.Created, data: { message: `A verification code was sent to the user ::: [${email}]`, user: newInstance } })
+                                const record = this.allService.filterUserFields(newInstance)
+                                return Responder({ status: HttpStatusCode.Created, data: { user: record } })
                             } else {
                                 return Responder({ status: HttpStatusCode.BadRequest })
                             }
@@ -241,6 +506,71 @@ export class UsersService {
                 log(err)
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
+    }
+
+    async registerThanSendMagicLink(createUserDto: CreateUserMagicLinkDto): Promise<ResponseServer> {
+        const { email, id_role } = createUserDto
+        try {
+            const existingUser = await this.userModel.findOne({ where: { email } });
+            const role = await this.rolesModel.findOne({ where: { id: id_role } })
+            if (existingUser) {
+                return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
+            }
+            if (!role) return Responder({ status: HttpStatusCode.BadRequest, data: `Ce role n'est pas configurable` })
+
+            const password = "123456";
+            const verif_code = this.allService.randomLongNumber({ length: 6 })
+            const num_record = this.allService.randomLongNumber({ length: 8 })
+            const hashed_password = await this.cryptoService.hashPassword(password)
+            const uuid_user = this.allService.generateUuid()
+            const escape = this.configService.get<string>('ESCAPESTRING') || "---";
+            const { role: as_role } = role.toJSON()
+
+            return this.userModel.create({
+                num_record: num_record,
+                email,
+                fs_name: escape,
+                ls_name: escape,
+                password: hashed_password,
+                nick_name: escape,
+                uuid: uuid_user,
+                verification_code: verif_code,
+                is_verified: 0,
+                status: 1
+            })
+                .then(async u => {
+                    if (u instanceof Users) {
+                        const { id } = u.toJSON()
+                        return this.hasRoleModel.create({
+                            RoleId: id_role || 2, // ie. sec. role
+                            UserId: id as number,
+                            status: 1
+                        })
+                            .then(hasrole => {
+                                if (hasrole instanceof HasRoles) {
+                                    const { id } = u.toJSON()
+                                    return this.jwtService.signinPayloadAndEncrypt({ id_user: id as any, roles_user: id_role as any, uuid_user, level_indicator: 95 })
+                                        .then(({ data, code }) => {
+                                            const { hashed, refresh, cleared } = data
+                                            this.mailService.onInviteViaMagicLink({
+                                                to: email,
+                                                link: `https://tantor-learning-frontend-eight.vercel.app/auth/magic-link?email=${email}&verify=${hashed}`,
+                                                role: as_role
+                                            })
+                                            return Responder({ status: HttpStatusCode.Created, data: "Magic link envoyé avec succès !" })
+                                        })
+                                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                                } else return Responder({ status: HttpStatusCode.BadRequest, data: null })
+                            })
+                            .catch(err => Responder({ status: HttpStatusCode.BadRequest, data: err }))
+                    } else {
+                        return Responder({ status: HttpStatusCode.InternalServerError, data: u })
+                    }
+                })
+                .catch(er => Responder({ status: HttpStatusCode.InternalServerError, data: er }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
     async registerAsNewUser(createUserDto: CreateUserDto): Promise<ResponseServer> {
@@ -289,7 +619,8 @@ export class UsersService {
                                 delete (newInstance as any).createdAt;
                                 delete (newInstance as any).updatedAt;
 
-                                return Responder({ status: HttpStatusCode.Created, data: { user: newInstance } })
+                                const record = this.allService.filterUserFields(newInstance)
+                                return Responder({ status: HttpStatusCode.Created, data: { user: record } })
                             } else {
                                 return Responder({ status: HttpStatusCode.BadRequest })
                             }
@@ -304,6 +635,53 @@ export class UsersService {
             .catch(err => {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
+    }
+
+    async registerAsNewUserFormMagicLink(createUserDto: CreateUserDto, emailmagic: string, token: string): Promise<ResponseServer> {
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
+        const decoded: IJwtSignin = await this.jwtService.checkTokenWithRound(token)
+        if (!decoded) return Responder({ status: HttpStatusCode.Unauthorized, data: "Le token fournie est invalide" })
+        const { id_user, } = decoded
+        const existingUser = await this.userModel.findOne({ where: { email, id: id_user } });
+
+        if (existingUser) {
+            const hashed_password = await this.cryptoService.hashPassword(password)
+            return this.userModel.update({
+                email,
+                fs_name,
+                ls_name,
+                phone: phone,
+                password: hashed_password,
+                nick_name,
+                status: 1
+            }, {
+                where: {
+                    email,
+                    id: id_user
+                }
+            })
+                .then(student => {
+                    if (student instanceof Users) {
+                        const { id: as_id_user, email } = student?.toJSON()
+                        const newInstance = student.toJSON();
+
+                        delete (newInstance as any).password;
+                        delete (newInstance as any).verification_code;
+                        delete (newInstance as any).last_login;
+                        delete (newInstance as any).status;
+                        delete (newInstance as any).is_verified;
+                        delete (newInstance as any).createdAt;
+                        delete (newInstance as any).updatedAt;
+
+                        return Responder({ status: HttpStatusCode.Created, data: { user: newInstance } })
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: {} })
+                    }
+                })
+                .catch(err => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                })
+        } else return Responder({ status: HttpStatusCode.BadRequest, data: `Les informations fournies ne sont pas conformes` })
     }
 
     async setNewPassword(resetPasswordDto: ResetPasswordDto): Promise<ResponseServer> {
@@ -337,7 +715,7 @@ export class UsersService {
                         }
 
                         const hashed_password = await this.cryptoService.hashPassword(new_password)
-                        const _roles = this.formatRoles(roles as any)
+                        const _roles = this.allService.formatRoles(roles as any)
 
                         return student.update({
                             password: hashed_password
@@ -435,7 +813,7 @@ export class UsersService {
                 if (student instanceof Users) {
 
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
-                    const _roles = this.formatRoles(roles as any)
+                    const _roles = this.allService.formatRoles(roles as any)
                     if (1) {
                         if (as_code?.toString() === verication_code.toString()) {
                             student.update({
@@ -485,7 +863,7 @@ export class UsersService {
                 if (student instanceof Users) {
 
                     const { email, fs_name, ls_name, nick_name, password: as_hashed_password, is_verified, uuid, id, verification_code: as_code, roles } = student?.toJSON()
-                    const _roles = this.formatRoles(roles as any)
+                    const _roles = this.allService.formatRoles(roles as any)
 
                     if (is_verified === 0) {
                         if (as_code?.toString() === verication_code.toString()) {
@@ -722,7 +1100,7 @@ export class UsersService {
                             })
                     } else {
                         if (is_verified === 1) {
-                            const _roles = this.formatRoles(roles as any)
+                            const _roles = this.allService.formatRoles(roles as any)
                             return this.jwtService.signinPayloadAndEncrypt({
                                 id_user: as_id_user as number,
                                 roles_user: _roles,

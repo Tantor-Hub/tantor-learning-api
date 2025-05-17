@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Invitation à compléter vos informations - {{appname}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        color: #333;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 20px;
+        margin-top: 20px;
+        background-color: #004080;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+      .footer {
+        margin-top: 40px;
+        font-size: 14px;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Bonjour,</h2>
+
+    <p>
+      Vous avez été invité à compléter vos informations sur la plateforme
+      <strong>{{appname}}</strong> en tant que <strong>{{role}}</strong>.
+    </p>
+
+    <p>
+      Pour accéder à votre espace personnel et compléter votre profil, veuillez
+      cliquer sur le lien ci-dessous :
+    </p>
+
+    <p>
+      <a href="{{magicLink}}" class="button">Compléter mes informations</a>
+    </p>
+
+    <p>
+      Ce lien est personnel, sécurisé et valable pour une durée limitée. Merci
+      de le conserver confidentiel.
+    </p>
+
+    <div class="footer">
+      <p>Cordialement,</p>
+      <p><strong>{{appowner}} - {{appname}}</strong></p>
+      <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+    </div>
+  </body>
+</html>

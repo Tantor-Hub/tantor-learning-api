@@ -19,13 +19,27 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @Column({ type: DataType.INTEGER })
     id_formation: number;
 
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
+    is_started: number;
+
     @Column({ type: DataType.INTEGER })
     @ForeignKey(() => SessionSuivi)
     id_sessionsuivi: number;
 
     @Column({ type: DataType.INTEGER })
+    @ForeignKey(() => SessionSuivi)
+    id_seances: number;
+
+    @Column({ type: DataType.INTEGER })
     @ForeignKey(() => Users)
     id_stagiaire: number;
+
+    @Column({ type: DataType.FLOAT })
+    @ForeignKey(() => Users)
+    total_score: number;
+
+    @Column({ type: DataType.INTEGER })
+    status: number
 
     // @Column({ type: DataType.INTEGER })
     // controleur: number;
@@ -56,4 +70,5 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
 
     // @Column({ type: DataType.TEXT, allowNull: true })
     // commentaires: string;
+    
 }

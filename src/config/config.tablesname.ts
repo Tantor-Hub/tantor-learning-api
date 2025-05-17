@@ -19,4 +19,8 @@ export enum tables {
     pendant_formation_docs = `${table_prefix}docspendantformations`,
     reclamations_sanctions = `${table_prefix}docsreclamationformations`,
     payementmethode = `${table_prefix}payementmethode`,
+    homeworks = `${table_prefix}homeworks`,
+    messages = `${table_prefix}messages`,
+    seancesessions = `${table_prefix}seancessessions`,
+    homeworkssessions = `${table_prefix}homeworkssessions`
 }

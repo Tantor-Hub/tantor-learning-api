@@ -80,6 +80,16 @@ export class JwtService {
     }
   }
 
+  async checkTokenWithRound(token: string): Promise<any> {
+    try {
+      const cleared = await this.decryptWithRound(token)
+      const decrypted = await this.jwtService.decode(cleared);
+      return decrypted
+    } catch (error) {
+      return null
+    }
+  }
+
   async verifyToken(token: string): Promise<any> {
     try {
       return await this.jwtService.verifyAsync(token, {

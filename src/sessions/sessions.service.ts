@@ -22,6 +22,13 @@ import { typesprestations } from 'src/utils/utiles.typesprestation';
 import { typesrelances } from 'src/utils/utiles.typerelances';
 import { typesactions } from 'src/utils/utiles.actionreprendre';
 import { DocsService } from 'src/services/service.docs';
+import { AddSeanceSessionDto } from './dto/add-seances.dto';
+import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { AddHomeworkSessionDto } from './dto/add-homework.dto';
+import { HomeworksSession } from 'src/models/model.homework';
+import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+import { Op } from 'sequelize';
+import { log } from 'console';
 
 @Injectable()
 export class SessionsService {
@@ -48,17 +55,63 @@ export class SessionsService {
         @InjectModel(Thematiques)
         private readonly thematicModel: typeof Thematiques,
 
+        @InjectModel(SeanceSessions)
+        private readonly seancesModel: typeof SeanceSessions,
+
         @InjectModel(StagiaireHasSession)
         private readonly hasSessionStudentModel: typeof StagiaireHasSession,
 
         @InjectModel(FormateurHasSession)
         private readonly hasSessionFormateurModel: typeof FormateurHasSession,
 
+        @InjectModel(HomeworksSession)
+        private readonly homeworkModel: typeof HomeworksSession,
+
+        @InjectModel(StagiaireHasHomeWork)
+        private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
-        private readonly docsService: DocsService,
-
+        private readonly docsService: DocsService
     ) { }
+
+    async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
+        const { id_session, piece_jointe, id_formation, homework_date_on, score } = addSeanceSessionDto
+        try {
+            const session = await this.sessionModel.findOne({ where: { id: id_session } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            const allConcernedStudent = await this.hasSessionStudentModel.findAll({ where: { id_sessionsuivi: id_session } })
+            const studentsIds = allConcernedStudent.map(s => (s.toJSON()['id_stagiaire']));
+
+            const { id_formation: as_id_formation } = session.toJSON()
+            return this.homeworkModel.create({
+                id_session: id_session as number,
+                homework_date_on: Number(homework_date_on) as number,
+                id_formation: as_id_formation,
+                piece_jointe,
+                score: Number(score) as number
+            })
+                .then(seance => {
+                    studentsIds.forEach(id => {
+                        this.hashomeworkModel.create({
+                            date_de_creation: new Date(),
+                            date_de_remise: homework_date_on,
+                            id_session,
+                            id_user: id,
+                            id_formation: as_id_formation,
+                            piece_jointe,
+                            is_returned: 0,
+                            score: Number(score) as number,
+                            score_on: 0
+                        })
+                    })
+                    return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
 
     async listAllSessionsByOwn(user: IJwtSignin): Promise<ResponseServer> {
 
@@ -179,6 +232,60 @@ export class SessionsService {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesactions.length, list: typesactions } })
     }
 
+    async createSeance(addSeanceSessionDto: AddSeanceSessionDto): Promise<ResponseServer> {
+        const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree } = addSeanceSessionDto
+        try {
+            const session = await this.sessionModel.findOne({ where: { id: id_session } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            const { id_formation: as_id_formation } = session.toJSON()
+            return this.seancesModel.create({
+                duree,
+                id_session: id_session as number,
+                seance_date_on: Number(seance_date_on) as number,
+                id_formation: as_id_formation,
+                piece_jointe,
+                type_seance
+            })
+                .then(seance => {
+                    return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async deleteseance(id_seance: number) {
+        try {
+            const session = await this.seancesModel.findOne({ where: { id: id_seance } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            return session.destroy()
+                .then(async (seance: any) => {
+                    return Responder({ status: HttpStatusCode.Ok, data: "Supprimé" })
+                })
+                .catch((err: any) => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
+    async updateSeance(addSeanceSessionDto: any, id_seance: number): Promise<ResponseServer> {
+        const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree } = addSeanceSessionDto
+        try {
+            const session = await this.seancesModel.findOne({ where: { id: id_seance } })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
+            return session.update({
+                ...addSeanceSessionDto
+            })
+                .then(async (seance: any) => {
+                    return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch((err: any) => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 
         const { type_formation, description, prix, date_session_debut, date_session_fin, id_superviseur, piece_jointe, id_formation, id_controleur } = createSessionDto
@@ -267,6 +374,53 @@ export class SessionsService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
 
+    async listAllSessionByKeyword(user: IJwtSignin, keyword: string): Promise<ResponseServer> {
+
+        const { id_user } = user
+        StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        Formations.belongsTo(Categories, { foreignKey: "id_category" })
+        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: SessionSuivi,
+                    required: true,
+                },
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    where: {
+                        titre: {
+                            [Op.like]: `%${keyword}`
+                        }
+                    },
+                    include: [
+                        {
+                            model: Thematiques,
+                            required: true,
+                            attributes: ['id', 'thematic']
+                        },
+                        {
+                            model: Categories,
+                            required: true,
+                            attributes: ['id', 'category']
+                        }
+                    ]
+                }
+            ],
+            where: {
+                id_stagiaire: id_user,
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
     async listAllSession(): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
@@ -299,6 +453,51 @@ export class SessionsService {
                 return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+    async listAllSessionByGroupe(user: IJwtSignin, group: 'active' | 'upcoming' | 'completed'): Promise<ResponseServer> {
+        const { id_user } = user
+        StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        Formations.belongsTo(Categories, { foreignKey: "id_category" })
+        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" });
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: SessionSuivi,
+                    required: true,
+                },
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    include: [
+                        {
+                            model: Thematiques,
+                            required: true,
+                            attributes: ['id', 'thematic']
+                        },
+                        {
+                            model: Categories,
+                            required: true,
+                            attributes: ['id', 'category']
+                        }
+                    ]
+                }
+            ],
+            where: {
+                status: 1,
+                id_stagiaire: id_user
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => {
+                log(_)
+                return Responder({ status: HttpStatusCode.InternalServerError, data: _ })
+            })
     }
 
     async gatAllSessionsByThematic(idThematic: number): Promise<ResponseServer> {
