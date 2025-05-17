@@ -22,6 +22,12 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Get('list/groupe/:group')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async getAllSessionsByGroupe(@User() user, @Param('group') group: 'active' | 'upcoming' | 'completed') {
+        return this.sessionsService.listAllSessionByGroupe(user, group);
+    }
+
     @Post('session/addhomework')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))

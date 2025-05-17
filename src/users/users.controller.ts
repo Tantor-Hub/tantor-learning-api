@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Req, Request, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, Request, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
@@ -16,6 +16,9 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { log } from 'console';
+import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
+import { Responder } from 'src/strategy/strategy.responder';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
 
 @Controller('users')
 export class UsersController {
@@ -33,6 +36,20 @@ export class UsersController {
     @UseGuards(JwtAuthGuardAsFormateur)
     async addNewSystemeUser(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsNewUser(createUserDto);
+    }
+
+    @Post('user/add/magiclink')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async addNewSystemeUserSendMagicLink(@Body() createUserDto: CreateUserMagicLinkDto) {
+        return this.userService.registerThanSendMagicLink(createUserDto);
+    }
+
+    @Post('user/register')
+    async addNewSystemeUserViaMagicLink(@Body() createUserDto: CreateUserDto, @Query('email') email: string, @Query('verify') verify: string,) {
+        if (!email || !verify) {
+            return Responder({ status: HttpStatusCode.BadRequest, data: 'Email et token de vérification sont requis' });
+        }
+        return this.userService.registerAsNewUserFormMagicLink(createUserDto, email, verify);
     }
 
     @Post("user/signin")

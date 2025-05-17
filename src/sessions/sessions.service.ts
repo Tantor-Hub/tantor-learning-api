@@ -406,6 +406,42 @@ export class SessionsService {
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 
+    async listAllSessionByGroupe(user: IJwtSignin, igroupe: 'active' | 'upcoming' | 'completed'): Promise<ResponseServer> {
+        const { id_user } = user
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                }
+            ],
+            where: {
+                status: 1,
+                id_stagiaire: id_user
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+
     async gatAllSessionsByThematic(idThematic: number): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })

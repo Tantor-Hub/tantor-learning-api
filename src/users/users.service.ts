@@ -34,6 +34,7 @@ import { Thematiques } from 'src/models/model.groupeformations';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Sequelize } from 'sequelize-typescript';
+import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 
 @Injectable()
 export class UsersService {
@@ -70,10 +71,10 @@ export class UsersService {
 
     ) { }
 
-    async loadPerformances(user: IJwtSignin){
+    async loadPerformances(user: IJwtSignin) {
         const { id_user, roles_user, level_indicator } = user
         try {
-            
+
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
@@ -145,7 +146,7 @@ export class UsersService {
                     totalLastSemeter: Number(last[0]?.total || 0),
                 };
             }
-            
+
             const resul = await getSemesterScores(id_user)
             return Responder({ status: HttpStatusCode.Ok, data: resul })
         } catch (error) {
@@ -507,6 +508,71 @@ export class UsersService {
             })
     }
 
+    async registerThanSendMagicLink(createUserDto: CreateUserMagicLinkDto): Promise<ResponseServer> {
+        const { email, id_role } = createUserDto
+        try {
+            const existingUser = await this.userModel.findOne({ where: { email } });
+            const role = await this.rolesModel.findOne({ where: { id: id_role } })
+            if (existingUser) {
+                return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
+            }
+            if (!role) return Responder({ status: HttpStatusCode.BadRequest, data: `Ce role n'est pas configurable` })
+
+            const password = "123456";
+            const verif_code = this.allService.randomLongNumber({ length: 6 })
+            const num_record = this.allService.randomLongNumber({ length: 8 })
+            const hashed_password = await this.cryptoService.hashPassword(password)
+            const uuid_user = this.allService.generateUuid()
+            const escape = this.configService.get<string>('ESCAPESTRING') || "---";
+            const { role: as_role } = role.toJSON()
+
+            return this.userModel.create({
+                num_record: num_record,
+                email,
+                fs_name: escape,
+                ls_name: escape,
+                password: hashed_password,
+                nick_name: escape,
+                uuid: uuid_user,
+                verification_code: verif_code,
+                is_verified: 0,
+                status: 1
+            })
+                .then(async u => {
+                    if (u instanceof Users) {
+                        const { id } = u.toJSON()
+                        return this.hasRoleModel.create({
+                            RoleId: id_role || 2, // ie. sec. role
+                            UserId: id as number,
+                            status: 1
+                        })
+                            .then(hasrole => {
+                                if (hasrole instanceof HasRoles) {
+                                    const { id } = u.toJSON()
+                                    return this.jwtService.signinPayloadAndEncrypt({ id_user: id as any, roles_user: id_role as any, uuid_user, level_indicator: 95 })
+                                        .then(({ data, code }) => {
+                                            const { hashed, refresh, cleared } = data
+                                            this.mailService.onInviteViaMagicLink({
+                                                to: email,
+                                                link: `https://tantor-learning-frontend-eight.vercel.app/auth/magic-link?email=${email}&verify=${hashed}`,
+                                                role: as_role
+                                            })
+                                            return Responder({ status: HttpStatusCode.Created, data: hashed })
+                                        })
+                                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                                } else return Responder({ status: HttpStatusCode.BadRequest, data: null })
+                            })
+                            .catch(err => Responder({ status: HttpStatusCode.BadRequest, data: err }))
+                    } else {
+                        return Responder({ status: HttpStatusCode.InternalServerError, data: u })
+                    }
+                })
+                .catch(er => Responder({ status: HttpStatusCode.InternalServerError, data: er }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+
     async registerAsNewUser(createUserDto: CreateUserDto): Promise<ResponseServer> {
         const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, id_role } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
@@ -568,6 +634,53 @@ export class UsersService {
             .catch(err => {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
+    }
+
+    async registerAsNewUserFormMagicLink(createUserDto: CreateUserDto, emailmagic: string, token: string): Promise<ResponseServer> {
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
+        const decoded: IJwtSignin = await this.jwtService.checkTokenWithRound(token)
+        if (!decoded) return Responder({ status: HttpStatusCode.Unauthorized, data: "Le token fournie est invalide" })
+        const { id_user, } = decoded
+        const existingUser = await this.userModel.findOne({ where: { email, id: id_user } });
+
+        if (existingUser) {
+            const hashed_password = await this.cryptoService.hashPassword(password)
+            return this.userModel.update({
+                email,
+                fs_name,
+                ls_name,
+                phone: phone,
+                password: hashed_password,
+                nick_name,
+                status: 1
+            }, {
+                where: {
+                    email,
+                    id: id_user
+                }
+            })
+                .then(student => {
+                    if (student instanceof Users) {
+                        const { id: as_id_user, email } = student?.toJSON()
+                        const newInstance = student.toJSON();
+
+                        delete (newInstance as any).password;
+                        delete (newInstance as any).verification_code;
+                        delete (newInstance as any).last_login;
+                        delete (newInstance as any).status;
+                        delete (newInstance as any).is_verified;
+                        delete (newInstance as any).createdAt;
+                        delete (newInstance as any).updatedAt;
+
+                        return Responder({ status: HttpStatusCode.Created, data: { user: newInstance } })
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: {} })
+                    }
+                })
+                .catch(err => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                })
+        } else return Responder({ status: HttpStatusCode.BadRequest, data: `Les informations fournies ne sont pas conformes` })
     }
 
     async setNewPassword(resetPasswordDto: ResetPasswordDto): Promise<ResponseServer> {

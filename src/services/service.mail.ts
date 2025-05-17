@@ -424,4 +424,28 @@ export class MailService {
             return { code: 500, message: "Error occured", data: error }
         }
     }
+
+    async onInviteViaMagicLink({ to, role, link }: { to: string, role: string, link: string }): Promise<IInternalResponse> {
+        const appname = this.configService.get<string>('APPNAME')
+        const appowner = this.configService.get<string>('APPOWNER')
+        const brut_welcome = join(__dirname, '../../src', 'templates', 'template.createwithmagiclink.html');
+
+        const html_welcome = fs.readFileSync(brut_welcome, "utf8");
+        const template_welocme = Handlebars.compile(html_welcome);
+        const content_welcome = template_welocme({
+            to,
+            role,
+            magicLink: link,
+            appowner,
+            appname
+        });
+        return this.sendMail({
+            to,
+            content: content_welcome,
+            subject: `Invitation en tant que ${role}`
+        })
+            .then(inv => ({ code: 200, message: "Done", data: "This is " }))
+            .catch(err => ({ code: 500, message: "Error occured", data: err }))
+
+    }
 }
