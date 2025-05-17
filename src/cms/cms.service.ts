@@ -17,6 +17,8 @@ import { Op } from 'sequelize';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { CreateMessageDto } from './dto/send-message.dto';
 import { Users } from 'src/models/model.users';
+import { CreateEvenementDto } from './dto/create-planing.dto';
+import { Planings } from 'src/models/model.planings';
 
 @Injectable()
 export class CmsService {
@@ -32,9 +34,63 @@ export class CmsService {
         @InjectModel(Messages)
         private readonly messageModel: typeof Messages,
 
+        @InjectModel(Planings)
+        private readonly planingModel: typeof Planings,
+
         private readonly configService: ConfigService
     ) { }
 
+    async addPlaning(user: IJwtSignin, planing: CreateEvenementDto): Promise<ResponseServer> {
+        const { description, titre, id_cibling, type } = planing;
+        try {
+            return this.planingModel.create({
+                description,
+                titre,
+                type,
+                id_cibling
+            })
+                .then(plan => Responder({ status: HttpStatusCode.Created, data: plan }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+
+    async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
+        return this.messageModel.findOne({
+            include: [
+                {
+                    model: Users,
+                    as: 'Sender',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
+                },
+                {
+                    model: Users,
+                    as: 'Receiver',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
+                }
+            ],
+            where: {
+                id: id_message,
+                // id_user_sender: user.id_user
+            }
+        })
+            .then(_ => {
+                if (_ instanceof Messages) {
+                    _.update({
+                        is_readed: _.toJSON()['id_user_receiver'] === user.id_user ? 1 : _.toJSON()['is_readed']
+                    })
+                    return Responder({ status: HttpStatusCode.Ok, data: _ })
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: _ })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
 
     async archiveMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({

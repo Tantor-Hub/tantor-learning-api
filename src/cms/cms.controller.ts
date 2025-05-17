@@ -31,6 +31,12 @@ export class CmsController {
         return this.cmsService.getAllMessages(user)
     }
 
+    @Get('messages/message/:idmessage')
+    @UseGuards(JwtAuthGuard)
+    async getOneMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
+        return this.cmsService.getMessageById(user, idmessage)
+    }
+
     @Put("messages/message/archive/:idmessage")
     @UseGuards(JwtAuthGuard)
     async onArchiveMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {

@@ -23,5 +23,6 @@ export enum tables {
     homeworks = `${table_prefix}homeworks`,
     messages = `${table_prefix}messages`,
     seancesessions = `${table_prefix}seancessessions`,
-    homeworkssessions = `${table_prefix}homeworkssessions`
+    homeworkssessions = `${table_prefix}homeworkssessions`,
+    planing = `${table_prefix}planings`
 }
