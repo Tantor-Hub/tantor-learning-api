@@ -194,7 +194,7 @@ export class AllSercices {
                 }
         }
     };
-    dateToUnixOnly(dateString): number {
-        return moment(dateString, 'DD/MM/YYYY').startOf('day').unix()
+    dateToUnixOnly(dateString: string): number {
+        return moment(dateString).startOf('day').unix()
     }
 }

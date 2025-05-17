@@ -7,10 +7,13 @@ export class CreateEvenementDto {
     @IsString()
     description: string;
 
-    @IsEnum(['Examen', 'Cours', 'Réunion', 'Autre'])
+    @IsEnum(['Examen', 'Cours', 'Réunion', 'Autre'], { message: "type must be one of the following values: 'Examen' | 'Cours' | 'Réunion' | 'Autre'" })
     type: 'Examen' | 'Cours' | 'Réunion' | 'Autre';
 
     @IsOptional()
     @IsNumber()
     id_cibling?: number | null;
+
+    @IsOptional()
+    timeline: string[]
 }

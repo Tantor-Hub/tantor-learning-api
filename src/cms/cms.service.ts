@@ -86,8 +86,9 @@ export class CmsService {
     }
 
     async addPlaning(planing: CreateEvenementDto, user: IJwtSignin,): Promise<ResponseServer> {
-        const { description, titre, id_cibling, type } = planing;
-        const on = this.allSercices.dateToUnixOnly(new Date())
+        const { description, titre, id_cibling, type, timeline } = planing;
+        const ons = timeline.map(time => this.allSercices.dateToUnixOnly(time))
+        log("Line are ==> ", ons)
         try {
             return this.planingModel.create({
                 description,
@@ -95,7 +96,7 @@ export class CmsService {
                 type,
                 id_cibling,
                 createdBy: user.id_user,
-                planning_date_on: on
+                timeline: ons
             })
                 .then(plan => Responder({ status: HttpStatusCode.Created, data: plan }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))

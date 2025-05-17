@@ -6,5 +6,6 @@ export interface IPlanings extends IGlobale {
     type: 'Examen' | 'Cours' | 'Réunion' | 'Autre';
     id_cibling?: number | null;
     createdBy?: number
-    planning_date_on?: number
+    timeline?: number[]
+    
 }

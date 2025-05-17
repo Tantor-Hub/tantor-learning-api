@@ -47,14 +47,10 @@ export class Planings extends Model<IPlanings> {
 
     @AllowNull(true)
     @Column({
-        type: DataType.BIGINT,
-        defaultValue: Date.now() / 1000,
-        get() {
-            const rawValue = this.getDataValue('planning_date_on');
-            return rawValue ? Number(rawValue) : null;
-        }
+        type: DataType.ARRAY(DataType.BIGINT),
+        defaultValue: [],
     })
-    planning_date_on: number
+    timeline: number[];
 
     @AllowNull(true)
     @Column({ type: DataType.INTEGER, defaultValue: 1 })
