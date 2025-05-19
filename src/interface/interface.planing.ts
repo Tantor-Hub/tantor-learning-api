@@ -7,5 +7,4 @@ export interface IPlanings extends IGlobale {
     id_cibling?: number | null;
     createdBy?: number
     timeline?: number[]
-    
 }
