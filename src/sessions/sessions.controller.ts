@@ -15,6 +15,7 @@ import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Controller('sessions')
 export class SessionsController {
@@ -24,6 +25,18 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
+
+    @Put('/students/list/:idsession')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async listeDesApprenantsParIdSession(@Param("idsession", ParseIntPipe) idsession: number) {
+        return this.sessionsService.listOfLearnerByIdSession(idsession)
+    }
+
+    @Put('/students/list')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async listeDesApprenantsOnAllSessions(@User() user: IJwtSignin) {
+        return this.sessionsService.listOfLearnerByConnectedFormateur(user)
+    }
 
     @Put('session/assign')
     @UseGuards(JwtAuthGuardAsFormateur)

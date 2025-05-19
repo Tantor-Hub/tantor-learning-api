@@ -76,6 +76,42 @@ export class SessionsService {
         private readonly docsService: DocsService
     ) { }
 
+    async listOfLearnerByIdSession(idsession: number): Promise<ResponseServer> {
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: SessionSuivi,
+                    required: true,
+                    where: {
+                        id: idsession
+                    }
+                },
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    include: [
+                        {
+                            model: Thematiques,
+                            required: true,
+                            attributes: ['id', 'thematic']
+                        },
+                        {
+                            model: Categories,
+                            required: true,
+                            attributes: ['id', 'category']
+                        }
+                    ]
+                }
+            ]
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
     async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
         const { id_session, piece_jointe, id_formation, homework_date_on, score } = addSeanceSessionDto
         try {
@@ -112,6 +148,46 @@ export class SessionsService {
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
+    }
+
+    async listOfLearnerByConnectedFormateur(user: IJwtSignin): Promise<ResponseServer> {
+
+        let list = await this.sessionModel.findAll({ where: { id_superviseur: user.id_user }, attributes: ['id', 'id_superviseur'] })
+        list.map(l => l.toJSON()['id'])
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: SessionSuivi,
+                    required: true,
+                    where: {
+                        id: {
+                            [Op.in]: [...list]
+                        }
+                    }
+                },
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    include: [
+                        {
+                            model: Thematiques,
+                            required: true,
+                            attributes: ['id', 'thematic']
+                        },
+                        {
+                            model: Categories,
+                            required: true,
+                            attributes: ['id', 'category']
+                        }
+                    ]
+                }
+            ]
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 
     async listAllSessionsByOwn(user: IJwtSignin): Promise<ResponseServer> {
