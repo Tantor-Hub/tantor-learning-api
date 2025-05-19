@@ -26,13 +26,13 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
-    @Put('/students/list/:idsession')
+    @Get('students/list/:idsession')
     @UseGuards(JwtAuthGuardAsFormateur)
     async listeDesApprenantsParIdSession(@Param("idsession", ParseIntPipe) idsession: number) {
         return this.sessionsService.listOfLearnerByIdSession(idsession)
     }
 
-    @Put('/students/list')
+    @Get('students/list')
     @UseGuards(JwtAuthGuardAsFormateur)
     async listeDesApprenantsOnAllSessions(@User() user: IJwtSignin) {
         return this.sessionsService.listOfLearnerByConnectedFormateur(user)

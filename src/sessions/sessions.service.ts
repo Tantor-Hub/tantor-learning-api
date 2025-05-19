@@ -78,32 +78,48 @@ export class SessionsService {
 
     async listOfLearnerByIdSession(idsession: number): Promise<ResponseServer> {
 
+        // StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        // StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        // Formations.belongsTo(Categories, { foreignKey: "id_category" })
+        // Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+        StagiaireHasSession.belongsTo(Users, { foreignKey: "id_stagiaire", as: "Stagiaire" })
         return this.hasSessionStudentModel.findAndCountAll({
+            where: {
+                id_sessionsuivi: idsession
+            },
+            attributes: ['id', 'id_stagiaire'],
             include: [
                 {
-                    model: SessionSuivi,
+                    as: "Stagiaire",
+                    model: Users,
                     required: true,
-                    where: {
-                        id: idsession
-                    }
+                    attributes: ['id', 'fs_name', 'ls_name', 'email', 'phone']
                 },
-                {
-                    model: Formations,
-                    required: true,
-                    attributes: ['id', 'titre', 'sous_titre', 'description'],
-                    include: [
-                        {
-                            model: Thematiques,
-                            required: true,
-                            attributes: ['id', 'thematic']
-                        },
-                        {
-                            model: Categories,
-                            required: true,
-                            attributes: ['id', 'category']
-                        }
-                    ]
-                }
+                // {
+                //     model: SessionSuivi,
+                //     required: true,
+                //     where: {
+                //         id: idsession
+                //     }
+                // },
+                // {
+                //     model: Formations,
+                //     required: true,
+                //     attributes: ['id', 'titre', 'sous_titre', 'description'],
+                //     include: [
+                //         {
+                //             model: Thematiques,
+                //             required: true,
+                //             attributes: ['id', 'thematic']
+                //         },
+                //         {
+                //             model: Categories,
+                //             required: true,
+                //             attributes: ['id', 'category']
+                //         }
+                //     ]
+                // }
             ]
         })
             .then(({ count, rows }) => {
@@ -154,34 +170,17 @@ export class SessionsService {
 
         let list = await this.sessionModel.findAll({ where: { id_superviseur: user.id_user }, attributes: ['id', 'id_superviseur'] })
         list.map(l => l.toJSON()['id'])
+        StagiaireHasSession.belongsTo(Users, { foreignKey: "id_stagiaire", as: "Stagiaire" })
+
         return this.hasSessionStudentModel.findAndCountAll({
+            attributes: ['id', 'id_stagiaire'],
             include: [
                 {
-                    model: SessionSuivi,
+                    model: Users,
                     required: true,
-                    where: {
-                        id: {
-                            [Op.in]: [...list]
-                        }
-                    }
+                    as: "Stagiaire",
+                    attributes: ['id', 'fs_name', 'ls_name', 'email', 'phone']
                 },
-                {
-                    model: Formations,
-                    required: true,
-                    attributes: ['id', 'titre', 'sous_titre', 'description'],
-                    include: [
-                        {
-                            model: Thematiques,
-                            required: true,
-                            attributes: ['id', 'thematic']
-                        },
-                        {
-                            model: Categories,
-                            required: true,
-                            attributes: ['id', 'category']
-                        }
-                    ]
-                }
             ]
         })
             .then(({ count, rows }) => {
@@ -223,7 +222,7 @@ export class SessionsService {
                 }
             ],
             where: {
-                id_stagiaire: id_user,
+                id_stagiaire: id_user
             }
         })
             .then(({ count, rows }) => {
