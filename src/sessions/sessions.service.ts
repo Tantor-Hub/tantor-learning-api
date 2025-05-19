@@ -29,6 +29,7 @@ import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Op } from 'sequelize';
 import { log } from 'console';
+import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 
 @Injectable()
 export class SessionsService {
@@ -75,6 +76,58 @@ export class SessionsService {
         private readonly docsService: DocsService
     ) { }
 
+    async listOfLearnerByIdSession(idsession: number): Promise<ResponseServer> {
+
+        // StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        // StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        // Formations.belongsTo(Categories, { foreignKey: "id_category" })
+        // Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+
+        StagiaireHasSession.belongsTo(Users, { foreignKey: "id_stagiaire", as: "Stagiaire" })
+        return this.hasSessionStudentModel.findAndCountAll({
+            where: {
+                id_sessionsuivi: idsession
+            },
+            attributes: ['id', 'id_stagiaire'],
+            include: [
+                {
+                    as: "Stagiaire",
+                    model: Users,
+                    required: true,
+                    attributes: ['id', 'fs_name', 'ls_name', 'email', 'phone']
+                },
+                // {
+                //     model: SessionSuivi,
+                //     required: true,
+                //     where: {
+                //         id: idsession
+                //     }
+                // },
+                // {
+                //     model: Formations,
+                //     required: true,
+                //     attributes: ['id', 'titre', 'sous_titre', 'description'],
+                //     include: [
+                //         {
+                //             model: Thematiques,
+                //             required: true,
+                //             attributes: ['id', 'thematic']
+                //         },
+                //         {
+                //             model: Categories,
+                //             required: true,
+                //             attributes: ['id', 'category']
+                //         }
+                //     ]
+                // }
+            ]
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
     async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
         const { id_session, piece_jointe, id_formation, homework_date_on, score } = addSeanceSessionDto
         try {
@@ -113,6 +166,29 @@ export class SessionsService {
         }
     }
 
+    async listOfLearnerByConnectedFormateur(user: IJwtSignin): Promise<ResponseServer> {
+
+        let list = await this.sessionModel.findAll({ where: { id_superviseur: user.id_user }, attributes: ['id', 'id_superviseur'] })
+        list.map(l => l.toJSON()['id'])
+        StagiaireHasSession.belongsTo(Users, { foreignKey: "id_stagiaire", as: "Stagiaire" })
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            attributes: ['id', 'id_stagiaire'],
+            include: [
+                {
+                    model: Users,
+                    required: true,
+                    as: "Stagiaire",
+                    attributes: ['id', 'fs_name', 'ls_name', 'email', 'phone']
+                },
+            ]
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
     async listAllSessionsByOwn(user: IJwtSignin): Promise<ResponseServer> {
 
         const { id_user } = user
@@ -146,7 +222,85 @@ export class SessionsService {
                 }
             ],
             where: {
-                id_stagiaire: id_user,
+                id_stagiaire: id_user
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+    async listAllSessionsByOwnAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
+
+        const { id_user } = user
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+
+        return this.sessionModel.findAndCountAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                }
+            ],
+            where: {
+                status: 1,
+                id_superviseur: id_user
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+
+    async listAllSessionsByIdInstructor(idinstructor: number): Promise<ResponseServer> {
+
+        SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+        SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", as: "Instructor" })
+
+        return this.sessionModel.findAndCountAll({
+            include: [
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description']
+                },
+                {
+                    model: Thematiques,
+                    required: true,
+                    attributes: ['id', 'thematic']
+                },
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                },
+                {
+                    model: Users,
+                    required: false,
+                    as: "Instructor",
+                    attributes: ['id', 'fs_name', 'ls_name', 'email']
+                }
+            ],
+            where: {
+                status: 1,
+                id_superviseur: idinstructor
             }
         })
             .then(({ count, rows }) => {
@@ -647,5 +801,42 @@ export class SessionsService {
                 }
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+
+    async assignFormateurToSession(updateSessionDto: AssignFormateurToSessionDto): Promise<ResponseServer> {
+        const { id_session, id_user } = updateSessionDto;
+
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
+        const user = await this.usersModel.findOne({
+            where: { id: id_user },
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    where: {
+                        id: 3
+                    }
+                }
+            ],
+        });
+
+        if (!user) return Responder({ status: HttpStatusCode.BadRequest, data: "Une session ne peut être attribuer qu'à un formateur ! id_user passé ne correspond à aucun formateur !" })
+        return this.sessionModel.findOne({
+            where: {
+                id: id_session
+            }
+        })
+            .then(inst => {
+                if (inst instanceof SessionSuivi) {
+                    return inst.update({
+                        id_superviseur: id_user,
+                    })
+                        .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
+                        .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: `La session n'a pas été retrouvée [id]:${id_user}` })
+                }
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 }
