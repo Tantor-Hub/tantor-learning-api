@@ -34,7 +34,7 @@ export class CmsController {
     }
 
     @Get('events/a/list')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async getMyPlaningAsManager( @User() user: IJwtSignin) {
         return this.cmsService.myListAsFormateur(user)
     }
