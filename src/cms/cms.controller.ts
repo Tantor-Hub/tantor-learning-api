@@ -29,13 +29,13 @@ export class CmsController {
 
     @Get('events/e/list')
     @UseGuards(JwtAuthGuard)
-    async getMyPlaning( @User() user: IJwtSignin) {
+    async getMyPlaning(@User() user: IJwtSignin) {
         return this.cmsService.myListAsStudent(user)
     }
 
     @Get('events/a/list')
     @UseGuards(JwtAuthGuardAsFormateur)
-    async getMyPlaningAsManager( @User() user: IJwtSignin) {
+    async getMyPlaningAsManager(@User() user: IJwtSignin) {
         return this.cmsService.myListAsFormateur(user)
     }
 
@@ -47,13 +47,13 @@ export class CmsController {
 
     @Get('messages/list')
     @UseGuards(JwtAuthGuard)
-    async messagesListAll(@User() user) {
+    async messagesListAll(@User() user: IJwtSignin) {
         return this.cmsService.getAllMessages(user)
     }
 
     @Get('messages/message/:idmessage')
     @UseGuards(JwtAuthGuard)
-    async getOneMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
+    async getOneMessage(@User() user: IJwtSignin, @Param('idmessage', ParseIntPipe) idmessage: number) {
         return this.cmsService.getMessageById(user, idmessage)
     }
 
