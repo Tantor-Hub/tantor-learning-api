@@ -42,47 +42,55 @@ export class CmsService {
     ) { }
 
     async myListAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
-        const { id_user } = user
-        Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
-        return this.planingModel.findAll({
-            include: [
-                {
-                    model: Users,
-                    as: 'Concerned',
-                    attributes: ['id', 'fs_name', 'ls_name'],
-                    required: false
+        try {
+            const { id_user } = user
+            Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
+            return this.planingModel.findAll({
+                include: [
+                    {
+                        model: Users,
+                        as: 'Concerned',
+                        attributes: ['id', 'fs_name', 'ls_name'],
+                        required: false
+                    }
+                ],
+                where: {
+                    status: 1,
+                    createdBy: id_user
                 }
-            ],
-            where: {
-                status: 1,
-                createdBy: id_user
-            }
-        })
-            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
     async myListAsStudent(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
-        Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Creator" })
-        return this.planingModel.findAll({
-            include: [
-                {
-                    model: Users,
-                    as: 'Creator',
-                    attributes: ['id', 'fs_name', 'ls_name']
+        try {
+            Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Creator" })
+            return this.planingModel.findAll({
+                include: [
+                    {
+                        model: Users,
+                        as: 'Creator',
+                        attributes: ['id', 'fs_name', 'ls_name']
+                    }
+                ],
+                where: {
+                    status: 1,
+                    [Op.or]: [
+                        { id_cibling: id_user },
+                        { id_cibling: null }
+                    ]
                 }
-            ],
-            where: {
-                status: 1,
-                [Op.or]: [
-                    { id_cibling: id_user },
-                    { id_cibling: null }
-                ]
-            }
-        })
-            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
 
     async addPlaning(planing: CreateEvenementDto, user: IJwtSignin,): Promise<ResponseServer> {
