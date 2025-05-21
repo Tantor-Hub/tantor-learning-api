@@ -24,16 +24,12 @@ export class JwtAuthGuardAsFormateur implements CanActivate {
             throw new CustomUnauthorizedException("Aucune clé d'authentification n'a éte fournie");
         }
         const [_, token] = authHeader.split(" ");
-        try {
-            const decoded = await this.jwtService.verifyTokenWithRound(token);
-            if (!decoded) throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
-            const { roles_user, level_indicator } = decoded
-            if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user })) {
-                request.user = decoded;
-                return true
-            } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
-        } catch (error) {
-            throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
-        }
+        const decoded = await this.jwtService.verifyTokenWithRound(token);
+        if (!decoded) throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
+        const { roles_user, level_indicator } = decoded
+        if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user })) {
+            request.user = decoded;
+            return true
+        } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
     }
 }

@@ -33,6 +33,7 @@ export class JwtAuthGuardAsStudent implements CanActivate {
                 return true
             } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
         } catch (error) {
+            log(error)
             throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
         }
     }
