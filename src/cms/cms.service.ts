@@ -69,13 +69,14 @@ export class CmsService {
     async myListAsStudent(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
         try {
-            Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Creator" })
+            Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Concerne" })
             return this.planingModel.findAll({
                 include: [
                     {
                         model: Users,
-                        as: 'Creator',
-                        attributes: ['id', 'fs_name', 'ls_name']
+                        as: 'Concerne',
+                        attributes: ['id', 'fs_name', 'ls_name'],
+                        required: false
                     }
                 ],
                 where: {
@@ -87,8 +88,12 @@ export class CmsService {
                 }
             })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
-                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                .catch(err => {
+                    log("List of all err whene getting List of Events",err)
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                })
         } catch (error) {
+            log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
