@@ -778,7 +778,7 @@ export class UsersService {
                     await student.update({
                         verification_code: verif_code
                     })
-                    return Responder({ status: HttpStatusCode.Ok, data: { message: `Un nouveau code de vérification a été envoyé à ${email}`, user: { fs_name, ls_name, email, nick_name } } })
+                    return Responder({ status: HttpStatusCode.Ok, data: { fs_name, ls_name, email, nick_name } })
                 } else {
                     return Responder({ status: HttpStatusCode.NotFound, data: `${user_email} n'est pas reconnu !` })
                 }
