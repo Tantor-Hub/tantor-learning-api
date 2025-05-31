@@ -36,6 +36,9 @@ export class RolesService {
     }
     async getRoles(): Promise<ResponseServer> {
         return this.rolesModel.findAll({
+            attributes: {
+                exclude: ['status']
+            },
             where: {
                 status: 1
             }
@@ -50,6 +53,9 @@ export class RolesService {
     async attributeRole(createRoleDto: AttributeRoleDto): Promise<ResponseServer> {
         const { id_role, id_user, description } = createRoleDto
         return this.hasRoleModel.findOrCreate({
+            attributes: {
+                exclude: ['status']
+            },
             where: {
                 RoleId: id_role,
                 UserId: id_user,

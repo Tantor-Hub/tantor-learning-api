@@ -16,6 +16,7 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Controller('sessions')
 export class SessionsController {
@@ -27,31 +28,31 @@ export class SessionsController {
     ) { }
 
     @Get('students/list/:idsession')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async listeDesApprenantsParIdSession(@Param("idsession", ParseIntPipe) idsession: number) {
         return this.sessionsService.listOfLearnerByIdSession(idsession)
     }
 
     @Get('students/list')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async listeDesApprenantsOnAllSessions(@User() user: IJwtSignin) {
         return this.sessionsService.listOfLearnerByConnectedFormateur(user)
     }
 
     @Put('session/assign')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async attributeSessionToUser(@Body() assignFormateurToSessionDto: AssignFormateurToSessionDto) {
         return this.sessionsService.assignFormateurToSession(assignFormateurToSessionDto)
     }
 
     @Get('list/listebyformateur')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async loadMySessionsAsFormateur(@User() user) {
         return this.sessionsService.listAllSessionsByOwnAsFormateur(user)
     }
 
     @Get('list/listebyformateur/:idinstructor')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async loadMySessionsByIdFormateur(@Param("idinstructor", ParseIntPipe) idinstructor: number) {
         return this.sessionsService.listAllSessionsByIdInstructor(idinstructor)
     }
