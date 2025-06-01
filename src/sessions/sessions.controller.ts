@@ -39,12 +39,6 @@ export class SessionsController {
         return this.sessionsService.listOfLearnerByConnectedFormateur(user)
     }
 
-    @Put('session/assign')
-    @UseGuards(JwtAuthGuardAsSuperviseur)
-    async attributeSessionToUser(@Body() assignFormateurToSessionDto: AssignFormateurToSessionDto) {
-        return this.sessionsService.assignFormateurToSession(assignFormateurToSessionDto)
-    }
-
     @Get('list/listebyformateur')
     @UseGuards(JwtAuthGuardAsSuperviseur)
     async loadMySessionsAsFormateur(@User() user: IJwtSignin) {
@@ -157,17 +151,8 @@ export class SessionsController {
 
     @Post('session/add')
     @UseGuards(JwtAuthGuardAsFormateur)
-    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
-    async addNewSession(@Body() createSessionDto: CreateSessionDto, @UploadedFile() file: Express.Multer.File,) {
-        let piece_jointe: any = null;
-        if (file) {
-            const result = await this.googleDriveService.uploadBufferFile(file);
-            if (result) {
-                const { id, name, link, } = result
-                piece_jointe = link
-            }
-        }
-        return this.sessionsService.createSession({ ...createSessionDto, piece_jointe })
+    async addNewSession(@Body() createSessionDto: CreateSessionDto,) {
+        return this.sessionsService.createSession({ ...createSessionDto })
     }
 
     @Post('session/addseance')

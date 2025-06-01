@@ -62,9 +62,9 @@ export class Cours extends Model<ICours> {
     @ForeignKey(() => Thematiques)
     @Column({
         type: DataType.INTEGER,
-        allowNull: false,
+        allowNull: true,
     })
-    id_thematic: number;
+    id_thematic?: number;
 
     @AllowNull(true)
     @ForeignKey(() => Users)

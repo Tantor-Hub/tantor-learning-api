@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
@@ -21,6 +20,12 @@ import { FormateurHasSession } from 'src/models/model.formateurhassession';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { SessionSuivi } from 'src/models/model.suivisession';
+import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
+import { Users } from 'src/models/model.users';
+import { Roles } from 'src/models/model.roles';
+import { HasRoles } from 'src/models/model.userhasroles';
+import { CreateDocumentDto } from './dto/create-documents.dto';
+import { Documents } from 'src/models/model.documents';
 
 @Injectable()
 export class CoursService {
@@ -46,6 +51,9 @@ export class CoursService {
         @InjectModel(SessionSuivi)
         private readonly sessionModel: typeof SessionSuivi,
 
+        @InjectModel(Users)
+        private readonly usersModel: typeof Users,
+
         @InjectModel(StagiaireHasSession)
         private readonly hasSessionStudentModel: typeof StagiaireHasSession,
 
@@ -57,11 +65,23 @@ export class CoursService {
 
         @InjectModel(StagiaireHasHomeWork)
         private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
+
+        @InjectModel(Documents)
+        private readonly docModel: typeof Documents,
     ) { }
 
     async getListCours(): Promise<ResponseServer> {
         try {
             return this.listcoursModel.findAll()
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getListCoursAll(): Promise<ResponseServer> {
+        try {
+            return this.coursModel.findAll()
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {
@@ -94,7 +114,6 @@ export class CoursService {
                 id_category,
                 id_preset_cours,
                 id_session,
-                id_thematic,
                 duree,
                 id_formateur,
                 is_published,
@@ -143,6 +162,63 @@ export class CoursService {
                         })
                     })
                     return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async assignFormateurToSession(manager: IJwtSignin, updateSessionDto: AssignFormateurToSessionDto): Promise<ResponseServer> {
+        const { id_cours: id_session, id_user } = updateSessionDto;
+
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
+        const user = await this.usersModel.findOne({
+            where: { id: id_user },
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    where: {
+                        id: 3
+                    }
+                }
+            ],
+        });
+
+        if (!user) return Responder({ status: HttpStatusCode.BadRequest, data: "Une session ne peut être attribuer qu'à un formateur ! id_user passé ne correspond à aucun formateur !" })
+        return this.sessionModel.findOne({
+            where: {
+                id: id_session
+            }
+        })
+            .then(inst => {
+                if (inst instanceof SessionSuivi) {
+                    return inst.update({
+                        id_superviseur: id_user,
+                    })
+                        .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
+                        .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
+                } else {
+                    return Responder({ status: HttpStatusCode.NotFound, data: `La session n'a pas été retrouvée [id]:${id_user}` })
+                }
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+    async addDocumentsToCours(user: IJwtSignin, document: CreateDocumentDto): Promise<ResponseServer> {
+        const { id_user, roles_user } = user
+        const { document_name, id_cours, id_document, piece_jointe, type, id_session } = document
+        try {
+            return this.docModel.create({
+                file_name: document_name,
+                url: piece_jointe,
+                id_cours,
+                id_session,
+                type,
+                createdBy: id_user
+            })
+                .then(doc => {
+                    if (doc instanceof Documents) return Responder({ status: HttpStatusCode.Created, data: doc })
+                    else return Responder({ status: HttpStatusCode.InternalServerError, data: doc })
                 })
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {

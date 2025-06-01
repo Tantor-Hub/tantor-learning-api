@@ -25,20 +25,9 @@ export class CreateSessionDto {
     @IsNumberString()
     id_formation: number;
 
-    @IsOptional()
-    @IsString()
-    piece_jointe?: string;
-
-    @IsEnum(['onLine', 'visionConference', 'presentiel', 'hybride'])
-    type_formation: string;
-
     @IsNumberString()
     @IsOptional()
     id_category: number;
-
-    @IsNumberString()
-    @IsOptional()
-    id_thematic: number;
 
     @IsDateString()
     // @IsISO8601()

@@ -11,21 +11,26 @@ export class CreateDocumentDto {
     @IsString()
     @IsOptional()
     @IsNumberString()
-    id_document: number;
+    id_document: number; // for update purpose
 
     @IsString()
     @IsNotEmpty()
-    file_name: string;
+    document_name: string;
 
     @IsString()
+    @IsOptional()
     @IsNotEmpty()
-    url: string;
+    piece_jointe: string;
 
     @IsString()
     @IsOptional()
     type?: string; // PDF, Word, etc.
 
-    @IsInt()
+    @IsNumberString()
     @IsNotEmpty()
     id_cours: number;
+
+    @IsNumberString()
+    @IsNotEmpty()
+    id_session: number;
 }

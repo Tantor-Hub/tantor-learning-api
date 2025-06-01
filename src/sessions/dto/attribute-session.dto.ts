@@ -7,5 +7,5 @@ export class AssignFormateurToSessionDto {
 
     @IsInt()
     @IsPositive()
-    id_session: number;
+    id_cours: number;
 }

@@ -29,7 +29,6 @@ import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Op } from 'sequelize';
 import { log } from 'console';
-import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 
 @Injectable()
 export class SessionsService {
@@ -404,7 +403,7 @@ export class SessionsService {
 
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 
-        const { type_formation, description, prix, date_session_debut, date_session_fin, id_superviseur, piece_jointe, id_formation, id_controleur } = createSessionDto
+        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur } = createSessionDto
         const s_on = this.allServices.parseDate(date_session_debut as any)
         const e_on = this.allServices.parseDate(date_session_fin as any)
 
@@ -435,8 +434,6 @@ export class SessionsService {
                         id_superviseur,
                         id_thematic,
                         prix: prix,
-                        type_formation: type_formation as any,
-                        piece_jointe: piece_jointe,
                         id_formation,
                         designation: designation.toUpperCase(),
                         date_mise_a_jour: null,
@@ -763,42 +760,5 @@ export class SessionsService {
                 }
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-    }
-
-    async assignFormateurToSession(updateSessionDto: AssignFormateurToSessionDto): Promise<ResponseServer> {
-        const { id_session, id_user } = updateSessionDto;
-
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
-        const user = await this.usersModel.findOne({
-            where: { id: id_user },
-            include: [
-                {
-                    model: Roles,
-                    required: true,
-                    where: {
-                        id: 3
-                    }
-                }
-            ],
-        });
-
-        if (!user) return Responder({ status: HttpStatusCode.BadRequest, data: "Une session ne peut être attribuer qu'à un formateur ! id_user passé ne correspond à aucun formateur !" })
-        return this.sessionModel.findOne({
-            where: {
-                id: id_session
-            }
-        })
-            .then(inst => {
-                if (inst instanceof SessionSuivi) {
-                    return inst.update({
-                        id_superviseur: id_user,
-                    })
-                        .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
-                        .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
-                } else {
-                    return Responder({ status: HttpStatusCode.NotFound, data: `La session n'a pas été retrouvée [id]:${id_user}` })
-                }
-            })
-            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 }

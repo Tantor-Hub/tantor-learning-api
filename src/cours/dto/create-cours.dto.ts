@@ -21,6 +21,7 @@ import {
   
     @IsInt()
     @IsNotEmpty()
+    @IsOptional()
     id_thematic: number;
   
     @IsOptional()
@@ -41,6 +42,6 @@ import {
   
     @IsOptional()
     @IsInt()
-    createdBy?: number; // sera normalement injecté via le token
+    createdBy?: number; // injecté via le token
   }
   
