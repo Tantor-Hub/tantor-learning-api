@@ -30,6 +30,8 @@ import { Op } from 'sequelize';
 import { log } from 'console';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { SeanceSessions } from 'src/models/model.courshasseances';
+import { Cours } from 'src/models/model.sessionshascours';
+import { Listcours } from 'src/models/model.cours';
 
 @Injectable()
 export class SessionsService {
@@ -207,16 +209,16 @@ export class SessionsService {
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description'],
                     include: [
-                        {
-                            model: Thematiques,
-                            required: true,
-                            attributes: ['id', 'thematic']
-                        },
-                        {
-                            model: Categories,
-                            required: true,
-                            attributes: ['id', 'category']
-                        }
+                        // {
+                        //     model: Thematiques,
+                        //     required: true,
+                        //     attributes: ['id', 'thematic']
+                        // },
+                        // {
+                        //     model: Categories,
+                        //     required: true,
+                        //     attributes: ['id', 'category']
+                        // }
                     ]
                 }
             ],
@@ -233,7 +235,7 @@ export class SessionsService {
 
         const { id_user } = user
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+        // SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
 
         return this.sessionModel.findAndCountAll({
@@ -243,16 +245,16 @@ export class SessionsService {
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
                 },
-                {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
-                },
-                {
-                    model: Categories,
-                    required: true,
-                    attributes: ['id', 'category']
-                }
+                // {
+                //     model: Thematiques,
+                //     required: true,
+                //     attributes: ['id', 'thematic']
+                // },
+                // {
+                //     model: Categories,
+                //     required: true,
+                //     attributes: ['id', 'category']
+                // }
             ],
             where: {
                 status: 1,
@@ -269,7 +271,7 @@ export class SessionsService {
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
         SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
-        SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", as: "Instructor" })
+        SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", as: "Superviseur" })
 
         return this.sessionModel.findAndCountAll({
             include: [
@@ -278,20 +280,20 @@ export class SessionsService {
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
                 },
-                {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
-                },
-                {
-                    model: Categories,
-                    required: true,
-                    attributes: ['id', 'category']
-                },
+                // {
+                //     model: Thematiques,
+                //     required: true,
+                //     attributes: ['id', 'thematic']
+                // },
+                // {
+                //     model: Categories,
+                //     required: true,
+                //     attributes: ['id', 'category']
+                // },
                 {
                     model: Users,
                     required: false,
-                    as: "Instructor",
+                    as: "Superviseur",
                     attributes: ['id', 'fs_name', 'ls_name', 'email']
                 }
             ],
@@ -304,6 +306,62 @@ export class SessionsService {
                 return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
+    async getSessionById(idsession: number): Promise<ResponseServer> {
+        try {
+            SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", })
+            Listcours.belongsTo(Cours, { foreignKey: "id_preset_cours",  })
+            SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+
+            SessionSuivi.hasMany(Cours, { foreignKey: "id_session" })
+
+            return this.sessionModel.findOne({
+                subQuery: false,
+                include: [
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description']
+                    },
+                    {
+                        model: Users,
+                        required: false,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Cours,
+                        required: false,
+                        include: [
+                            {
+                                model: Listcours,
+                                required: true,
+                                attributes: {
+                                    exclude: ['createdAt', 'updatedAt', 'createdBy'],
+                                }
+                            }
+                        ],
+                        attributes: {
+                            exclude: ['createdAt', 'updatedAt']
+                        }
+                    },
+                ],
+                where: {
+                    id: idsession
+                }
+            })
+                .then(session => {
+                    if (session instanceof SessionSuivi) return Responder({ status: HttpStatusCode.Ok, data: session })
+                    else return Responder({ status: HttpStatusCode.NotFound, data: session })
+                })
+                .catch(_ => {
+                    log(_)
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: _.toString() })
+                })
+        } catch (error) {
+            log(error)
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
     async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
         const { id_session, id_formation, id_user: as_user_id } = applySessionDto;
@@ -431,7 +489,7 @@ export class SessionsService {
     }
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 
-        const {  description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur } = createSessionDto
+        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur } = createSessionDto
         const s_on = this.allServices.parseDate(date_session_debut as any)
         const e_on = this.allServices.parseDate(date_session_fin as any)
 
@@ -538,16 +596,16 @@ export class SessionsService {
                         }
                     },
                     include: [
-                        {
-                            model: Thematiques,
-                            required: true,
-                            attributes: ['id', 'thematic']
-                        },
-                        {
-                            model: Categories,
-                            required: true,
-                            attributes: ['id', 'category']
-                        }
+                        // {
+                        //     model: Thematiques,
+                        //     required: true,
+                        //     attributes: ['id', 'thematic']
+                        // },
+                        // {
+                        //     model: Categories,
+                        //     required: true,
+                        //     attributes: ['id', 'category']
+                        // }
                     ]
                 }
             ],
@@ -573,16 +631,16 @@ export class SessionsService {
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
                 },
-                {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
-                },
-                {
-                    model: Categories,
-                    required: true,
-                    attributes: ['id', 'category']
-                }
+                // {
+                //     model: Thematiques,
+                //     required: true,
+                //     attributes: ['id', 'thematic']
+                // },
+                // {
+                //     model: Categories,
+                //     required: true,
+                //     attributes: ['id', 'category']
+                // }
             ],
             where: {
                 status: 1
@@ -611,16 +669,16 @@ export class SessionsService {
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description'],
                     include: [
-                        {
-                            model: Thematiques,
-                            required: true,
-                            attributes: ['id', 'thematic']
-                        },
-                        {
-                            model: Categories,
-                            required: true,
-                            attributes: ['id', 'category']
-                        }
+                        // {
+                        //     model: Thematiques,
+                        //     required: true,
+                        //     attributes: ['id', 'thematic']
+                        // },
+                        // {
+                        //     model: Categories,
+                        //     required: true,
+                        //     attributes: ['id', 'category']
+                        // }
                     ]
                 }
             ],

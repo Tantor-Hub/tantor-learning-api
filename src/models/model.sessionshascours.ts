@@ -7,6 +7,7 @@ import {
     AllowNull,
     HasMany,
     ForeignKey,
+    BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Documents } from './model.documents';
@@ -73,4 +74,10 @@ export class Cours extends Model<ICours> {
 
     @HasMany(() => Documents)
     documents: Documents[];
+
+    @BelongsTo(() => SessionSuivi)
+    session: SessionSuivi;
+
+    @BelongsTo(() => Listcours)
+    Title: Listcours;
 }

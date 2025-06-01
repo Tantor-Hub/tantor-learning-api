@@ -16,6 +16,7 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 
 @Controller('sessions')
 export class SessionsController {
@@ -26,6 +27,11 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Get('session/:idsession')
+    @UseGuards(JwtAuthGuard)
+    async getSessionById(@Param("idsession", ParseIntPipe) idsession: number) {
+        return this.sessionsService.getSessionById(idsession)
+    }
     @Get('students/list/:idsession')
     @UseGuards(JwtAuthGuardAsFormateur)
     async listeDesApprenantsParIdSession(@Param("idsession", ParseIntPipe) idsession: number) {
