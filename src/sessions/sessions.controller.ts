@@ -47,7 +47,7 @@ export class SessionsController {
 
     @Get('list/listebyformateur')
     @UseGuards(JwtAuthGuardAsSuperviseur)
-    async loadMySessionsAsFormateur(@User() user) {
+    async loadMySessionsAsFormateur(@User() user: IJwtSignin) {
         return this.sessionsService.listAllSessionsByOwnAsFormateur(user)
     }
 
@@ -65,7 +65,7 @@ export class SessionsController {
 
     @Get('list/bykeyword')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getAllSessionsByKeyword(@User() user, @Query('keyword') keyword: string) {
+    async getAllSessionsByKeyword(@User() user: IJwtSignin, @Query('keyword') keyword: string) {
         if (!keyword) return Responder({ status: HttpStatusCode.BadRequest, data: "Le mot de recherche n'est pas envoyé dans la requete !" })
         return this.sessionsService.listAllSessionByKeyword(user, keyword);
     }
@@ -93,7 +93,7 @@ export class SessionsController {
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
+    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
 
