@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsNumber } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class CreateNewsLetterDto {
     @IsString()
