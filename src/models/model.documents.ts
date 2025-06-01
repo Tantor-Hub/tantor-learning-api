@@ -9,9 +9,12 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Cours } from './model.sessionshascours';
+import { IDocument } from 'src/interface/interface.document';
+import { SessionSuivi } from './model.suivisession';
+import { Users } from './model.users';
 
 @Table({ tableName: tables['documents']})
-export class Documents extends Model<Document> {
+export class Documents extends Model<IDocument> {
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
     id: number;
 
@@ -31,6 +34,15 @@ export class Documents extends Model<Document> {
     @Column(DataType.INTEGER)
     id_cours: number;
 
+    @ForeignKey(() => Users)
+    @Column(DataType.INTEGER)
+    createdBy: number;
+
+    @ForeignKey(() => SessionSuivi)
+    @Column(DataType.INTEGER)
+    id_session: number;
+
     @BelongsTo(() => Cours)
     cours: Cours;
+    
 }

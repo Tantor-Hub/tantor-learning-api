@@ -3,30 +3,40 @@ import {
     Model,
     Column,
     DataType,
-    PrimaryKey,
     Default,
     AllowNull,
     HasMany,
     ForeignKey,
+    BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Documents } from './model.documents';
 import { Thematiques } from './model.groupeformations';
 import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
+import { SessionSuivi } from './model.suivisession';
+import { ICours } from 'src/interface/interface.cours';
+import { Listcours } from './model.cours';
 
 @Table({ tableName: tables['sessionhascours'] })
-export class Cours extends Model<Cours> {
+export class Cours extends Model<ICours> {
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
     id: number;
 
-    @AllowNull(false)
-    @Column(DataType.STRING)
-    title: string;
+    @ForeignKey(() => Listcours)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_preset_cours: number
 
     @AllowNull(true)
-    @Column(DataType.TEXT)
-    description: string;
+    @Column(DataType.FLOAT)
+    duree: number; // en minutes
+
+    @AllowNull(true)
+    @Column(DataType.FLOAT)
+    ponderation: number;
 
     @Default(false)
     @Column(DataType.BOOLEAN)
@@ -35,6 +45,13 @@ export class Cours extends Model<Cours> {
     @AllowNull(true)
     @Column(DataType.INTEGER)
     createdBy: number;
+
+    @ForeignKey(() => SessionSuivi)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_session: number;
 
     @ForeignKey(() => Categories)
     @Column({
@@ -46,9 +63,9 @@ export class Cours extends Model<Cours> {
     @ForeignKey(() => Thematiques)
     @Column({
         type: DataType.INTEGER,
-        allowNull: false,
+        allowNull: true,
     })
-    id_thematic: number;
+    id_thematic?: number;
 
     @AllowNull(true)
     @ForeignKey(() => Users)
@@ -57,4 +74,10 @@ export class Cours extends Model<Cours> {
 
     @HasMany(() => Documents)
     documents: Documents[];
+
+    @BelongsTo(() => SessionSuivi)
+    session: SessionSuivi;
+
+    @BelongsTo(() => Listcours)
+    Title: Listcours;
 }

@@ -22,10 +22,11 @@ import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Contacts } from 'src/models/model.contactform';
 import { Planings } from 'src/models/model.planings';
+import { Newsletter } from 'src/models/model.newsletter';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings]),
+    SequelizeModule.forFeature([AppInfos, Newsletter, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

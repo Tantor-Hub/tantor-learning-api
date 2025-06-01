@@ -1,23 +1,25 @@
-import { Table, Column, Model, DataType, ForeignKey } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
 import { Thematiques } from './model.groupeformations';
+import { Users } from './model.users';
 
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
 
+    @Column({ type: DataType.UUID, allowNull: false, unique: true })
+    uuid?: string;
+    
     @Column({ type: DataType.STRING })
     designation?: string;
 
     @Column({ type: DataType.INTEGER })
     id_controleur?: number;
 
-    @Column({ type: DataType.INTEGER })
+    @Column({ type: DataType.INTEGER, allowNull: true })
+    @ForeignKey(() => Users)
     id_superviseur?: number;
-
-    @Column({ type: DataType.UUID, allowNull: false, unique: true })
-    uuid?: string;
 
     @Column(DataType.DATE)
     date_mise_a_jour?: Date;
@@ -25,7 +27,7 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column(DataType.STRING)
     duree?: string;
 
-    @Column(DataType.FLOAT)
+    @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
     progression?: number;
 
     @Column({ type: DataType.INTEGER })
@@ -71,4 +73,7 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @Column({ type: DataType.FLOAT, defaultValue: 1, allowNull: true })
     status?: number;
+
+    @BelongsTo(() => Users)
+    Superviseur: Users;
 }

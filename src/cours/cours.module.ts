@@ -22,10 +22,17 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Contacts } from 'src/models/model.contactform';
 import { Planings } from 'src/models/model.planings';
 import { JwtService } from 'src/services/service.jwt';
+import { CoursService } from './cours.service';
+import { Cours } from 'src/models/model.sessionshascours';
+import { Listcours } from 'src/models/model.cours';
+import { SessionSuivi } from 'src/models/model.suivisession';
+import { FormateurHasSession } from 'src/models/model.formateurhassession';
+import { Documents } from 'src/models/model.documents';
+import { Newsletter } from 'src/models/model.newsletter';
 
 @Module({
     imports: [
-        SequelizeModule.forFeature([AppInfos, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings]),
+        SequelizeModule.forFeature([AppInfos, Newsletter, Documents, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings, Cours, Listcours, SessionSuivi, FormateurHasSession ]),
         ConfigModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
@@ -36,9 +43,9 @@ import { JwtService } from 'src/services/service.jwt';
                     expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h'),
                 },
             }),
-        }),
+        })
     ],
     controllers: [CoursController],
-    providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService],
+    providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService, CoursService],
 })
 export class CoursModule { }

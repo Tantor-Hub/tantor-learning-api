@@ -1,43 +1,47 @@
 import {
-    IsString,
+    IsInt,
     IsOptional,
     IsBoolean,
-    IsInt,
-    IsNotEmpty,
     IsNumber,
-} from 'class-validator';
-
-export class CreateCoursDto {
-
-    @IsOptional()
-    @IsNumber()
-    id_cours: number;
-
-    @IsString()
-    @IsNotEmpty()
-    title: string;
-
-    @IsString()
-    @IsOptional()
-    description?: string;
-
-    @IsBoolean()
-    @IsOptional()
-    is_published?: boolean;
-
+    IsNotEmpty,
+  } from 'class-validator';
+  
+  export class CreateCoursDto {
     @IsInt()
-    @IsOptional()
-    createdBy?: number;
-
+    @IsNotEmpty()
+    id_preset_cours: number;
+  
+    @IsInt()
+    @IsNotEmpty()
+    id_session: number;
+  
     @IsInt()
     @IsNotEmpty()
     id_category: number;
-
+  
     @IsInt()
     @IsNotEmpty()
-    id_thematic: number;
-
-    @IsInt()
     @IsOptional()
+    id_thematic: number;
+  
+    @IsOptional()
+    @IsInt()
     id_formateur?: number;
-}
+  
+    @IsOptional()
+    @IsNumber()
+    duree?: number;
+  
+    @IsOptional()
+    @IsNumber()
+    ponderation?: number;
+  
+    @IsOptional()
+    @IsBoolean()
+    is_published?: boolean;
+  
+    @IsOptional()
+    @IsInt()
+    createdBy?: number; // injecté via le token
+  }
+  

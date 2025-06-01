@@ -20,6 +20,8 @@ import { Users } from 'src/models/model.users';
 import { CreateEvenementDto } from './dto/create-planing.dto';
 import { Planings } from 'src/models/model.planings';
 import { log } from 'console';
+import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
+import { Newsletter } from 'src/models/model.newsletter';
 
 @Injectable()
 export class CmsService {
@@ -37,6 +39,9 @@ export class CmsService {
 
         @InjectModel(Planings)
         private readonly planingModel: typeof Planings,
+
+        @InjectModel(Newsletter)
+        private readonly newsletterModel: typeof Newsletter,
 
         private readonly configService: ConfigService
     ) { }
@@ -65,7 +70,6 @@ export class CmsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async myListAsStudent(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
         try {
@@ -89,7 +93,7 @@ export class CmsService {
             })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
                 .catch(err => {
-                    log("List of all err whene getting List of Events",err)
+                    log("List of all err whene getting List of Events", err)
                     return Responder({ status: HttpStatusCode.InternalServerError, data: err })
                 })
         } catch (error) {
@@ -97,7 +101,6 @@ export class CmsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async addPlaning(planing: CreateEvenementDto, user: IJwtSignin,): Promise<ResponseServer> {
         const { description, titre, id_cibling, type, timeline } = planing;
         const ons = timeline.map(time => this.allSercices.dateToUnixOnly(time))
@@ -118,7 +121,6 @@ export class CmsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
-
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
@@ -154,7 +156,6 @@ export class CmsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async archiveMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({
             status: 3
@@ -168,7 +169,6 @@ export class CmsService {
             .then(_ => Responder({ status: HttpStatusCode.Ok, data: null }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async deleteMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({
             status: 3
@@ -182,7 +182,6 @@ export class CmsService {
             .then(_ => Responder({ status: HttpStatusCode.Ok, data: null }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async sendMessage(user: IJwtSignin, createMessageDto: CreateMessageDto): Promise<ResponseServer> {
         const { id_user } = user;
         const { content, date_d_envoie, id_user_receiver, id_user_sender, date_de_lecture, is_readed, is_replied_to, piece_jointe, subject, thread } = createMessageDto
@@ -205,7 +204,6 @@ export class CmsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async getAllMessagesByGroupe(user: IJwtSignin, groupe: string): Promise<ResponseServer> {
         const { id_user } = user
         if (Object.keys(typeMessages).indexOf(groupe) === -1) return Responder({ status: HttpStatusCode.BadRequest, data: "Key groupe n'a pas été retrouvé" })
@@ -241,7 +239,6 @@ export class CmsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async getAllMessages(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
@@ -280,7 +277,6 @@ export class CmsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async onContactForm(infos: CreateContactDto): Promise<ResponseServer> {
         const { content, from_mail, from_name, subject } = infos
         return this.contactModel.create({
@@ -301,7 +297,23 @@ export class CmsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
+    async onSubscribeToNewsLetter(createNewsLetter: CreateNewsLetterDto): Promise<ResponseServer> {
+        const { user_email } = createNewsLetter
+        return this.newsletterModel.create({
+            user_email
+        })
+            .then(infos => {
+                // this.mailService.sendMail({
+                //     to: this.configService.get<string>('APPSMTPUSER') as string,
+                //     content,
+                //     subject,
+                // })
+                //     .then(_ => { })
+                //     .catch(__ => { })
+                return Responder({ status: HttpStatusCode.Created, data: infos })
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
     async onGetAppInfos(): Promise<ResponseServer> {
         return this.appInfosModel.findOne({
             where: { id: 1 }
@@ -309,7 +321,6 @@ export class CmsService {
             .then(infos => Responder({ status: HttpStatusCode.Ok, data: infos }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async onAddAppInfos(createAppInfosDto: CreateAppInfosDto): Promise<ResponseServer> {
         const { adresse, contacts_numbers, email_contact, about_app } = createAppInfosDto
         return this.appInfosModel.findOrCreate({
