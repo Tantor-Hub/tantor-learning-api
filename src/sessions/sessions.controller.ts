@@ -16,7 +16,6 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
-import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Controller('sessions')
 export class SessionsController {
@@ -28,25 +27,31 @@ export class SessionsController {
     ) { }
 
     @Get('students/list/:idsession')
-    @UseGuards(JwtAuthGuardAsSuperviseur)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async listeDesApprenantsParIdSession(@Param("idsession", ParseIntPipe) idsession: number) {
         return this.sessionsService.listOfLearnerByIdSession(idsession)
     }
 
     @Get('students/list')
-    @UseGuards(JwtAuthGuardAsSuperviseur)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async listeDesApprenantsOnAllSessions(@User() user: IJwtSignin) {
         return this.sessionsService.listOfLearnerByConnectedFormateur(user)
     }
 
+    @Put('session/assign')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async attributeSessionToUser(@Body() assignFormateurToSessionDto: AssignFormateurToSessionDto) {
+        return this.sessionsService.assignFormateurToSession(assignFormateurToSessionDto)
+    }
+
     @Get('list/listebyformateur')
-    @UseGuards(JwtAuthGuardAsSuperviseur)
-    async loadMySessionsAsFormateur(@User() user: IJwtSignin) {
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async loadMySessionsAsFormateur(@User() user) {
         return this.sessionsService.listAllSessionsByOwnAsFormateur(user)
     }
 
     @Get('list/listebyformateur/:idinstructor')
-    @UseGuards(JwtAuthGuardAsSuperviseur)
+    @UseGuards(JwtAuthGuardAsFormateur)
     async loadMySessionsByIdFormateur(@Param("idinstructor", ParseIntPipe) idinstructor: number) {
         return this.sessionsService.listAllSessionsByIdInstructor(idinstructor)
     }
@@ -59,9 +64,24 @@ export class SessionsController {
 
     @Get('list/bykeyword')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getAllSessionsByKeyword(@User() user: IJwtSignin, @Query('keyword') keyword: string) {
+    async getAllSessionsByKeyword(@User() user, @Query('keyword') keyword: string) {
         if (!keyword) return Responder({ status: HttpStatusCode.BadRequest, data: "Le mot de recherche n'est pas envoyé dans la requete !" })
         return this.sessionsService.listAllSessionByKeyword(user, keyword);
+    }
+
+    @Post('session/addhomework')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async addNewHomeWorkSession(@Body() createSessionDto: AddHomeworkSessionDto, @UploadedFile() file: Express.Multer.File) {
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.createHomework({ ...createSessionDto, piece_jointe })
     }
 
     @Get('mylist')
@@ -72,7 +92,7 @@ export class SessionsController {
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
+    async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
 
@@ -151,7 +171,8 @@ export class SessionsController {
 
     @Post('session/add')
     @UseGuards(JwtAuthGuardAsFormateur)
-    async addNewSession(@Body() createSessionDto: CreateSessionDto,) {
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    async addNewSession(@Body() createSessionDto: CreateSessionDto) {
         return this.sessionsService.createSession({ ...createSessionDto })
     }
 

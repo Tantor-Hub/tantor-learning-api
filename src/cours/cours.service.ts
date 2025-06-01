@@ -98,7 +98,7 @@ export class CoursService {
             };
             return this.listcoursModel.create(data)
                 .then(cours => {
-                    if (cours instanceof Listcours) return Responder({ status: HttpStatusCode.Ok, data: cours })
+                    if (cours instanceof Listcours) return Responder({ status: HttpStatusCode.Created, data: cours })
                     else return Responder({ status: HttpStatusCode.InternalServerError, data: cours })
                 })
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
@@ -121,7 +121,7 @@ export class CoursService {
                 status: 1,
             })
                 .then(cours => {
-                    if (cours instanceof Cours) return Responder({ status: HttpStatusCode.Ok, data: cours })
+                    if (cours instanceof Cours) return Responder({ status: HttpStatusCode.Created, data: cours })
                     else return Responder({ status: HttpStatusCode.InternalServerError, data: cours })
                 })
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
