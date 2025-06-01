@@ -128,44 +128,6 @@ export class SessionsService {
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
 
-    async createHomework(addSeanceSessionDto: AddHomeworkSessionDto): Promise<ResponseServer> {
-        const { id_session, piece_jointe, id_formation, homework_date_on, score } = addSeanceSessionDto
-        try {
-            const session = await this.sessionModel.findOne({ where: { id: id_session } })
-            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
-            const allConcernedStudent = await this.hasSessionStudentModel.findAll({ where: { id_sessionsuivi: id_session } })
-            const studentsIds = allConcernedStudent.map(s => (s.toJSON()['id_stagiaire']));
-
-            const { id_formation: as_id_formation } = session.toJSON()
-            return this.homeworkModel.create({
-                id_session: id_session as number,
-                homework_date_on: Number(homework_date_on) as number,
-                id_formation: as_id_formation,
-                piece_jointe,
-                score: Number(score) as number
-            })
-                .then(seance => {
-                    studentsIds.forEach(id => {
-                        this.hashomeworkModel.create({
-                            date_de_creation: new Date(),
-                            date_de_remise: homework_date_on,
-                            id_session,
-                            id_user: id,
-                            id_formation: as_id_formation,
-                            piece_jointe,
-                            is_returned: 0,
-                            score: Number(score) as number,
-                            score_on: 0
-                        })
-                    })
-                    return Responder({ status: HttpStatusCode.Created, data: seance })
-                })
-                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-        } catch (error) {
-            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
-        }
-    }
-
     async listOfLearnerByConnectedFormateur(user: IJwtSignin): Promise<ResponseServer> {
 
         let list = await this.sessionModel.findAll({ where: { id_superviseur: user.id_user }, attributes: ['id', 'id_superviseur'] })

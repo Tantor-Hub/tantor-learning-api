@@ -6,8 +6,9 @@ import {
     AllowNull,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
+import { IListcours } from 'src/interface/interface.cours';
 @Table({ tableName: tables['cours'] })
-export class Listcours extends Model<Listcours> {
+export class Listcours extends Model<IListcours> {
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
     id: number;
 
@@ -17,9 +18,9 @@ export class Listcours extends Model<Listcours> {
 
     @AllowNull(true)
     @Column(DataType.TEXT)
-    description: string;
+    description?: string;
 
     @AllowNull(true)
     @Column(DataType.INTEGER)
-    createdBy: number;
+    createdBy?: number;
 }

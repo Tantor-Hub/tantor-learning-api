@@ -6,6 +6,9 @@ export class AddHomeworkSessionDto {
     id_session: number;
 
     @IsNumberString()
+    id_cours: number;
+
+    @IsNumberString()
     homework_date_on: number;
 
     @IsOptional()

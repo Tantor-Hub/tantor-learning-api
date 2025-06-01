@@ -22,7 +22,6 @@ import { MediasoupService } from './services/service.mediasoup';
 import { GoogleDriveService } from './services/service.googledrive';
 import { DocsService } from './services/service.docs';
 import { AllSercices } from './services/serices.all';
-import { CmsController } from './cms/cms.controller';
 import { CmsService } from './cms/cms.service';
 import { CmsModule } from './cms/cms.module';
 import { AppInfos } from './models/model.appinfos';
@@ -38,11 +37,14 @@ import { MailService } from './services/service.mail';
 import { Messages } from './models/model.messages';
 import { Planings } from './models/model.planings';
 import { CoursService } from './cours/cours.service';
-import { CoursController } from './cours/cours.controller';
 import { CoursModule } from './cours/cours.module';
 import { Documents } from './models/model.documents';
 import { Cours } from './models/model.sessionshascours';
 import { Listcours } from './models/model.cours';
+import { SeanceSessions } from './models/model.courshasseances';
+import { FormateurHasSession } from './models/model.formateurhassession';
+import { HomeworksSession } from './models/model.homework';
+import { StagiaireHasHomeWork } from './models/model.stagiairehashomeworks';
 
 @Module({
   imports: [
@@ -81,7 +83,13 @@ import { Listcours } from './models/model.cours';
       Messages,
       Cours,
       Listcours,
-      Documents
+      Documents,
+      SeanceSessions,
+      FormateurHasSession,
+      HomeworksSession,
+      StagiaireHasSession,
+      StagiaireHasSessionSeances,
+      StagiaireHasHomeWork
     ]),
     RolesModule,
     UsersModule,
@@ -91,7 +99,7 @@ import { Listcours } from './models/model.cours';
     CmsModule,
     CoursModule
   ],
-  controllers: [AppController, CoursController],
+  controllers: [AppController],
   providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService, CoursService]
 })
 

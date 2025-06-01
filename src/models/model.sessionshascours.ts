@@ -3,7 +3,6 @@ import {
     Model,
     Column,
     DataType,
-    PrimaryKey,
     Default,
     AllowNull,
     HasMany,
@@ -15,19 +14,20 @@ import { Thematiques } from './model.groupeformations';
 import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
 import { SessionSuivi } from './model.suivisession';
+import { ICours } from 'src/interface/interface.cours';
+import { Listcours } from './model.cours';
 
 @Table({ tableName: tables['sessionhascours'] })
-export class Cours extends Model<Cours> {
+export class Cours extends Model<ICours> {
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
     id: number;
 
-    @AllowNull(false)
-    @Column(DataType.STRING)
-    title: string;
-
-    @AllowNull(true)
-    @Column(DataType.TEXT)
-    description: string;
+    @ForeignKey(() => Listcours)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_preset_cours: number
 
     @AllowNull(true)
     @Column(DataType.FLOAT)

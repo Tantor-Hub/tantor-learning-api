@@ -70,21 +70,6 @@ export class SessionsController {
         return this.sessionsService.listAllSessionByKeyword(user, keyword);
     }
 
-    @Post('session/addhomework')
-    @UseGuards(JwtAuthGuardAsFormateur)
-    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
-    async addNewHomeWorkSession(@Body() createSessionDto: AddHomeworkSessionDto, @UploadedFile() file: Express.Multer.File) {
-        let piece_jointe: any = null;
-        if (file) {
-            const result = await this.googleDriveService.uploadBufferFile(file);
-            if (result) {
-                const { id, name, link, } = result
-                piece_jointe = link
-            }
-        }
-        return this.sessionsService.createHomework({ ...createSessionDto, piece_jointe })
-    }
-
     @Get('mylist')
     @UseGuards(JwtAuthGuardAsStudent)
     async getAllSessionsByOwner(@User() user,) {

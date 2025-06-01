@@ -14,6 +14,7 @@ import { Users } from './model.users';
 import { Formations } from './model.formations';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { tables } from 'src/config/config.tablesname';
+import { Cours } from './model.sessionshascours';
 
 @Table({
     tableName: tables['homeworks'], timestamps: true,
@@ -38,6 +39,11 @@ export class StagiaireHasHomeWork extends Model<IHomeWorks> {
     @AllowNull(true)
     @Column(DataType.INTEGER)
     id_formation?: number;
+
+    @ForeignKey(() => Cours)
+    @AllowNull(true)
+    @Column(DataType.INTEGER)
+    id_cours: number;
 
     @AllowNull(false)
     @Column(DataType.DATE)

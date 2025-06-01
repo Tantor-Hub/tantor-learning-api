@@ -9,5 +9,6 @@ export interface IHomeWorks extends IGlobale {
     piece_jointe?: string
     score: number,
     score_on: number,
+    id_cours: number,
     is_returned: number // 1 deja remis par l'etudiant 0 othewhise
 }
