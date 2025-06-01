@@ -17,7 +17,7 @@ import { HasRoles } from 'src/models/model.userhasroles';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { Messages } from 'src/models/model.messages';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
-import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { SeanceSessions } from 'src/models/model.courshasseances';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Contacts } from 'src/models/model.contactform';

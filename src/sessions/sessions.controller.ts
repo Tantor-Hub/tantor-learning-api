@@ -16,6 +16,7 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Controller('sessions')
 export class SessionsController {
@@ -27,31 +28,31 @@ export class SessionsController {
     ) { }
 
     @Get('students/list/:idsession')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async listeDesApprenantsParIdSession(@Param("idsession", ParseIntPipe) idsession: number) {
         return this.sessionsService.listOfLearnerByIdSession(idsession)
     }
 
     @Get('students/list')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async listeDesApprenantsOnAllSessions(@User() user: IJwtSignin) {
         return this.sessionsService.listOfLearnerByConnectedFormateur(user)
     }
 
     @Put('session/assign')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async attributeSessionToUser(@Body() assignFormateurToSessionDto: AssignFormateurToSessionDto) {
         return this.sessionsService.assignFormateurToSession(assignFormateurToSessionDto)
     }
 
     @Get('list/listebyformateur')
-    @UseGuards(JwtAuthGuardAsFormateur)
-    async loadMySessionsAsFormateur(@User() user) {
+    @UseGuards(JwtAuthGuardAsSuperviseur)
+    async loadMySessionsAsFormateur(@User() user: IJwtSignin) {
         return this.sessionsService.listAllSessionsByOwnAsFormateur(user)
     }
 
     @Get('list/listebyformateur/:idinstructor')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async loadMySessionsByIdFormateur(@Param("idinstructor", ParseIntPipe) idinstructor: number) {
         return this.sessionsService.listAllSessionsByIdInstructor(idinstructor)
     }
@@ -64,7 +65,7 @@ export class SessionsController {
 
     @Get('list/bykeyword')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getAllSessionsByKeyword(@User() user, @Query('keyword') keyword: string) {
+    async getAllSessionsByKeyword(@User() user: IJwtSignin, @Query('keyword') keyword: string) {
         if (!keyword) return Responder({ status: HttpStatusCode.BadRequest, data: "Le mot de recherche n'est pas envoyé dans la requete !" })
         return this.sessionsService.listAllSessionByKeyword(user, keyword);
     }
@@ -92,7 +93,7 @@ export class SessionsController {
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
+    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
 

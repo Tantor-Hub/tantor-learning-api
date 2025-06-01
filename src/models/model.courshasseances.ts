@@ -4,13 +4,12 @@ import {
   Model,
   DataType,
   ForeignKey,
-  CreatedAt,
-  UpdatedAt,
 } from 'sequelize-typescript';
 import { ISeanceSession } from 'src/interface/interface.seancesession';
 import { tables } from 'src/config/config.tablesname';
 import { SessionSuivi } from './model.suivisession';
 import { Formations } from './model.formations';
+import { Cours } from './model.sessionshascours';
 
 @Table({
   tableName: tables['seancesessions'],
@@ -52,6 +51,13 @@ export class SeanceSessions extends Model<ISeanceSession> {
     allowNull: true,
   })
   id_formation?: number;
+
+  @ForeignKey(() => Cours)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  id_cours?: number;
 
   @Column({
     type: DataType.STRING,

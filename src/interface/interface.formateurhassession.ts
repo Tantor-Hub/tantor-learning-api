@@ -5,5 +5,6 @@ export interface IFormateurHasSession extends IGlobale {
     UserId: number,
     SessionId: number,
     description?: string,
-    is_complited?: number
+    is_complited?: number,
+    id_cours?: number
 }

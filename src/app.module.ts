@@ -37,6 +37,12 @@ import { Contacts } from './models/model.contactform';
 import { MailService } from './services/service.mail';
 import { Messages } from './models/model.messages';
 import { Planings } from './models/model.planings';
+import { CoursService } from './cours/cours.service';
+import { CoursController } from './cours/cours.controller';
+import { CoursModule } from './cours/cours.module';
+import { Documents } from './models/model.documents';
+import { Cours } from './models/model.sessionshascours';
+import { Listcours } from './models/model.cours';
 
 @Module({
   imports: [
@@ -59,16 +65,34 @@ import { Planings } from './models/model.planings';
         logging: false
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Planings, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances, Contacts, Messages]),
+    SequelizeModule.forFeature([
+      Users,
+      Roles,
+      HasRoles,
+      Categories,
+      Formations,
+      Planings,
+      Thematiques,
+      SessionSuivi,
+      AppInfos,
+      StagiaireHasSession,
+      StagiaireHasSessionSeances,
+      Contacts,
+      Messages,
+      Cours,
+      Listcours,
+      Documents
+    ]),
     RolesModule,
     UsersModule,
     FormationsModule,
     CategoriesModule,
     SessionsModule,
-    CmsModule
+    CmsModule,
+    CoursModule
   ],
-  controllers: [AppController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService]
+  controllers: [AppController, CoursController],
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService, CoursService]
 })
 
 export class AppModule implements OnModuleInit {
@@ -85,7 +109,6 @@ export class AppModule implements OnModuleInit {
           // console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName());
         })
         .catch(err => log("[ DB Error ]", err))
-
     } catch (error) {
       console.error('[ Database ] Échec de connexion : ', error.message);
     }

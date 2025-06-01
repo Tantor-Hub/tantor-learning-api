@@ -26,7 +26,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
-import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { SeanceSessions } from 'src/models/model.courshasseances';
 import { Formations } from 'src/models/model.formations';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { Categories } from 'src/models/model.categoriesformations';

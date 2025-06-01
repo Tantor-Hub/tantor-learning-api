@@ -1,9 +1,9 @@
 import { Table, Column, Model, ForeignKey, DataType } from 'sequelize-typescript';
 import { Users } from './model.users';
-import { Roles } from './model.roles';
 import { tables } from 'src/config/config.tablesname';
 import { IFormateurHasSession } from 'src/interface/interface.formateurhassession';
 import { SessionSuivi } from './model.suivisession';
+import { Cours } from './model.sessionshascours';
 
 @Table({ tableName: tables['formateurhassession'], timestamps: true })
 export class FormateurHasSession extends Model<IFormateurHasSession> {
@@ -18,6 +18,13 @@ export class FormateurHasSession extends Model<IFormateurHasSession> {
     @ForeignKey(() => SessionSuivi)
     @Column({ allowNull: false, type: DataType.INTEGER })
     SessionId: number;
+
+    @ForeignKey(() => Cours)
+    @Column({
+      type: DataType.INTEGER,
+      allowNull: false,
+    })
+    id_cours: number;
 
     @Column({ allowNull: false, type: DataType.INTEGER })
     status?: number;
