@@ -45,6 +45,7 @@ import { SeanceSessions } from './models/model.courshasseances';
 import { FormateurHasSession } from './models/model.formateurhassession';
 import { HomeworksSession } from './models/model.homework';
 import { StagiaireHasHomeWork } from './models/model.stagiairehashomeworks';
+import { Newsletter } from './models/model.newsletter';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { StagiaireHasHomeWork } from './models/model.stagiairehashomeworks';
       StagiaireHasSessionSeances,
       Contacts,
       Messages,
+      Newsletter,
       Cours,
       Listcours,
       Documents,

@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from '../services/service.googledrive';
 import { CreateEvenementDto } from './dto/create-planing.dto';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
+import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 
 @Controller('cms')
 export class CmsController {
@@ -26,49 +27,45 @@ export class CmsController {
     async onContactForm(@Body() form: CreateContactDto) {
         return this.cmsService.onContactForm(form)
     }
-
+    @Post('newsletter')
+    async subscribeToNewsLetter(@Body() form: CreateNewsLetterDto) {
+        return this.cmsService.onSubscribeToNewsLetter(form)
+    }
     @Get('events/e/list')
     @UseGuards(JwtAuthGuard)
     async getMyPlaning(@User() user: IJwtSignin) {
         return this.cmsService.myListAsStudent(user)
     }
-
     @Get('events/a/list')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getMyPlaningAsManager(@User() user: IJwtSignin) {
         return this.cmsService.myListAsFormateur(user)
     }
-
     @Post('events/event/add')
     @UseGuards(JwtAuthGuardAsFormateur)
     async onCreateEvent(@Body() form: CreateEvenementDto, @User() user: IJwtSignin) {
         return this.cmsService.addPlaning(form, user)
     }
-
     @Get('messages/list')
     @UseGuards(JwtAuthGuard)
     async messagesListAll(@User() user: IJwtSignin) {
         return this.cmsService.getAllMessages(user)
     }
-
     @Get('messages/message/:idmessage')
     @UseGuards(JwtAuthGuard)
     async getOneMessage(@User() user: IJwtSignin, @Param('idmessage', ParseIntPipe) idmessage: number) {
         return this.cmsService.getMessageById(user, idmessage)
     }
-
     @Put("messages/message/archive/:idmessage")
     @UseGuards(JwtAuthGuard)
     async onArchiveMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
         return this.cmsService.archiveMessage(user, idmessage)
     }
-
     @Delete("messages/message/delete/:idmessage")
     @UseGuards(JwtAuthGuard)
     async onDeleteMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
         return this.cmsService.deleteMessage(user, idmessage)
     }
-
     @Post('messages/message/send')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -83,42 +80,35 @@ export class CmsController {
         }
         return this.cmsService.sendMessage(user, { ...createMessageDto, piece_jointe: avatar })
     }
-
     @Get('messages/list/:groupe')
     @UseGuards(JwtAuthGuard)
     async messagesListAllByGroupe(@User() user, @Param('groupe') group: string) {
         return this.cmsService.getAllMessagesByGroupe(user, group)
     }
-
     @Get('infos')
     async onGetAppInfos() {
         return this.cmsService.onGetAppInfos()
     }
-
     @Post('infos/add')
     @UseGuards(JwtAuthGuardAsManagerSystem)
     async onAddInfosData(@Body() createAppInfosDto: CreateAppInfosDto) {
         return this.cmsService.onAddAppInfos(createAppInfosDto)
     }
-
     @Get('dashboard/cards')
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadStudentDashboard(@User() user: IJwtSignin) {
         return this.usersService.loadStudentDashboard(user)
     }
-
     @Get('dashboard/nextlivessessions')
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadNextLivesSessions(@User() user: IJwtSignin) {
         return this.usersService.loadStudentNextLiveSession(user)
     }
-
     @Get('/dashboard/averages')
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadScores(@User() user: IJwtSignin) {
         return this.usersService.loadScores(user)
     }
-
     @Get('/dashboard/performances')
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadScoresPerformances(@User() user: IJwtSignin) {

@@ -28,10 +28,11 @@ import { Listcours } from 'src/models/model.cours';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { FormateurHasSession } from 'src/models/model.formateurhassession';
 import { Documents } from 'src/models/model.documents';
+import { Newsletter } from 'src/models/model.newsletter';
 
 @Module({
     imports: [
-        SequelizeModule.forFeature([AppInfos, Documents, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings, Cours, Listcours, SessionSuivi, FormateurHasSession ]),
+        SequelizeModule.forFeature([AppInfos, Newsletter, Documents, Users, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings, Cours, Listcours, SessionSuivi, FormateurHasSession ]),
         ConfigModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],

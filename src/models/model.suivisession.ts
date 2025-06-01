@@ -8,6 +8,9 @@ import { Users } from './model.users';
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
 
+    @Column({ type: DataType.UUID, allowNull: false, unique: true })
+    uuid?: string;
+    
     @Column({ type: DataType.STRING })
     designation?: string;
 
@@ -18,16 +21,13 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @ForeignKey(() => Users)
     id_superviseur?: number;
 
-    @Column({ type: DataType.UUID, allowNull: false, unique: true })
-    uuid?: string;
-
     @Column(DataType.DATE)
     date_mise_a_jour?: Date;
 
     @Column(DataType.STRING)
     duree?: string;
 
-    @Column(DataType.FLOAT)
+    @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
     progression?: number;
 
     @Column({ type: DataType.INTEGER })
