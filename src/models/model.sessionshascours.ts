@@ -14,6 +14,7 @@ import { Documents } from './model.documents';
 import { Thematiques } from './model.groupeformations';
 import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
+import { SessionSuivi } from './model.suivisession';
 
 @Table({ tableName: tables['sessionhascours'] })
 export class Cours extends Model<Cours> {
@@ -28,6 +29,14 @@ export class Cours extends Model<Cours> {
     @Column(DataType.TEXT)
     description: string;
 
+    @AllowNull(true)
+    @Column(DataType.FLOAT)
+    duree: number; // en minutes
+
+    @AllowNull(true)
+    @Column(DataType.FLOAT)
+    ponderation: number;
+
     @Default(false)
     @Column(DataType.BOOLEAN)
     is_published: boolean;
@@ -35,6 +44,13 @@ export class Cours extends Model<Cours> {
     @AllowNull(true)
     @Column(DataType.INTEGER)
     createdBy: number;
+
+    @ForeignKey(() => SessionSuivi)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_session: number;
 
     @ForeignKey(() => Categories)
     @Column({
