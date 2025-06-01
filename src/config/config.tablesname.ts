@@ -7,6 +7,7 @@ export enum tables {
     roles = `${table_prefix}roles`,
     hasroles = `${table_prefix}hasroles`,
     cours = `${table_prefix}cours`,
+    sessionhascours = `${table_prefix}sessionhascours`,
     categories = `${table_prefix}categoriesformations`,
     groupefromations = `${table_prefix}thematicsformations`,
     fromations = `${table_prefix}formationsascours`,

@@ -23,7 +23,7 @@ import { typesrelances } from 'src/utils/utiles.typerelances';
 import { typesactions } from 'src/utils/utiles.actionreprendre';
 import { DocsService } from 'src/services/service.docs';
 import { AddSeanceSessionDto } from './dto/add-seances.dto';
-import { SeanceSessions } from 'src/models/model.sessionhasseances';
+import { SeanceSessions } from 'src/models/model.courshasseances';
 import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';

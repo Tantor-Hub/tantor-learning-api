@@ -3,26 +3,21 @@ import {
     Model,
     Column,
     DataType,
-    PrimaryKey,
     ForeignKey,
     BelongsTo,
-    Default,
     AllowNull,
 } from 'sequelize-typescript';
-import { v4 as uuidv4 } from 'uuid';
-import { Cours } from './model.cours';
 import { tables } from 'src/config/config.tablesname';
+import { Cours } from './model.sessionshascours';
 
 @Table({ tableName: tables['documents']})
 export class Documents extends Model<Document> {
-    @PrimaryKey
-    @Default(uuidv4)
-    @Column(DataType.UUID)
-    id: string;
+    @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
+    id: number;
 
     @AllowNull(false)
     @Column(DataType.STRING)
-    nomFichier: string;
+    file_name: string;
 
     @AllowNull(false)
     @Column(DataType.STRING)
@@ -33,8 +28,8 @@ export class Documents extends Model<Document> {
     type: string; // PDF, vidéo, Word...
 
     @ForeignKey(() => Cours)
-    @Column(DataType.UUID)
-    coursId: string;
+    @Column(DataType.INTEGER)
+    id_cours: number;
 
     @BelongsTo(() => Cours)
     cours: Cours;

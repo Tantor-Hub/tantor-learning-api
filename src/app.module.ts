@@ -40,8 +40,9 @@ import { Planings } from './models/model.planings';
 import { CoursService } from './cours/cours.service';
 import { CoursController } from './cours/cours.controller';
 import { CoursModule } from './cours/cours.module';
-import { Cours } from './models/model.cours';
 import { Documents } from './models/model.documents';
+import { Cours } from './models/model.sessionshascours';
+import { Listcours } from './models/model.cours';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { Documents } from './models/model.documents';
       Contacts,
       Messages,
       Cours,
+      Listcours,
       Documents
     ]),
     RolesModule,
@@ -107,7 +109,6 @@ export class AppModule implements OnModuleInit {
           // console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName());
         })
         .catch(err => log("[ DB Error ]", err))
-
     } catch (error) {
       console.error('[ Database ] Échec de connexion : ', error.message);
     }
