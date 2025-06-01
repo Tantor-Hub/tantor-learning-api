@@ -40,6 +40,8 @@ import { Planings } from './models/model.planings';
 import { CoursService } from './cours/cours.service';
 import { CoursController } from './cours/cours.controller';
 import { CoursModule } from './cours/cours.module';
+import { Cours } from './models/model.cours';
+import { Documents } from './models/model.documents';
 
 @Module({
   imports: [
@@ -62,7 +64,23 @@ import { CoursModule } from './cours/cours.module';
         logging: false
       }),
     }),
-    SequelizeModule.forFeature([Users, Roles, HasRoles, Categories, Formations, Planings, Thematiques, SessionSuivi, AppInfos, StagiaireHasSession, StagiaireHasSessionSeances, Contacts, Messages]),
+    SequelizeModule.forFeature([
+      Users,
+      Roles,
+      HasRoles,
+      Categories,
+      Formations,
+      Planings,
+      Thematiques,
+      SessionSuivi,
+      AppInfos,
+      StagiaireHasSession,
+      StagiaireHasSessionSeances,
+      Contacts,
+      Messages,
+      Cours,
+      Documents
+    ]),
     RolesModule,
     UsersModule,
     FormationsModule,

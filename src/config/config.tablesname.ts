@@ -1,6 +1,7 @@
 const table_prefix = "___tbl_tantor_";
 
 export enum tables {
+    documents = `${table_prefix}documents`,
     appinfos = `${table_prefix}infos`,
     users = `${table_prefix}users`,
     roles = `${table_prefix}roles`,
