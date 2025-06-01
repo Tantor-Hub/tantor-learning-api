@@ -4,8 +4,6 @@ import {
   Model,
   DataType,
   ForeignKey,
-  CreatedAt,
-  UpdatedAt,
 } from 'sequelize-typescript';
 import { ISeanceSession } from 'src/interface/interface.seancesession';
 import { tables } from 'src/config/config.tablesname';
