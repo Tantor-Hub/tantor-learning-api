@@ -37,6 +37,9 @@ import { Contacts } from './models/model.contactform';
 import { MailService } from './services/service.mail';
 import { Messages } from './models/model.messages';
 import { Planings } from './models/model.planings';
+import { CoursService } from './cours/cours.service';
+import { CoursController } from './cours/cours.controller';
+import { CoursModule } from './cours/cours.module';
 
 @Module({
   imports: [
@@ -65,10 +68,11 @@ import { Planings } from './models/model.planings';
     FormationsModule,
     CategoriesModule,
     SessionsModule,
-    CmsModule
+    CmsModule,
+    CoursModule
   ],
-  controllers: [AppController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService]
+  controllers: [AppController, CoursController],
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService, CoursService]
 })
 
 export class AppModule implements OnModuleInit {
