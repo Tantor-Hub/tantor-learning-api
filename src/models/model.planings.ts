@@ -45,6 +45,12 @@ export class Planings extends Model<IPlanings> {
     @Column({ type: DataType.INTEGER })
     createdBy: number
 
+    @BelongsTo(() => Users, 'createdBy')
+    Createdby: Users;
+
+    @BelongsTo(() => Users, 'id_cibling')
+    Cibling: Users; // ceci peut etre null et cela signifie que tout le monde est concerne
+
     @AllowNull(true)
     @Column({
         type: DataType.ARRAY(DataType.BIGINT),

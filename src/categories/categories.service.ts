@@ -78,17 +78,20 @@ export class CategoriesService {
 
     async getCategoriesFormations(): Promise<ResponseServer> {
 
-        Categories.belongsTo(Thematiques, { foreignKey: "ThematicId" })
+        // Categories.belongsTo(Thematiques, { foreignKey: "ThematicId" })
         return this.categoriesModel.findAll({
-            include: [
-                {
-                    model: Thematiques,
-                    required: true,
-                    attributes: {
-                        exclude: ['status']
-                    }
-                }
-            ],
+            // include: [
+            //     {
+            //         model: Thematiques,
+            //         required: true,
+            //         attributes: {
+            //             exclude: ['status']
+            //         }
+            //     }
+            // ],
+            attributes: {
+                exclude: ['status']
+            },
             where: {
                 status: 1
             }

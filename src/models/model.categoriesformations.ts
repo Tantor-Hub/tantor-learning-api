@@ -18,9 +18,9 @@ export class Categories extends Model<ICategorieFormations> {
     @Column({ type: DataType.STRING, allowNull: true, })
     description?: string;
 
-    @ForeignKey(() => Thematiques)
-    @Column({ allowNull: false })
-    ThematicId: number;
+    // @ForeignKey(() => Thematiques)
+    // @Column({ allowNull: true })
+    // ThematicId: number;
 
     @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
     status: number

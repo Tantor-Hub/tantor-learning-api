@@ -14,8 +14,8 @@ export class Thematiques extends Model<IGroupeFormations> {
     @Column({ type: DataType.STRING, allowNull: true, })
     description: string;
 
-    @HasMany(() => Categories)
-    categories: Categories[];
+    // @HasMany(() => Categories)
+    // categories: Categories[];
 
     @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
     status: number
