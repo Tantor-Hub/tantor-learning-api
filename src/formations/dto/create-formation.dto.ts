@@ -11,7 +11,8 @@ export class CreateFormationDto {
     id_category: number;
 
     @IsNumberString()
-    id_thematic: number;
+    @IsOptional()
+    id_thematic?: number;
 
     @IsEnum(['onLine', 'visioConference', 'presentiel', 'hybride'])
     type_formation: string;

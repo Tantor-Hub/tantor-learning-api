@@ -4,6 +4,7 @@ import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
 import { Thematiques } from './model.groupeformations';
 import { Users } from './model.users';
+import { Formations } from './model.formations';
 
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
@@ -30,8 +31,12 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
     progression?: number;
 
+    @ForeignKey(() => Formations)
     @Column({ type: DataType.INTEGER })
     id_formation: number;
+    
+    @BelongsTo(() => Formations)
+    Formation: Formations;
 
     @Column({
         type: DataType.STRING,

@@ -514,7 +514,7 @@ export class SessionsService {
         })
             .then(form => {
                 if (form instanceof Formations) {
-                    const { id_category, id_thematic, sous_titre, titre, } = form.toJSON()
+                    const { id_category, sous_titre, titre, } = form.toJSON()
                     return this.sessionModel.create({
                         description: description,
                         duree: data as string,
@@ -523,7 +523,6 @@ export class SessionsService {
                         id_category,
                         id_controleur,
                         id_superviseur,
-                        id_thematic,
                         prix: prix,
                         id_formation,
                         designation: designation.toUpperCase(),
