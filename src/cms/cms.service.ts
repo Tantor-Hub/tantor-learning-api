@@ -48,7 +48,7 @@ export class CmsService {
 
     async myListAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
         try {
-            const { id_user } = user
+            const { id_user } = user;
             // Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
             return this.planingModel.findAll({
                 include: [
