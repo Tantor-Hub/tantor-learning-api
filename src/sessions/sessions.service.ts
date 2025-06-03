@@ -311,8 +311,9 @@ export class SessionsService {
         try {
             SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
             SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", })
-            Listcours.belongsTo(Cours, { foreignKey: "id_preset_cours",  })
-            SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
+            // Listcours.belongsTo(Cours, { foreignKey: "id_preset_cours",  })
+            Cours.belongsTo(Listcours, { foreignKey: "id_preset_cours" });
+            SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" });
 
             SessionSuivi.hasMany(Cours, { foreignKey: "id_session" })
 
@@ -355,11 +356,15 @@ export class SessionsService {
                     else return Responder({ status: HttpStatusCode.NotFound, data: session })
                 })
                 .catch(_ => {
+                    log("=========================")
                     log(_)
+                    log("=========================")
                     return Responder({ status: HttpStatusCode.InternalServerError, data: _.toString() })
                 })
         } catch (error) {
+            log("=========================")
             log(error)
+            log("=========================")
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
