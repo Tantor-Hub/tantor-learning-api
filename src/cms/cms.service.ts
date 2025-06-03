@@ -48,13 +48,13 @@ export class CmsService {
 
     async myListAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
         try {
-            const { id_user } = user
-            Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
+            const { id_user } = user;
+            // Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
             return this.planingModel.findAll({
                 include: [
                     {
                         model: Users,
-                        as: 'Concerned',
+                        as: 'Cibling',
                         attributes: ['id', 'fs_name', 'ls_name'],
                         required: false
                     }
@@ -73,12 +73,12 @@ export class CmsService {
     async myListAsStudent(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
         try {
-            Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Concerne" })
+            // Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Createdby" }) // j'ai commenter ceci
             return this.planingModel.findAll({
                 include: [
                     {
                         model: Users,
-                        as: 'Concerne',
+                        as: 'Createdby',
                         attributes: ['id', 'fs_name', 'ls_name'],
                         required: false
                     }
@@ -87,7 +87,7 @@ export class CmsService {
                     status: 1,
                     [Op.or]: [
                         { id_cibling: id_user },
-                        { id_cibling: null }
+                        { id_cibling: null } // null means all of us
                     ]
                 }
             })
@@ -122,8 +122,8 @@ export class CmsService {
         }
     }
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
-        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
-        Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
         return this.messageModel.findOne({
             include: [
                 {
@@ -208,8 +208,8 @@ export class CmsService {
         const { id_user } = user
         if (Object.keys(typeMessages).indexOf(groupe) === -1) return Responder({ status: HttpStatusCode.BadRequest, data: "Key groupe n'a pas été retrouvé" })
 
-        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
-        Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender", })
         const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
@@ -241,8 +241,8 @@ export class CmsService {
     }
     async getAllMessages(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user } = user
-        Messages.belongsTo(Users, { foreignKey: "id_user_receiver", as: 'Receiver' })
-        Messages.belongsTo(Users, { foreignKey: "id_user_sender", as: 'Sender' })
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
             include: [

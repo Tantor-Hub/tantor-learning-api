@@ -6,6 +6,7 @@ import {
     ForeignKey,
     CreatedAt,
     UpdatedAt,
+    BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
@@ -29,6 +30,12 @@ export class Messages extends Model<IMessages> {
         allowNull: false,
     })
     id_user_receiver: number;
+
+    @BelongsTo(() => Users, 'id_user_receiver')
+    Receiver: Users;
+
+    @BelongsTo(() => Users, 'id_user_sender')
+    Sender: Users;
 
     @Column({
         type: DataType.STRING,
