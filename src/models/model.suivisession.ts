@@ -2,7 +2,6 @@ import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize
 import { tables } from 'src/config/config.tablesname';
 import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
-import { Thematiques } from './model.groupeformations';
 import { Users } from './model.users';
 import { Formations } from './model.formations';
 
@@ -56,13 +55,6 @@ export class SessionSuivi extends Model<ISessionSuivi> {
         allowNull: false,
     })
     id_category: number;
-
-    @ForeignKey(() => Thematiques)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-    })
-    id_thematic: number;
 
     @Column(DataType.DATE)
     date_session_debut: Date;

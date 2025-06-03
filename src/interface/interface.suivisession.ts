@@ -7,7 +7,6 @@ export interface ISessionSuivi extends IGlobale {
     // 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
     id_formation: number;
     id_category?: number;
-    id_thematic?: number;
     progression?: number;
 
     id_controleur?: number;
