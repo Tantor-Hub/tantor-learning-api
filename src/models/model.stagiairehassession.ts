@@ -7,6 +7,9 @@ import { SessionSuivi } from './model.suivisession';
 @Table({ tableName: tables['statgiairehassession'], timestamps: true })
 export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
 
+    @Column({ type: DataType.INTEGER, allowNull: false, unique: true, primaryKey: true, autoIncrement: true, })
+    id: number;
+    
     @Column({ type: DataType.INTEGER, allowNull: true })
     id_controleur?: number;
 

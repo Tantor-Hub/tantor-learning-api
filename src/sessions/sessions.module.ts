@@ -22,10 +22,14 @@ import { DocsService } from 'src/services/service.docs';
 import { SeanceSessions } from 'src/models/model.courshasseances';
 import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+import { UploadDocument } from 'src/models/model.documentsession';
+import { AvantFormationDocs } from 'src/models/model.avantformation';
+import { PendantFormationDocs } from 'src/models/model.pendantformation';
+import { ApresFormationDocs } from 'src/models/model.apresformation';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork]),
+    SequelizeModule.forFeature([UploadDocument, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

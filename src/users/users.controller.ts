@@ -15,7 +15,6 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { GoogleDriveService } from 'src/services/service.googledrive';
-import { log } from 'console';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';

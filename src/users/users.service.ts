@@ -68,7 +68,6 @@ export class UsersService {
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,
         private readonly configService: ConfigService
-
     ) { }
 
     async loadPerformances(user: IJwtSignin) {
@@ -79,7 +78,6 @@ export class UsersService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async loadScores(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, roles_user, level_indicator } = user
 
@@ -153,7 +151,6 @@ export class UsersService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, uuid_user, roles_user } = user
         try {
@@ -247,7 +244,6 @@ export class UsersService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, uuid_user, roles_user } = user
         try {
@@ -312,7 +308,6 @@ export class UsersService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     protected async onWelcomeNewStudent({ to, otp, nom, postnom, all }: { to: string, nom: string, postnom: string, all?: boolean, otp: string }): Promise<void> {
         if (all && all === true) {
             this.mailService.sendMail({
@@ -336,7 +331,6 @@ export class UsersService {
             })
         }
     }
-
     async getAllUsers(): Promise<ResponseServer> {
 
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
@@ -360,7 +354,6 @@ export class UsersService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async getAllUsersByRole(getUserByRoleDto: GetUserByRoleDto): Promise<ResponseServer> {
         return this.userModel.findAll({
             where: {
@@ -370,7 +363,6 @@ export class UsersService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
         const { user_name, password } = signInStudentDto
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
@@ -442,9 +434,8 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async registerAsStudent(createUserDto: CreateUserDto): Promise<ResponseServer> {
-        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, date_of_birth } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
             return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
@@ -463,6 +454,7 @@ export class UsersService {
             phone: phone,
             password: hashed_password,
             nick_name,
+            date_of_birth,
             uuid: uuid_user,
             verification_code: verif_code,
             is_verified: 0,
@@ -507,7 +499,6 @@ export class UsersService {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
     }
-
     async registerThanSendMagicLink(createUserDto: CreateUserMagicLinkDto): Promise<ResponseServer> {
         const { email, id_role } = createUserDto
         try {
@@ -572,9 +563,8 @@ export class UsersService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-
     async registerAsNewUser(createUserDto: CreateUserDto): Promise<ResponseServer> {
-        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, id_role } = createUserDto
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, id_role, date_of_birth } = createUserDto
         const existingUser = await this.userModel.findOne({ where: { email } });
         if (existingUser) {
             return Responder({ status: HttpStatusCode.Conflict, data: `[Email]: ${email} est déjà utilisé` })
@@ -594,6 +584,7 @@ export class UsersService {
             password: hashed_password,
             nick_name,
             uuid: uuid_user,
+            date_of_birth,
             verification_code: verif_code,
             is_verified: id_role && id_role === 4 ? 0 : 1,
             status: 1
@@ -636,9 +627,8 @@ export class UsersService {
                 return Responder({ status: HttpStatusCode.InternalServerError, data: err })
             })
     }
-
     async registerAsNewUserFormMagicLink(createUserDto: CreateUserDto, emailmagic: string, token: string): Promise<ResponseServer> {
-        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code } = createUserDto
+        const { email, fs_name, ls_name, password, id, nick_name, phone, uuid, verification_code, date_of_birth } = createUserDto
         const decoded: IJwtSignin = await this.jwtService.checkTokenWithRound(token)
         if (!decoded) return Responder({ status: HttpStatusCode.Unauthorized, data: "Le token fournie est invalide" })
         const { id_user, } = decoded
@@ -653,6 +643,7 @@ export class UsersService {
                 phone: phone,
                 password: hashed_password,
                 nick_name,
+                date_of_birth,
                 status: 1
             }, {
                 where: {
@@ -683,7 +674,6 @@ export class UsersService {
                 })
         } else return Responder({ status: HttpStatusCode.BadRequest, data: `Les informations fournies ne sont pas conformes` })
     }
-
     async setNewPassword(resetPasswordDto: ResetPasswordDto): Promise<ResponseServer> {
         const { new_password, repet_new_password, user_name, verification_code, description } = resetPasswordDto
 
@@ -756,7 +746,6 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async resentVerificationCode(resentCodeDto: ResentCodeDto, forgetPasswordCase: boolean = false): Promise<ResponseServer> {
 
         const { user_email } = resentCodeDto
@@ -785,7 +774,6 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.NotFound, data: err }))
     }
-
     async verifyBeforeResetPassword(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
 
         const { email_user, verication_code } = verifyAsStudentDto
@@ -835,7 +823,6 @@ export class UsersService {
                 return Responder({ status: HttpStatusCode.NotFound, data: err })
             })
     }
-
     async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
 
         const { email_user, verication_code } = verifyAsStudentDto
@@ -897,7 +884,6 @@ export class UsersService {
                 return Responder({ status: HttpStatusCode.NotFound, data: err })
             })
     }
-
     async refreshTokenUser(refreshTokenDto: RefreshTokenDto): Promise<ResponseServer> {
         const { refresh_token } = refreshTokenDto
         return this.jwtService.verifyRefreshToken(refresh_token)
@@ -925,7 +911,6 @@ export class UsersService {
                 return Responder({ status: HttpStatusCode.Unauthorized, data: "La clé de rafreshissement a aussi expirée !" })
             })
     }
-
     async findByEmail(findByEmailDto: FindByEmailDto): Promise<ResponseServer> {
         const { email } = findByEmailDto
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
@@ -958,7 +943,6 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async updateUserProfile(user: IJwtSignin, profile: any, req: Request): Promise<ResponseServer> {
         const { id_user, roles_user, uuid_user, level_indicator } = user
         if (Object.keys(profile as {}).length <= 0) {
@@ -999,7 +983,6 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
 
         const { id_user, roles_user, uuid_user, level_indicator } = user
@@ -1031,7 +1014,6 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async authWithGoogle(user: IAuthWithGoogle): Promise<ResponseServer> {
         const { email, firstName, lastName, picture, accessToken } = user;
 

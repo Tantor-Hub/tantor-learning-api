@@ -1,15 +1,69 @@
-import { Column, ForeignKey, Model, Table } from 'sequelize-typescript';
+import { BelongsTo, Column, DataType, ForeignKey, HasOne, Model, Table } from 'sequelize-typescript';
 import { StagiaireHasSession } from './model.stagiairehassession';
 import { tables } from 'src/config/config.tablesname';
+import { UploadDocument } from './model.documentsession';
+import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
+import { Users } from './model.users';
+import { IApresFormationDocs } from 'src/interface/interface.formations';
 
 @Table({ tableName: tables['apres_formation_docs'] })
-export class ApresFormationDocs extends Model<ApresFormationDocs> {
+export class ApresFormationDocs extends Model<IApresFormationDocs> {
+  @Column({ type: DataType.INTEGER, allowNull: true })
   @ForeignKey(() => StagiaireHasSession)
-  @Column
-  suivi_id: number;
+  session_id: number;
 
-  @Column questionnaire_satisfaction: string;
-  @Column paiement: string;
-  @Column documents_financeur: string;
-  @Column fiche_controle_finale: string;
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  @ForeignKey(() => Users)
+  user_id: number;
+
+  @Column questionnaire_satisfaction?: string;
+  @Column paiement?: string;
+  @Column documents_financeur?: string;
+  @Column fiche_controle_finale?: string;
+
+  @BelongsTo(() => StagiaireHasSession, 'session_id')
+  SessionStudent: StagiaireHasSession
+
+  @BelongsTo(() => Users, 'user_id')
+  Student: Users;
+
+  @HasOne(() => UploadDocument, {
+    sourceKey: 'session_id',
+    foreignKey: 'id_session',
+    scope: {
+      key_document: DocumentKeyEnum.QUESTIONNAIRE_SATISFACTION,
+    },
+    constraints: false,
+  })
+  QuestionnaireSatisfactionDoc: UploadDocument;
+
+  @HasOne(() => UploadDocument, {
+    sourceKey: 'session_id',
+    foreignKey: 'id_session',
+    scope: {
+      key_document: DocumentKeyEnum.PAIEMENT,
+    },
+    constraints: false,
+  })
+  PaiementDoc: UploadDocument;
+
+  @HasOne(() => UploadDocument, {
+    sourceKey: 'session_id',
+    foreignKey: 'id_session',
+    scope: {
+      key_document: DocumentKeyEnum.DOCUMENTS_FINANCEUR,
+    },
+    constraints: false,
+  })
+  DocumentsFinanceurDoc: UploadDocument;
+
+  @HasOne(() => UploadDocument, {
+    sourceKey: 'session_id',
+    foreignKey: 'id_session',
+    scope: {
+      key_document: DocumentKeyEnum.FICHE_CONTROLE_FINALE,
+    },
+    constraints: false,
+  })
+  FicheControleFinaleDoc: UploadDocument;
 }
