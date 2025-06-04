@@ -32,6 +32,11 @@ import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { SeanceSessions } from 'src/models/model.courshasseances';
 import { Cours } from 'src/models/model.sessionshascours';
 import { Listcours } from 'src/models/model.cours';
+import { UploadDocument } from 'src/models/model.documentsession';
+import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
+import { AvantFormationDocs } from 'src/models/model.avantformation';
+import { PendantFormationDocs } from 'src/models/model.pendantformation';
+import { ApresFormationDocs } from 'src/models/model.apresformation';
 
 @Injectable()
 export class SessionsService {
@@ -73,11 +78,73 @@ export class SessionsService {
         @InjectModel(StagiaireHasHomeWork)
         private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
 
+        @InjectModel(UploadDocument)
+        private readonly documentModel: typeof UploadDocument,
+
+        @InjectModel(AvantFormationDocs)
+        private readonly adocsModel: typeof AvantFormationDocs,
+
+        @InjectModel(PendantFormationDocs)
+        private readonly pdocsModel: typeof PendantFormationDocs,
+
+        @InjectModel(ApresFormationDocs)
+        private readonly apdocsModel: typeof ApresFormationDocs,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
         private readonly docsService: DocsService
     ) { }
 
+
+    async GetDocumentsByGroup(idSession: number, idStudent: number, group: 'before' | 'during' | 'after'): Promise<ResponseServer> { // before ~ during ~ after
+        try {
+            const student = await this.usersModel.findOne({
+                where: {
+                    id: idStudent
+                }
+            })
+            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: `Student not found with id: ${idStudent}` })
+            const session = await this.sessionModel.findOne({
+                where: {
+                    id: idSession
+                }
+            })
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: `Session not found with id: ${idSession}` })
+            const sessionStudent = await this.hasSessionStudentModel.findOne({
+                where: {
+                    id_sessionsuivi: idSession,
+                    id_stagiaire: idStudent
+                }
+            })
+            if (!session) return Responder({ status: HttpStatusCode.BadRequest, data: `The student is not associated to this session: ${idSession}` })
+            const { id } = sessionStudent?.toJSON() as any
+            switch (group) {
+                case 'after':
+                    return this.apdocsModel.findOne({
+                        include: [
+                            'QuestionnaireSatisfactionDoc',
+                            'PaiementDoc',
+                            'DocumentsFinanceurDoc',
+                            'FicheControleFinaleDoc',
+                        ],
+                        where: {
+                            user_id: idStudent,
+                            session_id: id
+                        }
+                    })
+                        .then(pref => Responder({ status: HttpStatusCode.Ok, data: pref }))
+                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                    break;
+
+                default:
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: `Key group must be included in before | during | after` })
+                    break;
+            }
+
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async listOfLearnerByIdSession(idsession: number): Promise<ResponseServer> {
 
         // StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })

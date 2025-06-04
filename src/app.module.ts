@@ -46,6 +46,10 @@ import { FormateurHasSession } from './models/model.formateurhassession';
 import { HomeworksSession } from './models/model.homework';
 import { StagiaireHasHomeWork } from './models/model.stagiairehashomeworks';
 import { Newsletter } from './models/model.newsletter';
+import { UploadDocument } from './models/model.documentsession';
+import { ApresFormationDocs } from './models/model.apresformation';
+import { PendantFormationDocs } from './models/model.pendantformation';
+import { AvantFormationDocs } from './models/model.avantformation';
 
 @Module({
   imports: [
@@ -91,7 +95,11 @@ import { Newsletter } from './models/model.newsletter';
       HomeworksSession,
       StagiaireHasSession,
       StagiaireHasSessionSeances,
-      StagiaireHasHomeWork
+      StagiaireHasHomeWork,
+      UploadDocument,
+      AvantFormationDocs, 
+      PendantFormationDocs, 
+      ApresFormationDocs
     ]),
     RolesModule,
     UsersModule,

@@ -9,3 +9,11 @@ export interface IDocument extends IGlobale {
     id_session: number
     createdBy?: number
 }
+
+export interface IUploadDocument extends IGlobale {
+    id_student: number
+    id_session: number;
+    document: string;
+    key_document: string;
+    description?: string;
+}

@@ -1,4 +1,4 @@
-import { Column, DataType, ForeignKey, Model, Table } from 'sequelize-typescript';
+import { BelongsTo, Column, DataType, ForeignKey, Model, Table } from 'sequelize-typescript';
 import { StagiaireHasSession } from './model.stagiairehassession';
 import { tables } from 'src/config/config.tablesname';
 
@@ -6,7 +6,7 @@ import { tables } from 'src/config/config.tablesname';
 export class AvantFormationDocs extends Model<AvantFormationDocs> {
     @ForeignKey(() => StagiaireHasSession)
     @Column
-    suivi_id: number;
+    session_id: number; 
 
     @Column(DataType.STRING) carte_identite: string;
     @Column(DataType.STRING) contrat_ou_convention: string;
@@ -19,4 +19,7 @@ export class AvantFormationDocs extends Model<AvantFormationDocs> {
     @Column(DataType.STRING) reglement_interieur: string;
     @Column(DataType.STRING) cgv: string;
     @Column(DataType.STRING) fiche_controle_initiale: string;
+
+    @BelongsTo(() => StagiaireHasSession, 'session_id')
+    SessionStudent: StagiaireHasSession
 }

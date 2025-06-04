@@ -1,4 +1,4 @@
-import { Column, ForeignKey, Model, Table } from 'sequelize-typescript';
+import { BelongsTo, Column, ForeignKey, Model, Table } from 'sequelize-typescript';
 import { StagiaireHasSession } from './model.stagiairehassession';
 import { tables } from 'src/config/config.tablesname';
 
@@ -6,11 +6,14 @@ import { tables } from 'src/config/config.tablesname';
 export class PendantFormationDocs extends Model<PendantFormationDocs> {
   @ForeignKey(() => StagiaireHasSession)
   @Column
-  suivi_id: number;
+  session_id: number;
 
   @Column convocation_examen: string;
   @Column attestation_formation: string;
   @Column certification: string;
   @Column fiche_controle_cours: string;
   @Column fiches_emargement: string;
+
+  @BelongsTo(() => StagiaireHasSession, 'session_id')
+  SessionStudent: StagiaireHasSession
 }

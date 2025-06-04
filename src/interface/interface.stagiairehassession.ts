@@ -1,6 +1,7 @@
 import { IGlobale } from "./interface.globale";
 
 export interface IStagiaireHasSessionSuiivi extends IGlobale {
+    id?: number;
     id_sessionsuivi: number,
     id_stagiaire: number;
     supervision?: boolean;

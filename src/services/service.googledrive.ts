@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { google } from 'googleapis';
 import * as path from 'path';
-import { ConfigService } from '@nestjs/config';
+import * as stream from 'stream';
 
 @Injectable()
 export class GoogleDriveService {
@@ -18,7 +19,12 @@ export class GoogleDriveService {
     this.drive = google.drive({ version: 'v3', auth });
   }
 
-  async uploadBufferFile(file: Express.Multer.File, folderId?: string) {
+  async uploadBufferFile(file: Express.Multer.File, folderId?: string): Promise<{
+    id: string;
+    name: string;
+    viewLink: string;
+    link: string;
+  } | null> {
     const fileMetadata: any = {
       name: file.originalname,
     };
@@ -27,7 +33,6 @@ export class GoogleDriveService {
       fileMetadata.parents = [folderId];
     }
 
-    const stream = require('stream');
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file.buffer);
 
@@ -63,10 +68,12 @@ export class GoogleDriveService {
       return {
         id: fileId,
         name: response.data.name,
-        link: response.data.webViewLink,
+        viewLink: response.data.webViewLink,
+        link: `https://drive.google.com/uc?id=${fileId}&export=download`,
       };
     } catch (error) {
-      return null
+      console.error('Erreur lors de l’upload sur Google Drive :', error?.message || error);
+      return null;
     }
   }
 }
