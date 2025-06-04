@@ -2,8 +2,8 @@ import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize
 import { tables } from 'src/config/config.tablesname';
 import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
-import { Thematiques } from './model.groupeformations';
 import { Users } from './model.users';
+import { Formations } from './model.formations';
 
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
@@ -30,8 +30,12 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
     progression?: number;
 
+    @ForeignKey(() => Formations)
     @Column({ type: DataType.INTEGER })
     id_formation: number;
+    
+    @BelongsTo(() => Formations)
+    Formation: Formations;
 
     @Column({
         type: DataType.STRING,
@@ -51,13 +55,6 @@ export class SessionSuivi extends Model<ISessionSuivi> {
         allowNull: false,
     })
     id_category: number;
-
-    @ForeignKey(() => Thematiques)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-    })
-    id_thematic: number;
 
     @Column(DataType.DATE)
     date_session_debut: Date;

@@ -4,7 +4,6 @@ export interface IFormation extends IGlobale {
     titre: string;
     sous_titre: string;
     id_category: number;
-    id_thematic: number;
     
     type_formation?: 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
     piece_jointe?: string; // optionnel

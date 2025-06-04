@@ -196,7 +196,6 @@ export class SessionsService {
         StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
         StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
         Formations.belongsTo(Categories, { foreignKey: "id_category" })
-        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
 
         return this.hasSessionStudentModel.findAndCountAll({
             include: [
@@ -235,7 +234,6 @@ export class SessionsService {
 
         const { id_user } = user
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        // SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
 
         return this.sessionModel.findAndCountAll({
@@ -269,7 +267,6 @@ export class SessionsService {
     async listAllSessionsByIdInstructor(idinstructor: number): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
         SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", as: "Superviseur" })
 
@@ -494,7 +491,7 @@ export class SessionsService {
     }
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 
-        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur } = createSessionDto
+        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur, type_formation } = createSessionDto
         const s_on = this.allServices.parseDate(date_session_debut as any)
         const e_on = this.allServices.parseDate(date_session_fin as any)
 
@@ -513,8 +510,9 @@ export class SessionsService {
             }
         })
             .then(form => {
+                log(form?.toJSON())
                 if (form instanceof Formations) {
-                    const { id_category, id_thematic, sous_titre, titre, } = form.toJSON()
+                    const { id_category, sous_titre, titre } = form.toJSON()
                     return this.sessionModel.create({
                         description: description,
                         duree: data as string,
@@ -523,8 +521,8 @@ export class SessionsService {
                         id_category,
                         id_controleur,
                         id_superviseur,
-                        id_thematic,
                         prix: prix,
+                        type_formation,
                         id_formation,
                         designation: designation.toUpperCase(),
                         date_mise_a_jour: null,
@@ -583,7 +581,6 @@ export class SessionsService {
         StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
         StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
         Formations.belongsTo(Categories, { foreignKey: "id_category" })
-        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
 
         return this.hasSessionStudentModel.findAndCountAll({
             include: [
@@ -600,18 +597,6 @@ export class SessionsService {
                             [Op.like]: `%${keyword}`
                         }
                     },
-                    include: [
-                        // {
-                        //     model: Thematiques,
-                        //     required: true,
-                        //     attributes: ['id', 'thematic']
-                        // },
-                        // {
-                        //     model: Categories,
-                        //     required: true,
-                        //     attributes: ['id', 'category']
-                        // }
-                    ]
                 }
             ],
             where: {
@@ -626,7 +611,6 @@ export class SessionsService {
     async listAllSession(): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
 
         return this.sessionModel.findAndCountAll({
@@ -661,7 +645,6 @@ export class SessionsService {
         StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
         StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
         Formations.belongsTo(Categories, { foreignKey: "id_category" })
-        Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" });
 
         return this.hasSessionStudentModel.findAndCountAll({
             include: [
@@ -673,18 +656,6 @@ export class SessionsService {
                     model: Formations,
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description'],
-                    include: [
-                        // {
-                        //     model: Thematiques,
-                        //     required: true,
-                        //     attributes: ['id', 'thematic']
-                        // },
-                        // {
-                        //     model: Categories,
-                        //     required: true,
-                        //     attributes: ['id', 'category']
-                        // }
-                    ]
                 }
             ],
             where: {
@@ -703,7 +674,6 @@ export class SessionsService {
     async gatAllSessionsByThematic(idThematic: number): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
         return this.sessionModel.findAll({
             include: [
@@ -713,11 +683,6 @@ export class SessionsService {
                     attributes: ['id', 'titre', 'sous_titre', 'description']
                 },
                 {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
-                },
-                {
                     model: Categories,
                     required: true,
                     attributes: ['id', 'category']
@@ -725,7 +690,7 @@ export class SessionsService {
             ],
             where: {
                 status: 1,
-                id_thematic: idThematic
+                // id_thematic: idThematic
             }
         })
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
@@ -734,7 +699,6 @@ export class SessionsService {
     async gatAllSessionsByThematicAndCategory(idThematic: number, idCategory: number): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
         return this.sessionModel.findAll({
             include: [
@@ -744,11 +708,6 @@ export class SessionsService {
                     attributes: ['id', 'titre', 'sous_titre', 'description']
                 },
                 {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
-                },
-                {
                     model: Categories,
                     required: true,
                     attributes: ['id', 'category']
@@ -756,7 +715,7 @@ export class SessionsService {
             ],
             where: {
                 status: 1,
-                id_thematic: idThematic,
+                // id_thematic: idThematic,
                 id_category: idCategory
             }
         })
@@ -766,7 +725,6 @@ export class SessionsService {
     async gatAllSessionsByCategory(idCategory: number): Promise<ResponseServer> {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
-        SessionSuivi.belongsTo(Thematiques, { foreignKey: "id_thematic" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
         return this.sessionModel.findAll({
             include: [
@@ -774,11 +732,6 @@ export class SessionsService {
                     model: Formations,
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
-                },
-                {
-                    model: Thematiques,
-                    required: true,
-                    attributes: ['id', 'thematic']
                 },
                 {
                     model: Categories,
@@ -803,7 +756,7 @@ export class SessionsService {
         })
             .then(inst => {
                 if (inst instanceof SessionSuivi) {
-                    const { date_session_debut, date_session_fin, description, id_category, id_formation, id_thematic, type_formation, designation, id_controleur, id_superviseur, piece_jointe, prix } = updateSessionDto
+                    const { date_session_debut, date_session_fin, description, id_category, id_formation, type_formation, designation, id_controleur, id_superviseur, piece_jointe, prix } = updateSessionDto
                     return inst.update({
                         date_session_debut,
                         date_session_fin,
@@ -813,7 +766,6 @@ export class SessionsService {
                         id_controleur,
                         id_formation,
                         id_superviseur,
-                        id_thematic,
                         piece_jointe,
                         type_formation
                     })

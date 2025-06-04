@@ -22,6 +22,10 @@ export class CreateSessionDto {
     @IsDateString()
     date_mise_a_jour?: Date;
 
+    @IsEnum(['onLine', 'visioConference', 'presentiel', 'hybride'])
+    @IsOptional()
+    type_formation: string;
+
     @IsNumberString()
     id_formation: number;
 

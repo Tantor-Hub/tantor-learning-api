@@ -14,6 +14,12 @@ export class FormationsController {
         private readonly googleDriveService: GoogleDriveService
     ) { }
 
+    @Get('formation/:idFormation')
+    // @UseGuards(JwtAuthGuardAsManagerSystem)
+    async getOne(@Param('idFormation', ParseIntPipe) idFormation: number,) {
+        return this.formationsService.getFormationById(idFormation)
+    }
+
     @Delete('formation/:idFormation')
     @UseGuards(JwtAuthGuardAsManagerSystem)
     async deleteSession(@Param('idFormation', ParseIntPipe) idFormation: number,) {
@@ -47,21 +53,9 @@ export class FormationsController {
         return this.formationsService.gatAllFormations()
     }
 
-    @Get('list/bythematic/:idThematic')
-    @UseGuards(JwtAuthGuardAsFormateur)
-    async getAllFormationsByThematic(@Param('idThematic', ParseIntPipe) idThematic: number) {
-        return this.formationsService.gatAllFormationsByThematic(idThematic)
-    }
-
     @Get('list/bycategory/:idCategory')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormationsByCategory(@Param('idCategory', ParseIntPipe) idCategory: number) {
         return this.formationsService.gatAllFormationsByCategory(idCategory)
-    }
-
-    @Get('list/by/:idThematic/:idCategory')
-    @UseGuards(JwtAuthGuardAsFormateur)
-    async getAllFormationsByThematicAndCategory(@Param('idCategory', ParseIntPipe) idCategory: number, @Param('idThematic', ParseIntPipe) idThematic: number) {
-        return this.formationsService.gatAllFormationsByThematicAndCategory(idThematic, idCategory)
     }
 }

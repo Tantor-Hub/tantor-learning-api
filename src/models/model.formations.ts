@@ -4,11 +4,14 @@ import {
     Model,
     DataType,
     ForeignKey,
+    HasMany,
+    BelongsTo,
 } from 'sequelize-typescript';
 import { Categories } from './model.categoriesformations';
 import { tables } from 'src/config/config.tablesname';
 import { IFormation } from 'src/interface/interface.formations';
 import { Thematiques } from './model.groupeformations';
+import { SessionSuivi } from './model.suivisession';
 
 @Table({ tableName: tables['fromations'] })
 export class Formations extends Model<IFormation> {
@@ -31,10 +34,13 @@ export class Formations extends Model<IFormation> {
     })
     id_category: number;
 
+    @BelongsTo(() => Categories, 'id_category')
+    Category: Categories
+
     @ForeignKey(() => Thematiques)
     @Column({
         type: DataType.INTEGER,
-        allowNull: false,
+        allowNull: true,
     })
     id_thematic: number;
 
@@ -43,6 +49,9 @@ export class Formations extends Model<IFormation> {
         allowNull: false,
     })
     description: string;
+
+    @HasMany(() => SessionSuivi, 'id_formation')
+    Sessions: SessionSuivi[];
 
     @Column({
         type: DataType.INTEGER,

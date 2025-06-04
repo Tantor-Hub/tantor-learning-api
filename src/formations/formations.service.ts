@@ -8,6 +8,8 @@ import { typeFormations } from 'src/utils/utiles.typesformations';
 import { CreateFormationDto } from './dto/create-formation.dto';
 import { AllSercices } from '../services/serices.all';
 import { MailService } from '../services/service.mail';
+import { Categories } from 'src/models/model.categoriesformations';
+import { SessionSuivi } from 'src/models/model.suivisession';
 
 @Injectable()
 export class FormationsService {
@@ -19,6 +21,32 @@ export class FormationsService {
         private readonly mailService: MailService
     ) { }
 
+    async getFormationById(idSession: number): Promise<ResponseServer> {
+        return this.formationModel.findOne({
+            include: [{
+                model: Categories,
+                required: true,
+                attributes: ['id', 'category']
+            },
+            {
+                model: SessionSuivi,
+                required: false,
+                // attributes
+            }
+            ],
+            where: {
+                id: idSession
+            }
+        })
+            .then(inst => {
+                if (inst instanceof Formations) {
+                    return Responder({ status: HttpStatusCode.Ok, data: inst })
+                } else {
+                    return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                }
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
     async delete(idSession: number): Promise<ResponseServer> {
         return this.formationModel.findOne({
             where: {
@@ -38,7 +66,6 @@ export class FormationsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async createNewFormation(createFormationDto: CreateFormationDto): Promise<ResponseServer> {
         const { id_category, sous_titre, titre, type_formation, description, lien_contenu, prix, id_thematic, end_on, start_on, id_formateur, duree } = createFormationDto;
 
@@ -52,7 +79,6 @@ export class FormationsService {
             start_on: s_on as any,
             id_category,
             id_formateur: id_formateur || 0 as number,
-            id_thematic,
             prix: prix as number,
             sous_titre,
             titre,
@@ -68,13 +94,16 @@ export class FormationsService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
     async getTypesFormations(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: typeFormations })
     }
-
     async gatAllFormations(): Promise<ResponseServer> {
         return this.formationModel.findAll({
+            include: [{
+                model: Categories,
+                required: true,
+                attributes: ['id', 'category']
+            }],
             where: {
                 status: 1
             }
@@ -82,32 +111,13 @@ export class FormationsService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-
-    async gatAllFormationsByThematic(idThematic: number): Promise<ResponseServer> {
-        return this.formationModel.findAll({
-            where: {
-                status: 1,
-                id_thematic: idThematic
-            }
-        })
-            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-    }
-
-    async gatAllFormationsByThematicAndCategory(idThematic: number, idCategory: number): Promise<ResponseServer> {
-        return this.formationModel.findAll({
-            where: {
-                status: 1,
-                id_thematic: idThematic,
-                id_category: idCategory
-            }
-        })
-            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-    }
-
     async gatAllFormationsByCategory(idCategory: number): Promise<ResponseServer> {
         return this.formationModel.findAll({
+            include: [{
+                model: Categories,
+                required: true,
+                attributes: ['id', 'category']
+            }],
             where: {
                 status: 1,
                 id_category: idCategory
