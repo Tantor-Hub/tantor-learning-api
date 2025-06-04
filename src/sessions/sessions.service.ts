@@ -95,7 +95,6 @@ export class SessionsService {
         private readonly docsService: DocsService
     ) { }
 
-
     async GetDocumentsByGroup(idSession: number, idStudent: number, group: 'before' | 'during' | 'after'): Promise<ResponseServer> { // before ~ during ~ after
         try {
             const student = await this.usersModel.findOne({
@@ -132,7 +131,50 @@ export class SessionsService {
                             session_id: id
                         }
                     })
-                        .then(pref => Responder({ status: HttpStatusCode.Ok, data: pref }))
+                        .then(pref => {
+                            if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
+                            else return Responder({ status: HttpStatusCode.Ok, data: {} })
+                        })
+                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                    break;
+
+                case 'before':
+                    return this.adocsModel.findOne({
+                        // include: [
+                        //     'QuestionnaireSatisfactionDoc',
+                        //     'PaiementDoc',
+                        //     'DocumentsFinanceurDoc',
+                        //     'FicheControleFinaleDoc',
+                        // ],
+                        where: {
+                            user_id: idStudent,
+                            session_id: id
+                        }
+                    })
+                        .then(pref => {
+                            if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
+                            else return Responder({ status: HttpStatusCode.Ok, data: {} })
+                        })
+                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                    break;
+
+                case 'during':
+                    return this.pdocsModel.findOne({
+                        // include: [
+                        //     'QuestionnaireSatisfactionDoc',
+                        //     'PaiementDoc',
+                        //     'DocumentsFinanceurDoc',
+                        //     'FicheControleFinaleDoc',
+                        // ],
+                        where: {
+                            user_id: idStudent,
+                            session_id: id
+                        }
+                    })
+                        .then(pref => {
+                            if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
+                            else return Responder({ status: HttpStatusCode.Ok, data: {} })
+                        })
                         .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
                     break;
 
@@ -420,15 +462,9 @@ export class SessionsService {
                     else return Responder({ status: HttpStatusCode.NotFound, data: session })
                 })
                 .catch(_ => {
-                    log("=========================")
-                    log(_)
-                    log("=========================")
                     return Responder({ status: HttpStatusCode.InternalServerError, data: _.toString() })
                 })
         } catch (error) {
-            log("=========================")
-            log(error)
-            log("=========================")
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
@@ -474,6 +510,19 @@ export class SessionsService {
                         })
                             .then(([record, isNew]) => {
                                 if (isNew) {
+                                    const { id } = record?.toJSON()
+                                    this.apdocsModel.create({
+                                        session_id: id as number,
+                                        user_id: id_user,
+                                    })
+                                    this.adocsModel.create({
+                                        session_id: id as number,
+                                        user_id: id_user,
+                                    })
+                                    this.pdocsModel.create({
+                                        session_id: id as number,
+                                        user_id: id_user,
+                                    })
                                     this.serviceMail.onWelcomeToSessionStudent({
                                         to: email,
                                         formation_name: titre,
@@ -615,7 +664,7 @@ export class SessionsService {
                                             id: id_superviseur
                                         }
                                     })
-                                        .then(formateur => {
+                                        .then(async (formateur) => {
                                             return this.hasSessionFormateurModel.create({
                                                 SessionId: id as number,
                                                 UserId: id_superviseur,
