@@ -69,4 +69,7 @@ export class Users extends Model<IUsers> {
 
     @Column({ type: DataType.INTEGER, defaultValue: 0 })
     can_update_password?: number
+
+    @Column({ type: DataType.STRING, allowNull: true })
+    date_of_birth?: string
 }

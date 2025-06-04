@@ -55,4 +55,8 @@ export class CreateUserDto {
     @IsOptional()
     @IsString()
     num_piece_identite?: string;
+
+    @IsOptional()
+    @IsString()
+    date_of_birth: string
 }

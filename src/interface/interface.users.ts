@@ -21,4 +21,5 @@ export interface IUsers extends IGlobale {
     ville_residance?: string,
     num_piece_identite?: string
     date_de_naissance?: string
+    date_of_birth?: string
 }
