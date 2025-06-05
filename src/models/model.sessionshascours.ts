@@ -44,7 +44,11 @@ export class Cours extends Model<ICours> {
 
     @AllowNull(true)
     @Column(DataType.INTEGER)
+    @ForeignKey(() => Users)
     createdBy: number;
+
+    @BelongsTo(() => Users, 'createdBy')
+    CreatedBy: Users
 
     @ForeignKey(() => SessionSuivi)
     @Column({

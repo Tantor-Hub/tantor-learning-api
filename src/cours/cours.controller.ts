@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { UsersService } from 'src/users/users.service';
 import { CoursService } from './cours.service';
@@ -22,6 +22,11 @@ export class CoursController {
         private readonly coursService: CoursService,
     ) { }
 
+    @Get("listall/:idsesson")
+    @UseGuards(JwtAuthGuardAsManagerSystem)
+    async listDeTousLesCoursParSesson(@Param('idsession', ParseIntPipe) idsession: number) {
+        return this.coursService.getListCoursAllBySesson(idsession)
+    }
     @Get("presets/list")
     @UseGuards(JwtAuthGuardAsManagerSystem)
     async listDeTousPresetsLesCours() {

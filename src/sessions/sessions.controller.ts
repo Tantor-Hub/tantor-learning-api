@@ -109,13 +109,13 @@ export class SessionsController {
     }
     @Get('mylist')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getAllSessionsByOwner(@User() user,) {
+    async getAllSessionsByOwner(@User() user: IJwtSignin,) {
         return this.sessionsService.listAllSessionsByOwn(user)
     }
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
+    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
 

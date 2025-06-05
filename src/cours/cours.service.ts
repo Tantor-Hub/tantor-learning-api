@@ -70,6 +70,27 @@ export class CoursService {
         private readonly docModel: typeof Documents,
     ) { }
 
+    async getListCoursAllBySesson(idsession: number): Promise<ResponseServer> {
+        try {
+
+            return this.coursModel.findAll({
+                include: [
+                    {
+                        model: Users,
+                        required: true,
+                        as: "CreatedBy"
+                    }
+                ],
+                where: {
+                    id_session: idsession
+                }
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async getListCours(): Promise<ResponseServer> {
         try {
             return this.listcoursModel.findAll()
