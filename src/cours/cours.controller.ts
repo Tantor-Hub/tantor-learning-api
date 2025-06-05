@@ -43,6 +43,11 @@ export class CoursController {
     async addPresetCours(@User() user: IJwtSignin, @Body() createCoursDto: CreatePresetCoursDto) {
         return this.coursService.addPresetCours(user, createCoursDto)
     }
+    @Put("course/:idcours")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async addCoursAsFreeToLibrairies(@User() user: IJwtSignin, @Param('idcours', ParseIntPipe) idcours: number,) {
+        return this.coursService.addCoursToLibrairie(idcours, user)
+    }
     @Post("course/add")
     @UseGuards(JwtAuthGuardAsFormateur)
     async addCours(@User() user: IJwtSignin, @Body() createCoursDto: CreateCoursDto) {

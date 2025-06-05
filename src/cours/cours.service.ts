@@ -134,6 +134,25 @@ export class CoursService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
+    async addCoursToLibrairie(idcours: number, user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const cours = await this.coursModel.findOne({
+                where: {
+                    id: idcours
+                }
+            })
+            if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })
+            const { createdBy } = cours?.toJSON()
+            if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" })
+            return cours.update({
+                is_published: true
+            })
+                .then(_ => Responder({ status: HttpStatusCode.Ok, data: cours }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async addCoursToSession(user: IJwtSignin, createCoursDto: CreateCoursDto): Promise<ResponseServer> {
         const { id_category, id_thematic, is_published, createdBy, id_formateur, id_preset_cours, duree, id_session, ponderation } = createCoursDto
         try {
