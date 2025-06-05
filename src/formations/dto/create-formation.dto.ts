@@ -17,9 +17,17 @@ export class CreateFormationDto {
     @IsEnum(['onLine', 'visioConference', 'presentiel', 'hybride'])
     type_formation: string;
 
-    @IsOptional()
     @IsString()
-    description?: string;
+    description: string;
+
+    @IsString()
+    rnc: string;
+
+    @IsString()
+    prerequis: string;
+
+    @IsString()
+    alternance: string;
 
     @IsOptional()
     @IsString()

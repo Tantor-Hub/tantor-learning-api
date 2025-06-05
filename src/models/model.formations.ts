@@ -46,9 +46,27 @@ export class Formations extends Model<IFormation> {
 
     @Column({
         type: DataType.TEXT,
-        allowNull: false,
+        allowNull: true,
+    })
+    rnc: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
     })
     description: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    prerequis: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: false,
+    })
+    alternance: string;
 
     @HasMany(() => SessionSuivi, 'id_formation')
     Sessions: SessionSuivi[];
