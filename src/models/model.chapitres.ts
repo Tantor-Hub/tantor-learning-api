@@ -1,5 +1,5 @@
 import { Table, Column, Model, PrimaryKey, AutoIncrement, AllowNull, ForeignKey, BelongsTo, DataType } from 'sequelize-typescript';
-import { CoursContent } from './model.courscontent';
+import { Cours } from './model.sessionshascours';
 
 @Table({ tableName: 'chapitres', timestamps: false })
 export class Chapitre extends Model {
@@ -13,13 +13,11 @@ export class Chapitre extends Model {
     chapitre: string;
 
     @AllowNull(false)
+    @Column
+    @ForeignKey(() => Cours)
+    id_cours: number;
+
+    @AllowNull(false)
     @Column(DataType.ARRAY(DataType.STRING)) // PostgreSQL uniquement
     paragraphes: string[];
-
-    @ForeignKey(() => CoursContent)
-    @Column
-    coursContentId: number;
-
-    @BelongsTo(() => CoursContent)
-    coursContent: CoursContent;
 }

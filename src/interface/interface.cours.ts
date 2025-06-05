@@ -24,10 +24,11 @@ export interface IContent extends IGlobale {
     id?: number;
     id_cours: number
     chapitre: string;
-    paragraphes: string[]
+    // paragraphes: string[]
 }
 
-export interface ICoursContent {
+export interface IParagraphes {
     id_cours: number;
-    content: IContent[];
+    id_content: number;
+    content: string[];
 }

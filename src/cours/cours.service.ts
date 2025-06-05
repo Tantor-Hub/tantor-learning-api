@@ -27,8 +27,8 @@ import { HasRoles } from 'src/models/model.userhasroles';
 import { CreateDocumentDto } from './dto/create-documents.dto';
 import { Documents } from 'src/models/model.documents';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
-import { CoursContent } from 'src/models/model.courscontent';
 import { Chapitre } from 'src/models/model.chapitres';
+import { log } from 'console';
 
 @Injectable()
 export class CoursService {
@@ -69,9 +69,6 @@ export class CoursService {
         @InjectModel(StagiaireHasHomeWork)
         private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
 
-        @InjectModel(CoursContent)
-        private readonly contentcoursModel: typeof CoursContent,
-
         @InjectModel(Chapitre)
         private readonly chapitrecoursModel: typeof Chapitre,
 
@@ -92,8 +89,12 @@ export class CoursService {
             const { createdBy } = cours?.toJSON()
             if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" });
 
-            return Responder({ status: HttpStatusCode.Ok, data: content });
+            for (const cont of contents) {
+                const { chapitre, paragraphes } = cont
+                // await this.chapitrecoursModel.bulkCreate(cha)
+            }
 
+            return Responder({ status: HttpStatusCode.Ok, data: content });
             // return this.contentcoursModel.create({
             //     id_cours: idcours,
             //     chapitre

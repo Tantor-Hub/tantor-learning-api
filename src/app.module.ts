@@ -90,7 +90,6 @@ import { Chapitre } from './models/model.chapitres';
       Messages,
       Newsletter,
       Cours,
-      CoursContent,
       Chapitre,
       Listcours,
       Documents,
