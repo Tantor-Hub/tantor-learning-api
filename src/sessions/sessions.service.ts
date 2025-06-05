@@ -33,7 +33,6 @@ import { SeanceSessions } from 'src/models/model.courshasseances';
 import { Cours } from 'src/models/model.sessionshascours';
 import { Listcours } from 'src/models/model.cours';
 import { UploadDocument } from 'src/models/model.documentsession';
-import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 import { AvantFormationDocs } from 'src/models/model.avantformation';
 import { PendantFormationDocs } from 'src/models/model.pendantformation';
 import { ApresFormationDocs } from 'src/models/model.apresformation';
