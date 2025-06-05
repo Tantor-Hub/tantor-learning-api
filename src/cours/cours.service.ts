@@ -116,7 +116,6 @@ export class CoursService {
                     }
                 })
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
