@@ -23,7 +23,12 @@ export class CoursController {
         private readonly googleDriveService: GoogleDriveService,
         private readonly coursService: CoursService,
     ) { }
-
+    
+    @Get("course/:idcours")
+    @UseGuards(JwtAuthGuard)
+    async getCoursById(@User() user: IJwtSignin, @Param('idcours', ParseIntPipe) idcours: number,) {
+        return this.coursService.getCoursById(idcours)
+    }
     @Post("course/addcontent")
     @UseGuards(JwtAuthGuardAsFormateur)
     async addContentToCourse(@User() user: IJwtSignin, @Body() content: CreateCoursContentDto) {

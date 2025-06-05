@@ -88,6 +88,10 @@ export class CoursService {
                 },
                 include: [
                     {
+                        model: Chapitre,
+                        required: false,
+                    },
+                    {
                         model: SessionSuivi,
                         required: true,
                         attributes: ['designation', 'duree', 'type_formation']

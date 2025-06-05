@@ -18,6 +18,9 @@ export class Chapitre extends Model<IChapitres> {
     @ForeignKey(() => Cours)
     id_cours: number;
 
+    @BelongsTo(() => Cours)
+    Cours: Cours;
+
     @AllowNull(false)
     @Column(DataType.ARRAY(DataType.STRING)) // PostgreSQL uniquement
     paragraphes: string[];
