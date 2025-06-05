@@ -77,6 +77,46 @@ export class CoursService {
         private readonly docModel: typeof Documents,
     ) { }
 
+    async getCoursById(idcours: number): Promise<ResponseServer> {
+        try {
+            return this.coursModel.findOne({
+                where: {
+                    id: idcours
+                },
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ]
+            })
+                .then(cours => {
+                    if (cours instanceof Cours) {
+                        return Responder({ status: HttpStatusCode.Ok, data: cours })
+                    } else {
+                        return Responder({ status: HttpStatusCode.NotFound, data: "The item can not be found with the specifique ID" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async addCoursContent(user: IJwtSignin, content: CreateCoursContentDto): Promise<ResponseServer> {
         const { content: contents, id_cours } = content
         try {
