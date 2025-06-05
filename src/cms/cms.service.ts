@@ -52,9 +52,7 @@ export class CmsService {
     async LibrairiesFreeBooks() {
         try {
             return this.coursModel.findAll({
-                where: {
-                    is_published: true
-                }
+                where: { is_published: true }
             })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
