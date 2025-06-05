@@ -72,7 +72,6 @@ export class CoursService {
 
     async getListCoursAllBySesson(idsession: number): Promise<ResponseServer> {
         try {
-
             return this.coursModel.findAll({
                 include: [
                     {
@@ -93,7 +92,15 @@ export class CoursService {
     }
     async getListCours(): Promise<ResponseServer> {
         try {
-            return this.listcoursModel.findAll()
+            return this.listcoursModel.findAll({
+                include: [
+                    {
+                        model: Users,
+                        required: true,
+                        as: "CreatedBy"
+                    }
+                ],
+            })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {

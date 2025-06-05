@@ -9,9 +9,10 @@ import { CreateCoursDto } from './dto/create-cours.dto';
 import { CreatePresetCoursDto } from './dto/create-preset-cours.dto';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateDocumentDto } from './dto/create-documents.dto';
 import path from 'path';
+import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 
 @Controller('courses')
 export class CoursController {
@@ -22,18 +23,18 @@ export class CoursController {
         private readonly coursService: CoursService,
     ) { }
 
-    @Get("listall/:idsesson")
-    @UseGuards(JwtAuthGuardAsManagerSystem)
-    async listDeTousLesCoursParSesson(@Param('idsession', ParseIntPipe) idsession: number) {
-        return this.coursService.getListCoursAllBySesson(idsession)
+    @Get("listall/:idSession")
+    @UseGuards(JwtAuthGuard)
+    async listDeTousLesCoursParSesson(@Param('idSession', ParseIntPipe) idSession: number,) {
+        return this.coursService.getListCoursAllBySesson(idSession)
     }
     @Get("presets/list")
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuard)
     async listDeTousPresetsLesCours() {
         return this.coursService.getListCours()
     }
     @Get("listall")
-    @UseGuards(JwtAuthGuardAsManagerSystem)
+    @UseGuards(JwtAuthGuard)
     async listDeTousLesCours() {
         return this.coursService.getListCoursAll()
     }
