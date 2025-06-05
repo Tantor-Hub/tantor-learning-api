@@ -23,6 +23,11 @@ export class CmsController {
         private readonly googleDriveService: GoogleDriveService
     ) { }
 
+    @Get('libraries/list')
+    async onGettingLibrairieListe() {
+        return this.cmsService.LibrairiesFreeBooks()
+    }
+
     @Post('contactus')
     async onContactForm(@Body() form: CreateContactDto) {
         return this.cmsService.onContactForm(form)
@@ -69,7 +74,7 @@ export class CmsController {
     @Post('messages/message/send')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
-    async sendMessage(@User() user, @Body() createMessageDto: CreateMessageDto, @UploadedFile() file: Express.Multer.File,) {
+    async sendMessage(@User() user: IJwtSignin, @Body() createMessageDto: CreateMessageDto, @UploadedFile() file: Express.Multer.File,) {
         let avatar: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
@@ -82,7 +87,7 @@ export class CmsController {
     }
     @Get('messages/list/:groupe')
     @UseGuards(JwtAuthGuard)
-    async messagesListAllByGroupe(@User() user, @Param('groupe') group: string) {
+    async messagesListAllByGroupe(@User() user: IJwtSignin, @Param('groupe') group: string) {
         return this.cmsService.getAllMessagesByGroupe(user, group)
     }
     @Get('infos')

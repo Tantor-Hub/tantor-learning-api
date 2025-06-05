@@ -22,6 +22,7 @@ import { Planings } from 'src/models/model.planings';
 import { log } from 'console';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 import { Newsletter } from 'src/models/model.newsletter';
+import { Cours } from 'src/models/model.sessionshascours';
 
 @Injectable()
 export class CmsService {
@@ -43,9 +44,24 @@ export class CmsService {
         @InjectModel(Newsletter)
         private readonly newsletterModel: typeof Newsletter,
 
+        @InjectModel(Cours)
+        private readonly coursModel: typeof Cours,
+
         private readonly configService: ConfigService
     ) { }
-
+    async LibrairiesFreeBooks() {
+        try {
+            return this.coursModel.findAll({
+                where: {
+                    is_published: true
+                }
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async myListAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
         try {
             const { id_user } = user;
