@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateDocumentDto } from './dto/create-documents.dto';
 import path from 'path';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
+import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 
 @Controller('courses')
 export class CoursController {
@@ -23,6 +24,11 @@ export class CoursController {
         private readonly coursService: CoursService,
     ) { }
 
+    @Post("course/addcontent")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async addContentToCourse(@User() user: IJwtSignin, @Body() content: CreateCoursContentDto) {
+        return this.coursService.addCoursContent(user, content)
+    }
     @Get("listall/:idSession")
     @UseGuards(JwtAuthGuard)
     async listDeTousLesCoursParSesson(@Param('idSession', ParseIntPipe) idSession: number,) {

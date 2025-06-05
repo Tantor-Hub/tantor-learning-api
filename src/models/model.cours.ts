@@ -5,9 +5,12 @@ import {
     DataType,
     AllowNull,
     HasMany,
+    ForeignKey,
+    BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IListcours } from 'src/interface/interface.cours';
+import { Users } from './model.users';
 @Table({ tableName: tables['cours'] })
 export class Listcours extends Model<IListcours> {
     @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
@@ -23,5 +26,9 @@ export class Listcours extends Model<IListcours> {
 
     @AllowNull(true)
     @Column(DataType.INTEGER)
-    createdBy?: number;
+    @ForeignKey(() => Users)
+    createdBy: number;
+
+    @BelongsTo(() => Users, 'createdBy')
+    CreatedBy: Users
 }

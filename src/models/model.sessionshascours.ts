@@ -80,7 +80,7 @@ export class Cours extends Model<ICours> {
     documents: Documents[];
 
     @BelongsTo(() => SessionSuivi)
-    session: SessionSuivi;
+    Session: SessionSuivi;
 
     @BelongsTo(() => Listcours)
     Title: Listcours;
