@@ -67,12 +67,15 @@ export class FormationsService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
     async createNewFormation(createFormationDto: CreateFormationDto): Promise<ResponseServer> {
-        const { id_category, sous_titre, titre, type_formation, description, lien_contenu, prix, id_thematic, end_on, start_on, id_formateur, duree } = createFormationDto;
+        const { id_category, sous_titre, titre, type_formation, description, lien_contenu, prix, rnc, alternance, prerequis, id_thematic, end_on, start_on, id_formateur, duree } = createFormationDto;
 
         const s_on = this.allServices.parseDate(start_on as any)
         const e_on = this.allServices.parseDate(end_on as any)
 
         return this.formationModel.create({
+            rnc,
+            prerequis,
+            alternance,
             description: description || "",
             duree: duree || "",
             end_on: e_on as any,

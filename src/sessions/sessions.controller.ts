@@ -109,13 +109,13 @@ export class SessionsController {
     }
     @Get('mylist')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getAllSessionsByOwner(@User() user,) {
+    async getAllSessionsByOwner(@User() user: IJwtSignin,) {
         return this.sessionsService.listAllSessionsByOwn(user)
     }
 
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user, @Body() applySessionDto: ApplySessionDto) {
+    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
 
@@ -170,13 +170,11 @@ export class SessionsController {
     async getAllSessions() {
         return this.sessionsService.listAllSession()
     }
-
     @Delete('session/:idSession')
     @UseGuards(JwtAuthGuardAsManagerSystem)
     async deleteSession(@Param('idSession', ParseIntPipe) idSession: number,) {
         return this.sessionsService.deleteSession(idSession)
     }
-
     @Put('session/:idSession')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -191,14 +189,12 @@ export class SessionsController {
         }
         return this.sessionsService.updateSession({ ...updateSessionDto, piece_jointe }, idSession)
     }
-
     @Post('session/add')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async addNewSession(@Body() createSessionDto: CreateSessionDto) {
         return this.sessionsService.createSession({ ...createSessionDto })
     }
-
     @Post('session/addseance')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -213,7 +209,6 @@ export class SessionsController {
         }
         return this.sessionsService.createSeance({ ...createSessionDto, piece_jointe })
     }
-
     @Post('session/addhomework')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -228,13 +223,11 @@ export class SessionsController {
         }
         return this.sessionsService.createSeance({ ...createSessionDto, piece_jointe })
     }
-
     @Delete('session/addseance/:idSeance')
     @UseGuards(JwtAuthGuardAsFormateur)
     async deleteSeanceSession(@Param('idSeance', ParseIntPipe) idSeance: number) {
         return this.sessionsService.deleteseance(idSeance)
     }
-
     @Put('session/addseance/:idSeance')
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -249,17 +242,14 @@ export class SessionsController {
         }
         return this.sessionsService.updateSeance({ ...createSessionDto, piece_jointe }, idSeance)
     }
-
     @Get('list/bythematic/:idThematic')
     async getAllFormationsByThematic(@Param('idThematic', ParseIntPipe) idThematic: number) {
         return this.sessionsService.gatAllSessionsByThematic(idThematic)
     }
-
     @Get('list/bycategory/:idCategory')
     async getAllFormationsByCategory(@Param('idCategory', ParseIntPipe) idCategory: number) {
         return this.sessionsService.gatAllSessionsByCategory(idCategory)
     }
-
     @Get('list/by/:idThematic/:idCategory')
     async getAllFormationsByThematicAndCategory(@Param('idCategory', ParseIntPipe) idCategory: number, @Param('idThematic', ParseIntPipe) idThematic: number) {
         return this.sessionsService.gatAllSessionsByThematicAndCategory(idThematic, idCategory)

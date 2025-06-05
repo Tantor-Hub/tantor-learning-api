@@ -23,6 +23,8 @@ import { log } from 'console';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 import { Newsletter } from 'src/models/model.newsletter';
 import { Cours } from 'src/models/model.sessionshascours';
+import { Listcours } from 'src/models/model.cours';
+import { SessionSuivi } from 'src/models/model.suivisession';
 
 @Injectable()
 export class CmsService {
@@ -47,14 +49,38 @@ export class CmsService {
         @InjectModel(Cours)
         private readonly coursModel: typeof Cours,
 
+        @InjectModel(SessionSuivi)
+        private readonly sessionModel: typeof SessionSuivi,
+
+        @InjectModel(Listcours)
+        private readonly listcoursModel: typeof Listcours,
+
         private readonly configService: ConfigService
     ) { }
     async LibrairiesFreeBooks() {
         try {
             return this.coursModel.findAll({
-                where: {
-                    is_published: true
-                }
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ],
+                where: { is_published: true }
             })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))

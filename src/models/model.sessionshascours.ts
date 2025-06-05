@@ -17,6 +17,7 @@ import { Users } from './model.users';
 import { SessionSuivi } from './model.suivisession';
 import { ICours } from 'src/interface/interface.cours';
 import { Listcours } from './model.cours';
+import { Chapitre } from './model.chapitres';
 
 @Table({ tableName: tables['sessionhascours'] })
 export class Cours extends Model<ICours> {
@@ -44,7 +45,11 @@ export class Cours extends Model<ICours> {
 
     @AllowNull(true)
     @Column(DataType.INTEGER)
+    @ForeignKey(() => Users)
     createdBy: number;
+
+    @BelongsTo(() => Users, 'createdBy')
+    CreatedBy: Users
 
     @ForeignKey(() => SessionSuivi)
     @Column({
@@ -60,13 +65,6 @@ export class Cours extends Model<ICours> {
     })
     id_category: number;
 
-    @ForeignKey(() => Thematiques)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: true,
-    })
-    id_thematic?: number;
-
     @AllowNull(true)
     @ForeignKey(() => Users)
     @Column(DataType.INTEGER)
@@ -75,8 +73,11 @@ export class Cours extends Model<ICours> {
     @HasMany(() => Documents)
     documents: Documents[];
 
+    @HasMany(() => Chapitre)
+    Chapitres: Chapitre[];
+
     @BelongsTo(() => SessionSuivi)
-    session: SessionSuivi;
+    Session: SessionSuivi;
 
     @BelongsTo(() => Listcours)
     Title: Listcours;

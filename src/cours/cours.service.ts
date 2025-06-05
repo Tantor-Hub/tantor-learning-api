@@ -26,6 +26,10 @@ import { Roles } from 'src/models/model.roles';
 import { HasRoles } from 'src/models/model.userhasroles';
 import { CreateDocumentDto } from './dto/create-documents.dto';
 import { Documents } from 'src/models/model.documents';
+import { CreateCoursContentDto } from './dto/create-cours-content.dto';
+import { Chapitre } from 'src/models/model.chapitres';
+import { log } from 'console';
+import { IChapitres } from 'src/interface/interface.cours';
 
 @Injectable()
 export class CoursService {
@@ -42,14 +46,14 @@ export class CoursService {
         @InjectModel(Cours)
         private readonly coursModel: typeof Cours,
 
-        @InjectModel(Listcours)
-        private readonly listcoursModel: typeof Listcours,
-
         @InjectModel(SeanceSessions)
         private readonly seancesModel: typeof SeanceSessions,
 
         @InjectModel(SessionSuivi)
         private readonly sessionModel: typeof SessionSuivi,
+
+        @InjectModel(Listcours)
+        private readonly listcoursModel: typeof Listcours,
 
         @InjectModel(Users)
         private readonly usersModel: typeof Users,
@@ -66,13 +70,135 @@ export class CoursService {
         @InjectModel(StagiaireHasHomeWork)
         private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
 
+        @InjectModel(Chapitre)
+        private readonly chapitrecoursModel: typeof Chapitre,
+
         @InjectModel(Documents)
         private readonly docModel: typeof Documents,
     ) { }
 
+    async getCoursById(idcours: number): Promise<ResponseServer> {
+        try {
+            return this.coursModel.findOne({
+                where: {
+                    id: idcours
+                },
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: Chapitre,
+                        required: false,
+                    },
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ]
+            })
+                .then(cours => {
+                    if (cours instanceof Cours) {
+                        return Responder({ status: HttpStatusCode.Ok, data: cours })
+                    } else {
+                        return Responder({ status: HttpStatusCode.NotFound, data: "The item can not be found with the specifique ID" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async addCoursContent(user: IJwtSignin, content: CreateCoursContentDto): Promise<ResponseServer> {
+        const { content: contents, id_cours } = content
+        try {
+            const cours = await this.coursModel.findOne({
+                where: {
+                    id: id_cours
+                }
+            })
+
+            if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })
+            const { createdBy } = cours?.toJSON()
+            if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" });
+
+            return await this.chapitrecoursModel.bulkCreate(contents.map(cont => {
+                const { chapitre, paragraphes } = cont
+                return ({
+                    chapitre,
+                    id_cours,
+                    paragraphes
+                }) as IChapitres
+            }))
+                .then(bulk => {
+                    return Responder({ status: HttpStatusCode.Ok, data: bulk });
+                })
+                .catch(err => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getListCoursAllBySesson(idsession: number): Promise<ResponseServer> {
+        try {
+            return this.coursModel.findAll({
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ],
+                where: {
+                    id_session: idsession
+                }
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async getListCours(): Promise<ResponseServer> {
         try {
-            return this.listcoursModel.findAll()
+            return this.listcoursModel.findAll({
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: Users,
+                        required: false,
+                        as: "CreatedBy",
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    }
+                ],
+            })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {
@@ -81,7 +207,28 @@ export class CoursService {
     }
     async getListCoursAll(): Promise<ResponseServer> {
         try {
-            return this.coursModel.findAll()
+            return this.coursModel.findAll({
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ]
+            })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {
@@ -101,6 +248,25 @@ export class CoursService {
                     if (cours instanceof Listcours) return Responder({ status: HttpStatusCode.Created, data: cours })
                     else return Responder({ status: HttpStatusCode.InternalServerError, data: cours })
                 })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async addCoursToLibrairie(idcours: number, user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const cours = await this.coursModel.findOne({
+                where: {
+                    id: idcours
+                }
+            })
+            if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })
+            const { createdBy } = cours?.toJSON()
+            if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" })
+            return cours.update({
+                is_published: true
+            })
+                .then(_ => Responder({ status: HttpStatusCode.Ok, data: cours }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })

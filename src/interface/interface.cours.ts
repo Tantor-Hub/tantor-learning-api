@@ -19,3 +19,16 @@ export interface ICours extends IGlobale {
     id_thematic?: number;
     id_formateur?: number;
 }
+
+export interface IContent extends IGlobale {
+    id?: number;
+    id_cours: number
+    chapitre: string;
+    // paragraphes: string[]
+}
+
+export interface IChapitres {
+    chapitre: string
+    id_cours: number;
+    paragraphes: string[];
+}

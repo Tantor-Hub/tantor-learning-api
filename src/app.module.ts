@@ -50,6 +50,7 @@ import { UploadDocument } from './models/model.documentsession';
 import { ApresFormationDocs } from './models/model.apresformation';
 import { PendantFormationDocs } from './models/model.pendantformation';
 import { AvantFormationDocs } from './models/model.avantformation';
+import { Chapitre } from './models/model.chapitres';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AvantFormationDocs } from './models/model.avantformation';
       Messages,
       Newsletter,
       Cours,
+      Chapitre,
       Listcours,
       Documents,
       SeanceSessions,
@@ -97,8 +99,8 @@ import { AvantFormationDocs } from './models/model.avantformation';
       StagiaireHasSessionSeances,
       StagiaireHasHomeWork,
       UploadDocument,
-      AvantFormationDocs, 
-      PendantFormationDocs, 
+      AvantFormationDocs,
+      PendantFormationDocs,
       ApresFormationDocs
     ]),
     RolesModule,

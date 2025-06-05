@@ -23,7 +23,7 @@ export class CmsController {
         private readonly googleDriveService: GoogleDriveService
     ) { }
 
-    @Get('libraries/list')
+    @Get('librairies/list')
     async onGettingLibrairieListe() {
         return this.cmsService.LibrairiesFreeBooks()
     }
