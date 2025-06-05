@@ -64,7 +64,7 @@ export class Formations extends Model<IFormation> {
 
     @Column({
         type: DataType.TEXT,
-        allowNull: false,
+        allowNull: true,
     })
     alternance: string;
 
