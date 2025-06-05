@@ -1,8 +1,9 @@
 import { Table, Column, Model, PrimaryKey, AutoIncrement, AllowNull, ForeignKey, BelongsTo, DataType } from 'sequelize-typescript';
 import { Cours } from './model.sessionshascours';
+import { IChapitres } from 'src/interface/interface.cours';
 
 @Table({ tableName: 'chapitres', timestamps: false })
-export class Chapitre extends Model {
+export class Chapitre extends Model<IChapitres> {
     @PrimaryKey
     @AutoIncrement
     @Column

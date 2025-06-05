@@ -29,6 +29,7 @@ import { Documents } from 'src/models/model.documents';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 import { Chapitre } from 'src/models/model.chapitres';
 import { log } from 'console';
+import { IChapitres } from 'src/interface/interface.cours';
 
 @Injectable()
 export class CoursService {
@@ -89,22 +90,20 @@ export class CoursService {
             const { createdBy } = cours?.toJSON()
             if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" });
 
-            for (const cont of contents) {
+            return await this.chapitrecoursModel.bulkCreate(contents.map(cont => {
                 const { chapitre, paragraphes } = cont
-                // await this.chapitrecoursModel.bulkCreate(cha)
-            }
-
-            return Responder({ status: HttpStatusCode.Ok, data: content });
-            // return this.contentcoursModel.create({
-            //     id_cours: idcours,
-            //     chapitre
-            // })
-            //     .then(content => {
-
-            //         return Responder({ status: HttpStatusCode.Created, data: content })
-            //     })
-            //     .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-
+                return ({
+                    chapitre,
+                    id_cours,
+                    paragraphes
+                }) as IChapitres
+            }))
+                .then(bulk => {
+                    return Responder({ status: HttpStatusCode.Ok, data: bulk });
+                })
+                .catch(err => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                })
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }

@@ -27,8 +27,8 @@ export interface IContent extends IGlobale {
     // paragraphes: string[]
 }
 
-export interface IParagraphes {
+export interface IChapitres {
+    chapitre: string
     id_cours: number;
-    id_content: number;
-    content: string[];
+    paragraphes: string[];
 }
