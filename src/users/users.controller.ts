@@ -30,19 +30,16 @@ export class UsersController {
     async registerAsStudent(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsStudent(createUserDto);
     }
-
     @Post('user/add')
     @UseGuards(JwtAuthGuardAsFormateur)
     async addNewSystemeUser(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsNewUser(createUserDto);
     }
-
     @Post('user/add/magiclink')
     @UseGuards(JwtAuthGuardAsFormateur)
     async addNewSystemeUserSendMagicLink(@Body() createUserDto: CreateUserMagicLinkDto) {
         return this.userService.registerThanSendMagicLink(createUserDto);
     }
-
     @Post('user/register')
     async addNewSystemeUserViaMagicLink(@Body() createUserDto: CreateUserDto, @Query('email') email: string, @Query('verify') verify: string,) {
         if (!email || !verify) {
@@ -50,48 +47,39 @@ export class UsersController {
         }
         return this.userService.registerAsNewUserFormMagicLink(createUserDto, email, verify);
     }
-
     @Post("user/signin")
     async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
         return this.userService.signInAsStudent(signInStudentDto);
     }
-
     @Put("user/verify")
     async verifyAsStudent(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
         return this.userService.verifyAsStudent(verifyAsStudentDto);
     }
-
     @Put("user/verify-before-reset-password")
     async verifyBeforeResetPassword(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
         return this.userService.verifyBeforeResetPassword(verifyAsStudentDto);
     }
-
     @Put("user/refresh")
     async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
         return this.userService.refreshTokenUser(refreshTokenDto);
     }
-
     @Put("user/resendcode")
     async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
         return this.userService.resentVerificationCode(resentCodeDto)
     }
-
     @Put("user/forgotenpassword")
     async askForResetPassword(@Body() resentCodeDto: ResentCodeDto) {
         return this.userService.resentVerificationCode(resentCodeDto)
     }
-
     @Put("user/resetpassword")
     async setNewPassword(@Body() resentCodeDto: ResetPasswordDto) {
         return this.userService.setNewPassword(resentCodeDto)
     }
-
     @Get("user/profile")
     @UseGuards(JwtAuthGuard)
     async profileAsStudent(@User() user) {
         return this.userService.profileAsStudent(user)
     }
-
     @Put("user/update")
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 10_000_000 } }))
@@ -106,7 +94,6 @@ export class UsersController {
         }
         return this.userService.updateUserProfile(user, { ...profile, as_avatar: avatar }, req)
     }
-
     @Get('user/authwithgoogle')
     @UseGuards(AuthGuard('google'))
     async googleAuth(@Req() req) { }
@@ -116,17 +103,20 @@ export class UsersController {
     async googleAuthRedirect(@Req() req: any) {
         return this.userService.authWithGoogle(req.user)
     }
-
     @Get("user/:email")
     @UseGuards(JwtAuthGuardAsFormateur)
     async findByEmail(@Param() findByEmailDto: FindByEmailDto) {
         return this.userService.findByEmail(findByEmailDto)
     }
-
     @Get("listall")
     @UseGuards(JwtAuthGuardAsFormateur)
     async getAllUsers() {
         return this.userService.getAllUsers()
+    }
+    @Get("list")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getAllUsersAsSImplifiedList() {
+        return this.userService.getAllUsersAsSimplifiedList()
     }
 
     // @Get("list/by/role:idrole")
