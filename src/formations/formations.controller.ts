@@ -48,13 +48,13 @@ export class FormationsController {
     }
 
     @Get('list')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    // @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormations() {
         return this.formationsService.gatAllFormations()
     }
 
     @Get('list/bycategory/:idCategory')
-    @UseGuards(JwtAuthGuardAsFormateur)
+    // @UseGuards(JwtAuthGuardAsFormateur)
     async getAllFormationsByCategory(@Param('idCategory', ParseIntPipe) idCategory: number) {
         return this.formationsService.gatAllFormationsByCategory(idCategory)
     }

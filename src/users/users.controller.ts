@@ -114,7 +114,7 @@ export class UsersController {
         return this.userService.getAllUsers()
     }
     @Get("list")
-    @UseGuards(JwtAuthGuardAsFormateur)
+    @UseGuards(JwtAuthGuard)
     async getAllUsersAsSImplifiedList() {
         return this.userService.getAllUsersAsSimplifiedList()
     }
