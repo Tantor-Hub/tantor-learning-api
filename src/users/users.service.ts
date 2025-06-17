@@ -354,6 +354,16 @@ export class UsersService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
+    async getAllUsersAsSimplifiedList(): Promise<ResponseServer> {
+        return this.userModel.findAll({
+            attributes: ['id', 'fs_name', 'ls_name', 'avatar'],
+            where: {
+                status: 1
+            }
+        })
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
     async getAllUsersByRole(getUserByRoleDto: GetUserByRoleDto): Promise<ResponseServer> {
         return this.userModel.findAll({
             where: {

@@ -23,16 +23,17 @@ export class FormationsService {
 
     async getFormationById(idSession: number): Promise<ResponseServer> {
         return this.formationModel.findOne({
-            include: [{
-                model: Categories,
-                required: true,
-                attributes: ['id', 'category']
-            },
-            {
-                model: SessionSuivi,
-                required: false,
-                // attributes
-            }
+            include: [
+                {
+                    model: Categories,
+                    required: true,
+                    attributes: ['id', 'category']
+                },
+                {
+                    model: SessionSuivi,
+                    required: false,
+                    // attributes
+                }
             ],
             where: {
                 id: idSession
