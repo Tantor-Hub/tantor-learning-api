@@ -188,7 +188,10 @@ export class CmsService {
             .then(async _ => {
                 return Responder({ status: HttpStatusCode.Ok, data: { length: _.length, list: _ } })
             })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            .catch(err => {
+                log("Error when getting message by thread", err)
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
     }
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
