@@ -11,4 +11,6 @@ export interface IMessages extends IGlobale {
     piece_jointe?: string | null,
     is_readed: number,
     thread?: string
+    is_deletedto?: number[]
+    is_archievedto?: number[]
 }

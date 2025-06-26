@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as moment from 'moment';
 import { userColumns } from 'src/interface/interface.usercolomuns';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
-import { Op } from 'sequelize';
+import { literal, Op } from 'sequelize';
 
 @Injectable()
 export class AllSercices {
@@ -143,55 +143,50 @@ export class AllSercices {
         return roles.map(role => role?.id)
     };
     buildClauseMessage(groupe: number, id_user: number): any {
-        typeMessages
-        // 1: alive 2: archived 3: deleted
         switch (groupe) {
-            case 1:
+            case 1: // Actifs (ni archivés ni supprimés)
                 return {
-                    id_user_sender: id_user,
-                    status: 1
-                }
-            case 2:
+                    [Op.or]: [
+                        { id_user_sender: id_user },
+                        { id_user_receiver: id_user }
+                    ],
+                    [Op.and]: [
+                        literal(`NOT (${id_user} = ANY("is_deletedto"))`),
+                        literal(`NOT (${id_user} = ANY("is_archievedto"))`)
+                    ]
+                };
+
+            case 2: // Archivés uniquement
                 return {
-                    [Op.or]: {
-                        id_user_sender: id_user,
-                        id_user_receiver: id_user,
-                    },
-                    status: 2,
-                }
-            case 3:
+                    [Op.or]: [
+                        { id_user_sender: id_user },
+                        { id_user_receiver: id_user }
+                    ],
+                    [Op.and]: [
+                        literal(`${id_user} = ANY("is_archievedto")`),
+                        literal(`NOT (${id_user} = ANY("is_deletedto"))`)
+                    ]
+                };
+
+            case 3: // Supprimés uniquement
                 return {
-                    id_user_receiver: id_user,
-                    status: 1
-                }
-            case 4:
-                return {
-                    [Op.or]: {
-                        id_user_sender: id_user,
-                        id_user_receiver: id_user,
-                    },
-                    status: 3
-                }
-            case 5:
-                return {
-                    [Op.or]: {
-                        id_user_sender: id_user,
-                        id_user_receiver: id_user,
-                    },
-                    status: {
-                        [Op.in]: [1, 2, 3, 4, 5]
-                    }
-                }
+                    [Op.or]: [
+                        { id_user_sender: id_user },
+                        { id_user_receiver: id_user }
+                    ],
+                    [Op.and]: [
+                        literal(`${id_user} = ANY("is_deletedto")`)
+                    ]
+                };
+
+            case 4: // Tous (pas de filtre sur suppression/archivage)
             default:
                 return {
-                    [Op.or]: {
-                        id_user_sender: id_user,
-                        id_user_receiver: id_user,
-                    },
-                    status: {
-                        [Op.in]: [1, 2, 3, 4, 5]
-                    }
-                }
+                    [Op.or]: [
+                        { id_user_sender: id_user },
+                        { id_user_receiver: id_user }
+                    ]
+                };
         }
     };
     dateToUnixOnly(dateString: string): number {

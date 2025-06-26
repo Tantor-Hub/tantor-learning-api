@@ -167,6 +167,7 @@ export class CmsService {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
         return this.messageModel.findAll({
+            subQuery: false,
             include: [
                 {
                     model: Users,
@@ -183,6 +184,11 @@ export class CmsService {
             ],
             where: {
                 thread: thread,
+                is_archievedto: {
+                    [Op.not]: {
+                        [Op.contains]: [user.id_user]
+                    }
+                }
             }
         })
             .then(async _ => {
@@ -241,7 +247,7 @@ export class CmsService {
     }
     async archiveMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({
-            status: 3
+            is_archievedto: [user.id_user]
         },
             {
                 where: {
@@ -254,7 +260,7 @@ export class CmsService {
     }
     async deleteMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({
-            status: 3
+            is_deletedto: [user.id_user]
         },
             {
                 where: {
