@@ -27,7 +27,6 @@ export class CmsController {
     async onGettingLibrairieListe() {
         return this.cmsService.LibrairiesFreeBooks()
     }
-
     @Post('contactus')
     async onContactForm(@Body() form: CreateContactDto) {
         return this.cmsService.onContactForm(form)
@@ -60,6 +59,11 @@ export class CmsController {
     @UseGuards(JwtAuthGuard)
     async getOneMessage(@User() user: IJwtSignin, @Param('idmessage', ParseIntPipe) idmessage: number) {
         return this.cmsService.getMessageById(user, idmessage)
+    }
+    @Get('messages/thread/:thread')
+    @UseGuards(JwtAuthGuard)
+    async getOneMessageByThread(@User() user: IJwtSignin, @Param('thread') thread: string) {
+        return this.cmsService.getMessageByThread(user, thread)
     }
     @Put("messages/message/archive/:idmessage")
     @UseGuards(JwtAuthGuard)

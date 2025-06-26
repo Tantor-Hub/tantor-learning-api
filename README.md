@@ -71,3 +71,7 @@ NestJS, SequelizeORM, postgreSQL
 ```https://documenter.getpostman.com/view/14319426/2sB2cVeh52```
 
 ```https://tantor-learning.apimatic.dev/v/1_0#/http/step-by-step-tutorial```
+
+## Distant DB
+
+```psql -h caboose.proxy.rlwy.net -p 53988 -U postgres -d railway```

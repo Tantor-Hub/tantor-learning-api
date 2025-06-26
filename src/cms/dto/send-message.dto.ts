@@ -49,7 +49,7 @@ export class CreateMessageDto {
     is_readed?: number;
 
     @IsOptional()
-    @IsInt()
+    @IsNumberString()
     is_replied_to?: number;
 
     @IsOptional()

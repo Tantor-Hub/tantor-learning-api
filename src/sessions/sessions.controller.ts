@@ -17,7 +17,7 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { UploadDocumentDto } from './dto/add-document-session.dto';
+import { log } from 'console';
 
 @Controller('sessions')
 export class SessionsController {
@@ -27,7 +27,10 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
-
+    @Get('byidformation/:idformation')
+    async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {
+        return this.sessionsService.getAllSessionByIdFormation(idformation)
+    }
     @Get("session/documents/:idstudent/:idsession/:group")
     @UseGuards(JwtAuthGuard)
     async getDocumentsList(
@@ -37,22 +40,8 @@ export class SessionsController {
     ) {
         return this.sessionsService.GetDocumentsByGroup(idsession, idstudent, group)
     }
-    // @Put('session/document/before')
-    // @UseGuards(JwtAuthGuardAsStudent)
-    // @UseInterceptors(FileInterceptor('document', { limits: { fileSize: 10_000_000 } }))
-    // async uploadDocument(@Body() createSessionDto: UploadDocumentDto, @UploadedFile() file: Express.Multer.File) {
-    //     let piece_jointe: any = null;
-    //     if (file) {
-    //         const result = await this.googleDriveService.uploadBufferFile(file);
-    //         if (result) {
-    //             const { id, name, link, } = result
-    //             piece_jointe = link
-    //         }
-    //     }
-    //     return this.sessionsService.createHomework({ ...createSessionDto, piece_jointe })
-    // }
     @Get('session/:idsession')
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     async getSessionById(@Param("idsession", ParseIntPipe) idsession: number) {
         return this.sessionsService.getSessionById(idsession)
     }
@@ -112,32 +101,26 @@ export class SessionsController {
     async getAllSessionsByOwner(@User() user: IJwtSignin,) {
         return this.sessionsService.listAllSessionsByOwn(user)
     }
-
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
     async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
-
     @Get('listprestations')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListePrestations() {
         return this.sessionsService.getListePrestation()
     }
-
     @Get('listrelances')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListeRelances() {
         return this.sessionsService.getListeRealnce()
     }
-
-
     @Get('listactions')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListeActions() {
         return this.sessionsService.getListeActions()
     }
-
     @Get('rtpcapabilities')
     async getRtpCapabilities() {
         const router = this.mediasoupService.getRouter();
@@ -147,13 +130,11 @@ export class SessionsController {
         const rtpCapabilities = router.rtpCapabilities;
         return rtpCapabilities;
     }
-
     @Post('sendtransport')
     async createSendTransport(@Body() body: { clientId: string }) {
         const transportOptions = await this.mediasoupService.createSendTransport(body.clientId);
         return { transportOptions };
     }
-
     @Post('connecttransport')
     async connectTransport(@Body() body: {
         clientId: string;
@@ -165,7 +146,6 @@ export class SessionsController {
         await transport.connect({ dtlsParameters: body.dtlsParameters });
         return { connected: true };
     }
-
     @Get('list')
     async getAllSessions() {
         return this.sessionsService.listAllSession()
@@ -194,6 +174,11 @@ export class SessionsController {
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async addNewSession(@Body() createSessionDto: CreateSessionDto) {
         return this.sessionsService.createSession({ ...createSessionDto })
+    }
+    @Get(":idsession/:idcours/seances")
+    @UseGuards(JwtAuthGuard)
+    async getSeancesList(@Param('idsession', ParseIntPipe) idsession: number, @Param('idcours', ParseIntPipe) idcours: number,) {
+        return this.sessionsService.listAllSeancesBySession(idsession, idcours)
     }
     @Post('session/addseance')
     @UseGuards(JwtAuthGuardAsFormateur)

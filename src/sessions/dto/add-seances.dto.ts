@@ -1,9 +1,12 @@
 import { IsString, IsOptional, IsEnum, IsNumber, IsNumberString, IsDateString, IsInt, IsUUID, IsDate, IsISO8601 } from 'class-validator';
 
 export class AddSeanceSessionDto {
-    
+
     @IsNumberString()
     id_session: number;
+
+    @IsNumberString()
+    id_cours: number;
 
     @IsNumberString()
     duree: number;

@@ -6,7 +6,7 @@ import { AppInfos } from 'src/models/model.appinfos';
 import { AllSercices } from 'src/services/serices.all';
 import { Responder } from 'src/strategy/strategy.responder';
 import { CreateAppInfosDto } from './dto/create-infos.dto';
-import { CreationAttributes } from 'sequelize';
+import { CreationAttributes, literal } from 'sequelize';
 import { CreateContactDto } from './dto/contact-form.dto';
 import { Contacts } from '../models/model.contactform';
 import { MailService } from '../services/service.mail';
@@ -25,6 +25,8 @@ import { Newsletter } from 'src/models/model.newsletter';
 import { Cours } from 'src/models/model.sessionshascours';
 import { Listcours } from 'src/models/model.cours';
 import { SessionSuivi } from 'src/models/model.suivisession';
+import { Roles } from 'src/models/model.roles';
+import { HasRoles } from 'src/models/model.userhasroles';
 
 @Injectable()
 export class CmsService {
@@ -163,22 +165,98 @@ export class CmsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
+    async getMessageByThread(user: IJwtSignin, thread: string): Promise<ResponseServer> {
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
+        const id_user = user.id_user;
+        return this.messageModel.findAll({
+            subQuery: false,
+            include: [
+                {
+                    model: Users,
+                    as: 'Sender',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
+                },
+                {
+                    model: Users,
+                    as: 'Receiver',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
+                }
+            ],
+            where: {
+                thread: thread,
+                [Op.and]: [
+                    literal(`NOT (${id_user} = ANY("is_deletedto"))`),
+                    literal(`NOT (${id_user} = ANY("is_archievedto"))`)
+                ]
+            }
+        })
+            .then(async _ => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: _.length, list: _ } })
+            })
+            .catch(err => {
+                log("Error when getting message by thread", err)
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
+    }
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         return this.messageModel.findOne({
             include: [
                 {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             where: {
@@ -186,12 +264,55 @@ export class CmsService {
                 // id_user_sender: user.id_user
             }
         })
-            .then(_ => {
+            .then(async _ => {
                 if (_ instanceof Messages) {
+                    const allInThread = await this.messageModel.findAll({
+                        include: [
+                            {
+                                model: Users,
+                                as: 'Sender',
+                                attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                                required: true,
+                                include: [
+                                    {
+                                        model: Roles,
+                                        attributes: ['role'],
+                                        through: {
+                                            attributes: []
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                model: Users,
+                                as: 'Receiver',
+                                attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                                required: true,
+                                include: [
+                                    {
+                                        model: Roles,
+                                        attributes: ['role'],
+                                        through: {
+                                            attributes: []
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        where: {
+                            thread: _.toJSON()['thread'],
+                            status: {
+                                [Op.lt]: 3
+                            },
+                            id: {
+                                [Op.ne]: _.toJSON()['id']
+                            }
+                        }
+                    })
                     _.update({
                         is_readed: _.toJSON()['id_user_receiver'] === user.id_user ? 1 : _.toJSON()['is_readed']
                     })
-                    return Responder({ status: HttpStatusCode.Ok, data: _ })
+                    return Responder({ status: HttpStatusCode.Ok, data: { ..._.toJSON(), Thread: allInThread } })
                 } else {
                     return Responder({ status: HttpStatusCode.NotFound, data: _ })
                 }
@@ -200,7 +321,7 @@ export class CmsService {
     }
     async archiveMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({
-            status: 3
+            is_archievedto: [user.id_user]
         },
             {
                 where: {
@@ -213,7 +334,7 @@ export class CmsService {
     }
     async deleteMessage(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         return this.messageModel.update({
-            status: 3
+            is_deletedto: [user.id_user]
         },
             {
                 where: {
@@ -252,6 +373,8 @@ export class CmsService {
 
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver", })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender", })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
@@ -260,13 +383,31 @@ export class CmsService {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             attributes: {
@@ -285,6 +426,8 @@ export class CmsService {
         const { id_user } = user
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
             include: [
@@ -292,13 +435,31 @@ export class CmsService {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             attributes: {

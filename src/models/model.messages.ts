@@ -93,4 +93,18 @@ export class Messages extends Model<IMessages> {
         defaultValue: 1,
     })
     status?: number // 1: alive 2: archived 3: deleted
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        defaultValue: []
+    })
+    is_deletedto?: any
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+        defaultValue: []
+    })
+    is_archievedto?: any
 }
