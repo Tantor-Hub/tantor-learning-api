@@ -7,6 +7,7 @@ import * as moment from 'moment';
 import { userColumns } from 'src/interface/interface.usercolomuns';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { literal, Op } from 'sequelize';
+import { log } from 'console';
 
 @Injectable()
 export class AllSercices {
@@ -143,20 +144,18 @@ export class AllSercices {
         return roles.map(role => role?.id)
     };
     buildClauseMessage(groupe: number, id_user: number): any {
+        log(`Building clause for group ${groupe} and user ID ${id_user}`);
         switch (groupe) {
-            case 1: // Actifs (ni archivés ni supprimés)
+            case 1: // Messages envoyés, ni archivés ni supprimés
                 return {
-                    [Op.or]: [
-                        { id_user_sender: id_user },
-                        { id_user_receiver: id_user }
-                    ],
+                    id_user_sender: id_user,
                     [Op.and]: [
                         literal(`NOT (${id_user} = ANY("is_deletedto"))`),
                         literal(`NOT (${id_user} = ANY("is_archievedto"))`)
                     ]
                 };
 
-            case 2: // Archivés uniquement
+            case 2: // Messages archivés par l'utilisateur
                 return {
                     [Op.or]: [
                         { id_user_sender: id_user },
@@ -168,7 +167,16 @@ export class AllSercices {
                     ]
                 };
 
-            case 3: // Supprimés uniquement
+            case 3: // Messages reçus, non archivés, non supprimés
+                return {
+                    id_user_receiver: id_user,
+                    [Op.and]: [
+                        literal(`NOT (${id_user} = ANY("is_deletedto"))`),
+                        literal(`NOT (${id_user} = ANY("is_archievedto"))`)
+                    ]
+                };
+
+            case 4: // Messages supprimés
                 return {
                     [Op.or]: [
                         { id_user_sender: id_user },
@@ -179,8 +187,8 @@ export class AllSercices {
                     ]
                 };
 
-            case 4: // Tous (pas de filtre sur suppression/archivage)
-            default:
+            case 5:
+            default: // Tous les messages (sans filtrer suppression ou archivage)
                 return {
                     [Op.or]: [
                         { id_user_sender: id_user },

@@ -6,7 +6,7 @@ import { AppInfos } from 'src/models/model.appinfos';
 import { AllSercices } from 'src/services/serices.all';
 import { Responder } from 'src/strategy/strategy.responder';
 import { CreateAppInfosDto } from './dto/create-infos.dto';
-import { CreationAttributes } from 'sequelize';
+import { CreationAttributes, literal } from 'sequelize';
 import { CreateContactDto } from './dto/contact-form.dto';
 import { Contacts } from '../models/model.contactform';
 import { MailService } from '../services/service.mail';
@@ -25,6 +25,8 @@ import { Newsletter } from 'src/models/model.newsletter';
 import { Cours } from 'src/models/model.sessionshascours';
 import { Listcours } from 'src/models/model.cours';
 import { SessionSuivi } from 'src/models/model.suivisession';
+import { Roles } from 'src/models/model.roles';
+import { HasRoles } from 'src/models/model.userhasroles';
 
 @Injectable()
 export class CmsService {
@@ -166,6 +168,9 @@ export class CmsService {
     async getMessageByThread(user: IJwtSignin, thread: string): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
+        const id_user = user.id_user;
         return this.messageModel.findAll({
             subQuery: false,
             include: [
@@ -173,22 +178,39 @@ export class CmsService {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             where: {
                 thread: thread,
-                is_archievedto: {
-                    [Op.not]: {
-                        [Op.contains]: [user.id_user]
-                    }
-                }
+                [Op.and]: [
+                    literal(`NOT (${id_user} = ANY("is_deletedto"))`),
+                    literal(`NOT (${id_user} = ANY("is_archievedto"))`)
+                ]
             }
         })
             .then(async _ => {
@@ -202,19 +224,39 @@ export class CmsService {
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         return this.messageModel.findOne({
             include: [
                 {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             where: {
@@ -225,6 +267,38 @@ export class CmsService {
             .then(async _ => {
                 if (_ instanceof Messages) {
                     const allInThread = await this.messageModel.findAll({
+                        include: [
+                            {
+                                model: Users,
+                                as: 'Sender',
+                                attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                                required: true,
+                                include: [
+                                    {
+                                        model: Roles,
+                                        attributes: ['role'],
+                                        through: {
+                                            attributes: []
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                model: Users,
+                                as: 'Receiver',
+                                attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                                required: true,
+                                include: [
+                                    {
+                                        model: Roles,
+                                        attributes: ['role'],
+                                        through: {
+                                            attributes: []
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
                         where: {
                             thread: _.toJSON()['thread'],
                             status: {
@@ -299,6 +373,8 @@ export class CmsService {
 
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver", })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender", })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
@@ -307,13 +383,31 @@ export class CmsService {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             attributes: {
@@ -332,6 +426,8 @@ export class CmsService {
         const { id_user } = user
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],
             include: [
@@ -339,13 +435,31 @@ export class CmsService {
                     model: Users,
                     as: 'Sender',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 },
                 {
                     model: Users,
                     as: 'Receiver',
                     attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
-                    required: true
+                    required: true,
+                    include: [
+                        {
+                            model: Roles,
+                            attributes: ['role'],
+                            through: {
+                                attributes: []
+                            }
+                        }
+                    ]
                 }
             ],
             attributes: {
