@@ -554,13 +554,14 @@ export class SessionsService {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesactions.length, list: typesactions } })
     }
     async createSeance(addSeanceSessionDto: AddSeanceSessionDto): Promise<ResponseServer> {
-        const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree } = addSeanceSessionDto
+        const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree, id_cours } = addSeanceSessionDto
         try {
             const session = await this.sessionModel.findOne({ where: { id: id_session } })
             if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session n'a pas été retrouvé !" })
             const { id_formation: as_id_formation } = session.toJSON()
             return this.seancesModel.create({
                 duree,
+                id_cours,
                 id_session: id_session as number,
                 seance_date_on: Number(seance_date_on) as number,
                 id_formation: as_id_formation,
@@ -569,6 +570,22 @@ export class SessionsService {
             })
                 .then(seance => {
                     return Responder({ status: HttpStatusCode.Created, data: seance })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async listAllSeancesBySession(id_session: number, id_cours: number): Promise<ResponseServer> {
+        try {
+            return this.seancesModel.findAndCountAll({
+                where: {
+                    id_session: id_session,
+                    id_cours: id_cours
+                }
+            })
+                .then(({ count, rows }) => {
+                    return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
                 })
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
         } catch (error) {

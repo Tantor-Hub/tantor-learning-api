@@ -17,7 +17,7 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { UploadDocumentDto } from './dto/add-document-session.dto';
+import { log } from 'console';
 
 @Controller('sessions')
 export class SessionsController {
@@ -194,6 +194,11 @@ export class SessionsController {
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async addNewSession(@Body() createSessionDto: CreateSessionDto) {
         return this.sessionsService.createSession({ ...createSessionDto })
+    }
+    @Get(":idsession/:idcours/seances")
+    @UseGuards(JwtAuthGuard)
+    async getSeancesList(@Param('idsession', ParseIntPipe) idsession: number, @Param('idcours', ParseIntPipe) idcours: number,) {
+        return this.sessionsService.listAllSeancesBySession(idsession, idcours)
     }
     @Post('session/addseance')
     @UseGuards(JwtAuthGuardAsFormateur)
