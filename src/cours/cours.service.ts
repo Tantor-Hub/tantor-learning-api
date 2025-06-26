@@ -261,10 +261,10 @@ export class CoursService {
                 }
             })
             if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })
-            const { createdBy } = cours?.toJSON()
+            const { createdBy, is_published } = cours?.toJSON()
             if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" })
             return cours.update({
-                is_published: true
+                is_published: !is_published
             })
                 .then(_ => Responder({ status: HttpStatusCode.Ok, data: cours }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
