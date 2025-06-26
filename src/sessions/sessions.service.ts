@@ -467,6 +467,63 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
+    async getAllSessionByIdFormation(idsession: number): Promise<ResponseServer> {
+        try {
+            SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
+            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", })
+            // Listcours.belongsTo(Cours, { foreignKey: "id_preset_cours",  })
+            Cours.belongsTo(Listcours, { foreignKey: "id_preset_cours" });
+            SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" });
+
+            SessionSuivi.hasMany(Cours, { foreignKey: "id_session" })
+
+            return this.sessionModel.findAll({
+                subQuery: false,
+                include: [
+                    {
+                        model: Formations,
+                        required: true,
+                        attributes: ['id', 'titre', 'sous_titre', 'description'],
+                        where: {
+                            id: idsession
+                        }
+                    },
+                    {
+                        model: Users,
+                        required: false,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Cours,
+                        required: false,
+                        include: [
+                            {
+                                model: Listcours,
+                                required: true,
+                                attributes: {
+                                    exclude: ['createdAt', 'updatedAt', 'createdBy'],
+                                }
+                            }
+                        ],
+                        attributes: {
+                            exclude: ['createdAt', 'updatedAt']
+                        }
+                    },
+                ],
+                where: {
+                    status: 1
+                }
+            })
+                .then(session => {
+                    return Responder({ status: HttpStatusCode.Ok, data: { length: session.length, list: session } })
+                })
+                .catch(_ => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: _.toString() })
+                })
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
         const { id_session, id_formation, id_user: as_user_id } = applySessionDto;
         const { id_user } = user;

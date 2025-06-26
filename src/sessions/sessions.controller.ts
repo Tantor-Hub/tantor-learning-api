@@ -27,7 +27,10 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
-
+    @Get('byidformation/:idformation')
+    async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {
+        return this.sessionsService.getAllSessionByIdFormation(idformation)
+    }
     @Get("session/documents/:idstudent/:idsession/:group")
     @UseGuards(JwtAuthGuard)
     async getDocumentsList(
@@ -37,20 +40,6 @@ export class SessionsController {
     ) {
         return this.sessionsService.GetDocumentsByGroup(idsession, idstudent, group)
     }
-    // @Put('session/document/before')
-    // @UseGuards(JwtAuthGuardAsStudent)
-    // @UseInterceptors(FileInterceptor('document', { limits: { fileSize: 10_000_000 } }))
-    // async uploadDocument(@Body() createSessionDto: UploadDocumentDto, @UploadedFile() file: Express.Multer.File) {
-    //     let piece_jointe: any = null;
-    //     if (file) {
-    //         const result = await this.googleDriveService.uploadBufferFile(file);
-    //         if (result) {
-    //             const { id, name, link, } = result
-    //             piece_jointe = link
-    //         }
-    //     }
-    //     return this.sessionsService.createHomework({ ...createSessionDto, piece_jointe })
-    // }
     @Get('session/:idsession')
     @UseGuards(JwtAuthGuard)
     async getSessionById(@Param("idsession", ParseIntPipe) idsession: number) {
