@@ -112,32 +112,26 @@ export class SessionsController {
     async getAllSessionsByOwner(@User() user: IJwtSignin,) {
         return this.sessionsService.listAllSessionsByOwn(user)
     }
-
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
     async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
-
     @Get('listprestations')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListePrestations() {
         return this.sessionsService.getListePrestation()
     }
-
     @Get('listrelances')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListeRelances() {
         return this.sessionsService.getListeRealnce()
     }
-
-
     @Get('listactions')
     @UseGuards(JwtAuthGuardAsFormateur)
     async getListeActions() {
         return this.sessionsService.getListeActions()
     }
-
     @Get('rtpcapabilities')
     async getRtpCapabilities() {
         const router = this.mediasoupService.getRouter();
@@ -147,13 +141,11 @@ export class SessionsController {
         const rtpCapabilities = router.rtpCapabilities;
         return rtpCapabilities;
     }
-
     @Post('sendtransport')
     async createSendTransport(@Body() body: { clientId: string }) {
         const transportOptions = await this.mediasoupService.createSendTransport(body.clientId);
         return { transportOptions };
     }
-
     @Post('connecttransport')
     async connectTransport(@Body() body: {
         clientId: string;
@@ -165,7 +157,6 @@ export class SessionsController {
         await transport.connect({ dtlsParameters: body.dtlsParameters });
         return { connected: true };
     }
-
     @Get('list')
     async getAllSessions() {
         return this.sessionsService.listAllSession()

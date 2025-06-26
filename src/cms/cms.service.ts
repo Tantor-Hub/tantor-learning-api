@@ -163,6 +163,33 @@ export class CmsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
+    async getMessageByThread(user: IJwtSignin, thread: string): Promise<ResponseServer> {
+        Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
+        Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
+        return this.messageModel.findAll({
+            include: [
+                {
+                    model: Users,
+                    as: 'Sender',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
+                },
+                {
+                    model: Users,
+                    as: 'Receiver',
+                    attributes: ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone'],
+                    required: true
+                }
+            ],
+            where: {
+                thread: thread,
+            }
+        })
+            .then(async _ => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: _.length, list: _ } })
+            })
+            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
@@ -186,12 +213,23 @@ export class CmsService {
                 // id_user_sender: user.id_user
             }
         })
-            .then(_ => {
+            .then(async _ => {
                 if (_ instanceof Messages) {
+                    const allInThread = await this.messageModel.findAll({
+                        where: {
+                            thread: _.toJSON()['thread'],
+                            status: {
+                                [Op.lt]: 3
+                            },
+                            id: {
+                                [Op.ne]: _.toJSON()['id']
+                            }
+                        }
+                    })
                     _.update({
                         is_readed: _.toJSON()['id_user_receiver'] === user.id_user ? 1 : _.toJSON()['is_readed']
                     })
-                    return Responder({ status: HttpStatusCode.Ok, data: _ })
+                    return Responder({ status: HttpStatusCode.Ok, data: { ..._.toJSON(), Thread: allInThread } })
                 } else {
                     return Responder({ status: HttpStatusCode.NotFound, data: _ })
                 }
