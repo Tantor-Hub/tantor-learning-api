@@ -89,6 +89,9 @@ export class SessionsService {
         @InjectModel(ApresFormationDocs)
         private readonly apdocsModel: typeof ApresFormationDocs,
 
+        @InjectModel(Cours)
+        private readonly coursModel: typeof Cours,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
         private readonly docsService: DocsService
@@ -376,7 +379,7 @@ export class SessionsService {
 
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
-        SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", as: "Superviseur" })
+        SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
 
         return this.sessionModel.findAndCountAll({
             include: [
@@ -385,16 +388,6 @@ export class SessionsService {
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
                 },
-                // {
-                //     model: Thematiques,
-                //     required: true,
-                //     attributes: ['id', 'thematic']
-                // },
-                // {
-                //     model: Categories,
-                //     required: true,
-                //     attributes: ['id', 'category']
-                // },
                 {
                     model: Users,
                     required: false,
@@ -471,10 +464,8 @@ export class SessionsService {
         try {
             SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
             SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur", })
-            // Listcours.belongsTo(Cours, { foreignKey: "id_preset_cours",  })
             Cours.belongsTo(Listcours, { foreignKey: "id_preset_cours" });
             SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" });
-
             SessionSuivi.hasMany(Cours, { foreignKey: "id_session" })
 
             return this.sessionModel.findAll({
@@ -1003,20 +994,20 @@ export class SessionsService {
         });
 
         if (!user) return Responder({ status: HttpStatusCode.BadRequest, data: "Une session ne peut être attribuer qu'à un formateur ! id_user passé ne correspond à aucun formateur !" })
-        return this.sessionModel.findOne({
+        return this.coursModel.findOne({
             where: {
                 id: id_cours
             }
         })
             .then(inst => {
-                if (inst instanceof SessionSuivi) {
+                if (inst instanceof Cours) {
                     return inst.update({
-                        id_superviseur: id_user,
+                        id_formateur: id_user,
                     })
                         .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
                         .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
                 } else {
-                    return Responder({ status: HttpStatusCode.NotFound, data: `La session n'a pas été retrouvée [id]:${id_user}` })
+                    return Responder({ status: HttpStatusCode.NotFound, data: `Le Cours n'a pas été retrouvée [id] :${id_user}` })
                 }
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))

@@ -41,7 +41,7 @@ export class SessionsController {
         return this.sessionsService.GetDocumentsByGroup(idsession, idstudent, group)
     }
     @Get('session/:idsession')
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     async getSessionById(@Param("idsession", ParseIntPipe) idsession: number) {
         return this.sessionsService.getSessionById(idsession)
     }
