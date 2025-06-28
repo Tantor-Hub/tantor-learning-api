@@ -70,7 +70,7 @@ export class UsersService {
         private readonly configService: ConfigService
     ) {}
 
-    private readonly roleMap: Record<string, number> = {
+    readonly roleMap: Record<string, number> = {
         instructor: 5,
         teacher: 3,
         admin: 1,
