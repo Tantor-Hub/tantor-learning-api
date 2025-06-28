@@ -120,8 +120,8 @@ export class UsersController {
     }
     @Get("list/bygroup/:group")
     @UseGuards(JwtAuthGuardAsSuperviseur)
-    async getAllUsersByRole(@Param('group') group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary') {
-        if (![...Object.keys(this.userService.roleMap)].includes(group)) {
+    async getAllUsersByRole(@Param('group') group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary' | 'all') {
+        if (![...Object.keys(this.userService.roleMap), 'all'].includes(group)) {
             return Responder({ status: HttpStatusCode.BadRequest, data: `Invalid group: ${group}` });
         }
         return this.userService.getAllUsersByRole(group)
