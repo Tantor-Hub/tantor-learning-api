@@ -68,7 +68,7 @@ export class UsersService {
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,
         private readonly configService: ConfigService
-    ) {}
+    ) { }
 
     readonly roleMap: Record<string, number> = {
         instructor: 5,
@@ -371,7 +371,7 @@ export class UsersService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-    async getAllUsersByRole(group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary'): Promise<ResponseServer> {
+    async getAllUsersByRole(group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary' | 'all'): Promise<ResponseServer> {
         Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.userModel.findAll({
@@ -380,9 +380,11 @@ export class UsersService {
                     model: Roles,
                     required: true,
                     attributes: ['id', 'role'],
-                    where: {
-                        id: this.roleMap[group]
-                    }
+                    ...(group !== 'all' && {
+                        where: {
+                            id: this.roleMap[group],
+                        },
+                    }),
                 }
             ],
             attributes: {
