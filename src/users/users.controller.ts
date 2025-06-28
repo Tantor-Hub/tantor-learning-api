@@ -119,7 +119,7 @@ export class UsersController {
         return this.userService.getAllUsersAsSimplifiedList()
     }
     @Get("list/bygroup/:group")
-    async getAllUsersByRole(@Param('group') group: 'instructor' | 'teacher' | 'admin' | 'student') {
+    async getAllUsersByRole(@Param('group') group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary') {
         return this.userService.getAllUsersByRole(group)
     }
 }
