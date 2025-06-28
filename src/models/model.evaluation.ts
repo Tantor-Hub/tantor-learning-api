@@ -1,9 +1,10 @@
 import { Table, Column, Model, HasMany, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { Question } from './model.quiz';
 import { Cours } from './model.sessionshascours';
+import { IEvaluation } from 'src/interface/interface.cours';
 
 @Table({ tableName: 'evaluations' })
-export class Evaluation extends Model {
+export class Evaluation extends Model<IEvaluation> {
     @Column({ type: DataType.STRING, allowNull: false })
     title: string;
 
@@ -15,6 +16,9 @@ export class Evaluation extends Model {
 
     @Column({ type: DataType.STRING, allowNull: true })
     score: string;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: true })
+    is_finished: false;
 
     @ForeignKey(() => Cours)
     @Column

@@ -17,7 +17,6 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { log } from 'console';
 
 @Controller('sessions')
 export class SessionsController {
@@ -27,6 +26,7 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
+    
     @Get('byidformation/:idformation')
     async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {
         return this.sessionsService.getAllSessionByIdFormation(idformation)

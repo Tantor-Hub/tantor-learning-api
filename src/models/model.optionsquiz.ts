@@ -7,9 +7,10 @@ import {
     DataType,
 } from 'sequelize-typescript';
 import { Question } from './model.quiz';
+import { IOption } from 'src/interface/interface.cours';
 
 @Table({ tableName: 'options' })
-export class Option extends Model {
+export class Option extends Model<IOption> {
     @ForeignKey(() => Question)
     @Column
     id_question: number;
@@ -21,5 +22,5 @@ export class Option extends Model {
     text: string;
 
     @Column({ type: DataType.BOOLEAN, defaultValue: false })
-    isCorrect: boolean;
+    is_correct: boolean;
 }

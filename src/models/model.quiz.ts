@@ -9,10 +9,10 @@ import {
 } from 'sequelize-typescript';
 import { Evaluation } from './model.evaluation';
 import { Option } from './model.optionsquiz';
-
+import { IQuestion } from 'src/interface/interface.cours';
 
 @Table({ tableName: 'questions' })
-export class Question extends Model {
+export class Question extends Model<IQuestion> {
     @ForeignKey(() => Evaluation)
     @Column
     id_evaluation: number;
@@ -24,7 +24,7 @@ export class Question extends Model {
     content: string;
 
     @Column({ type: DataType.STRING, allowNull: false, defaultValue: 'QCM' })
-    type: string; // tu peux mettre d'autres types si tu veux à l'avenir
+    type: string;
 
     @HasMany(() => Option)
     Options: Option[];
