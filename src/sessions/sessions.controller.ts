@@ -60,7 +60,6 @@ export class SessionsController {
     async attributeSessionToUser(@Body() assignFormateurToSessionDto: AssignFormateurToSessionDto) {
         return this.sessionsService.assignFormateurToSession(assignFormateurToSessionDto)
     }
-
     @Get('list/listebyformateur')
     @UseGuards(JwtAuthGuardAsFormateur)
     async loadMySessionsAsFormateur(@User() user) {

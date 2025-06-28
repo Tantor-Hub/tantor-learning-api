@@ -76,7 +76,29 @@ export class CoursService {
         @InjectModel(Documents)
         private readonly docModel: typeof Documents,
     ) { }
-
+    async getDocumentsByCours(idcours: number): Promise<ResponseServer> {
+        try {
+            return this.docModel.findAll({
+                where: {
+                    id_cours: idcours
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'id_cours', 'id_session']
+                },
+                include: [
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    }
+                ]
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async getCoursById(idcours: number): Promise<ResponseServer> {
         try {
             return this.coursModel.findOne({
@@ -89,6 +111,10 @@ export class CoursService {
                 include: [
                     {
                         model: Chapitre,
+                        required: false,
+                    },
+                    {
+                        model: Documents,
                         required: false,
                     },
                     {

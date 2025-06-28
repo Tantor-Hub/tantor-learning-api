@@ -69,6 +69,11 @@ export class CoursController {
     async assignCours(@User() user: IJwtSignin, @Body() createCoursDto: AssignFormateurToSessionDto) {
         return this.coursService.assignFormateurToSession(user, createCoursDto)
     }
+    @Get("cours/getdocuments/:idcours")
+    @UseGuards(JwtAuthGuard)
+    async getDocumentsByCours(@Param('idcours', ParseIntPipe) idcours: number) {
+        return this.coursService.getDocumentsByCours(idcours)
+    }
     @Post("course/adddocuments")
     @UseGuards(JwtAuthGuardAsFormateur)
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))

@@ -43,6 +43,5 @@ export class Documents extends Model<IDocument> {
     id_session: number;
 
     @BelongsTo(() => Cours)
-    cours: Cours;
-    
+    Cours: Cours;
 }

@@ -72,7 +72,7 @@ export class CmsController {
     }
     @Delete("messages/message/delete/:idmessage")
     @UseGuards(JwtAuthGuard)
-    async onDeleteMessage(@User() user, @Param('idmessage', ParseIntPipe) idmessage: number) {
+    async onDeleteMessage(@User() user: IJwtSignin, @Param('idmessage', ParseIntPipe) idmessage: number) {
         return this.cmsService.deleteMessage(user, idmessage)
     }
     @Post('messages/message/send')
