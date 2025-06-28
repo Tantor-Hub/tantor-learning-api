@@ -85,13 +85,13 @@ export class CoursService {
                 attributes: {
                     exclude: ['createdAt', 'updatedAt', 'id_cours', 'id_session']
                 },
-                include: [
-                    {
-                        model: Users,
-                        required: true,
-                        attributes: ['id', 'fs_name', 'ls_name', 'email']
-                    }
-                ]
+                // include: [
+                //     {
+                //         model: Users,
+                //         required: true,
+                //         attributes: ['id', 'fs_name', 'ls_name', 'email']
+                //     }
+                // ]
             })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
                 .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
@@ -116,6 +116,9 @@ export class CoursService {
                     {
                         model: Documents,
                         required: false,
+                        attributes: {
+                            exclude: ['createdAt', 'updatedAt', 'id_cours', 'id_session']
+                        }
                     },
                     {
                         model: SessionSuivi,
