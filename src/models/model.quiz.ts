@@ -15,10 +15,10 @@ import { Option } from './model.optionsquiz';
 export class Question extends Model {
     @ForeignKey(() => Evaluation)
     @Column
-    evaluationId: number;
+    id_evaluation: number;
 
     @BelongsTo(() => Evaluation)
-    evaluation: Evaluation;
+    Evaluation: Evaluation;
 
     @Column({ type: DataType.TEXT, allowNull: false })
     content: string;
@@ -27,5 +27,5 @@ export class Question extends Model {
     type: string; // tu peux mettre d'autres types si tu veux à l'avenir
 
     @HasMany(() => Option)
-    options: Option[];
+    Options: Option[];
 }

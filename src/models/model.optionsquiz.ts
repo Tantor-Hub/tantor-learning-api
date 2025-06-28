@@ -12,10 +12,10 @@ import { Question } from './model.quiz';
 export class Option extends Model {
     @ForeignKey(() => Question)
     @Column
-    questionId: number;
+    id_question: number;
 
     @BelongsTo(() => Question)
-    question: Question;
+    Question: Question;
 
     @Column({ type: DataType.STRING, allowNull: false })
     text: string;
