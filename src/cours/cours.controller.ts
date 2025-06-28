@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { UsersService } from 'src/users/users.service';
 import { CoursService } from './cours.service';
@@ -14,6 +14,7 @@ import { CreateDocumentDto } from './dto/create-documents.dto';
 import * as path from 'path';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
+import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
 
 @Controller('courses')
 export class CoursController {
@@ -23,7 +24,41 @@ export class CoursController {
         private readonly googleDriveService: GoogleDriveService,
         private readonly coursService: CoursService,
     ) { }
-
+    @Get("course/course/evaluations/conditions")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getConditionEvaluation(@User() user: IJwtSignin) {
+        return this.coursService.getconditionsevaluation(user);
+    }
+    @Get("course/course/evaluations/tools")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getMaterialsEvaluation(@User() user: IJwtSignin) {
+        return this.coursService.getallowedmatosevaluation(user);
+    }
+    @Get("course/course/evaluations/types")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getTypesEvaluation(@User() user: IJwtSignin) {
+        return this.coursService.gettypesevaluation(user);
+    }
+    @Delete("course/evaluations/evaluation/:idevaluation")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async deleteEvaluation(@User() user: IJwtSignin, @Param('idevaluation', ParseIntPipe) idevaluation: number,) {
+        return this.coursService.deleteEvaluation(user, idevaluation)
+    }
+    @Get("course/evaluations/evaluation/:idevaluation")
+    @UseGuards(JwtAuthGuard)
+    async getEvaluationById(@Param('idevaluation', ParseIntPipe) idevaluation: number,) {
+        return this.coursService.getEvaluationById(idevaluation)
+    }
+    @Get("course/evaluations/:idsession/:idcours")
+    @UseGuards(JwtAuthGuard)
+    async getEvaluationsByCours(@Param('idcours', ParseIntPipe) idcours: number, @Param('idsession', ParseIntPipe) idsession: number,) {
+        return this.coursService.getEvaluationsByCours(idcours, idsession)
+    }
+    @Post("course/addevaluation")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async addEvaluationToCours(@User() user: IJwtSignin, @Body() createEvaluationDto: CreateEvaluationFullDto) {
+        return this.coursService.addEvaluationToCours(user, createEvaluationDto)
+    }
     @Get("course/:idcours")
     @UseGuards(JwtAuthGuard)
     async getCoursById(@User() user: IJwtSignin, @Param('idcours', ParseIntPipe) idcours: number,) {

@@ -51,6 +51,9 @@ import { ApresFormationDocs } from './models/model.apresformation';
 import { PendantFormationDocs } from './models/model.pendantformation';
 import { AvantFormationDocs } from './models/model.avantformation';
 import { Chapitre } from './models/model.chapitres';
+import { Evaluation } from './models/model.evaluation';
+import { Question } from './models/model.quiz';
+import { Option } from './models/model.optionsquiz';
 
 @Module({
   imports: [
@@ -75,6 +78,9 @@ import { Chapitre } from './models/model.chapitres';
     }),
     SequelizeModule.forFeature([
       Users,
+      Evaluation,
+      Question,
+      Option,
       Roles,
       HasRoles,
       Categories,

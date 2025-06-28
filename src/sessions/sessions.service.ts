@@ -36,6 +36,8 @@ import { UploadDocument } from 'src/models/model.documentsession';
 import { AvantFormationDocs } from 'src/models/model.avantformation';
 import { PendantFormationDocs } from 'src/models/model.pendantformation';
 import { ApresFormationDocs } from 'src/models/model.apresformation';
+import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
+import { Payement } from 'src/models/model.payementmethode';
 
 @Injectable()
 export class SessionsService {
@@ -92,11 +94,54 @@ export class SessionsService {
         @InjectModel(Cours)
         private readonly coursModel: typeof Cours,
 
+        @InjectModel(Payement)
+        private readonly payementModel: typeof Payement,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
         private readonly docsService: DocsService
     ) { }
 
+    async payementSession(student: IJwtSignin, payementSessionDto: CreatePaymentSessionDto): Promise<ResponseServer> {
+        const { id_session, id_user, full_name, card_number, month, year, cvv } = payementSessionDto;
+        try {
+            const sess = await this.sessionModel.findOne({ where: { id: id_session } });
+            if (!sess) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+            const session = await this.hasSessionStudentModel.findOne({ where: { id_sessionsuivi: id_session, id_stagiaire: student.id_user } });
+            const user = await this.usersModel.findOne({ where: { id: student.id_user } });
+            if (!user) return Responder({ status: HttpStatusCode.NotFound, data: "L'utilisateur ciblé n'a pas été retrouvé !" });
+            if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+
+            return this.payementModel.create({
+                id_session,
+                id_session_student: session?.id as number,
+                id_user: student.id_user,
+                full_name,
+                card_number,
+                amount: sess.prix as number,
+                month,
+                year,
+                cvv
+            })
+                .then(payement => {
+                    if (payement instanceof Payement) {
+                        this.serviceMail.onPayementSession({
+                            to: user.email,
+                            fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
+                            session: sess.designation as string,
+                            amount: sess.prix as number,
+                            currency: 'EUR',
+                        })
+                        return Responder({ status: HttpStatusCode.Created, data: payement })
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.BadRequest, data: `Le paiement ne peut etre effectue qu'une seule fois pour session !` }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async GetDocumentsByGroup(idSession: number, idStudent: number, group: 'before' | 'during' | 'after'): Promise<ResponseServer> { // before ~ during ~ after
         try {
             const student = await this.usersModel.findOne({

@@ -28,8 +28,12 @@ import { CreateDocumentDto } from './dto/create-documents.dto';
 import { Documents } from 'src/models/model.documents';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 import { Chapitre } from 'src/models/model.chapitres';
-import { log } from 'console';
 import { IChapitres } from 'src/interface/interface.cours';
+import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
+import { Evaluation } from 'src/models/model.evaluation';
+import { Question } from 'src/models/model.quiz';
+import { Option } from 'src/models/model.optionsquiz';
+import { alloedMaterials, typeEvaluation, typeFormations } from 'src/utils/utiles.typesformations';
 
 @Injectable()
 export class CoursService {
@@ -75,7 +79,178 @@ export class CoursService {
 
         @InjectModel(Documents)
         private readonly docModel: typeof Documents,
+
+        @InjectModel(Evaluation)
+        private readonly evaluationModel: typeof Evaluation,
+
+        @InjectModel(Question)
+        private readonly questionModel: typeof Question,
+
+        @InjectModel(Option)
+        private readonly optionModel: typeof Option,
+
     ) { }
+
+    async gettypesevaluation(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const types = typeEvaluation;
+            return Responder({ status: HttpStatusCode.Ok, data: types });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+    async getconditionsevaluation(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const types = typeFormations;
+            return Responder({ status: HttpStatusCode.Ok, data: types });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+    async getallowedmatosevaluation(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const types = alloedMaterials;
+            return Responder({ status: HttpStatusCode.Ok, data: types });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+    async deleteEvaluation(user: IJwtSignin, idevaluation: number): Promise<ResponseServer> {
+        try {
+            const evaluation = await this.evaluationModel.findOne({
+                where: {
+                    id: idevaluation
+                }
+            })
+            if (!evaluation) return Responder({ status: HttpStatusCode.NotFound, data: "The evaluation with ID not found in the list" })
+            return evaluation.destroy()
+                .then(_ => Responder({ status: HttpStatusCode.Ok, data: "The evaluation has been deleted successfully" }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getEvaluationById(idevaluation: number): Promise<ResponseServer> {
+        try {
+            return this.evaluationModel.findOne({
+                where: {
+                    id: idevaluation
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'id_cours']
+                },
+                include: [
+                    {
+                        model: Question,
+                        required: false,
+                        attributes: ['id', 'content', 'type'],
+                        include: [
+                            {
+                                model: Option,
+                                required: false,
+                                attributes: ['id', 'text', 'is_correct']
+                            }
+                        ]
+                    }
+                ]
+            })
+                .then(evaluation => {
+                    if (evaluation instanceof Evaluation) {
+                        return Responder({ status: HttpStatusCode.Ok, data: evaluation })
+                    } else return Responder({ status: HttpStatusCode.NotFound, data: "The item can not be found with the specifique ID" })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getEvaluationsByCours(idcours: number, idsession: number): Promise<ResponseServer> {
+        try {
+            return this.evaluationModel.findAll({
+                where: {
+                    id_cours: idcours,
+                    id_session: idsession
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'id_cours']
+                },
+                include: [
+                    {
+                        model: Question,
+                        required: false,
+                        attributes: ['id', 'content', 'type'],
+                        include: [
+                            {
+                                model: Option,
+                                required: false,
+                                attributes: ['id', 'text',]
+                            }
+                        ]
+                    }
+                ]
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async addEvaluationToCours(user: IJwtSignin, createEvaluationDto: CreateEvaluationFullDto): Promise<ResponseServer> {
+        const { id_cours, title, description, estimatedDuration, score, Questions, id_session } = createEvaluationDto
+        try {
+            const cours = await this.coursModel.findOne({
+                where: {
+                    id: id_cours,
+                    id_session
+                }
+            })
+            if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })
+            const { createdBy } = cours?.toJSON()
+            if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" });
+
+            return this.evaluationModel.create(createEvaluationDto, {
+                include: [
+                    {
+                        model: Question,
+                        required: true,
+                        include: [
+                            {
+                                required: true,
+                                model: Option
+                            }
+                        ]
+                    }
+                ]
+            })
+                .then(evaluation => {
+                    if (evaluation instanceof Evaluation) {
+                        for (const question of Questions) {
+                            const { content, type, Options } = question;
+                            this.questionModel.create({
+                                content,
+                                type,
+                                id_evaluation: evaluation.id
+                            })
+                                .then(async q => {
+                                    if (q instanceof Question) {
+                                        for (const option of Options) {
+                                            await this.optionModel.create({
+                                                text: option.text,
+                                                is_correct: option.isCorrect,
+                                                id_question: q.id
+                                            })
+                                        }
+                                    }
+                                })
+                        }
+                        return Responder({ status: HttpStatusCode.Created, data: evaluation })
+                    } else return Responder({ status: HttpStatusCode.InternalServerError, data: evaluation })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async getDocumentsByCours(idcours: number): Promise<ResponseServer> {
         try {
             return this.docModel.findAll({

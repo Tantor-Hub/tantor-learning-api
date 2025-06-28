@@ -118,9 +118,8 @@ export class UsersController {
     async getAllUsersAsSImplifiedList() {
         return this.userService.getAllUsersAsSimplifiedList()
     }
-
-    // @Get("list/by/role:idrole")
-    // async getAllUsersByRole() {
-    //     return this.userService.getAllUsersByRole(@Body('idrole') getUserByRoleDto: GetUserByRoleDto)
-    // }
+    @Get("list/bygroup/:group")
+    async getAllUsersByRole(@Param('group') group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary') {
+        return this.userService.getAllUsersByRole(group)
+    }
 }

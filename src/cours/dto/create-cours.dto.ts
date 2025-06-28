@@ -42,6 +42,6 @@ import {
   
     @IsOptional()
     @IsInt()
-    createdBy?: number; // injecté via le token
+    createdBy?: number;
   }
   

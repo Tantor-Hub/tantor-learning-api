@@ -448,4 +448,34 @@ export class MailService {
             .catch(err => ({ code: 500, message: "Error occured", data: err }))
 
     }
+
+    async onPayementSession({ to, fullname, session, amount, currency }: { to: string, fullname: string, session: string, amount: number, currency: string }): Promise<IInternalResponse> {
+        try {
+            const appname = this.configService.get<string>('APPNAME')
+            const appowner = this.configService.get<string>('APPOWNER')
+            const brut_welcome = join(__dirname, '../../src', 'templates', 'template.onpayement.html');
+
+            const html_welcome = fs.readFileSync(brut_welcome, "utf8");
+            const template_welocme = Handlebars.compile(html_welcome);
+            const content_welcome = template_welocme({
+                fullname,
+                session: session,
+                appowner,
+                appname,
+                amount,
+                currency
+            });
+
+            return this.sendMail({
+                to,
+                content: content_welcome,
+                subject: `Payement pour la session ${session}`.toUpperCase()
+            })
+                .then(inv => ({ code: 200, message: "Done", data: "This is " }))
+                .catch(err => ({ code: 500, message: "Error occured", data: err }))
+        } catch (error) {
+            return { code: 500, message: "Error occured", data: error }
+        }
+
+    }
 }

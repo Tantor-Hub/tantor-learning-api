@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Paiement - TANTOR</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        margin: 40px;
+        line-height: 1.6;
+        color: #333;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #004080;
+      }
+      .section {
+        margin-top: 30px;
+      }
+      .signature {
+        margin-top: 60px;
+      }
+      .footer {
+        background: #f1f1f1;
+        padding: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+      }
+      .footer p {
+        margin: 5px 0;
+      }
+      .welcome {
+        background-color: #e6f2ff;
+        padding: 20px;
+        border-left: 6px solid #007acc;
+        margin-bottom: 30px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="welcome">
+      Bonjour <strong>{{fullname}}</strong>,<br /><br />
+      Vous allez trouver ci-dessous le
+      <strong>Règlement Intérieur du centre de formation TANTOR</strong>. Ce
+      document précise les règles à respecter durant votre parcours de
+      formation, qu'il soit réalisé en présentiel ou à distance.<br />
+      Merci de le lire attentivement, puis de le signer à la fin pour valider
+      votre engagement.<br /><br />
+      Nous vous souhaitons une excellente formation !
+    </div>
+
+    <div class="section">
+      <h2>INFORMATIONS RELATIVES AU PAIEMENT</h2>
+      <p>
+        Le montant à payer pour la session de formation est de :
+        <strong>{{amount}} {{currency}}</strong>.
+      </p>
+      <p>
+        Ce paiement doit être effectué avant le démarrage effectif de la
+        formation, sauf indication contraire de l'administration.
+      </p>
+      <p>Nom de l’apprenant : <strong>{{fullname}}</strong></p>
+      <p>
+        Pour toute question liée au paiement, veuillez contacter :
+        <a href="mailto:finance@tantorlearning.com"
+          >finance@tantorlearning.com</a
+        >
+      </p>
+      <!-- Si tu veux insérer un lien de paiement -->
+      <!-- <p>
+    Cliquez ici pour procéder au paiement :
+    <a href="{{lien_paiement}}" target="_blank">Payer maintenant</a>
+  </p> -->
+    </div>
+
+    <div class="signature">
+      <p><strong>Fait à :</strong> ______________________</p>
+      <p><strong>Le :</strong> ______________________</p>
+      <p><strong>Signature du Stagiaire :</strong> ______________________</p>
+    </div>
+    <div class="footer">
+      <p>Cordialement,</p>
+      <p><strong>{{appowner}} ({{appname}})</strong></p>
+      <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+    </div>
+  </body>
+</html>

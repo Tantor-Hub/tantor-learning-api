@@ -68,8 +68,15 @@ export class UsersService {
         private readonly allService: AllSercices,
         private readonly cryptoService: CryptoService,
         private readonly configService: ConfigService
-    ) { }
+    ) {}
 
+    private readonly roleMap: Record<string, number> = {
+        instructor: 5,
+        teacher: 3,
+        admin: 1,
+        student: 4,
+        secretary: 2,
+    };
     async loadPerformances(user: IJwtSignin) {
         const { id_user, roles_user, level_indicator } = user
         try {
@@ -364,13 +371,28 @@ export class UsersService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-    async getAllUsersByRole(getUserByRoleDto: GetUserByRoleDto): Promise<ResponseServer> {
+    async getAllUsersByRole(group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary'): Promise<ResponseServer> {
+        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+
         return this.userModel.findAll({
+            include: [
+                {
+                    model: Roles,
+                    required: true,
+                    attributes: ['id', 'role'],
+                    where: {
+                        id: this.roleMap[group]
+                    }
+                }
+            ],
+            attributes: {
+                exclude: ['password', 'verification_code', 'status', 'is_verified', 'createdAt', 'updatedAt', 'can_update_password', 'last_login']
+            },
             where: {
-                // status: 1
+                status: 1
             }
         })
-            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+            .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
