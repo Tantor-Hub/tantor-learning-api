@@ -25,10 +25,15 @@ export class CoursController {
         private readonly coursService: CoursService,
     ) { }
 
-    @Get("course/evaluations/:idcours")
+    @Get("course/evaluations/evaluation/:idevaluation")
     @UseGuards(JwtAuthGuard)
-    async getEvaluationsByCours(@Param('idcours', ParseIntPipe) idcours: number,) {
-        return this.coursService.getEvaluationsByCours(idcours)
+    async getEvaluationById(@Param('idevaluation', ParseIntPipe) idevaluation: number,) {
+        return this.coursService.getEvaluationById(idevaluation)
+    }
+    @Get("course/evaluations/:idsession/:idcours")
+    @UseGuards(JwtAuthGuard)
+    async getEvaluationsByCours(@Param('idcours', ParseIntPipe) idcours: number, @Param('idsession', ParseIntPipe) idsession: number,) {
+        return this.coursService.getEvaluationsByCours(idcours, idsession)
     }
     @Post("course/addevaluation")
     @UseGuards(JwtAuthGuardAsFormateur)

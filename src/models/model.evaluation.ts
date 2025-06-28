@@ -3,8 +3,9 @@ import { Question } from './model.quiz';
 import { Cours } from './model.sessionshascours';
 import { IEvaluation } from 'src/interface/interface.cours';
 import { table_prefix } from 'src/config/config.tablesname';
+import { SessionSuivi } from './model.suivisession';
 
-@Table({ tableName: `${table_prefix}evaluations`, timestamps: true })
+@Table({ tableName: `${table_prefix}evaluations`, timestamps: true,  })
 export class Evaluation extends Model<IEvaluation> {
     @Column({ type: DataType.STRING, allowNull: false })
     title: string;
@@ -25,8 +26,15 @@ export class Evaluation extends Model<IEvaluation> {
     @Column
     id_cours: number;
 
+    @ForeignKey(() => SessionSuivi)
+    @Column
+    id_session: number;
+
     @BelongsTo(() => Cours)
     Cours: Cours;
+
+    @BelongsTo(() => SessionSuivi)
+    Session: SessionSuivi;
 
     @HasMany(() => Question)
     Questions: Question[];

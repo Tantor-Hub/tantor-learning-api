@@ -28,7 +28,6 @@ import { CreateDocumentDto } from './dto/create-documents.dto';
 import { Documents } from 'src/models/model.documents';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 import { Chapitre } from 'src/models/model.chapitres';
-import { log } from 'console';
 import { IChapitres } from 'src/interface/interface.cours';
 import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
 import { Evaluation } from 'src/models/model.evaluation';
@@ -90,12 +89,11 @@ export class CoursService {
         private readonly optionModel: typeof Option,
 
     ) { }
-
-    async getEvaluationsByCours(idcours: number): Promise<ResponseServer> {
+    async getEvaluationById(idevaluation: number): Promise<ResponseServer> {
         try {
-            return this.evaluationModel.findAll({
+            return this.evaluationModel.findOne({
                 where: {
-                    id_cours: idcours
+                    id: idevaluation
                 },
                 attributes: {
                     exclude: ['createdAt', 'updatedAt', 'id_cours']
@@ -104,19 +102,49 @@ export class CoursService {
                     {
                         model: Question,
                         required: false,
-                        // attributes: ['id', 'content', 'type'],
+                        attributes: ['id', 'content', 'type'],
                         include: [
                             {
                                 model: Option,
                                 required: false,
-                                // attributes: ['id', 'text', 'is_correct']
+                                attributes: ['id', 'text', 'is_correct']
                             }
                         ]
-                    },
+                    }
+                ]
+            })
+                .then(evaluation => {
+                    if (evaluation instanceof Evaluation) {
+                        return Responder({ status: HttpStatusCode.Ok, data: evaluation })
+                    } else return Responder({ status: HttpStatusCode.NotFound, data: "The item can not be found with the specifique ID" })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getEvaluationsByCours(idcours: number, idsession: number): Promise<ResponseServer> {
+        try {
+            return this.evaluationModel.findAll({
+                where: {
+                    id_cours: idcours,
+                    id_session: idsession
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'id_cours']
+                },
+                include: [
                     {
-                        model: Cours,
-                        required: true,
-                        attributes: ['id', 'title']
+                        model: Question,
+                        required: false,
+                        attributes: ['id', 'content', 'type'],
+                        include: [
+                            {
+                                model: Option,
+                                required: false,
+                                attributes: ['id', 'text',]
+                            }
+                        ]
                     }
                 ]
             })
@@ -127,11 +155,12 @@ export class CoursService {
         }
     }
     async addEvaluationToCours(user: IJwtSignin, createEvaluationDto: CreateEvaluationFullDto): Promise<ResponseServer> {
-        const { id_cours, title, description, estimatedDuration, score, Questions, } = createEvaluationDto
+        const { id_cours, title, description, estimatedDuration, score, Questions, id_session } = createEvaluationDto
         try {
             const cours = await this.coursModel.findOne({
                 where: {
-                    id: id_cours
+                    id: id_cours,
+                    id_session
                 }
             })
             if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })

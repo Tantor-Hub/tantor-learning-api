@@ -57,6 +57,9 @@ export class CreateEvaluationFullDto {
     @IsNumber()
     id_cours: number;
 
+    @IsNumber()
+    id_session: number;
+
     @IsArray()
     @ArrayMinSize(1)
     @ValidateNested({ each: true })

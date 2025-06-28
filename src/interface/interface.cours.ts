@@ -42,6 +42,7 @@ export interface IEvaluation {
     score: number;
     is_finished?: boolean;
     id_cours: number;
+    id_session: number
     Cours?: any; // relation optionnelle
     Questions?: any[]; // relation optionnelle
     createdAt?: Date;
