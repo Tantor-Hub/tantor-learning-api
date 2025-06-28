@@ -895,7 +895,6 @@ export class SessionsService {
             ],
             where: {
                 status: 1,
-                // id_thematic: idThematic,
                 id_category: idCategory
             }
         })

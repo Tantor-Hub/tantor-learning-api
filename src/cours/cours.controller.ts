@@ -11,7 +11,7 @@ import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateu
 import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateDocumentDto } from './dto/create-documents.dto';
-import path from 'path';
+import * as path from 'path';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 
@@ -23,11 +23,16 @@ export class CoursController {
         private readonly googleDriveService: GoogleDriveService,
         private readonly coursService: CoursService,
     ) { }
-    
+
     @Get("course/:idcours")
     @UseGuards(JwtAuthGuard)
     async getCoursById(@User() user: IJwtSignin, @Param('idcours', ParseIntPipe) idcours: number,) {
         return this.coursService.getCoursById(idcours)
+    }
+    @Get("course/getdocuments/:idcours")
+    // @UseGuards(JwtAuthGuard)
+    async getDocumentsByCours(@Param('idcours', ParseIntPipe) idcours: number) {
+        return this.coursService.getDocumentsByCours(idcours)
     }
     @Post("course/addcontent")
     @UseGuards(JwtAuthGuardAsFormateur)

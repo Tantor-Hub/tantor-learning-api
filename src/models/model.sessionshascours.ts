@@ -71,7 +71,7 @@ export class Cours extends Model<ICours> {
     id_formateur?: number;
 
     @HasMany(() => Documents)
-    documents: Documents[];
+    Documents: Documents[];
 
     @HasMany(() => Chapitre)
     Chapitres: Chapitre[];
