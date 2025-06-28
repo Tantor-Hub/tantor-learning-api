@@ -89,6 +89,22 @@ export class CoursService {
         private readonly optionModel: typeof Option,
 
     ) { }
+
+    async deleteEvaluation(user: IJwtSignin, idevaluation: number): Promise<ResponseServer> {
+        try {
+            const evaluation = await this.evaluationModel.findOne({
+                where: {
+                    id: idevaluation
+                }
+            })
+            if (!evaluation) return Responder({ status: HttpStatusCode.NotFound, data: "The evaluation with ID not found in the list" })
+            return evaluation.destroy()
+                .then(_ => Responder({ status: HttpStatusCode.Ok, data: "The evaluation has been deleted successfully" }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async getEvaluationById(idevaluation: number): Promise<ResponseServer> {
         try {
             return this.evaluationModel.findOne({

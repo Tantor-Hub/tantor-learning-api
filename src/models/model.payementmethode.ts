@@ -7,10 +7,12 @@ import {
     AutoIncrement,
     CreatedAt,
     ForeignKey,
+    BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IPayemenMethode } from 'src/interface/interface.payementmethode';
 import { Users } from './model.users';
+import { SessionSuivi } from './model.suivisession';
 
 @Table({ tableName: tables['payementmethode'], timestamps: true, })
 export class Payment extends Model<IPayemenMethode> {
@@ -26,6 +28,13 @@ export class Payment extends Model<IPayemenMethode> {
         allowNull: false,
     })
     id_user: number;
+
+    @ForeignKey(() => SessionSuivi)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_session: number;
 
     @Column({
         type: DataType.STRING,
@@ -55,5 +64,18 @@ export class Payment extends Model<IPayemenMethode> {
         type: DataType.STRING,
         allowNull: false,
     })
-    cvc: string;
+    cvv: string;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1, // 1 paid, 0 not paid
+    })
+    status: number;
+
+    @BelongsTo(() => Users)
+    Stagiaire: Users;
+
+    @BelongsTo(() => SessionSuivi)
+    Session: SessionSuivi;
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { UsersService } from 'src/users/users.service';
 import { CoursService } from './cours.service';
@@ -25,6 +25,11 @@ export class CoursController {
         private readonly coursService: CoursService,
     ) { }
 
+    @Delete("course/evaluations/evaluation/:idevaluation")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async deleteEvaluation(@User() user: IJwtSignin, @Param('idevaluation', ParseIntPipe) idevaluation: number,) {
+        return this.coursService.deleteEvaluation(user, idevaluation)
+    }
     @Get("course/evaluations/evaluation/:idevaluation")
     @UseGuards(JwtAuthGuard)
     async getEvaluationById(@Param('idevaluation', ParseIntPipe) idevaluation: number,) {
