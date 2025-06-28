@@ -33,6 +33,7 @@ import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
 import { Evaluation } from 'src/models/model.evaluation';
 import { Question } from 'src/models/model.quiz';
 import { Option } from 'src/models/model.optionsquiz';
+import { alloedMaterials, typeEvaluation, typeFormations } from 'src/utils/utiles.typesformations';
 
 @Injectable()
 export class CoursService {
@@ -90,6 +91,30 @@ export class CoursService {
 
     ) { }
 
+    async gettypesevaluation(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const types = typeEvaluation;
+            return Responder({ status: HttpStatusCode.Ok, data: types });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+    async getconditionsevaluation(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const types = typeFormations;
+            return Responder({ status: HttpStatusCode.Ok, data: types });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+    async getallowedmatosevaluation(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const types = alloedMaterials;
+            return Responder({ status: HttpStatusCode.Ok, data: types });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async deleteEvaluation(user: IJwtSignin, idevaluation: number): Promise<ResponseServer> {
         try {
             const evaluation = await this.evaluationModel.findOne({

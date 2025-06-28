@@ -128,14 +128,16 @@ export class SessionsService {
                         this.serviceMail.onPayementSession({
                             to: user.email,
                             fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
-                            session: sess.designation as string
+                            session: sess.designation as string,
+                            amount: sess.prix as number,
+                            currency: 'EUR',
                         })
                         return Responder({ status: HttpStatusCode.Created, data: payement })
                     } else {
                         return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
                     }
                 })
-                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+                .catch(err => Responder({ status: HttpStatusCode.BadRequest, data: `Le paiement ne peut etre effectue qu'une seule fois pour session !` }))
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }

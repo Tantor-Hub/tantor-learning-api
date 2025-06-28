@@ -449,7 +449,7 @@ export class MailService {
 
     }
 
-    async onPayementSession({ to, fullname, session }: { to: string, fullname: string, session: string }): Promise<IInternalResponse> {
+    async onPayementSession({ to, fullname, session, amount, currency }: { to: string, fullname: string, session: string, amount: number, currency: string }): Promise<IInternalResponse> {
         try {
             const appname = this.configService.get<string>('APPNAME')
             const appowner = this.configService.get<string>('APPOWNER')
@@ -461,7 +461,9 @@ export class MailService {
                 fullname,
                 session: session,
                 appowner,
-                appname
+                appname,
+                amount,
+                currency
             });
 
             return this.sendMail({

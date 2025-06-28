@@ -24,7 +24,21 @@ export class CoursController {
         private readonly googleDriveService: GoogleDriveService,
         private readonly coursService: CoursService,
     ) { }
-
+    @Get("course/course/evaluations/conditions")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getConditionEvaluation(@User() user: IJwtSignin) {
+        return this.coursService.getconditionsevaluation(user);
+    }
+    @Get("course/course/evaluations/tools")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getMaterialsEvaluation(@User() user: IJwtSignin) {
+        return this.coursService.getallowedmatosevaluation(user);
+    }
+    @Get("course/course/evaluations/types")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async getTypesEvaluation(@User() user: IJwtSignin) {
+        return this.coursService.gettypesevaluation(user);
+    }
     @Delete("course/evaluations/evaluation/:idevaluation")
     @UseGuards(JwtAuthGuardAsFormateur)
     async deleteEvaluation(@User() user: IJwtSignin, @Param('idevaluation', ParseIntPipe) idevaluation: number,) {

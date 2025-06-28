@@ -364,7 +364,7 @@ export class UsersService {
             .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-    async getAllUsersByRole(getUserByRoleDto: GetUserByRoleDto): Promise<ResponseServer> {
+    async getAllUsersByRole(group: 'instructor' | 'teacher' | 'admin' | 'student'): Promise<ResponseServer> {
         return this.userModel.findAll({
             where: {
                 // status: 1
