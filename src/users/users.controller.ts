@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Post, Put, Query, Req, Request, UploadedF
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
-import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { FindByEmailDto } from './dto/find-by-email.dto';
@@ -18,6 +17,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Controller('users')
 export class UsersController {
@@ -119,7 +119,11 @@ export class UsersController {
         return this.userService.getAllUsersAsSimplifiedList()
     }
     @Get("list/bygroup/:group")
+    @UseGuards(JwtAuthGuardAsSuperviseur)
     async getAllUsersByRole(@Param('group') group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary') {
+        if (![...Object.keys(this.userService.roleMap)].includes(group)) {
+            return Responder({ status: HttpStatusCode.BadRequest, data: `Invalid group: ${group}` });
+        }
         return this.userService.getAllUsersByRole(group)
     }
 }
