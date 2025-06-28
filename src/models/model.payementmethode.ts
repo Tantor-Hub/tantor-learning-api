@@ -5,7 +5,6 @@ import {
     DataType,
     PrimaryKey,
     AutoIncrement,
-    CreatedAt,
     ForeignKey,
     BelongsTo,
 } from 'sequelize-typescript';
@@ -13,9 +12,20 @@ import { tables } from 'src/config/config.tablesname';
 import { IPayemenMethode } from 'src/interface/interface.payementmethode';
 import { Users } from './model.users';
 import { SessionSuivi } from './model.suivisession';
+import { StagiaireHasSession } from './model.stagiairehassession';
 
-@Table({ tableName: tables['payementmethode'], timestamps: true, })
-export class Payment extends Model<IPayemenMethode> {
+@Table({
+    tableName: tables['payementmethode'],
+    timestamps: true,
+    indexes: [
+        {
+            name: 'unique_user_session_combo',
+            unique: true,
+            fields: ['id_user', 'id_session', 'id_session_student']
+        }
+    ]
+})
+export class Payement extends Model<IPayemenMethode> {
 
     @PrimaryKey
     @AutoIncrement
@@ -36,11 +46,24 @@ export class Payment extends Model<IPayemenMethode> {
     })
     id_session: number;
 
+    @ForeignKey(() => StagiaireHasSession)
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    id_session_student: number;
+
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
     full_name: string;
+
+    @Column({
+        type: DataType.FLOAT,
+        allowNull: false,
+    })
+    amount: number;
 
     @Column({
         type: DataType.STRING,
@@ -77,5 +100,8 @@ export class Payment extends Model<IPayemenMethode> {
     Stagiaire: Users;
 
     @BelongsTo(() => SessionSuivi)
-    Session: SessionSuivi;
+    Formation: SessionSuivi;
+
+    @BelongsTo(() => StagiaireHasSession)
+    Session: StagiaireHasSession;
 }

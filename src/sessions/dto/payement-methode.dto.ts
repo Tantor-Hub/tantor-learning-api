@@ -1,10 +1,13 @@
 import { IsString, IsCreditCard, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
-export class PaymentMethodeDto {
+export class CreatePaymentSessionDto {
 
     @IsNumber()
     @IsOptional()
     id_user: string;
+
+    @IsNumber()
+    id_session: number;
 
     @IsString()
     @IsNotEmpty()
@@ -14,11 +17,14 @@ export class PaymentMethodeDto {
     card_number: string;
 
     @IsNotEmpty()
+    @IsNumber()
     month: number;
 
     @IsNotEmpty()
+    @IsNumber()
     year: number;
 
     @IsNotEmpty()
-    cvc: number;
+    @IsNumber()
+    cvv: number;
 }
