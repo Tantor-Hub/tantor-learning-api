@@ -14,6 +14,7 @@ import { CreateDocumentDto } from './dto/create-documents.dto';
 import * as path from 'path';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
+import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
 
 @Controller('courses')
 export class CoursController {
@@ -24,6 +25,16 @@ export class CoursController {
         private readonly coursService: CoursService,
     ) { }
 
+    @Get("course/evaluations/:idcours")
+    @UseGuards(JwtAuthGuard)
+    async getEvaluationsByCours(@Param('idcours', ParseIntPipe) idcours: number,) {
+        return this.coursService.getEvaluationsByCours(idcours)
+    }
+    @Post("course/addevaluation")
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async addEvaluationToCours(@User() user: IJwtSignin, @Body() createEvaluationDto: CreateEvaluationFullDto) {
+        return this.coursService.addEvaluationToCours(user, createEvaluationDto)
+    }
     @Get("course/:idcours")
     @UseGuards(JwtAuthGuard)
     async getCoursById(@User() user: IJwtSignin, @Param('idcours', ParseIntPipe) idcours: number,) {

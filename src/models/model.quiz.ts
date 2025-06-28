@@ -10,8 +10,9 @@ import {
 import { Evaluation } from './model.evaluation';
 import { Option } from './model.optionsquiz';
 import { IQuestion } from 'src/interface/interface.cours';
+import { table_prefix } from 'src/config/config.tablesname';
 
-@Table({ tableName: 'questions' })
+@Table({ tableName: `${table_prefix}questions`, timestamps: true })
 export class Question extends Model<IQuestion> {
     @ForeignKey(() => Evaluation)
     @Column

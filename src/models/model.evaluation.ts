@@ -2,8 +2,9 @@ import { Table, Column, Model, HasMany, DataType, ForeignKey, BelongsTo } from '
 import { Question } from './model.quiz';
 import { Cours } from './model.sessionshascours';
 import { IEvaluation } from 'src/interface/interface.cours';
+import { table_prefix } from 'src/config/config.tablesname';
 
-@Table({ tableName: 'evaluations' })
+@Table({ tableName: `${table_prefix}evaluations`, timestamps: true })
 export class Evaluation extends Model<IEvaluation> {
     @Column({ type: DataType.STRING, allowNull: false })
     title: string;
@@ -11,11 +12,11 @@ export class Evaluation extends Model<IEvaluation> {
     @Column({ type: DataType.TEXT, allowNull: true })
     description: string;
 
-    @Column({ type: DataType.STRING, allowNull: true })
-    estimatedDuration: string;
+    @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
+    estimatedDuration: number;
 
-    @Column({ type: DataType.STRING, allowNull: true })
-    score: string;
+    @Column({ type: DataType.FLOAT, allowNull: true })
+    score: number;
 
     @Column({ type: DataType.BOOLEAN, allowNull: true })
     is_finished: false;

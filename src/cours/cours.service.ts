@@ -30,6 +30,10 @@ import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 import { Chapitre } from 'src/models/model.chapitres';
 import { log } from 'console';
 import { IChapitres } from 'src/interface/interface.cours';
+import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
+import { Evaluation } from 'src/models/model.evaluation';
+import { Question } from 'src/models/model.quiz';
+import { Option } from 'src/models/model.optionsquiz';
 
 @Injectable()
 export class CoursService {
@@ -75,7 +79,108 @@ export class CoursService {
 
         @InjectModel(Documents)
         private readonly docModel: typeof Documents,
+
+        @InjectModel(Evaluation)
+        private readonly evaluationModel: typeof Evaluation,
+
+        @InjectModel(Question)
+        private readonly questionModel: typeof Question,
+
+        @InjectModel(Option)
+        private readonly optionModel: typeof Option,
+
     ) { }
+
+    async getEvaluationsByCours(idcours: number): Promise<ResponseServer> {
+        try {
+            return this.evaluationModel.findAll({
+                where: {
+                    id_cours: idcours
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'id_cours']
+                },
+                include: [
+                    {
+                        model: Question,
+                        required: false,
+                        // attributes: ['id', 'content', 'type'],
+                        include: [
+                            {
+                                model: Option,
+                                required: false,
+                                // attributes: ['id', 'text', 'is_correct']
+                            }
+                        ]
+                    },
+                    {
+                        model: Cours,
+                        required: true,
+                        attributes: ['id', 'title']
+                    }
+                ]
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async addEvaluationToCours(user: IJwtSignin, createEvaluationDto: CreateEvaluationFullDto): Promise<ResponseServer> {
+        const { id_cours, title, description, estimatedDuration, score, Questions, } = createEvaluationDto
+        try {
+            const cours = await this.coursModel.findOne({
+                where: {
+                    id: id_cours
+                }
+            })
+            if (!cours) return Responder({ status: HttpStatusCode.NotFound, data: "The course with ID not found in the list" })
+            const { createdBy } = cours?.toJSON()
+            if (createdBy !== user.id_user) return Responder({ status: HttpStatusCode.Unauthorized, data: "This course is not assigned to this User as Teacher" });
+
+            return this.evaluationModel.create(createEvaluationDto, {
+                include: [
+                    {
+                        model: Question,
+                        required: true,
+                        include: [
+                            {
+                                required: true,
+                                model: Option
+                            }
+                        ]
+                    }
+                ]
+            })
+                .then(evaluation => {
+                    if (evaluation instanceof Evaluation) {
+                        for (const question of Questions) {
+                            const { content, type, Options } = question;
+                            this.questionModel.create({
+                                content,
+                                type,
+                                id_evaluation: evaluation.id
+                            })
+                                .then(async q => {
+                                    if (q instanceof Question) {
+                                        for (const option of Options) {
+                                            await this.optionModel.create({
+                                                text: option.text,
+                                                is_correct: option.isCorrect,
+                                                id_question: q.id
+                                            })
+                                        }
+                                    }
+                                })
+                        }
+                        return Responder({ status: HttpStatusCode.Created, data: evaluation })
+                    } else return Responder({ status: HttpStatusCode.InternalServerError, data: evaluation })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async getDocumentsByCours(idcours: number): Promise<ResponseServer> {
         try {
             return this.docModel.findAll({

@@ -38,8 +38,8 @@ export interface IEvaluation {
     id?: number; // optionnel car généré par Sequelize
     title: string;
     description?: string;
-    estimatedDuration?: string;
-    score?: string;
+    estimatedDuration: number;
+    score: number;
     is_finished?: boolean;
     id_cours: number;
     Cours?: any; // relation optionnelle
