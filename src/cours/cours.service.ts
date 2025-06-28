@@ -117,7 +117,7 @@ export class CoursService {
                         model: Documents,
                         required: false,
                         attributes: {
-                            exclude: ['createdAt', 'updatedAt', 'id_cours', 'id_session']
+                            exclude: ['createdAt', 'updatedAt', 'id_cours', 'id_session', 'createdBy']
                         }
                     },
                     {
