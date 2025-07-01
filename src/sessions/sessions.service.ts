@@ -1003,7 +1003,8 @@ export class SessionsService {
         if (Object.keys(updateSessionDto).length <= 0) return Responder({ status: HttpStatusCode.BadRequest, data: "Le corps de cette requête ne devrait pas être vide !" })
         return this.sessionModel.findOne({
             where: {
-                id: idSession
+                id: idSession,
+                status: 1 // On ne peut modifier que les sessions actives
             }
         })
             .then(inst => {
