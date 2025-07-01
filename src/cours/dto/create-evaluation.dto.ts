@@ -62,10 +62,10 @@ export class CreateEvaluationFullDto {
     id_session: number;
 
     @IsString()
-    evaluation_type: string; // e.g. "pre-corrige", "free-writing", "oral"
+    evaluation_type: string;
 
     @IsString()
-    evaluation_condition: string; // e.g. "onLine", "visioConference", "presentiel", "hybride"
+    evaluation_condition: string;
 
     @IsBoolean()
     has_jury: boolean;
@@ -75,7 +75,7 @@ export class CreateEvaluationFullDto {
     location?: string;
 
     @IsDateString()
-    datetime: string; // format: "YYYY-MM-DDTHH:mm:ssZ"
+    datetime: string;
 
     @IsArray()
     @IsString({ each: true })

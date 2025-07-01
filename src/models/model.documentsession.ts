@@ -22,15 +22,17 @@ export class UploadDocument extends Model<IUploadDocument> {
   id_session: number;
 
   @Column({ type: DataType.STRING, allowNull: false })
-  document: string; // URL ou ID Google Drive, etc.
+  document: string;
 
-  @Column({ type: DataType.ENUM(...Object.values(DocumentKeyEnum)), allowNull: false })
+  @Column({ type: DataType.STRING, allowNull: false })
+  piece_jointe: string;
+
+  @Column({ type: DataType.ENUM(...Object.keys(DocumentKeyEnum)), allowNull: false })
   key_document: string;
 
   @Column({ type: DataType.TEXT, allowNull: true })
   description?: string;
 
-  // Relations (facultatif)
   @BelongsTo(() => Users)
   Student: Users;
 

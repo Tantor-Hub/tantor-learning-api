@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -18,6 +18,8 @@ import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
+import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
+import { DOCUMENT_KEYS_PHASES } from 'src/utils/utiles.documentskeyenum';
 
 @Controller('sessions')
 export class SessionsController {
@@ -28,6 +30,24 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Put('session/document/before')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async submitDocBefore(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin) {
+        if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(payementSessionDto.key_document)) return Responder({ status: HttpStatusCode.BadRequest, data: "Le document envoyé n'est pas autorisé pour cette phase de la formation." })
+        return this.sessionsService.uploadDocumentToSessionDTO(user, payementSessionDto);
+    }
+    @Put('session/document/during')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async submitDocDuring(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin) {
+        if (!DOCUMENT_KEYS_PHASES.pendant_formation.includes(payementSessionDto.key_document)) return Responder({ status: HttpStatusCode.BadRequest, data: "Le document envoyé n'est pas autorisé pour cette phase de la formation." })
+        return this.sessionsService.uploadDocumentToSessionDTO(user, payementSessionDto);
+    }
+    @Put('session/document/before')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async submitDocAfter(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin) {
+        if (!DOCUMENT_KEYS_PHASES.apres_formation.includes(payementSessionDto.key_document)) return Responder({ status: HttpStatusCode.BadRequest, data: "Le document envoyé n'est pas autorisé pour cette phase de la formation." })
+        return this.sessionsService.uploadDocumentToSessionDTO(user, payementSessionDto);
+    }
     @Put('session/payement')
     @UseGuards(JwtAuthGuardAsStudent)
     async payementSession(@Body() payementSessionDto: CreatePaymentSessionDto, @User() user: IJwtSignin) {
