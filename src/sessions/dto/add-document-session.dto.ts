@@ -2,10 +2,10 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsNumber,
   IsIn,
+  IsNumberString,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 
 export const DOCUMENT_KEYS = [
@@ -13,18 +13,21 @@ export const DOCUMENT_KEYS = [
 ];
 
 export class UploadDocumentToSessionDto {
-  @IsNumber()
-  @Type(() => Number)
+  @IsNumberString()
   @IsNotEmpty()
   id_session: number;
 
-  @IsNumber()
-  @Type(() => Number)
+  @IsNumberString()
   @IsOptional()
   id_student: number;
 
+  @Transform(({ value }) => value?.toString())
   @IsString()
-  @IsIn(DOCUMENT_KEYS, { message: 'key_document must be one of the predefined document types' })
+  @IsNotEmpty()
+  @IsIn(DOCUMENT_KEYS, {
+    message: ({ value }) =>
+      `La clé "${value}" n'est pas valide. Elle doit être l'un des types de document suivants : ${DOCUMENT_KEYS.join(', ')}`,
+  })
   key_document: string;
 
   @IsString()

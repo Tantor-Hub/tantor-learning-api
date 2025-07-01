@@ -2,6 +2,7 @@
   "name": "tantor-learning",
   "version": "0.1.12",
   "description": "E-Learning Platefeorme",
+  "type": "commonjs",
   "author": "https://davmaene.github.io",
   "private": true,
   "license": "UNLICENSED",
@@ -17,7 +18,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "dev:hot": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts"
+
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
