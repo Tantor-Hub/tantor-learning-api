@@ -36,8 +36,8 @@ export class SessionsController {
     @UseGuards(JwtAuthGuardAsStudent)
     async submitDocBefore(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
         const document = DocumentKeyEnum[payementSessionDto['key_document']];
-        log(payementSessionDto['key_document'], DOCUMENT_KEYS, document)
-        if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(payementSessionDto['key_document'])) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
+        log(payementSessionDto['key_document'], DOCUMENT_KEYS_PHASES.avant_formation, document)
+        if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(document)) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
         let piece_jointe: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
