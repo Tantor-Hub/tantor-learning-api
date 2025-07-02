@@ -54,6 +54,8 @@ import { Chapitre } from './models/model.chapitres';
 import { Evaluation } from './models/model.evaluation';
 import { Question } from './models/model.quiz';
 import { Option } from './models/model.optionsquiz';
+import { UsersService } from './users/users.service';
+import { RolesService } from './roles/roles.service';
 
 @Module({
   imports: [
@@ -117,8 +119,8 @@ import { Option } from './models/model.optionsquiz';
     CmsModule,
     CoursModule
   ],
+  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService, CoursService, UsersService, RolesService],
   controllers: [AppController],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService, CoursService]
 })
 
 export class AppModule implements OnModuleInit {
