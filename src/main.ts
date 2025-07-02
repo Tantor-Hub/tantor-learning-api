@@ -46,6 +46,7 @@ async function tantorAPP() {
   const mediasoupService = app.get(MediasoupService);
   await mediasoupService.init();
   app.useGlobalInterceptors(new ResponseInterceptor());
+  app.enableShutdownHooks();
 
   await app.listen(port, () => {
     log("---------------------------------------");

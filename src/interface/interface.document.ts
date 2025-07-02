@@ -16,4 +16,5 @@ export interface IUploadDocument extends IGlobale {
     document: string;
     key_document: string;
     description?: string;
+    piece_jointe?: string; 
 }

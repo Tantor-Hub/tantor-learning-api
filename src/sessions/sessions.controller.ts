@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -18,6 +18,9 @@ import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
+import { DOCUMENT_KEYS, UploadDocumentToSessionDto } from './dto/add-document-session.dto';
+import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
+import { log } from 'node:console';
 
 @Controller('sessions')
 export class SessionsController {
@@ -28,12 +31,57 @@ export class SessionsController {
         private readonly mediasoupService: MediasoupService
     ) { }
 
+    @Put('session/document/before')
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
+    @UseGuards(JwtAuthGuardAsStudent)
+    async submitDocBefore(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
+        const document = DocumentKeyEnum[payementSessionDto['key_document']];
+        if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(document)) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
+    }
+    @Put('session/document/during')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async submitDocDuring(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
+        const document = DocumentKeyEnum[payementSessionDto['key_document']];
+        if (!DOCUMENT_KEYS_PHASES.pendant_formation.includes(document)) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
+    }
+    @Put('session/document/after')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async submitDocAfter(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
+        const document = DocumentKeyEnum[payementSessionDto['key_document']];
+        if (!DOCUMENT_KEYS_PHASES.apres_formation.includes(document)) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
+        let piece_jointe: any = null;
+        if (file) {
+            const result = await this.googleDriveService.uploadBufferFile(file);
+            if (result) {
+                const { id, name, link, } = result
+                piece_jointe = link
+            }
+        }
+        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
+    }
     @Put('session/payement')
     @UseGuards(JwtAuthGuardAsStudent)
     async payementSession(@Body() payementSessionDto: CreatePaymentSessionDto, @User() user: IJwtSignin) {
         return this.sessionsService.payementSession(user, payementSessionDto);
     }
-
     @Get('byidformation/:idformation')
     async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {
         return this.sessionsService.getAllSessionByIdFormation(idformation)

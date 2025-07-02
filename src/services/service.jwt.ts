@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Global, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
@@ -6,6 +6,7 @@ import { IMicroServices } from 'src/interface/interface.servicesinternesresponse
 import { AllSercices } from './serices.all';
 
 @Injectable()
+@Global()
 export class JwtService {
   round: number;
   constructor(

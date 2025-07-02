@@ -31,7 +31,6 @@ export class MailService {
         });
         this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
     }
-
     private async generateDocumentFromHtml(
         htmlContent: string,
         format: 'pdf' | 'docx' = 'pdf'
@@ -72,7 +71,6 @@ export class MailService {
 
         throw new Error(`Format ${format} non supporté`);
     }
-
     templates({ as, nom, postnom, cours, dateOn, prixCours, code }: { as: string, nom?: string, postnom?: string, cours?: string, dateOn?: string, prixCours?: string, code?: string }): string {
         const color = this.configService.get<string>('APPPRIMARYCOLOR')
         const appname = this.configService.get<string>('APPNAME')
@@ -276,8 +274,7 @@ export class MailService {
                 return this.configService.get<string>('APPSMTPUSER') || ""
                 break;
         }
-    };
-
+    }
     async sendMail({ to, subject, content, attachments }: { to: string, subject: string, content: string, attachments?: any[] }): Promise<IInternalResponse> {
         return new Promise(async (resolve, reject) => {
             try {
@@ -295,8 +292,7 @@ export class MailService {
                 return reject({ code: 500, message: 'Erreur', data: error });
             }
         })
-    };
-
+    }
     async generateDocxFromHtml(htmlContent: string): Promise<{ buffer: Buffer, mime: string, extension: string }> {
         const docxBuffer = htmlDocx.asBlob(htmlContent) as Buffer;
         return {
@@ -305,7 +301,6 @@ export class MailService {
             extension: 'pdf',
         };
     }
-
     async onWelcomeToSessionStudent({ to, session_name, formation_name, fullname, asAttachement }:
         { to: string, session_name?: string, formation_name?: string, fullname?: string, asAttachement?: boolean }):
         Promise<IInternalResponse> {
@@ -424,7 +419,6 @@ export class MailService {
             return { code: 500, message: "Error occured", data: error }
         }
     }
-
     async onInviteViaMagicLink({ to, role, link }: { to: string, role: string, link: string }): Promise<IInternalResponse> {
         const appname = this.configService.get<string>('APPNAME')
         const appowner = this.configService.get<string>('APPOWNER')
@@ -448,7 +442,6 @@ export class MailService {
             .catch(err => ({ code: 500, message: "Error occured", data: err }))
 
     }
-
     async onPayementSession({ to, fullname, session, amount, currency }: { to: string, fullname: string, session: string, amount: number, currency: string }): Promise<IInternalResponse> {
         try {
             const appname = this.configService.get<string>('APPNAME')

@@ -38,6 +38,7 @@ import { PendantFormationDocs } from 'src/models/model.pendantformation';
 import { ApresFormationDocs } from 'src/models/model.apresformation';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
 import { Payement } from 'src/models/model.payementmethode';
+import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 
 @Injectable()
 export class SessionsService {
@@ -102,6 +103,33 @@ export class SessionsService {
         private readonly docsService: DocsService
     ) { }
 
+    async uploadDocumentToSessionDTO(user: IJwtSignin, uploadDocumentDto: UploadDocumentToSessionDto): Promise<ResponseServer> {
+        const { id_session, key_document: document_type, description, document, piece_jointe } = uploadDocumentDto;
+        try {
+            const sess = await this.sessionModel.findOne({ where: { id: id_session } });
+            if (!sess) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+            const userSession = await this.hasSessionStudentModel.findOne({ where: { id_sessionsuivi: id_session, id_stagiaire: user.id_user } });
+            if (!userSession) return Responder({ status: HttpStatusCode.NotFound, data: "L'utilisateur ciblé n'a pas été retrouvé dans cette session !" });
+
+            return this.documentModel.create({
+                id_session,
+                id_student: user.id_user,
+                key_document: document_type,
+                document: document,
+                piece_jointe
+            })
+                .then(doc => {
+                    if (doc instanceof UploadDocument) {
+                        return Responder({ status: HttpStatusCode.Created, data: doc })
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: "Le document n'a pas pu être enregistré !" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async payementSession(student: IJwtSignin, payementSessionDto: CreatePaymentSessionDto): Promise<ResponseServer> {
         const { id_session, id_user, full_name, card_number, month, year, cvv } = payementSessionDto;
         try {
@@ -975,7 +1003,8 @@ export class SessionsService {
         if (Object.keys(updateSessionDto).length <= 0) return Responder({ status: HttpStatusCode.BadRequest, data: "Le corps de cette requête ne devrait pas être vide !" })
         return this.sessionModel.findOne({
             where: {
-                id: idSession
+                id: idSession,
+                status: 1 // On ne peut modifier que les sessions actives
             }
         })
             .then(inst => {
