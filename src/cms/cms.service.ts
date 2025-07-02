@@ -469,6 +469,7 @@ export class CmsService {
                 status: {
                     [Op.lt]: 3
                 },
+                is_replied_to: null,
                 [Op.or]: {
                     id_user_sender: id_user,
                     id_user_receiver: id_user,
