@@ -20,6 +20,7 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
 import { DOCUMENT_KEYS, UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { DOCUMENT_KEYS_PHASES } from 'src/utils/utiles.documentskeyenum';
+import { log } from 'node:console';
 
 @Controller('sessions')
 export class SessionsController {
@@ -34,7 +35,9 @@ export class SessionsController {
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     @UseGuards(JwtAuthGuardAsStudent)
     async submitDocBefore(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
-        if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(payementSessionDto.key_document)) return Responder({ status: HttpStatusCode.BadRequest, data: `Le document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
+        const document = DocumentType[payementSessionDto['key_document']];
+        log(payementSessionDto['key_document'], DOCUMENT_KEYS, document)
+        if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(payementSessionDto['key_document'])) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
         let piece_jointe: any = null;
         if (file) {
             const result = await this.googleDriveService.uploadBufferFile(file);
@@ -43,7 +46,7 @@ export class SessionsController {
                 piece_jointe = link
             }
         }
-        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document: DOCUMENT_KEYS[payementSessionDto['key_document']] });
+        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
     }
     @Put('session/document/during')
     @UseGuards(JwtAuthGuardAsStudent)
@@ -59,7 +62,7 @@ export class SessionsController {
         }
         return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document: DOCUMENT_KEYS[payementSessionDto['key_document']] });
     }
-    @Put('session/document/before')
+    @Put('session/document/after')
     @UseGuards(JwtAuthGuardAsStudent)
     async submitDocAfter(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
         if (!DOCUMENT_KEYS_PHASES.apres_formation.includes(payementSessionDto.key_document)) return Responder({ status: HttpStatusCode.BadRequest, data: "Le document envoyé n'est pas autorisé pour cette phase de la formation." })
@@ -78,7 +81,6 @@ export class SessionsController {
     async payementSession(@Body() payementSessionDto: CreatePaymentSessionDto, @User() user: IJwtSignin) {
         return this.sessionsService.payementSession(user, payementSessionDto);
     }
-
     @Get('byidformation/:idformation')
     async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {
         return this.sessionsService.getAllSessionByIdFormation(idformation)
