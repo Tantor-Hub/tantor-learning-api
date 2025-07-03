@@ -16,13 +16,13 @@ import {
     id_session: number;
   
     @IsInt()
-    @IsNotEmpty()
-    id_category: number;
+    @IsOptional()
+    id_category?: number;
   
     @IsInt()
     @IsNotEmpty()
     @IsOptional()
-    id_thematic: number;
+    id_thematic?: number;
   
     @IsOptional()
     @IsInt()

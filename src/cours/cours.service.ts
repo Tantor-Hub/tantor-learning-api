@@ -548,11 +548,10 @@ export class CoursService {
         }
     }
     async addCoursToSession(user: IJwtSignin, createCoursDto: CreateCoursDto): Promise<ResponseServer> {
-        const { id_category, id_thematic, is_published, createdBy, id_formateur, id_preset_cours, duree, id_session, ponderation } = createCoursDto
+        const { is_published, id_formateur, id_preset_cours, duree, id_session, ponderation } = createCoursDto
         try {
             return this.coursModel.create({
-                createdBy: user.id_user,
-                id_category,
+                createdBy: id_formateur || user.id_user,
                 id_preset_cours,
                 id_session,
                 duree,
