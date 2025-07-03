@@ -1064,7 +1064,7 @@ export class SessionsService {
             .then(inst => {
                 if (inst instanceof Cours) {
                     return inst.update({
-                        id_formateur: id_user,
+                        createdBy: id_user
                     })
                         .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
                         .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
