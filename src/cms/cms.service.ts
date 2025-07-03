@@ -414,6 +414,9 @@ export class CmsService {
                 exclude: ['createdAt', 'updatedAt']
             },
             where: {
+                is_replied_to: {
+                    [Op.gt]: 0
+                },
                 ...clause
             }
         })
@@ -469,7 +472,7 @@ export class CmsService {
                 status: {
                     [Op.lt]: 3
                 },
-                is_replied_to: null,
+                is_replied_to: 0,
                 [Op.or]: {
                     id_user_sender: id_user,
                     id_user_receiver: id_user,
