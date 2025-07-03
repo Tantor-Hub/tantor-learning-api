@@ -337,7 +337,7 @@ export class SessionsService {
     async listOfLearnerByConnectedFormateur(user: IJwtSignin): Promise<ResponseServer> {
 
         let list = await this.sessionModel.findAll({ where: { id_superviseur: user.id_user }, attributes: ['id', 'id_superviseur'] })
-        list.map(l => l.toJSON()['id'])
+        const allowed = list.map(l => l.toJSON()['id'])
         StagiaireHasSession.belongsTo(Users, { foreignKey: "id_stagiaire" })
 
         return this.hasSessionStudentModel.findAndCountAll({
@@ -351,6 +351,12 @@ export class SessionsService {
                 {
                     model: SessionSuivi,
                     required: true,
+                    where: {
+                        id_superviseur: user.id_user,
+                        id: {
+                            [Op.in]: allowed
+                        }
+                    }
                 },
                 {
                     model: Payement,

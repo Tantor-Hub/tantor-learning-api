@@ -79,6 +79,16 @@ export class CoursController {
     async listDeTousLesCoursParSesson(@Param('idSession', ParseIntPipe) idSession: number,) {
         return this.coursService.getListCoursAllBySesson(idSession)
     }
+    @Get("list")
+    @UseGuards(JwtAuthGuard)
+    async listDeTousLesCoursByConnectedUser(@User() user: IJwtSignin,) {
+        return this.coursService.getListCoursAllByFormateurConnected(user)
+    }
+    @Get("listallby/:byformateur/:idSession")
+    @UseGuards(JwtAuthGuard)
+    async listDeTousLesCoursParSessionAndFormateur(@Param('idSession', ParseIntPipe) idSession: number, @User() user: IJwtSignin, @Param('byformateur', ParseIntPipe) byformateur: number,) {
+        return this.coursService.getListCoursAllBySessonAndByFormateur(idSession, byformateur, user)
+    }
     @Get("presets/list")
     @UseGuards(JwtAuthGuard)
     async listDeTousPresetsLesCours() {

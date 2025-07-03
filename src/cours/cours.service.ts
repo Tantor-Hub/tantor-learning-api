@@ -370,6 +370,7 @@ export class CoursService {
                     {
                         model: Users,
                         required: true,
+                        as: "CreatedBy",
                         attributes: ['id', 'fs_name', 'ls_name', 'email']
                     },
                     {
@@ -380,6 +381,75 @@ export class CoursService {
                 ],
                 where: {
                     id_session: idsession
+                }
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getListCoursAllBySessonAndByFormateur(idsession: number, idformateur: number, user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            return this.coursModel.findAll({
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        as: "CreatedBy",
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ],
+                where: {
+                    id_session: idsession,
+                    createdBy: user.id_user
+                }
+            })
+                .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
+    async getListCoursAllByFormateurConnected(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            return this.coursModel.findAll({
+                attributes: {
+                    exclude: ['id_thematic', 'createdAt', 'updatedAt']
+                },
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['designation', 'duree', 'type_formation']
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        as: "CreatedBy",
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: Listcours,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ],
+                where: {
+                    createdBy: user.id_user
                 }
             })
                 .then(list => Responder({ status: HttpStatusCode.Ok, data: { length: list.length, rows: list } }))
@@ -424,6 +494,7 @@ export class CoursService {
                     {
                         model: Users,
                         required: true,
+                        as: "CreatedBy",
                         attributes: ['id', 'fs_name', 'ls_name', 'email']
                     },
                     {
