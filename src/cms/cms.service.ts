@@ -414,10 +414,8 @@ export class CmsService {
                 exclude: ['createdAt', 'updatedAt']
             },
             where: {
-                is_replied_to: {
-                    [Op.gt]: 0
-                },
-                ...clause
+                ...clause,
+                is_replied_to: 0,
             }
         })
             .then(({ rows, count }) => {

@@ -144,7 +144,6 @@ export class AllSercices {
         return roles.map(role => role?.id)
     };
     buildClauseMessage(groupe: number, id_user: number): any {
-        log(`Building clause for group ${groupe} and user ID ${id_user}`);
         switch (groupe) {
             case 1: // Messages envoyés, ni archivés ni supprimés
                 return {
