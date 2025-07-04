@@ -19,7 +19,7 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @Column({ type: DataType.INTEGER, allowNull: true })
     @ForeignKey(() => Users)
-    createdBy?: number; // id formateur ou superviseur
+    createdBy?: number; // id formateur ou superviseur dans le cas d'une session de suivi créée par un formateur ou un superviseur
 
     @Column({
         type: DataType.ARRAY(DataType.INTEGER),
