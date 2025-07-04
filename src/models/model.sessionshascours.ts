@@ -11,8 +11,6 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Documents } from './model.documents';
-import { Thematiques } from './model.groupeformations';
-import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
 import { SessionSuivi } from './model.suivisession';
 import { ICours } from 'src/interface/interface.cours';
@@ -57,13 +55,6 @@ export class Cours extends Model<ICours> {
         allowNull: false,
     })
     id_session: number;
-
-    @ForeignKey(() => Categories)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-    })
-    id_category?: number;
 
     @AllowNull(true)
     @ForeignKey(() => Users)
