@@ -63,7 +63,7 @@ export class Cours extends Model<ICours> {
         type: DataType.INTEGER,
         allowNull: false,
     })
-    id_category: number;
+    id_category?: number;
 
     @AllowNull(true)
     @ForeignKey(() => Users)

@@ -15,7 +15,7 @@ export interface ICours extends IGlobale {
     is_published?: boolean;
     createdBy?: number;
     id_session: number;
-    id_category: number;
+    id_category?: number;
     id_thematic?: number;
     id_formateur?: number;
 }

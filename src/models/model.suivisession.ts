@@ -10,7 +10,7 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @Column({ type: DataType.UUID, allowNull: false, unique: true })
     uuid?: string;
-    
+
     @Column({ type: DataType.STRING })
     designation?: string;
 
@@ -19,7 +19,13 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @Column({ type: DataType.INTEGER, allowNull: true })
     @ForeignKey(() => Users)
-    id_superviseur?: number;
+    createdBy?: number; // id formateur ou superviseur dans le cas d'une session de suivi créée par un formateur ou un superviseur
+
+    @Column({
+        type: DataType.ARRAY(DataType.INTEGER),
+        allowNull: true,
+    })
+    id_superviseur?: number[];
 
     @Column(DataType.DATE)
     date_mise_a_jour?: Date;
@@ -33,7 +39,7 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @ForeignKey(() => Formations)
     @Column({ type: DataType.INTEGER })
     id_formation: number;
-    
+
     @BelongsTo(() => Formations)
     Formation: Formations;
 
@@ -72,5 +78,5 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     status?: number;
 
     @BelongsTo(() => Users)
-    Superviseur: Users;
+    Creator: Users;
 }

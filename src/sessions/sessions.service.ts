@@ -13,7 +13,6 @@ import { MailService } from '../services/service.mail';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
 import { Categories } from 'src/models/model.categoriesformations';
-import { Thematiques } from 'src/models/model.groupeformations';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
@@ -53,18 +52,6 @@ export class SessionsService {
         @InjectModel(Users)
         private readonly usersModel: typeof Users,
 
-        @InjectModel(Roles)
-        private readonly rolesModel: typeof Roles,
-
-        @InjectModel(HasRoles)
-        private readonly hasRoleModel: typeof HasRoles,
-
-        @InjectModel(Categories)
-        private readonly categoryModel: typeof Categories,
-
-        @InjectModel(Thematiques)
-        private readonly thematicModel: typeof Thematiques,
-
         @InjectModel(SeanceSessions)
         private readonly seancesModel: typeof SeanceSessions,
 
@@ -99,8 +86,7 @@ export class SessionsService {
         private readonly payementModel: typeof Payement,
 
         private readonly allServices: AllSercices,
-        private readonly serviceMail: MailService,
-        private readonly docsService: DocsService
+        private readonly serviceMail: MailService
     ) { }
 
     async uploadDocumentToSessionDTO(user: IJwtSignin, uploadDocumentDto: UploadDocumentToSessionDto): Promise<ResponseServer> {
@@ -336,7 +322,7 @@ export class SessionsService {
     }
     async listOfLearnerByConnectedFormateur(user: IJwtSignin): Promise<ResponseServer> {
 
-        let list = await this.sessionModel.findAll({ where: { id_superviseur: user.id_user }, attributes: ['id', 'id_superviseur'] })
+        let list = await this.sessionModel.findAll({ where: { id_superviseur: { [Op.contains]: [user.id_user] } }, attributes: ['id', 'id_superviseur'] })
         const allowed = list.map(l => l.toJSON()['id'])
         StagiaireHasSession.belongsTo(Users, { foreignKey: "id_stagiaire" })
 
@@ -410,7 +396,6 @@ export class SessionsService {
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
     async listAllSessionsByOwnAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
-
         const { id_user } = user
         SessionSuivi.belongsTo(Categories, { foreignKey: "id_category" })
         SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
@@ -421,21 +406,13 @@ export class SessionsService {
                     model: Formations,
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
-                },
-                // {
-                //     model: Thematiques,
-                //     required: true,
-                //     attributes: ['id', 'thematic']
-                // },
-                // {
-                //     model: Categories,
-                //     required: true,
-                //     attributes: ['id', 'category']
-                // }
+                }
             ],
             where: {
                 status: 1,
-                id_superviseur: id_user
+                id_superviseur: {
+                    [Op.contains]: [id_user]
+                }
             }
         })
             .then(({ count, rows }) => {
@@ -465,7 +442,9 @@ export class SessionsService {
             ],
             where: {
                 status: 1,
-                id_superviseur: idinstructor
+                id_superviseur: {
+                    [Op.contains]: [idinstructor]
+                }
             }
         })
             .then(({ count, rows }) => {
@@ -768,7 +747,7 @@ export class SessionsService {
                         date_session_fin: date_session_fin,
                         id_category,
                         id_controleur,
-                        id_superviseur,
+                        id_superviseur: [id_superviseur ?? 0],
                         prix: prix,
                         type_formation,
                         id_formation,
@@ -867,17 +846,7 @@ export class SessionsService {
                     model: Formations,
                     required: true,
                     attributes: ['id', 'titre', 'sous_titre', 'description']
-                },
-                // {
-                //     model: Thematiques,
-                //     required: true,
-                //     attributes: ['id', 'thematic']
-                // },
-                // {
-                //     model: Categories,
-                //     required: true,
-                //     attributes: ['id', 'category']
-                // }
+                }
             ],
             where: {
                 status: 1
@@ -1013,7 +982,6 @@ export class SessionsService {
                         id_category,
                         id_controleur,
                         id_formation,
-                        id_superviseur,
                         piece_jointe,
                         type_formation
                     })

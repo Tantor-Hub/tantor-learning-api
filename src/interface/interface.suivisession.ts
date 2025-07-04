@@ -10,7 +10,7 @@ export interface ISessionSuivi extends IGlobale {
     progression?: number;
 
     id_controleur?: number;
-    id_superviseur?: number;
+    id_superviseur: number[];
     date_mise_a_jour?: Date | string | any;
     date_session_debut: Date | string;
     date_session_fin: Date | string;
@@ -18,6 +18,7 @@ export interface ISessionSuivi extends IGlobale {
     prix?: number;
     description: string;
     designation?: string;
+    createdBy?: number
 
     // controleur?: number;
     // type_prestation: 'formation' | 'cbs';
