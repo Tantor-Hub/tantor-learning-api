@@ -633,8 +633,9 @@ export class CoursService {
         })
             .then(inst => {
                 if (inst instanceof SessionSuivi) {
+                    const { id_superviseur } = inst.toJSON() || []
                     return inst.update({
-                        id_superviseur: id_user,
+                        id_superviseur: [...Array.from(id_superviseur), id_user],
                     })
                         .then(_ => Responder({ status: HttpStatusCode.Ok, data: inst }))
                         .catch(_ => Responder({ status: HttpStatusCode.BadRequest, data: _ }))
