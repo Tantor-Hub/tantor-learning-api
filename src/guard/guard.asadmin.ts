@@ -36,4 +36,4 @@ export class JwtAuthGuardAsManagerSystem implements CanActivate {
             return true
         } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
     }
-}
+};
