@@ -1,4 +1,3 @@
-import { Transform, Type } from 'class-transformer';
 import { IsString, IsOptional, IsEnum, IsNumber, IsNumberString, IsDateString, IsInt, IsUUID, IsDate, IsISO8601 } from 'class-validator';
 
 export class CreateSessionDto {
@@ -28,6 +27,9 @@ export class CreateSessionDto {
 
     @IsNumberString()
     id_formation: number;
+
+    @IsNumberString()
+    nb_places: number;
 
     @IsNumberString()
     @IsOptional()

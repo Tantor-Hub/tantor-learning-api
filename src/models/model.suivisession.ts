@@ -33,6 +33,9 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column(DataType.STRING)
     duree?: string;
 
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
+    nb_places: number;
+
     @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
     progression?: number;
 

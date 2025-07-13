@@ -30,7 +30,12 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
-
+    
+    @Get('payements')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async getPaymentsListAll(@User() user: IJwtSignin) {
+        return this.sessionsService.getPaymentsAll(user);
+    }
     @Put('session/document/before')
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     @UseGuards(JwtAuthGuardAsStudent)

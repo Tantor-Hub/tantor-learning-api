@@ -89,6 +89,14 @@ export class SessionsService {
         private readonly serviceMail: MailService
     ) { }
 
+    async getPaymentsAll(user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const payments = await this.payementModel.findAll({ where: { status: 1 } });
+            return Responder({ status: HttpStatusCode.Ok, data: payments });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async uploadDocumentToSessionDTO(user: IJwtSignin, uploadDocumentDto: UploadDocumentToSessionDto): Promise<ResponseServer> {
         const { id_session, key_document: document_type, description, document, piece_jointe } = uploadDocumentDto;
         try {
@@ -139,14 +147,31 @@ export class SessionsService {
             })
                 .then(payement => {
                     if (payement instanceof Payement) {
-                        this.serviceMail.onPayementSession({
-                            to: user.email,
-                            fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
-                            session: sess.designation as string,
-                            amount: sess.prix as number,
+                        return this.allServices.onPay({
                             currency: 'EUR',
+                            amount: sess.prix as number,
+                            payment_method_types: ['card']
                         })
-                        return Responder({ status: HttpStatusCode.Created, data: payement })
+                            .then((infos) => {
+                                const {code, data } = infos
+                                if (code === 200) {
+                                    const { clientSecret, id, amount, currency, status } = data;
+                                    payement.update({ status: 1 })
+                                    this.serviceMail.onPayementSession({
+                                        to: user.email,
+                                        fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
+                                        session: sess.designation as string,
+                                        amount: sess.prix as number,
+                                        currency: 'EUR',
+                                    })
+                                    return Responder({ status: HttpStatusCode.Created, data })
+                                } else {
+                                    return Responder({ status: HttpStatusCode.BadRequest, data: "Le paiement n'a pas pu être effectué !" })
+                                }
+                            })
+                            .catch(err => {
+                                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                            })
                     } else {
                         return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
                     }
@@ -718,7 +743,7 @@ export class SessionsService {
     }
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 
-        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur, type_formation } = createSessionDto
+        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur, type_formation, nb_places } = createSessionDto
         const s_on = this.allServices.parseDate(date_session_debut as any)
         const e_on = this.allServices.parseDate(date_session_fin as any)
 
@@ -737,7 +762,6 @@ export class SessionsService {
             }
         })
             .then(form => {
-                log(form?.toJSON())
                 if (form instanceof Formations) {
                     const { id_category, sous_titre, titre } = form.toJSON()
                     return this.sessionModel.create({

@@ -8,10 +8,14 @@ import { userColumns } from 'src/interface/interface.usercolomuns';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { literal, Op } from 'sequelize';
 import { log } from 'console';
+import Stripe from 'stripe';
 
 @Injectable()
 export class AllSercices {
-    constructor(private readonly configService: ConfigService) { }
+    private stripe: Stripe;
+    constructor(private readonly configService: ConfigService) {
+        this.stripe = new Stripe(this.configService.get<string>('STRIPE_SECRET_KEY') || '');
+    }
 
     formatDate({ dateString }: { dateString: string | Date }): string | any {
         const date = moment(dateString);
@@ -198,5 +202,44 @@ export class AllSercices {
     };
     dateToUnixOnly(dateString: string): number {
         return moment(dateString).startOf('day').unix()
+    };
+    async onPay({ currency, amount, payment_method_types }: { currency: string, amount: number, payment_method_types: string[] }): Promise<{ code: number, message: string, data: any }> {
+        try {
+            return this.stripe.paymentIntents.create({
+                amount: amount,
+                currency: currency,
+                payment_method_types: payment_method_types,
+            })
+                .then((paymentIntent) => {
+                    return {
+                        code: 200,
+                        message: "Paiement créé avec succès",
+                        data: {
+                            clientSecret: paymentIntent.client_secret,
+                            id: paymentIntent.id,
+                            amount: this.renderAsLisibleNumber({ nombre: paymentIntent.amount }),
+                            currency: paymentIntent.currency,
+                            status: paymentIntent.status,
+                        },
+                    };
+                })
+                .catch((error) => {
+                    return {
+                        code: 500,
+                        message: "Erreur lors du paiement",
+                        data: {
+                            error: error.message,
+                        },
+                    };
+                });
+        } catch (error) {
+            return {
+                code: 500,
+                message: "Erreur lors du paiement",
+                data: {
+                    error: error.message,
+                },
+            };
+        }
     }
 }
