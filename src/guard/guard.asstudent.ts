@@ -11,7 +11,7 @@ export class JwtAuthGuardAsStudent implements CanActivate {
 
     keyname: string;
     allowedTo: number[] = [4];
-    accessLevel: number = 90; // c'est à dire que le niveau pour les utilisateurs
+    accessLevel: number = 90;
 
     constructor(private readonly jwtService: JwtService, private configService: ConfigService, private readonly allSercices: AllSercices) {
         this.keyname = (this.configService.get<string>('APPKEYAPINAME')) as string
