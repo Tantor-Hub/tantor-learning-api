@@ -69,3 +69,18 @@ export interface IOption {
     createdAt?: Date;
     updatedAt?: Date;
 }
+
+export interface IQuestionnaire {
+    id?: number;
+    titre: string;
+    description?: string;
+    type: 'sondage';
+    questions: IQuestion[];
+}
+
+export interface IQuestioninscriptionSession {
+    id?: number;
+    questionnaireId: number;
+    texte: string;
+    options: IOption[];
+}
