@@ -74,7 +74,7 @@ import { RolesService } from './roles/roles.service';
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
         autoLoadModels: true,
-        synchronize: true,
+        synchronize: false,
         logging: false
       }),
     }),
@@ -131,9 +131,9 @@ export class AppModule implements OnModuleInit {
       await this.sequelize.authenticate();
       this.sequelize.sync({ alter: true, force: false, })
         .then(_ => {
-          console.log('[Database] Connexion réussie');
-          const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
-          const models = Object.keys(this.sequelize.models);
+          console.log('[Database] Connexion réussie', this.sequelize.getDatabaseName());
+          // const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
+          // const models = Object.keys(this.sequelize.models);
           // console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName());
         })
         .catch(err => log("[ DB Error ]", err))
