@@ -80,7 +80,9 @@ export interface IQuestionnaire {
 
 export interface IQuestioninscriptionSession {
     id?: number;
-    questionnaireId: number;
+    id_session: number;
+    id_questionnaire: number;
+    Questionnaires?: IQuestionnaire[];
     texte: string;
-    options: IOption[];
+    Options: IOption[];
 }

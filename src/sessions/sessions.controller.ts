@@ -21,6 +21,7 @@ import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
 import { DOCUMENT_KEYS, UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 import { log } from 'node:console';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Controller('sessions')
 export class SessionsController {
@@ -30,7 +31,12 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
-    
+
+    @Post('session/addsurvey')
+    @UseGuards(JwtAuthGuardAsSuperviseur)
+    async addNewSurvey(@Body() createSessionDto: CreateSessionDto, @User() user: IJwtSignin) {
+        return this.sessionsService.addSurveyToSession({ ...createSessionDto, type_formation: 'sondage' }, user);
+    }
     @Get('payements')
     @UseGuards(JwtAuthGuardAsStudent)
     async getPaymentsListAll(@User() user: IJwtSignin) {
