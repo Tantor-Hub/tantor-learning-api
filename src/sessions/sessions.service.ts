@@ -20,7 +20,6 @@ import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { typesprestations } from 'src/utils/utiles.typesprestation';
 import { typesrelances } from 'src/utils/utiles.typerelances';
 import { typesactions } from 'src/utils/utiles.actionreprendre';
-import { DocsService } from 'src/services/service.docs';
 import { AddSeanceSessionDto } from './dto/add-seances.dto';
 import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 import { HomeworksSession } from 'src/models/model.homework';
@@ -39,7 +38,8 @@ import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
 import { Payement } from 'src/models/model.payementmethode';
 import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
-import { QuestionInscriptionSession } from 'src/models/model.questionspourquestionnaireinscription';
+import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
+import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
 
 @Injectable()
 export class SessionsService {
@@ -87,16 +87,32 @@ export class SessionsService {
         @InjectModel(Payement)
         private readonly payementModel: typeof Payement,
 
-        @InjectModel(QuestionInscriptionSession)
-        private readonly surveyModel: typeof QuestionInscriptionSession,
+        @InjectModel(Survey)
+        private readonly surveyModel: typeof Survey,
+
+        @InjectModel(Questionnaires)
+        private readonly questionModel: typeof Questionnaires,
 
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService
     ) { }
     async addSurveyToSession(createSurveyDto: CreateSurveyDto, user: IJwtSignin): Promise<ResponseServer> {
+        const { questions } = createSurveyDto;
         try {
-            // const survey = await this.surveyModel.create({ ...createSurveyDto });
-            return Responder({ status: HttpStatusCode.Created, data: [] });
+            return this.surveyModel.create({ ...createSurveyDto, created_by: user.id_user })
+                .then(async (survey) => {
+                    const qst = await this.questionModel.bulkCreate(questions.map(q => ({ 
+                        ...q, 
+                        description: q.description, 
+                        is_required: q.is_required, 
+                        id_questionnaire: survey.id, 
+                        type: q.type_question
+                    })));
+                    return Responder({ status: HttpStatusCode.Created, data: qst });
+                })
+                .catch(err => {
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: err });
+                });
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }

@@ -28,11 +28,12 @@ import { PendantFormationDocs } from 'src/models/model.pendantformation';
 import { ApresFormationDocs } from 'src/models/model.apresformation';
 import { Cours } from 'src/models/model.sessionshascours';
 import { Payement } from 'src/models/model.payementmethode';
-import { QuestionInscriptionSession } from 'src/models/model.questionspourquestionnaireinscription';
-
+import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
+import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
+import { Options } from 'src/models/model.optionquestionnaires';
 @Module({
   imports: [
-    SequelizeModule.forFeature([UploadDocument, Payement, QuestionInscriptionSession, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork, Cours]),
+    SequelizeModule.forFeature([UploadDocument, Payement, Questionnaires, Options, Survey, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork, Cours]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
