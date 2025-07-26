@@ -1,10 +1,12 @@
-import { Table, Column, Model, DataType, HasMany, ForeignKey } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { IQuestionnaire } from 'src/interface/interface.cours';
 import { QuestionType } from 'src/utils/utiles.typesprestation';
 import { Options } from './model.optionquestionnaires';
 import { Survey } from './model.questionspourquestionnaireinscription';
+import { table_prefix } from 'src/config/config.tablesname';
+import { SessionSuivi } from './model.suivisession';
 
-@Table({ tableName: 'questionnaires-lors-de-inscription-session' })
+@Table({ tableName: `${table_prefix}questionnairesinscription`, timestamps: true })
 export class Questionnaires extends Model<IQuestionnaire> {
   @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
   id: number;
@@ -24,7 +26,16 @@ export class Questionnaires extends Model<IQuestionnaire> {
   @HasMany(() => Options)
   Options: Options[];
 
-  @Column({ type: DataType.INTEGER, allowNull: true })
   @ForeignKey(() => Survey)
+  @Column({ type: DataType.INTEGER, allowNull: true })
   id_questionnaire: number;
+
+  @BelongsTo(() => Survey, {
+    onDelete: 'CASCADE'
+  })
+  Survey: Survey;
+
+  @ForeignKey(() => SessionSuivi)
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  id_session: number;
 }

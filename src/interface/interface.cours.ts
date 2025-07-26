@@ -74,6 +74,8 @@ export interface IOption {
 export interface IQuestionnaire {
     id?: number;
     titre: string;
+    is_required?: boolean
+    id_questionnaire?: number
     description?: string;
     type: QuestionType; // Type de question
     options?: IOption[];

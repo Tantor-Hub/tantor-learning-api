@@ -40,6 +40,7 @@ import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
 import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
+import { Options } from 'src/models/model.optionquestionnaires';
 
 @Injectable()
 export class SessionsService {
@@ -93,22 +94,77 @@ export class SessionsService {
         @InjectModel(Questionnaires)
         private readonly questionModel: typeof Questionnaires,
 
+        @InjectModel(Options)
+        private readonly optionsModel: typeof Options,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService
     ) { }
+    async deleteSurveyById(id: number): Promise<ResponseServer> {
+        try {
+            const survey = await this.surveyModel.findByPk(id);
+            if (!survey) return Responder({ status: HttpStatusCode.NotFound, data: "Survey not found" });
+
+            await survey.destroy({ force: true });
+            return Responder({ status: HttpStatusCode.Ok, data: "Survey deleted successfully" });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
+    async getSurveyByIdSession(id_session: number): Promise<ResponseServer> {
+        try {
+            const survey = await this.surveyModel.findOne({
+                where: { id_session },
+                include: [
+                    {
+                        model: Questionnaires,
+                        required: true,
+                        include: [
+                            {
+                                model: Options,
+                                required: false
+                            }
+                        ]
+                    }
+                ]
+            });
+            if (!survey) return Responder({ status: HttpStatusCode.NotFound, data: "Survey not found" });
+            return Responder({ status: HttpStatusCode.Ok, data: survey });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async addSurveyToSession(createSurveyDto: CreateSurveyDto, user: IJwtSignin): Promise<ResponseServer> {
         const { questions } = createSurveyDto;
         try {
             return this.surveyModel.create({ ...createSurveyDto, created_by: user.id_user })
                 .then(async (survey) => {
-                    const qst = await this.questionModel.bulkCreate(questions.map(q => ({ 
-                        ...q, 
-                        description: q.description, 
-                        is_required: q.is_required, 
-                        id_questionnaire: survey.id, 
-                        type: q.type_question
-                    })));
-                    return Responder({ status: HttpStatusCode.Created, data: qst });
+                    if (survey instanceof Survey) {
+                        const { id } = survey.toJSON();
+                        log(`Survey created with ID: ${id}`);
+                        for (const question of questions) {
+                            const { is_required, options, titre, type_question, description } = question
+                            const qst = await this.questionModel.create({
+                                titre,
+                                is_required,
+                                id_questionnaire: id,
+                                type: type_question,
+                                description,
+                            })
+                            if (qst instanceof Questionnaires) {
+                                for (const option of options) {
+                                    await this.optionsModel.create({
+                                        text: option.text,
+                                        is_correct: option.is_correct,
+                                        id_question: qst.id
+                                    });
+                                }
+                            }
+                        }
+                        return Responder({ status: HttpStatusCode.Created, data: survey })
+                    } else {
+                        return Responder({ status: HttpStatusCode.InternalServerError, })
+                    }
                 })
                 .catch(err => {
                     return Responder({ status: HttpStatusCode.InternalServerError, data: err });

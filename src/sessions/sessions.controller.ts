@@ -32,7 +32,16 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
-
+    @Delete('session/survey/:idsession')
+    // @UseGuards(JwtAuthGuardAsSuperviseur)
+    async deleteSurvey(@Param('idsession', ParseIntPipe) idsession: number) {
+        return this.sessionsService.deleteSurveyById(idsession);
+    }
+    @Get('session/survey/:idsession')
+    // @UseGuards(JwtAuthGuardAsSuperviseur)
+    async getSurvey(@Param('idsession', ParseIntPipe) idsession: number) {
+        return this.sessionsService.getSurveyByIdSession(idsession);
+    }
     @Post('session/addsurvey')
     @UseGuards(JwtAuthGuardAsSuperviseur)
     async addNewSurvey(@Body() createSessionDto: CreateSurveyDto, @User() user: IJwtSignin) {
