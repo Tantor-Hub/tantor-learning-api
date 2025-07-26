@@ -1,6 +1,7 @@
 import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
 import { IQuestionnaire } from 'src/interface/interface.cours';
-import { QuestioninscriptionSession } from './model.questionspourquestionnaireinscription';
+import { QuestionType } from 'src/utils/utiles.typesprestation';
+import { Options } from './model.optionquestionnaires';
 
 @Table({ tableName: 'questionnaires-lors-de-inscription-session' })
 export class Questionnaires extends Model<IQuestionnaire> {
@@ -10,12 +11,15 @@ export class Questionnaires extends Model<IQuestionnaire> {
   @Column({ type: DataType.STRING, allowNull: false })
   titre: string;
 
+  @Column({ type: DataType.BOOLEAN, allowNull: true })
+  is_required: boolean;
+
   @Column({ type: DataType.TEXT, allowNull: true })
   description?: string;
 
-  @Column({ type: DataType.ENUM('sondage'), defaultValue: 'sondage' })
-  type: string;
+  @Column({ type: DataType.ENUM(...Object.values(QuestionType)) })
+  type: QuestionType;
 
-  @HasMany(() => QuestioninscriptionSession)
-  questions: QuestioninscriptionSession[];
+  @HasMany(() => Options)
+  Options: Options[];
 }

@@ -56,6 +56,9 @@ import { Question } from './models/model.quiz';
 import { Option } from './models/model.optionsquiz';
 import { UsersService } from './users/users.service';
 import { RolesService } from './roles/roles.service';
+import { QuestionInscriptionSession } from './models/model.questionspourquestionnaireinscription';
+import { Questionnaires } from './models/model.questionnaireoninscriptionsession';
+import { Options } from './models/model.optionquestionnaires';
 
 @Module({
   imports: [
@@ -109,7 +112,10 @@ import { RolesService } from './roles/roles.service';
       UploadDocument,
       AvantFormationDocs,
       PendantFormationDocs,
-      ApresFormationDocs
+      ApresFormationDocs,
+      QuestionInscriptionSession,
+      Questionnaires,
+      Options 
     ]),
     RolesModule,
     UsersModule,

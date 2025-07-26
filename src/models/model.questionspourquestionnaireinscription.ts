@@ -7,7 +7,6 @@ import {
     HasMany,
     DataType,
 } from 'sequelize-typescript';
-import { Evaluation } from './model.evaluation';
 import { Option } from './model.optionsquiz';
 import { IQuestion, IQuestioninscriptionSession } from 'src/interface/interface.cours';
 import { table_prefix } from 'src/config/config.tablesname';
@@ -15,7 +14,7 @@ import { Questionnaires } from './model.questionnaireoninscriptionsession';
 import { SessionSuivi } from './model.suivisession';
 
 @Table({ tableName: `${table_prefix}questions`, timestamps: true })
-export class QuestioninscriptionSession extends Model<IQuestioninscriptionSession> {
+export class QuestionInscriptionSession extends Model<IQuestioninscriptionSession> {
     @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
     id: number;
 
@@ -30,9 +29,6 @@ export class QuestioninscriptionSession extends Model<IQuestioninscriptionSessio
     @BelongsTo(() => Questionnaires)
     Questionnaires: Questionnaires;
 
-    @Column({ type: DataType.STRING, allowNull: false })
-    texte: string;
-
-    @HasMany(() => Option)
-    Options: Option[];
+    @Column({ type: DataType.STRING, allowNull: true })
+    created_by: string;
 }

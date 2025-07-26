@@ -22,6 +22,7 @@ import { DOCUMENT_KEYS, UploadDocumentToSessionDto } from './dto/add-document-se
 import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 import { log } from 'node:console';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -34,8 +35,8 @@ export class SessionsController {
 
     @Post('session/addsurvey')
     @UseGuards(JwtAuthGuardAsSuperviseur)
-    async addNewSurvey(@Body() createSessionDto: CreateSessionDto, @User() user: IJwtSignin) {
-        return this.sessionsService.addSurveyToSession({ ...createSessionDto, type_formation: 'sondage' }, user);
+    async addNewSurvey(@Body() createSessionDto: CreateSurveyDto, @User() user: IJwtSignin) {
+        return this.sessionsService.addSurveyToSession({ ...createSessionDto }, user);
     }
     @Get('payements')
     @UseGuards(JwtAuthGuardAsStudent)

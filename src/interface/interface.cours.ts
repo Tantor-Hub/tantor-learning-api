@@ -78,11 +78,11 @@ export interface IQuestionnaire {
     questions: IQuestion[];
 }
 
-export interface IQuestioninscriptionSession {
+export interface IQuestioninscriptionSession extends IGlobale {
     id?: number;
     id_session: number;
+    description?: string;
+    created_by: string;
     id_questionnaire: number;
     Questionnaires?: IQuestionnaire[];
-    texte: string;
-    Options: IOption[];
 }

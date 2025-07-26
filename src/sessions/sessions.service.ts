@@ -38,6 +38,8 @@ import { ApresFormationDocs } from 'src/models/model.apresformation';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
 import { Payement } from 'src/models/model.payementmethode';
 import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
+import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
+import { QuestionInscriptionSession } from 'src/models/model.questionspourquestionnaireinscription';
 
 @Injectable()
 export class SessionsService {
@@ -85,10 +87,20 @@ export class SessionsService {
         @InjectModel(Payement)
         private readonly payementModel: typeof Payement,
 
+        @InjectModel(QuestionInscriptionSession)
+        private readonly surveyModel: typeof QuestionInscriptionSession,
+
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService
     ) { }
-
+    async addSurveyToSession(createSurveyDto: CreateSurveyDto, user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            // const survey = await this.surveyModel.create({ ...createSurveyDto });
+            return Responder({ status: HttpStatusCode.Created, data: [] });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async getPaymentsAll(user: IJwtSignin): Promise<ResponseServer> {
         try {
             const payments = await this.payementModel.findAll({ where: { status: 1 } });
@@ -153,7 +165,7 @@ export class SessionsService {
                             payment_method_types: ['card']
                         })
                             .then((infos) => {
-                                const {code, data } = infos
+                                const { code, data } = infos
                                 if (code === 200) {
                                     const { clientSecret, id, amount, currency, status } = data;
                                     payement.update({ status: 1 })

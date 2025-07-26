@@ -1,13 +1,25 @@
-import { IsString, ValidateNested, ArrayMinSize } from 'class-validator';
-import { Type } from 'class-transformer';
-import { CreateOptionDto } from 'src/cours/dto/create-evaluation.dto';
+import { Type } from "class-transformer";
+import { ArrayMinSize, IsArray, IsBoolean, IsEnum, IsString, ValidateNested } from "class-validator";
+import { QuestionType } from "src/utils/utiles.typesprestation";
 
-export class CreateQuestionDto {
+export class CreateOptionDto {
     @IsString()
-    texte: string;
+    text: string;
 
+    @IsBoolean()
+    isCorrect: boolean;
+}
+
+export class CreateQuestionSurveyDto {
+    @IsString()
+    content: string;
+
+    @IsEnum(QuestionType, { message: 'Le type doit être QCM, QCU ou TEXTE_LIBRE' })
+    type: QuestionType;
+
+    @IsArray()
+    @ArrayMinSize(1)
     @ValidateNested({ each: true })
     @Type(() => CreateOptionDto)
-    @ArrayMinSize(2, { message: 'Chaque question doit avoir au moins deux options.' })
-    options: CreateOptionDto[];
+    Options: CreateOptionDto[];
 }
