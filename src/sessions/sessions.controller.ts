@@ -18,9 +18,8 @@ import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
-import { DOCUMENT_KEYS, UploadDocumentToSessionDto } from './dto/add-document-session.dto';
+import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
-import { log } from 'node:console';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 
