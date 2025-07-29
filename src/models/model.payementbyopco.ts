@@ -47,7 +47,7 @@ export class Payementopco extends Model<IPayementopco> {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        defaultValue: 1, // 1 paid, 0 not paid
+        defaultValue: 0, // 1 paid, 0 not paid
     })
     status: number;
 

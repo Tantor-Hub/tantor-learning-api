@@ -47,10 +47,10 @@ export class SessionsController {
     async addNewSurvey(@Body() createSessionDto: CreateSurveyDto, @User() user: IJwtSignin) {
         return this.sessionsService.addSurveyToSession({ ...createSessionDto }, user);
     }
-    @Get('payments')
+    @Get('payments/:status')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getPaymentsListAll(@User() user: IJwtSignin) {
-        return this.sessionsService.getPaymentsAll(user);
+    async getPaymentsListAll(@User() user: IJwtSignin, @Param('status', ParseIntPipe) status: number) {
+        return this.sessionsService.getPaymentsAll(user, status);
     }
     @Put('session/payment/validate/:idpayment')
     @UseGuards(JwtAuthGuardAsSuperviseur)

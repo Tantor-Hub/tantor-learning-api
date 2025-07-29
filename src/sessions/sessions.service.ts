@@ -205,10 +205,11 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
-    async getPaymentsAll(user: IJwtSignin): Promise<ResponseServer> {
+    async getPaymentsAll(user: IJwtSignin, status: number): Promise<ResponseServer> {
         try {
+            if ([0, 1].indexOf(status) === -1) return Responder({ status: HttpStatusCode.BadRequest, data: "Invalid status only 0 or 1 are allowed" });
             const payments_cards = await this.payementModel.findAll({
-                where: { status: 1 },
+                where: { status },
                 subQuery: false,
                 include: [
                     {
@@ -223,8 +224,8 @@ export class SessionsService {
                     }
                 ]
             });
-            const payments_opco = await this.payementModel.findAll({
-                where: { status: 1 },
+            const payments_opco = await this.payementOpcoModel.findAll({
+                where: { status },
                 subQuery: false,
                 include: [
                     {
