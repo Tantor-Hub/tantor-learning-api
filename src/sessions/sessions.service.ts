@@ -199,7 +199,11 @@ export class SessionsService {
             if (payment.status === 1) return Responder({ status: HttpStatusCode.BadRequest, data: "Payment already validated" });
             payment.status = 1;
             await payment.save();
-
+            this.hasSessionStudentModel.update({
+                id_payement: payment.id
+            }, {
+                where: { id: payment.id_session_student }
+            })
             return Responder({ status: HttpStatusCode.Ok, data: payment });
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
