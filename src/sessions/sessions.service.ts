@@ -35,12 +35,14 @@ import { AvantFormationDocs } from 'src/models/model.avantformation';
 import { PendantFormationDocs } from 'src/models/model.pendantformation';
 import { ApresFormationDocs } from 'src/models/model.apresformation';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
-import { Payement } from 'src/models/model.payementmethode';
+import { Payement } from 'src/models/model.payementbycard';
 import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
 import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
 import { Options } from 'src/models/model.optionquestionnaires';
+import { Payementopco } from 'src/models/model.payementbyopco';
+import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 
 @Injectable()
 export class SessionsService {
@@ -87,6 +89,9 @@ export class SessionsService {
 
         @InjectModel(Payement)
         private readonly payementModel: typeof Payement,
+
+        @InjectModel(Payementopco)
+        private readonly payementOpcoModel: typeof Payementopco,
 
         @InjectModel(Survey)
         private readonly surveyModel: typeof Survey,
@@ -175,8 +180,37 @@ export class SessionsService {
     }
     async getPaymentsAll(user: IJwtSignin): Promise<ResponseServer> {
         try {
-            const payments = await this.payementModel.findAll({ where: { status: 1 } });
-            return Responder({ status: HttpStatusCode.Ok, data: payments });
+            const payments_cards = await this.payementModel.findAll({
+                where: { status: 1 },
+                include: [
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ]
+            });
+            const payments_opco = await this.payementModel.findAll({
+                where: { status: 1 },
+                include: [
+                    {
+                        model: Users,
+                        required: true,
+                        attributes: ['id', 'fs_name', 'ls_name', 'email']
+                    },
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        attributes: ['id', 'title', 'description']
+                    }
+                ]
+            });
+            return Responder({ status: HttpStatusCode.Ok, data: { length: payments_cards.length + payments_opco.length, by_card: payments_cards, by_opco: payments_opco } });
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
@@ -208,8 +242,48 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
+    async payementByOpco(user: IJwtSignin, payementOpcoDto: PayementOpcoDto): Promise<ResponseServer> {
+        const { id_session, id_user, nom_opco, nom_entreprise, siren, nom_responsable, telephone_responsable, email_responsable } = payementOpcoDto;
+        try {
+            const sess = await this.sessionModel.findOne({ where: { id: id_session } });
+            if (!sess) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+            const userSession = await this.hasSessionStudentModel.findOne({ where: { id_sessionsuivi: id_session, id_stagiaire: user.id_user } });
+            if (!userSession) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+            let student = await this.usersModel.findOne({ where: { id: user.id_user }, raw: true });
+            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "L'utilisateur ciblé n'a pas été retrouvé !" });
+            return this.payementOpcoModel.create({
+                id_session,
+                id_session_student: userSession.id as number,
+                id_user: user.id_user,
+                nom_opco,
+                nom_entreprise,
+                siren,
+                nom_responsable,
+                telephone_responsable,
+                email_responsable
+            })
+                .then(async doc => {
+                    if (doc instanceof Payementopco) {
+
+                        const p = await this.serviceMail.onPayementSession({
+                            to: student.email,
+                            fullname: this.allServices.fullName({ fs: student.fs_name, ls: student.ls_name }),
+                            session: sess.designation as string,
+                            amount: sess.prix as number,
+                            currency: 'EUR',
+                        })
+                        return Responder({ status: HttpStatusCode.Created, data: doc })
+                    } else {
+                        return Responder({ status: HttpStatusCode.BadRequest, data: "Le document n'a pas pu être enregistré !" })
+                    }
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
+    }
     async payementSession(student: IJwtSignin, payementSessionDto: CreatePaymentSessionDto): Promise<ResponseServer> {
-        const { id_session, id_user, full_name, card_number, month, year, cvv } = payementSessionDto;
+        const { id_session, id_user, full_name, card_number, month, year, cvv, id_stripe_payment } = payementSessionDto;
         try {
             const sess = await this.sessionModel.findOne({ where: { id: id_session } });
             if (!sess) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
@@ -227,35 +301,45 @@ export class SessionsService {
                 amount: sess.prix as number,
                 month,
                 year,
+                id_stripe_payment,
                 cvv
             })
-                .then(payement => {
+                .then(async payement => {
                     if (payement instanceof Payement) {
-                        return this.allServices.onPay({
-                            currency: 'EUR',
+
+                        const p = await this.serviceMail.onPayementSession({
+                            to: user.email,
+                            fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
+                            session: sess.designation as string,
                             amount: sess.prix as number,
-                            payment_method_types: ['card']
+                            currency: 'EUR',
                         })
-                            .then((infos) => {
-                                const { code, data } = infos
-                                if (code === 200) {
-                                    const { clientSecret, id, amount, currency, status } = data;
-                                    payement.update({ status: 1 })
-                                    this.serviceMail.onPayementSession({
-                                        to: user.email,
-                                        fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
-                                        session: sess.designation as string,
-                                        amount: sess.prix as number,
-                                        currency: 'EUR',
-                                    })
-                                    return Responder({ status: HttpStatusCode.Created, data })
-                                } else {
-                                    return Responder({ status: HttpStatusCode.BadRequest, data: "Le paiement n'a pas pu être effectué !" })
-                                }
-                            })
-                            .catch(err => {
-                                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
-                            })
+                        return Responder({ status: HttpStatusCode.Created, data: payement })
+                        // return this.allServices.onPay({
+                        //     currency: 'EUR',
+                        //     amount: sess.prix as number,
+                        //     payment_method_types: ['card']
+                        // })
+                        //     .then((infos) => {
+                        //         const { code, data } = infos
+                        //         if (code === 200) {
+                        //             const { clientSecret, id, amount, currency, status } = data;
+                        //             payement.update({ status: 1 })
+                        //             this.serviceMail.onPayementSession({
+                        //                 to: user.email,
+                        //                 fullname: this.allServices.fullName({ fs: user.fs_name, ls: user.ls_name }),
+                        //                 session: sess.designation as string,
+                        //                 amount: sess.prix as number,
+                        //                 currency: 'EUR',
+                        //             })
+                        //             return Responder({ status: HttpStatusCode.Created, data })
+                        //         } else {
+                        //             return Responder({ status: HttpStatusCode.BadRequest, data: "Le paiement n'a pas pu être effectué !" })
+                        //         }
+                        //     })
+                        //     .catch(err => {
+                        //         return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                        //     })
                     } else {
                         return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
                     }
@@ -827,7 +911,7 @@ export class SessionsService {
     }
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
 
-        const { description, prix, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur, type_formation, nb_places } = createSessionDto
+        const { description, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur, nb_places } = createSessionDto
         const s_on = this.allServices.parseDate(date_session_debut as any)
         const e_on = this.allServices.parseDate(date_session_fin as any)
 
@@ -847,7 +931,7 @@ export class SessionsService {
         })
             .then(form => {
                 if (form instanceof Formations) {
-                    const { id_category, sous_titre, titre } = form.toJSON()
+                    const { id_category, sous_titre, titre, prix, type_formation } = form.toJSON()
                     return this.sessionModel.create({
                         description: description,
                         duree: data as string,
@@ -859,6 +943,7 @@ export class SessionsService {
                         prix: prix,
                         type_formation,
                         id_formation,
+                        nb_places,
                         designation: designation.toUpperCase(),
                         date_mise_a_jour: null,
                         status: 1,

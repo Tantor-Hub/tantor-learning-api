@@ -59,6 +59,7 @@ import { RolesService } from './roles/roles.service';
 import { Questionnaires } from './models/model.questionnaireoninscriptionsession';
 import { Options } from './models/model.optionquestionnaires';
 import { Survey } from './models/model.questionspourquestionnaireinscription';
+import { Payementopco } from './models/model.payementbyopco';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { Survey } from './models/model.questionspourquestionnaireinscription';
       Chapitre,
       Listcours,
       Documents,
+      Payementopco,
       SeanceSessions,
       FormateurHasSession,
       HomeworksSession,

@@ -22,6 +22,7 @@ import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
+import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -46,7 +47,7 @@ export class SessionsController {
     async addNewSurvey(@Body() createSessionDto: CreateSurveyDto, @User() user: IJwtSignin) {
         return this.sessionsService.addSurveyToSession({ ...createSessionDto }, user);
     }
-    @Get('payements')
+    @Get('payments')
     @UseGuards(JwtAuthGuardAsStudent)
     async getPaymentsListAll(@User() user: IJwtSignin) {
         return this.sessionsService.getPaymentsAll(user);
@@ -97,10 +98,15 @@ export class SessionsController {
         }
         return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
     }
-    @Put('session/payement')
+    @Post('session/payment/card')
     @UseGuards(JwtAuthGuardAsStudent)
     async payementSession(@Body() payementSessionDto: CreatePaymentSessionDto, @User() user: IJwtSignin) {
         return this.sessionsService.payementSession(user, payementSessionDto);
+    }
+    @Post('session/payment/opco')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async payementSessionByOpco(@Body() payementSessionDto: PayementOpcoDto, @User() user: IJwtSignin) {
+        return this.sessionsService.payementByOpco(user, payementSessionDto);
     }
     @Get('byidformation/:idformation')
     async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {
