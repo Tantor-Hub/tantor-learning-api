@@ -9,6 +9,7 @@ export interface ISessionSuivi extends IGlobale {
     id_category?: number;
     progression?: number;
     nb_places?: number;
+    initial_price?: number;
 
     id_controleur?: number;
     id_superviseur: number[];
