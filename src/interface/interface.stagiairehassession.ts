@@ -9,4 +9,5 @@ export interface IStagiaireHasSessionSuiivi extends IGlobale {
     date_mise_a_jour: string | Date;
     id_formation: number;
     is_started?: number // 1: yes 0 otherWhise
+    id_payement?: number;
 }

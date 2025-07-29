@@ -1,3 +1,4 @@
+import { QuestionType } from "src/utils/utiles.typesprestation";
 import { IGlobale } from "./interface.globale";
 
 export interface IListcours extends IGlobale {
@@ -73,14 +74,17 @@ export interface IOption {
 export interface IQuestionnaire {
     id?: number;
     titre: string;
+    is_required?: boolean
+    id_questionnaire?: number
     description?: string;
-    type: 'sondage';
-    questions: IQuestion[];
+    type: QuestionType; // Type de question
+    options?: IOption[];
 }
 
-export interface IQuestioninscriptionSession {
+export interface IQuestioninscriptionSession extends IGlobale {
     id?: number;
-    questionnaireId: number;
-    texte: string;
-    options: IOption[];
+    id_session: number;
+    description?: string;
+    created_by: number;
+    Questionnaires?: IQuestionnaire[];
 }

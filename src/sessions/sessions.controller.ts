@@ -18,9 +18,11 @@ import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreatePaymentSessionDto } from './dto/payement-methode.dto';
-import { DOCUMENT_KEYS, UploadDocumentToSessionDto } from './dto/add-document-session.dto';
+import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
 import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
-import { log } from 'node:console';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
+import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -30,11 +32,30 @@ export class SessionsController {
         private readonly sessionsService: SessionsService,
         private readonly mediasoupService: MediasoupService
     ) { }
-    
-    @Get('payements')
+    @Delete('session/survey/:idsession')
+    // @UseGuards(JwtAuthGuardAsSuperviseur)
+    async deleteSurvey(@Param('idsession', ParseIntPipe) idsession: number) {
+        return this.sessionsService.deleteSurveyById(idsession);
+    }
+    @Get('session/survey/:idsession')
+    // @UseGuards(JwtAuthGuardAsSuperviseur)
+    async getSurvey(@Param('idsession', ParseIntPipe) idsession: number) {
+        return this.sessionsService.getSurveyByIdSession(idsession);
+    }
+    @Post('session/addsurvey')
+    @UseGuards(JwtAuthGuardAsSuperviseur)
+    async addNewSurvey(@Body() createSessionDto: CreateSurveyDto, @User() user: IJwtSignin) {
+        return this.sessionsService.addSurveyToSession({ ...createSessionDto }, user);
+    }
+    @Get('payments/:status')
     @UseGuards(JwtAuthGuardAsStudent)
-    async getPaymentsListAll(@User() user: IJwtSignin) {
-        return this.sessionsService.getPaymentsAll(user);
+    async getPaymentsListAll(@User() user: IJwtSignin, @Param('status', ParseIntPipe) status: number) {
+        return this.sessionsService.getPaymentsAll(user, status);
+    }
+    @Put('session/payment/validate/:idpayment')
+    @UseGuards(JwtAuthGuardAsSuperviseur)
+    async validatePayment(@Param('idpayment', ParseIntPipe) idpayment: number, @User() user: IJwtSignin) {
+        return this.sessionsService.validatePayment(idpayment, user);
     }
     @Put('session/document/before')
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
@@ -82,10 +103,15 @@ export class SessionsController {
         }
         return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
     }
-    @Put('session/payement')
+    @Post('session/payment/card')
     @UseGuards(JwtAuthGuardAsStudent)
     async payementSession(@Body() payementSessionDto: CreatePaymentSessionDto, @User() user: IJwtSignin) {
         return this.sessionsService.payementSession(user, payementSessionDto);
+    }
+    @Post('session/payment/opco')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async payementSessionByOpco(@Body() payementSessionDto: PayementOpcoDto, @User() user: IJwtSignin) {
+        return this.sessionsService.payementByOpco(user, payementSessionDto);
     }
     @Get('byidformation/:idformation')
     async getAllSessionByIdFormation(@Param("idformation", ParseIntPipe) idformation: number) {

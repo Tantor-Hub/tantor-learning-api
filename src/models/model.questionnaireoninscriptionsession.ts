@@ -1,8 +1,12 @@
-import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { IQuestionnaire } from 'src/interface/interface.cours';
-import { QuestioninscriptionSession } from './model.questionspourquestionnaireinscription';
+import { QuestionType } from 'src/utils/utiles.typesprestation';
+import { Options } from './model.optionquestionnaires';
+import { Survey } from './model.questionspourquestionnaireinscription';
+import { table_prefix } from 'src/config/config.tablesname';
+import { SessionSuivi } from './model.suivisession';
 
-@Table({ tableName: 'questionnaires-lors-de-inscription-session' })
+@Table({ tableName: `${table_prefix}questionnairesinscription`, timestamps: true })
 export class Questionnaires extends Model<IQuestionnaire> {
   @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
   id: number;
@@ -10,12 +14,28 @@ export class Questionnaires extends Model<IQuestionnaire> {
   @Column({ type: DataType.STRING, allowNull: false })
   titre: string;
 
+  @Column({ type: DataType.BOOLEAN, allowNull: true })
+  is_required: boolean;
+
   @Column({ type: DataType.TEXT, allowNull: true })
   description?: string;
 
-  @Column({ type: DataType.ENUM('sondage'), defaultValue: 'sondage' })
-  type: string;
+  @Column({ type: DataType.ENUM(...Object.values(QuestionType)) })
+  type: QuestionType;
 
-  @HasMany(() => QuestioninscriptionSession)
-  questions: QuestioninscriptionSession[];
+  @HasMany(() => Options)
+  Options: Options[];
+
+  @ForeignKey(() => Survey)
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  id_questionnaire: number;
+
+  @BelongsTo(() => Survey, {
+    onDelete: 'CASCADE'
+  })
+  Survey: Survey;
+
+  @ForeignKey(() => SessionSuivi)
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  id_session: number;
 }

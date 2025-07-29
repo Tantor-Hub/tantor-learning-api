@@ -3,7 +3,7 @@ import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
 import { IStagiaireHasSessionSuiivi } from 'src/interface/interface.stagiairehassession';
 import { SessionSuivi } from './model.suivisession';
-import { Payement } from './model.payementmethode';
+import { Payement } from './model.payementbycard';
 import { SeanceSessions } from './model.courshasseances';
 
 @Table({ tableName: tables['statgiairehassession'], timestamps: true })

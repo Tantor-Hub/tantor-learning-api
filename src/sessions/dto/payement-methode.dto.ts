@@ -27,4 +27,7 @@ export class CreatePaymentSessionDto {
     @IsNotEmpty()
     @IsNumber()
     cvv: number;
+
+    @IsString()
+    id_stripe_payment: string; // Optional field for Stripe payment ID
 }

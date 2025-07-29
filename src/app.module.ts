@@ -56,6 +56,10 @@ import { Question } from './models/model.quiz';
 import { Option } from './models/model.optionsquiz';
 import { UsersService } from './users/users.service';
 import { RolesService } from './roles/roles.service';
+import { Questionnaires } from './models/model.questionnaireoninscriptionsession';
+import { Options } from './models/model.optionquestionnaires';
+import { Survey } from './models/model.questionspourquestionnaireinscription';
+import { Payementopco } from './models/model.payementbyopco';
 
 @Module({
   imports: [
@@ -100,6 +104,7 @@ import { RolesService } from './roles/roles.service';
       Chapitre,
       Listcours,
       Documents,
+      Payementopco,
       SeanceSessions,
       FormateurHasSession,
       HomeworksSession,
@@ -109,7 +114,10 @@ import { RolesService } from './roles/roles.service';
       UploadDocument,
       AvantFormationDocs,
       PendantFormationDocs,
-      ApresFormationDocs
+      ApresFormationDocs,
+      Survey,
+      Questionnaires,
+      Options 
     ]),
     RolesModule,
     UsersModule,

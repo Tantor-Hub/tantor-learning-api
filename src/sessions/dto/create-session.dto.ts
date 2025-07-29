@@ -25,6 +25,10 @@ export class CreateSessionDto {
     @IsOptional()
     type_formation: string;
 
+    @IsEnum(['OPCO', 'CPF', 'CARD'])
+    @IsOptional()
+    payment_method: string;
+
     @IsNumberString()
     id_formation: number;
 

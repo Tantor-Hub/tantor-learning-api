@@ -7,27 +7,26 @@ import {
     HasMany,
     DataType,
 } from 'sequelize-typescript';
-import { Evaluation } from './model.evaluation';
-import { Option } from './model.optionsquiz';
-import { IQuestion, IQuestioninscriptionSession } from 'src/interface/interface.cours';
+import { IQuestioninscriptionSession } from 'src/interface/interface.cours';
 import { table_prefix } from 'src/config/config.tablesname';
 import { Questionnaires } from './model.questionnaireoninscriptionsession';
+import { SessionSuivi } from './model.suivisession';
 
-@Table({ tableName: `${table_prefix}questions`, timestamps: true })
-export class QuestioninscriptionSession extends Model<IQuestioninscriptionSession> {
+@Table({ tableName: `${table_prefix}questionssurvey`, timestamps: true })
+export class Survey extends Model<IQuestioninscriptionSession> {
     @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
     id: number;
 
-    @ForeignKey(() => Questionnaires)
+    @ForeignKey(() => SessionSuivi)
     @Column({ type: DataType.INTEGER })
-    questionnaireId: number;
+    id_session: number;
 
-    @BelongsTo(() => Questionnaires)
-    questionnaire: Questionnaires;
+    @Column({ type: DataType.TEXT, allowNull: true })
+    description?: string;
 
-    @Column({ type: DataType.STRING, allowNull: false })
-    texte: string;
+    @HasMany(() => Questionnaires)
+    Questionnaires: Questionnaires[];
 
-    @HasMany(() => Option)
-    options: Option[];
+    @Column({ type: DataType.INTEGER, allowNull: true })
+    created_by: number;
 }

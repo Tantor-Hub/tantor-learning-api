@@ -32,6 +32,12 @@ export class Payement extends Model<IPayemenMethode> {
     @Column(DataType.INTEGER)
     id: number;
 
+    @Column({
+        type: DataType.STRING,
+        allowNull: true,
+    })
+    id_stripe_payment: string;
+
     @ForeignKey(() => Users)
     @Column({
         type: DataType.INTEGER,
@@ -92,7 +98,7 @@ export class Payement extends Model<IPayemenMethode> {
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        defaultValue: 1, // 1 paid, 0 not paid
+        defaultValue: 0, // 1 paid, 0 not paid
     })
     status: number;
 
