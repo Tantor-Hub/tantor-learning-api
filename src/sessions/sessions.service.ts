@@ -201,9 +201,7 @@ export class SessionsService {
             await payment.save();
             this.hasSessionStudentModel.update({
                 id_payement: payment.id
-            }, {
-                where: { id: payment.id_session_student }
-            })
+            }, { where: { id: payment.id_session_student } });
             return Responder({ status: HttpStatusCode.Ok, data: payment });
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
@@ -974,7 +972,8 @@ export class SessionsService {
                         id_category,
                         id_controleur,
                         id_superviseur: [id_superviseur ?? 0],
-                        prix: prix,
+                        prix: this.allServices.calcTotalAmount(prix as number),
+                        initial_price: prix as number,
                         type_formation,
                         id_formation,
                         nb_places,

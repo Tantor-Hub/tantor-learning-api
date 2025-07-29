@@ -74,6 +74,9 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column(DataType.FLOAT)
     prix?: number;
 
+    @Column(DataType.FLOAT)
+    initial_price?: number;
+
     @Column({ type: DataType.FLOAT, defaultValue: 1, allowNull: true })
     status?: number;
 
