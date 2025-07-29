@@ -249,7 +249,6 @@ export class AllSercices {
     calcTotalAmount(amount: number): number {
         const pourcentage = this.stripeCommission; // 1.4%
         const fixe = this.stripeCommissionFixed; // 10 centimes
-
         const frais = ((amount * pourcentage) + fixe) + amount;
         return parseFloat(frais.toFixed(2)); // arrondi à 2 décimales
     }
