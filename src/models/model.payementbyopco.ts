@@ -44,9 +44,19 @@ export class Payementopco extends Model<IPayementopco> {
     @ForeignKey(() => StagiaireHasSession)
     id_session_student: number;
 
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+        defaultValue: 1, // 1 paid, 0 not paid
+    })
+    status: number;
+
     @BelongsTo(() => Users)
     Student: Users;
 
     @BelongsTo(() => SessionSuivi)
-    Session: SessionSuivi;
+    Formation: SessionSuivi;
+
+    @BelongsTo(() => StagiaireHasSession)
+    Session: StagiaireHasSession;
 }

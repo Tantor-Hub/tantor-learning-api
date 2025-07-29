@@ -178,10 +178,38 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
+    async validatePayment(id_payment: number, user: IJwtSignin): Promise<ResponseServer> {
+        try {
+            const payment = await this.payementModel.findOne({
+                where: { id: id_payment },
+                // include: [
+                //     {
+                //         model: Users,
+                //         required: true,
+                //         attributes: ['id', 'fs_name', 'ls_name', 'email']
+                //     },
+                //     {
+                //         model: SessionSuivi,
+                //         required: true,
+                //         attributes: ['id', 'title', 'description']
+                //     }
+                // ]
+            });
+            if (!payment) return Responder({ status: HttpStatusCode.NotFound, data: "Payment not found or already validated" });
+            if (payment.status === 1) return Responder({ status: HttpStatusCode.BadRequest, data: "Payment already validated" });
+            payment.status = 1;
+            await payment.save();
+
+            return Responder({ status: HttpStatusCode.Ok, data: payment });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async getPaymentsAll(user: IJwtSignin): Promise<ResponseServer> {
         try {
             const payments_cards = await this.payementModel.findAll({
                 where: { status: 1 },
+                subQuery: false,
                 include: [
                     {
                         model: Users,
@@ -191,12 +219,13 @@ export class SessionsService {
                     {
                         model: SessionSuivi,
                         required: true,
-                        attributes: ['id', 'title', 'description']
+                        attributes: ['id', 'designation', 'description']
                     }
                 ]
             });
             const payments_opco = await this.payementModel.findAll({
                 where: { status: 1 },
+                subQuery: false,
                 include: [
                     {
                         model: Users,
@@ -206,7 +235,7 @@ export class SessionsService {
                     {
                         model: SessionSuivi,
                         required: true,
-                        attributes: ['id', 'title', 'description']
+                        attributes: ['id', 'designation', 'description']
                     }
                 ]
             });

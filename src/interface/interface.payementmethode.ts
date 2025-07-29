@@ -22,5 +22,6 @@ export interface IPayementopco extends IGlobale {
     telephone_responsable?: string;
     email_responsable?: string;
     id_user: number;
+    status?: number;
     id_session?: number;
 }

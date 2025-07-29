@@ -52,6 +52,11 @@ export class SessionsController {
     async getPaymentsListAll(@User() user: IJwtSignin) {
         return this.sessionsService.getPaymentsAll(user);
     }
+    @Put('session/payment/validate/:idpayment')
+    @UseGuards(JwtAuthGuardAsSuperviseur)
+    async validatePayment(@Param('idpayment', ParseIntPipe) idpayment: number, @User() user: IJwtSignin) {
+        return this.sessionsService.validatePayment(idpayment, user);
+    }
     @Put('session/document/before')
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     @UseGuards(JwtAuthGuardAsStudent)
