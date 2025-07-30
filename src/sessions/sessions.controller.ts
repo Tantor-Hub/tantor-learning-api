@@ -23,6 +23,7 @@ import { DOCUMENT_KEYS_PHASES, DocumentKeyEnum } from 'src/utils/utiles.document
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { PayementOpcoDto } from './dto/payement-method-opco.dto';
+import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -259,6 +260,11 @@ export class SessionsController {
     @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async addNewSession(@Body() createSessionDto: CreateSessionDto) {
         return this.sessionsService.createSession({ ...createSessionDto })
+    }
+    @Post('session/create')
+    @UseGuards(JwtAuthGuardAsSuperviseur)
+    async createSession(@Body() createSessionDto: CreateSessionFullStepDto, @User() user: IJwtSignin) {
+        return this.sessionsService.createSessionFullStep({ ...createSessionDto }, user)
     }
     @Get(":idsession/:idcours/seances")
     @UseGuards(JwtAuthGuard)

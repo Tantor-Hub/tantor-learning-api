@@ -43,6 +43,10 @@ import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsessi
 import { Options } from 'src/models/model.optionquestionnaires';
 import { Payementopco } from 'src/models/model.payementbyopco';
 import { PayementOpcoDto } from './dto/payement-method-opco.dto';
+import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
+import { Sequelize } from 'sequelize-typescript';
+import { Inject } from '@nestjs/common';
+import { IInternalResponse } from 'src/interface/interface.internalresponse';
 
 @Injectable()
 export class SessionsService {
@@ -103,8 +107,44 @@ export class SessionsService {
         private readonly optionsModel: typeof Options,
 
         private readonly allServices: AllSercices,
-        private readonly serviceMail: MailService
+        private readonly serviceMail: MailService,
+        @Inject(Sequelize) private readonly sequelize: Sequelize
     ) { }
+    async createSessionFullStep(createSessionDto: CreateSessionFullStepDto, user: IJwtSignin): Promise<ResponseServer> {
+        const transaction = await this.sequelize.transaction();
+        try {
+            const { id_formation, description, date_session_debut, date_session_fin, nb_places, payment_method, required_documents, text_reglement, questions } = createSessionDto;
+            return this.handleCreationOfSession(createSessionDto, transaction, user).then(async (session) => {
+                if (session.code === HttpStatusCode.Created) {
+                    const { id } = session.data as SessionSuivi;
+                    return this.handleCreationOfSurvey({ questions, id_session: id }, user, transaction)
+                        .then(async (survey) => {
+                            if (survey.code === HttpStatusCode.Created) {
+                                await transaction.commit();
+                                return Responder({ status: HttpStatusCode.Created, data: { session: session.data, survey: survey.data } });
+                            } else {
+                                await transaction.rollback();
+                                return Responder({ status: survey.code, data: survey.data });
+                            }
+                        })
+                        .catch(async (error) => {
+                            await transaction.rollback();
+                            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+                        });
+                } else {
+                    await transaction.rollback();
+                    return Responder({ status: session.code, data: session.data });
+                }
+            })
+                .catch(async (error) => {
+                    await transaction.rollback();
+                    return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+                });
+        } catch (error) {
+            await transaction.rollback();
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async deleteSurveyById(id: number): Promise<ResponseServer> {
         try {
             const survey = await this.surveyModel.findByPk(id);
@@ -140,43 +180,13 @@ export class SessionsService {
         }
     }
     async addSurveyToSession(createSurveyDto: CreateSurveyDto, user: IJwtSignin): Promise<ResponseServer> {
-        const { questions } = createSurveyDto;
-        try {
-            return this.surveyModel.create({ ...createSurveyDto, created_by: user.id_user })
-                .then(async (survey) => {
-                    if (survey instanceof Survey) {
-                        const { id } = survey.toJSON();
-                        log(`Survey created with ID: ${id}`);
-                        for (const question of questions) {
-                            const { is_required, options, titre, type_question, description } = question
-                            const qst = await this.questionModel.create({
-                                titre,
-                                is_required,
-                                id_questionnaire: id,
-                                type: type_question,
-                                description,
-                            })
-                            if (qst instanceof Questionnaires) {
-                                for (const option of options) {
-                                    await this.optionsModel.create({
-                                        text: option.text,
-                                        is_correct: option.is_correct,
-                                        id_question: qst.id
-                                    });
-                                }
-                            }
-                        }
-                        return Responder({ status: HttpStatusCode.Created, data: survey })
-                    } else {
-                        return Responder({ status: HttpStatusCode.InternalServerError, })
-                    }
-                })
-                .catch(err => {
-                    return Responder({ status: HttpStatusCode.InternalServerError, data: err });
-                });
-        } catch (error) {
-            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
-        }
+        return this.handleCreationOfSurvey(createSurveyDto, user, null)
+            .then((survey) => {
+                return Responder({ status: HttpStatusCode.Created, data: survey });
+            })
+            .catch((error) => {
+                return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+            });
     }
     async validatePayment(id_payment: number, user: IJwtSignin): Promise<ResponseServer> {
         try {
@@ -873,6 +883,174 @@ export class SessionsService {
     async getListeActions(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesactions.length, list: typesactions } })
     }
+    async handleCreationOfSession(createSessionDto: any, transaction: any, user: IJwtSignin | null): Promise<IInternalResponse> {
+        const {
+            description,
+            date_session_debut,
+            date_session_fin,
+            id_superviseur,
+            id_formation,
+            id_controleur,
+            nb_places,
+        } = createSessionDto;
+
+        const form = await this.formationModel.findOne({
+            where: { status: 1, id: id_formation },
+        });
+
+        if (!(form instanceof Formations)) {
+            return {
+                code: HttpStatusCode.NotFound,
+                data: 'La formation ciblée na pas été retrouvée sur notre serveur !',
+            };
+        }
+
+        const s_on = this.allServices.parseDate(date_session_debut as any);
+        const e_on = this.allServices.parseDate(date_session_fin as any);
+
+        const { code, data, message } = this.allServices.calcHoursBetweenDates(
+            { start: date_session_debut, end: date_session_fin },
+            true,
+        );
+        if (code !== 200) return { code: HttpStatusCode.BadRequest, data };
+
+        const designation_start = this.allServices.formatDate({ dateString: s_on as any });
+        const designation_end = this.allServices.formatDate({ dateString: e_on as any });
+        if (!designation_end || !designation_start)
+            return {
+                code: HttpStatusCode.BadRequest,
+                data: 'Date_start and Date_end must be type of date !',
+            };
+
+        const designation = this.allServices.createDesignationSessionName({
+            start: designation_start,
+            end: designation_end,
+        });
+
+        const uuid = this.allServices.generateUuid();
+
+        try {
+
+            const {
+                id_category,
+                sous_titre,
+                titre,
+                prix,
+                type_formation,
+            } = form.toJSON();
+
+            const formation = await this.sessionModel.create(
+                {
+                    description,
+                    duree: data as string,
+                    date_session_debut,
+                    date_session_fin,
+                    id_category,
+                    id_controleur,
+                    id_superviseur: [id_superviseur ?? 0],
+                    prix: this.allServices.calcTotalAmount(prix as number),
+                    initial_price: prix as number,
+                    type_formation,
+                    id_formation,
+                    // piece_jointe: null,
+                    nb_places,
+                    designation: designation.toUpperCase(),
+                    date_mise_a_jour: null,
+                    status: 1,
+                    uuid,
+                    createdBy: user?.id_user ?? id_superviseur ?? 0,
+                },
+                { transaction },
+            );
+
+            if (!(formation instanceof SessionSuivi)) {
+                return { code: HttpStatusCode.BadRequest, data: formation };
+            }
+
+            const { id } = formation?.toJSON();
+
+            if (!id_superviseur) {
+                return { code: HttpStatusCode.Created, data: formation };
+            }
+
+            Users.belongsToMany(Roles, { through: HasRoles, foreignKey: 'RoleId' });
+
+            const formateur = await this.usersModel.findOne({
+                include: [
+                    {
+                        model: Roles,
+                        required: true,
+                        where: { id: 3 },
+                    },
+                ],
+                where: { id: id_superviseur },
+            });
+
+            if (!formateur) {
+                return {
+                    code: HttpStatusCode.BadRequest,
+                    data: 'Les identifiants fournis du formateur sont incorrects [id_formateur]',
+                };
+            }
+
+            await this.hasSessionFormateurModel.create(
+                {
+                    SessionId: id as number,
+                    UserId: id_superviseur,
+                    is_complited: 0,
+                    status: 1,
+                },
+                { transaction },
+            );
+
+            return { code: HttpStatusCode.Created, data: formation };
+        } catch (err) {
+            log('Error while creating session', err);
+            return { code: HttpStatusCode.InternalServerError, data: err };
+        }
+    }
+    async handleCreationOfSurvey(createSurveyDto: CreateSurveyDto, user: IJwtSignin, transaction: any): Promise<IInternalResponse> {
+        const { questions } = createSurveyDto;
+
+        try {
+            const survey = await this.surveyModel.create({
+                ...createSurveyDto,
+                created_by: user.id_user,
+            }, { transaction });
+
+            if (!(survey instanceof Survey)) {
+                return { code: HttpStatusCode.InternalServerError, data: "Échec de la création du questionnaire." };
+            }
+
+            const { id } = survey.toJSON();
+
+            for (const question of questions) {
+                const { is_required, options, titre, type_question, description } = question;
+
+                const qst = await this.questionModel.create({
+                    titre,
+                    is_required,
+                    id_questionnaire: id,
+                    type: type_question,
+                    description,
+                }, { transaction });
+
+                if (qst instanceof Questionnaires) {
+                    for (const option of options) {
+                        await this.optionsModel.create({
+                            text: option.text,
+                            is_correct: option.is_correct,
+                            id_question: qst.id,
+                        }, { transaction });
+                    }
+                }
+            }
+
+            return { code: HttpStatusCode.Created, data: survey };
+        } catch (error) {
+            return { code: HttpStatusCode.InternalServerError, data: error };
+        }
+    }
     async createSeance(addSeanceSessionDto: AddSeanceSessionDto): Promise<ResponseServer> {
         const { id_session, piece_jointe, seance_date_on, type_seance, id_formation, duree, id_cours } = addSeanceSessionDto
         try {
@@ -942,91 +1120,17 @@ export class SessionsService {
         }
     }
     async createSession(createSessionDto: CreateSessionDto): Promise<ResponseServer> {
-
-        const { description, date_session_debut, date_session_fin, id_superviseur, id_formation, id_controleur, nb_places } = createSessionDto
-        const s_on = this.allServices.parseDate(date_session_debut as any)
-        const e_on = this.allServices.parseDate(date_session_fin as any)
-
-        const { code, data, message } = this.allServices.calcHoursBetweenDates({ start: date_session_debut, end: date_session_fin }, true)
-        if (code !== 200) return Responder({ status: HttpStatusCode.BadRequest, data: data })
-        const designation_start = this.allServices.formatDate({ dateString: s_on as any })
-        const designation_end = this.allServices.formatDate({ dateString: e_on as any })
-        if (!designation_end || !designation_start) return Responder({ status: HttpStatusCode.BadRequest, data: "Date_start and Date_end must be type of date !" })
-        const designation = this.allServices.createDesignationSessionName({ start: designation_start, end: designation_end })
-        const uuid = this.allServices.generateUuid()
-
-        return this.formationModel.findOne({
-            where: {
-                status: 1,
-                id: id_formation
-            }
-        })
-            .then(form => {
-                if (form instanceof Formations) {
-                    const { id_category, sous_titre, titre, prix, type_formation } = form.toJSON()
-                    return this.sessionModel.create({
-                        description: description,
-                        duree: data as string,
-                        date_session_debut: date_session_debut,
-                        date_session_fin: date_session_fin,
-                        id_category,
-                        id_controleur,
-                        id_superviseur: [id_superviseur ?? 0],
-                        prix: this.allServices.calcTotalAmount(prix as number),
-                        initial_price: prix as number,
-                        type_formation,
-                        id_formation,
-                        nb_places,
-                        designation: designation.toUpperCase(),
-                        date_mise_a_jour: null,
-                        status: 1,
-                        uuid: uuid
-                    })
-                        .then(async formation => {
-                            if (formation instanceof SessionSuivi) {
-                                const { id } = formation.toJSON()
-                                if (id_superviseur) {
-                                    Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
-                                    return this.usersModel.findOne({
-                                        include: [
-                                            {
-                                                model: Roles,
-                                                required: true,
-                                                where: {
-                                                    id: 3
-                                                }
-                                            }
-                                        ],
-                                        where: {
-                                            id: id_superviseur
-                                        }
-                                    })
-                                        .then(async (formateur) => {
-                                            return this.hasSessionFormateurModel.create({
-                                                SessionId: id as number,
-                                                UserId: id_superviseur,
-                                                is_complited: 0,
-                                                status: 1
-                                            })
-                                                .then(_ => {
-                                                    return Responder({ status: HttpStatusCode.Created, data: formation })
-                                                })
-                                                .catch(err => Responder({ status: HttpStatusCode.BadRequest, data: "Les identifiants fournis du formateur sont incorrectes [id_formateur]" }))
-                                        })
-                                        .catch(err => Responder({ status: HttpStatusCode.BadRequest, data: "Les identifiants fournis du formateur sont incorrectes [id_formateur]" }))
-                                } else {
-                                    return Responder({ status: HttpStatusCode.Created, data: formation })
-                                }
-                            } else {
-                                return Responder({ status: HttpStatusCode.BadRequest, data: formation })
-                            }
-                        })
-                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        return this.handleCreationOfSession(createSessionDto, null, null)
+            .then(({ code, data }) => {
+                if (code === HttpStatusCode.Created) {
+                    return Responder({ status: code, data })
                 } else {
-                    return Responder({ status: HttpStatusCode.NotFound, data: "La formation ciblée na pas été retrouvé sur notre serveur !" })
+                    return Responder({ status: code, data })
                 }
             })
-            .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            .catch(err => {
+                return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+            })
     }
     async listAllSessionByKeyword(user: IJwtSignin, keyword: string): Promise<ResponseServer> {
 

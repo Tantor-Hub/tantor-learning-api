@@ -4,6 +4,8 @@ import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
 import { Formations } from './model.formations';
+import { roiplaceholder } from 'src/utils/utiles.documentskeyenum';
+import { PaymentMethod } from 'src/sessions/dto/create-sesion-fulldoc.dto';
 
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
@@ -29,6 +31,12 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @Column(DataType.STRING)
     duree?: string;
+
+    @Column({ type: DataType.TEXT, allowNull: true, defaultValue: roiplaceholder })
+    text_reglement?: string;
+
+    @Column({ type: DataType.ENUM(...Object.values(PaymentMethod)), allowNull: false, defaultValue: PaymentMethod.CARD })
+    payment_method: string;
 
     @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
     nb_places: number;

@@ -17,8 +17,8 @@ export class AllSercices {
     private stripeCommissionFixed: number;
     constructor(private readonly configService: ConfigService) {
         this.stripe = new Stripe(this.configService.get<string>('STRIPE_SECRET_KEY') || '');
-        this.stripeCommission = this.configService.get<number>('STRIPE_COMMISSION') || 0;
-        this.stripeCommissionFixed = this.configService.get<number>('STRIPE_COMMISSION_FIXED') || 0;
+        this.stripeCommission = parseFloat(this.configService.get<string>('STRIPE_COMMISSION') || '0');
+        this.stripeCommissionFixed = parseFloat(this.configService.get<string>('STRIPE_COMMISSION_FIXED') || '0');
     }
 
     formatDate({ dateString }: { dateString: string | Date }): string | any {
@@ -247,9 +247,9 @@ export class AllSercices {
         }
     };
     calcTotalAmount(amount: number): number {
-        const pourcentage = this.stripeCommission; // 1.4%
-        const fixe = this.stripeCommissionFixed; // 10 centimes
-        const frais = ((amount * pourcentage) + fixe) + amount;
-        return parseFloat(frais.toFixed(2)); // arrondi à 2 décimales
+        const pourcentage = (this.stripeCommission); // 1.4%
+        const fixe = (this.stripeCommissionFixed); // 10 centimes
+        const frais = ((amount * pourcentage) + fixe);
+        return (frais + amount); // arrondi à 2 décimales
     }
 }

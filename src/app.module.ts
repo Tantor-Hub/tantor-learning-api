@@ -78,7 +78,7 @@ import { Payementopco } from './models/model.payementbyopco';
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
         autoLoadModels: true,
-        synchronize: true,
+        synchronize: false,
         logging: false
       }),
     }),

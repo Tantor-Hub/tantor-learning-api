@@ -6,7 +6,7 @@ export class CreateSessionDto {
     designation?: string;
 
     @IsOptional()
-    @IsNumberString()
+    @IsNumber()
     id_controleur?: number;
 
     @IsUUID()
@@ -14,7 +14,7 @@ export class CreateSessionDto {
     uuid: string;
 
     @IsOptional()
-    @IsNumberString()
+    @IsNumber()
     id_superviseur?: number;
 
     @IsOptional()
@@ -29,13 +29,13 @@ export class CreateSessionDto {
     @IsOptional()
     payment_method: string;
 
-    @IsNumberString()
+    @IsNumber()
     id_formation: number;
 
-    @IsNumberString()
+    @IsNumber()
     nb_places: number;
 
-    @IsNumberString()
+    @IsNumber()
     @IsOptional()
     id_category: number;
 
@@ -54,6 +54,6 @@ export class CreateSessionDto {
     description: string;
 
     @IsOptional()
-    @IsNumberString()
+    @IsNumber()
     prix?: number;
 };
