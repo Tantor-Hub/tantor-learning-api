@@ -8,7 +8,6 @@ import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateu
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { MediasoupService } from '../services/service.mediasoup';
-import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { AddSeanceSessionDto } from './dto/add-seances.dto';
 import { AddHomeworkSessionDto } from './dto/add-homework.dto';
@@ -25,7 +24,6 @@ import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
 import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
-
 @Controller('sessions')
 export class SessionsController {
 
@@ -187,6 +185,11 @@ export class SessionsController {
     @UseGuards(JwtAuthGuardAsStudent)
     async getAllSessionsByOwner(@User() user: IJwtSignin,) {
         return this.sessionsService.listAllSessionsByOwn(user)
+    }
+    @Get('mylist/status/:status')
+    @UseGuards(JwtAuthGuardAsStudent)
+    async getAllSessionsByOwnerAndStatus(@User() user: IJwtSignin, @Param('status', ParseIntPipe) status: number) {
+        return this.sessionsService.listAllSessionsByOwnAndStatus(user, status);
     }
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)

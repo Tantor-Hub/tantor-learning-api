@@ -14,7 +14,6 @@ import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
 import { Categories } from 'src/models/model.categoriesformations';
 import { UpdateSessionDto } from './dto/update-session.dto';
-import { ApplySessionDto } from './dto/apply-tosesssion.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { typesprestations } from 'src/utils/utiles.typesprestation';
@@ -336,7 +335,7 @@ export class SessionsService {
             if (!session) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
 
             return this.payementModel.create({
-                id_session,
+                id_session: id_session as number,
                 id_session_student: session?.id as number,
                 id_user: student.id_user,
                 full_name,
@@ -591,6 +590,47 @@ export class SessionsService {
             })
             .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
     }
+    async listAllSessionsByOwnAndStatus(user: IJwtSignin, status: number): Promise<ResponseServer> {
+
+        const { id_user } = user
+        StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+        StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+        Formations.belongsTo(Categories, { foreignKey: "id_category" })
+
+        return this.hasSessionStudentModel.findAndCountAll({
+            include: [
+                {
+                    model: SessionSuivi,
+                    required: true,
+                },
+                {
+                    model: Formations,
+                    required: true,
+                    attributes: ['id', 'titre', 'sous_titre', 'description'],
+                    include: [
+                        // {
+                        //     model: Thematiques,
+                        //     required: true,
+                        //     attributes: ['id', 'thematic']
+                        // },
+                        // {
+                        //     model: Categories,
+                        //     required: true,
+                        //     attributes: ['id', 'category']
+                        // }
+                    ]
+                }
+            ],
+            where: {
+                status: status,
+                id_stagiaire: id_user
+            }
+        })
+            .then(({ count, rows }) => {
+                return Responder({ status: HttpStatusCode.Ok, data: { length: count, list: rows } })
+            })
+            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
+    }
     async listAllSessionsByOwn(user: IJwtSignin): Promise<ResponseServer> {
 
         const { id_user } = user
@@ -623,7 +663,8 @@ export class SessionsService {
                 }
             ],
             where: {
-                id_stagiaire: id_user
+                id_stagiaire: id_user,
+                status: 1 // Assuming 1 means active sessions
             }
         })
             .then(({ count, rows }) => {
@@ -805,7 +846,7 @@ export class SessionsService {
             if (!roi_accepted) return Responder({ status: HttpStatusCode.BadRequest, data: "Vous devez accepter le ROI pour postuler à cette session !" })
             const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
             if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "Targeted user not found" });
-            const { phone, email, fs_name, ls_name } = student.toJSON();
+            const { fs_name, ls_name } = student.toJSON();
             const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
             const transaction = await this.sequelize.transaction();
 
@@ -838,6 +879,7 @@ export class SessionsService {
                                 id_stagiaire: id_user,
                                 date_mise_a_jour: this.allServices.nowDate(),
                                 id_formation,
+                                status: 0,
                             }
                         })
                             .then(async ([record, isNew]) => {

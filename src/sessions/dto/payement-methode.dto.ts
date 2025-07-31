@@ -4,10 +4,12 @@ export class CreatePaymentSessionDto {
 
     @IsNumber()
     @IsOptional()
-    id_user: string;
+    id_user?: number;
 
     @IsNumber()
-    id_session: number;
+    @IsOptional()
+    @IsNotEmpty()
+    id_session?: number;
 
     @IsString()
     @IsNotEmpty()

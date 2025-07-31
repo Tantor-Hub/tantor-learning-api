@@ -24,12 +24,34 @@ async function tantorAPP() {
     transform: true,
     whitelist: true,
     forbidNonWhitelisted: true,
+    transformOptions: {
+      enableImplicitConversion: true, // important si certains champs sont en string côté client
+    },
+    forbidUnknownValues: false, // essentiel pour nested
     validationError: {
       target: false,
       value: false,
     },
     exceptionFactory: (errors) => {
-      if (errors.length === 0) {
+      const formatErrors = (errs: any[], parentPath = '') => {
+        return errs.flatMap(err => {
+          const fieldPath = parentPath ? `${parentPath}.${err.property}` : err.property;
+
+          const thisLevelErrors = err.constraints
+            ? [{ field: fieldPath, errors: Object.values(err.constraints) }]
+            : [];
+
+          const childErrors = err.children?.length
+            ? formatErrors(err.children, fieldPath)
+            : [];
+
+          return [...thisLevelErrors, ...childErrors];
+        });
+      };
+
+      const formattedErrors = formatErrors(errors);
+
+      if (formattedErrors.length === 0) {
         return new NotFoundException({
           ...Responder({
             status: HttpStatusCode.NotFound,
@@ -40,10 +62,8 @@ async function tantorAPP() {
 
       return new BadRequestException({
         ...Responder({
-          status: HttpStatusCode.BadRequest, data: errors.map(err => ({
-            field: err.property,
-            errors: Object.values(err.constraints || {})
-          }))
+          status: HttpStatusCode.BadRequest,
+          data: formattedErrors
         })
       });
     }

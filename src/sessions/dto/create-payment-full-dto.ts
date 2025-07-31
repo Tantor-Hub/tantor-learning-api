@@ -6,6 +6,7 @@ import {
     IsOptional,
     ValidateNested,
     ValidateIf,
+    IsDefined,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod } from './create-sesion-fulldoc.dto';
@@ -13,23 +14,23 @@ import { CreatePaymentSessionDto } from './payement-methode.dto';
 import { CpfPaymentDto, PayementOpcoDto } from './payement-method-opco.dto';
 
 export class PaymentDto {
-    @ValidateIf((o) => o.method === PaymentMethod.CARD)
+    @IsEnum(PaymentMethod)
+    method: PaymentMethod;
+
+    @ValidateIf(o => o.method === PaymentMethod.CARD)
     @ValidateNested()
     @Type(() => CreatePaymentSessionDto)
     card?: CreatePaymentSessionDto;
 
-    @ValidateIf((o) => o.method === PaymentMethod.OPCO)
+    @ValidateIf(o => o.method === PaymentMethod.OPCO)
     @ValidateNested()
     @Type(() => PayementOpcoDto)
     opco?: PayementOpcoDto;
 
-    @ValidateIf((o) => o.method === PaymentMethod.CPF)
+    @ValidateIf(o => o.method === PaymentMethod.CPF)
     @ValidateNested()
     @Type(() => CpfPaymentDto)
     cpf?: CpfPaymentDto;
-
-    @IsEnum(PaymentMethod)
-    method: PaymentMethod;
 }
 
 export class CreateSessionPaiementDto {
@@ -41,6 +42,6 @@ export class CreateSessionPaiementDto {
 
     @ValidateNested()
     @Type(() => PaymentDto)
-    @IsObject()
+    // @IsObject()
     payment: PaymentDto;
 }

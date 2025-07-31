@@ -43,7 +43,7 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
     @ForeignKey(() => Payement)
     id_payement: number;
 
-    @Column({ type: DataType.INTEGER })
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
     status: number
 
     @BelongsTo(() => Payement)

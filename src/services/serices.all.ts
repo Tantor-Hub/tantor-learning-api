@@ -5,9 +5,7 @@ import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import { v4 as uuidv4 } from 'uuid';
 import * as moment from 'moment';
 import { userColumns } from 'src/interface/interface.usercolomuns';
-import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { literal, Op } from 'sequelize';
-import { log } from 'console';
 import Stripe from 'stripe';
 
 @Injectable()
