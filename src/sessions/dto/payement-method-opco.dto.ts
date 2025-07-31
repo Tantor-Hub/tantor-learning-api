@@ -32,3 +32,9 @@ export class PayementOpcoDto {
     @IsNumber()
     id_session: number; // ID de la session liée
 }
+
+export class CpfPaymentDto {
+    @IsNotEmpty()
+    @IsString()
+    full_name: string;
+}

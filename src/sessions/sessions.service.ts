@@ -42,11 +42,12 @@ import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
 import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
 import { Options } from 'src/models/model.optionquestionnaires';
 import { Payementopco } from 'src/models/model.payementbyopco';
-import { PayementOpcoDto } from './dto/payement-method-opco.dto';
+import { CpfPaymentDto, PayementOpcoDto } from './dto/payement-method-opco.dto';
 import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
 import { Sequelize } from 'sequelize-typescript';
 import { Inject } from '@nestjs/common';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
+import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
 
 @Injectable()
 export class SessionsService {
@@ -797,14 +798,16 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
-    async applyToSession(applySessionDto: ApplySessionDto, user: IJwtSignin): Promise<ResponseServer> {
-        const { id_session, id_formation, id_user: as_user_id } = applySessionDto;
+    async applyToSession(applySessionDto: CreateSessionPaiementDto, user: IJwtSignin): Promise<ResponseServer> {
+        const { id_session, payment, roi_accepted } = applySessionDto;
         const { id_user } = user;
         try {
+            if (!roi_accepted) return Responder({ status: HttpStatusCode.BadRequest, data: "Vous devez accepter le ROI pour postuler à cette session !" })
             const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
-            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "La session ciblée n'a pas été retrouvé !" });
+            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "Targeted user not found" });
             const { phone, email, fs_name, ls_name } = student.toJSON();
             const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
+            const transaction = await this.sequelize.transaction();
 
             SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
             return this.sessionModel.findOne({
@@ -821,7 +824,7 @@ export class SessionsService {
                 .then(inst => {
                     if (inst instanceof SessionSuivi) {
 
-                        const { id_formation, id_category, designation, Formation } = inst.toJSON() as any
+                        const { id_formation, id_category, designation, Formation, prix } = inst.toJSON() as any
                         const { phone, email } = student.toJSON();
                         const { titre } = Formation
 
@@ -837,21 +840,21 @@ export class SessionsService {
                                 id_formation,
                             }
                         })
-                            .then(([record, isNew]) => {
+                            .then(async ([record, isNew]) => {
                                 if (isNew) {
                                     const { id } = record?.toJSON()
                                     this.apdocsModel.create({
                                         session_id: id as number,
                                         user_id: id_user,
-                                    })
+                                    }, { transaction })
                                     this.adocsModel.create({
                                         session_id: id as number,
                                         user_id: id_user,
-                                    })
+                                    }, { transaction })
                                     this.pdocsModel.create({
                                         session_id: id as number,
                                         user_id: id_user,
-                                    })
+                                    }, { transaction })
                                     this.serviceMail.onWelcomeToSessionStudent({
                                         to: email,
                                         formation_name: titre,
@@ -859,7 +862,43 @@ export class SessionsService {
                                         session_name: designation,
                                         asAttachement: true
                                     })
-                                    return Responder({ status: HttpStatusCode.Created, data: record })
+                                    switch (payment['method']) {
+                                        case 'CARD':
+                                            const card = payment.card as CreatePaymentSessionDto;
+                                            this.payementModel.create({
+                                                id_session: id_session as number,
+                                                id_session_student: id,
+                                                id_user: id_user,
+                                                full_name: fullname,
+                                                card_number: card.card_number,
+                                                amount: prix as number,
+                                                month: card.month,
+                                                year: card.year,
+                                                cvv: card.cvv,
+                                                id_stripe_payment: card.id_stripe_payment
+                                            }, { transaction })
+                                            return Responder({ status: HttpStatusCode.Created, data: record })
+                                        case 'OPCO':
+                                            const opco = payment.opco as PayementOpcoDto;
+                                            this.payementOpcoModel.create({
+                                                id_session: id_session as number,
+                                                id_session_student: id as number,
+                                                id_user: id_user,
+                                                siren: opco.siren,
+                                                nom_opco: opco.nom_opco,
+                                                nom_entreprise: opco.nom_entreprise,
+                                                nom_responsable: opco.nom_responsable,
+                                                telephone_responsable: opco.telephone_responsable,
+                                                email_responsable: opco.email_responsable,
+                                            }, { transaction })
+                                            return Responder({ status: HttpStatusCode.Created, data: record })
+                                        case 'CPF':
+                                            const cpf = payment.cpf as CpfPaymentDto;
+                                            return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement CPF n'est pas en prise en charge" })
+                                        default:
+                                            await transaction.rollback();
+                                            return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement non prise en charge" })
+                                    }
                                 } else {
                                     return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
                                 }
@@ -933,8 +972,6 @@ export class SessionsService {
 
             const {
                 id_category,
-                sous_titre,
-                titre,
                 prix,
                 type_formation,
             } = form.toJSON();

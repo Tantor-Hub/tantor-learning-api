@@ -24,6 +24,7 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
+import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
 
 @Controller('sessions')
 export class SessionsController {
@@ -189,7 +190,7 @@ export class SessionsController {
     }
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)
-    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: ApplySessionDto) {
+    async applyToSession(@User() user: IJwtSignin, @Body() applySessionDto: CreateSessionPaiementDto) {
         return this.sessionsService.applyToSession(applySessionDto, user)
     }
     @Get('listprestations')
