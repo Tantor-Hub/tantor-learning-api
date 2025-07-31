@@ -1,12 +1,9 @@
 import {
     IsBoolean,
     IsEnum,
-    IsNotEmpty,
     IsNumber,
     IsObject,
     IsOptional,
-    IsString,
-    IsEmail,
     ValidateNested,
     ValidateIf,
 } from 'class-validator';
@@ -19,19 +16,16 @@ export class PaymentDto {
     @ValidateIf((o) => o.method === PaymentMethod.CARD)
     @ValidateNested()
     @Type(() => CreatePaymentSessionDto)
-    @IsOptional()
     card?: CreatePaymentSessionDto;
 
     @ValidateIf((o) => o.method === PaymentMethod.OPCO)
     @ValidateNested()
     @Type(() => PayementOpcoDto)
-    @IsOptional()
     opco?: PayementOpcoDto;
 
     @ValidateIf((o) => o.method === PaymentMethod.CPF)
     @ValidateNested()
     @Type(() => CpfPaymentDto)
-    @IsOptional()
     cpf?: CpfPaymentDto;
 
     @IsEnum(PaymentMethod)

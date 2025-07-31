@@ -842,6 +842,10 @@ export class SessionsService {
                         })
                             .then(async ([record, isNew]) => {
                                 if (isNew) {
+                                    if (inst.nb_places_disponible <= 0) {
+                                        await transaction.rollback();
+                                        return Responder({ status: HttpStatusCode.Forbidden, data: "Il n'y a plus de place disponible pour cette session !" })
+                                    }
                                     const { id } = record?.toJSON()
                                     this.apdocsModel.create({
                                         session_id: id as number,
@@ -930,6 +934,7 @@ export class SessionsService {
             id_superviseur,
             id_formation,
             id_controleur,
+            text_reglement,
             nb_places,
         } = createSessionDto;
 
@@ -976,27 +981,26 @@ export class SessionsService {
                 type_formation,
             } = form.toJSON();
 
-            const formation = await this.sessionModel.create(
-                {
-                    description,
-                    duree: data as string,
-                    date_session_debut,
-                    date_session_fin,
-                    id_category,
-                    id_controleur,
-                    id_superviseur: [id_superviseur ?? 0],
-                    prix: this.allServices.calcTotalAmount(prix as number),
-                    initial_price: prix as number,
-                    type_formation,
-                    id_formation,
-                    // piece_jointe: null,
-                    nb_places,
-                    designation: designation.toUpperCase(),
-                    date_mise_a_jour: null,
-                    status: 1,
-                    uuid,
-                    createdBy: user?.id_user ?? id_superviseur ?? 0,
-                },
+            const formation = await this.sessionModel.create({
+                description,
+                duree: data as string,
+                date_session_debut,
+                date_session_fin,
+                id_category,
+                id_controleur,
+                text_reglement,
+                id_superviseur: [id_superviseur ?? 0],
+                prix: this.allServices.calcTotalAmount(prix as number),
+                initial_price: prix as number,
+                type_formation,
+                id_formation,
+                nb_places,
+                designation: designation.toUpperCase(),
+                date_mise_a_jour: null,
+                status: 1,
+                uuid,
+                createdBy: user?.id_user ?? id_superviseur ?? 0,
+            },
                 { transaction },
             );
 

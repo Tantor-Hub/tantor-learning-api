@@ -22,6 +22,12 @@ async function tantorAPP() {
   app.setGlobalPrefix('/api/');
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    validationError: {
+      target: false,
+      value: false,
+    },
     exceptionFactory: (errors) => {
       if (errors.length === 0) {
         return new NotFoundException({
@@ -42,7 +48,7 @@ async function tantorAPP() {
       });
     }
   }));
-  
+
   const mediasoupService = app.get(MediasoupService);
   await mediasoupService.init();
   app.useGlobalInterceptors(new ResponseInterceptor());

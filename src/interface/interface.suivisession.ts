@@ -9,6 +9,8 @@ export interface ISessionSuivi extends IGlobale {
     id_category?: number;
     progression?: number;
     nb_places?: number;
+    nb_places_disponible?: number;
+    text_reglement?: string;
     initial_price?: number;
 
     id_controleur?: number;

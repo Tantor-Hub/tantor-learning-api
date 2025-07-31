@@ -30,6 +30,7 @@ export class PayementOpcoDto {
     id_user: number; // ou number si tu utilises des IDs numériques
 
     @IsNumber()
+    @IsOptional()
     id_session: number; // ID de la session liée
 }
 
