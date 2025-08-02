@@ -31,5 +31,6 @@ export class CreatePaymentSessionDto {
     cvv: number;
 
     @IsString()
-    id_stripe_payment: string; // Optional field for Stripe payment ID
+    // Stripe payment ID
+    id_stripe_payment: string; 
 }

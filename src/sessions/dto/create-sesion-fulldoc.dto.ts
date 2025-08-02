@@ -51,7 +51,6 @@ export enum PaymentMethod {
     CPF = 'CPF',
     CARD = 'CARD'
 }
-
 export class CreateSessionFullStepDto {
     @IsInt()
     id_formation: number;
@@ -71,10 +70,12 @@ export class CreateSessionFullStepDto {
     @Max(1000)
     nb_places: number;
 
+    @IsArray()
     @IsEnum(PaymentMethod, {
-        message: 'La méthode de paiement doit être OPCO, CPF ou CARD'
+        each: true,
+        message: 'Chaque méthode de paiement doit être OPCO, CPF ou CARD',
     })
-    payment_method: PaymentMethod;
+    payment_methods: PaymentMethod[];
 
     @IsArray()
     // @IsEnum(RequiredDocument, {

@@ -47,6 +47,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { Inject } from '@nestjs/common';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
+import { RequiredDocument } from 'src/utils/utiles.documentskeyenum';
 
 @Injectable()
 export class SessionsService {
@@ -113,7 +114,7 @@ export class SessionsService {
     async createSessionFullStep(createSessionDto: CreateSessionFullStepDto, user: IJwtSignin): Promise<ResponseServer> {
         const transaction = await this.sequelize.transaction();
         try {
-            const { id_formation, description, date_session_debut, date_session_fin, nb_places, payment_method, required_documents, text_reglement, questions } = createSessionDto;
+            const { questions } = createSessionDto;
             return this.handleCreationOfSession(createSessionDto, transaction, user).then(async (session) => {
                 if (session.code === HttpStatusCode.Created) {
                     const { id } = session.data as SessionSuivi;
@@ -748,6 +749,22 @@ export class SessionsService {
                         attributes: ['id', 'titre', 'sous_titre', 'description']
                     },
                     {
+                        model: Survey,
+                        required: true,
+                        include: [
+                            {
+                                model: Questionnaires,
+                                required: true,
+                                include: [
+                                    {
+                                        model: Options,
+                                        required: false
+                                    }
+                                ]
+                            }
+                        ],
+                    },
+                    {
                         model: Users,
                         required: false,
                         attributes: ['id', 'fs_name', 'ls_name', 'email']
@@ -977,7 +994,9 @@ export class SessionsService {
             id_formation,
             id_controleur,
             text_reglement,
+            required_documents,
             nb_places,
+            payment_methods
         } = createSessionDto;
 
         const form = await this.formationModel.findOne({
@@ -1035,7 +1054,9 @@ export class SessionsService {
                 prix: this.allServices.calcTotalAmount(prix as number),
                 initial_price: prix as number,
                 type_formation,
+                required_documents: required_documents ?? [...Object.values(RequiredDocument)],
                 id_formation,
+                payment_methods,
                 nb_places,
                 designation: designation.toUpperCase(),
                 date_mise_a_jour: null,

@@ -29,4 +29,9 @@ export class Survey extends Model<IQuestioninscriptionSession> {
 
     @Column({ type: DataType.INTEGER, allowNull: true })
     created_by: number;
+
+    @BelongsTo(() => SessionSuivi, {
+        onDelete: 'CASCADE',
+    })
+    Session: SessionSuivi;
 }

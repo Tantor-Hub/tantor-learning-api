@@ -1,11 +1,11 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
 import { Formations } from './model.formations';
-import { roiplaceholder } from 'src/utils/utiles.documentskeyenum';
-import { PaymentMethod } from 'src/sessions/dto/create-sesion-fulldoc.dto';
+import { RequiredDocument, roiplaceholder } from 'src/utils/utiles.documentskeyenum';
+import { Survey } from './model.questionspourquestionnaireinscription';
 
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
@@ -21,7 +21,8 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @Column({ type: DataType.INTEGER, allowNull: true })
     @ForeignKey(() => Users)
-    createdBy?: number; // id formateur ou superviseur dans le cas d'une session de suivi créée par un formateur ou un superviseur
+    // id formateur ou superviseur dans le cas d'une session de suivi créée par un formateur ou un superviseur
+    createdBy?: number;
 
     @Column({ type: DataType.ARRAY(DataType.INTEGER), allowNull: true })
     id_superviseur?: number[];
@@ -35,8 +36,19 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column({ type: DataType.TEXT, allowNull: true, defaultValue: roiplaceholder })
     text_reglement?: string;
 
-    @Column({ type: DataType.ENUM(...Object.values(PaymentMethod)), allowNull: false, defaultValue: PaymentMethod.CARD })
-    payment_method: string;
+    @Column({
+        type: DataType.ARRAY(DataType.STRING),
+        allowNull: false,
+        defaultValue: ['CARD'],
+    })
+    payment_methods: string[];
+
+    @Column({
+        type: DataType.ARRAY(DataType.STRING),
+        allowNull: false,
+        defaultValue: [...Object.values(RequiredDocument)],
+    })
+    required_documents: string[];
 
     @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
     nb_places: number;
@@ -93,4 +105,7 @@ export class SessionSuivi extends Model<ISessionSuivi> {
 
     @BelongsTo(() => Users)
     Creator: Users;
+
+    @HasMany(() => Survey)
+    Surveys: Survey[];
 }

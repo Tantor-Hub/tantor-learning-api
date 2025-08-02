@@ -11,9 +11,11 @@ export interface ISessionSuivi extends IGlobale {
     nb_places?: number;
     nb_places_disponible?: number;
     text_reglement?: string;
+    payment_methods: string[];
     initial_price?: number;
 
     id_controleur?: number;
+    required_documents?: string[];
     id_superviseur: number[];
     date_mise_a_jour?: Date | string | any;
     date_session_debut: Date | string;
