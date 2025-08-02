@@ -11,3 +11,10 @@ export interface IStagiaireHasSessionSuiivi extends IGlobale {
     is_started?: number // 1: yes 0 otherWhise
     id_payement?: number;
 }
+
+export interface ISurveyResponse extends IGlobale {
+    id?: number;
+    id_question: number;
+    answer: string;
+    id_stagiaire_session?: number;
+}

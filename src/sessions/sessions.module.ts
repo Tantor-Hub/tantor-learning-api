@@ -32,9 +32,10 @@ import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
 import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
 import { Options } from 'src/models/model.optionquestionnaires';
 import { Payementopco } from 'src/models/model.payementbyopco';
+import { SurveyResponse } from 'src/models/model.surveyresponses';
 @Module({
   imports: [
-    SequelizeModule.forFeature([UploadDocument, Payement, Payementopco, Questionnaires, Options, Survey, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork, Cours]),
+    SequelizeModule.forFeature([UploadDocument, Payement, SurveyResponse, Payementopco, Questionnaires, Options, Survey, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork, Cours]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

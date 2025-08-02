@@ -60,6 +60,7 @@ import { Questionnaires } from './models/model.questionnaireoninscriptionsession
 import { Options } from './models/model.optionquestionnaires';
 import { Survey } from './models/model.questionspourquestionnaireinscription';
 import { Payementopco } from './models/model.payementbyopco';
+import { SurveyResponse } from './models/model.surveyresponses';
 
 @Module({
   imports: [
@@ -117,7 +118,8 @@ import { Payementopco } from './models/model.payementbyopco';
       ApresFormationDocs,
       Survey,
       Questionnaires,
-      Options 
+      Options,
+      SurveyResponse
     ]),
     RolesModule,
     UsersModule,

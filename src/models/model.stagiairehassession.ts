@@ -1,10 +1,11 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
 import { IStagiaireHasSessionSuiivi } from 'src/interface/interface.stagiairehassession';
 import { SessionSuivi } from './model.suivisession';
 import { Payement } from './model.payementbycard';
 import { SeanceSessions } from './model.courshasseances';
+import { SurveyResponse } from './model.surveyresponses';
 
 @Table({ tableName: tables['statgiairehassession'], timestamps: true })
 export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
@@ -54,4 +55,7 @@ export class StagiaireHasSession extends Model<IStagiaireHasSessionSuiivi> {
 
     @BelongsTo(() => SessionSuivi)
     Session: Users;
+
+    @HasMany(() => SurveyResponse)
+    Responses: SurveyResponse[];
 }

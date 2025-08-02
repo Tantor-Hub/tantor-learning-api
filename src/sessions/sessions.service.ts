@@ -48,6 +48,8 @@ import { Inject } from '@nestjs/common';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
 import { RequiredDocument } from 'src/utils/utiles.documentskeyenum';
+import { SurveyResponse } from 'src/models/model.surveyresponses';
+import { ISurveyResponse } from 'src/interface/interface.stagiairehassession';
 
 @Injectable()
 export class SessionsService {
@@ -106,6 +108,9 @@ export class SessionsService {
 
         @InjectModel(Options)
         private readonly optionsModel: typeof Options,
+
+        @InjectModel(SurveyResponse)
+        private readonly surveyResponseModel: typeof SurveyResponse,
 
         private readonly allServices: AllSercices,
         private readonly serviceMail: MailService,
@@ -857,7 +862,7 @@ export class SessionsService {
         }
     }
     async applyToSession(applySessionDto: CreateSessionPaiementDto, user: IJwtSignin): Promise<ResponseServer> {
-        const { id_session, payment, roi_accepted } = applySessionDto;
+        const { id_session, payment, roi_accepted, responses_survey } = applySessionDto;
         const { id_user } = user;
         try {
             if (!roi_accepted) return Responder({ status: HttpStatusCode.BadRequest, data: "Vous devez accepter le ROI pour postuler à cette session !" })
@@ -906,6 +911,7 @@ export class SessionsService {
                                         return Responder({ status: HttpStatusCode.Forbidden, data: "Il n'y a plus de place disponible pour cette session !" })
                                     }
                                     const { id } = record?.toJSON()
+
                                     this.apdocsModel.create({
                                         session_id: id as number,
                                         user_id: id_user,
@@ -925,10 +931,16 @@ export class SessionsService {
                                         session_name: designation,
                                         asAttachement: true
                                     })
+                                    this.surveyResponseModel.bulkCreate(responses_survey.map((response: ISurveyResponse) => ({
+                                        id_question: response.id_question,
+                                        id_stagiaire_session: record.id as number,
+                                        id_user: id_user,
+                                        answer: response.answer,
+                                    })), { transaction })
                                     switch (payment['method']) {
                                         case 'CARD':
                                             const card = payment.card as CreatePaymentSessionDto;
-                                            this.payementModel.create({
+                                            await this.payementModel.create({
                                                 id_session: id_session as number,
                                                 id_session_student: id,
                                                 id_user: id_user,
@@ -943,7 +955,7 @@ export class SessionsService {
                                             return Responder({ status: HttpStatusCode.Created, data: record })
                                         case 'OPCO':
                                             const opco = payment.opco as PayementOpcoDto;
-                                            this.payementOpcoModel.create({
+                                            await this.payementOpcoModel.create({
                                                 id_session: id_session as number,
                                                 id_session_student: id as number,
                                                 id_user: id_user,
