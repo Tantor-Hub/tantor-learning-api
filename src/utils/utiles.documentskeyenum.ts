@@ -7,6 +7,12 @@ Renforcer la qualité de service : une meilleure compréhension des bonnes prati
 Favoriser l’autonomie : les stagiaires se sont montrés plus confiants et proactifs dans la mise en œuvre de leurs missions.
 
 Impacter positivement l’organisation : les compétences acquises ont été partagées en interne, générant un effet de levier sur l’ensemble de l’équipe.`
+
+export const StepsDocumentsSessionKeys: Record<string, string> = {
+    DURING: "DURING",
+    BEFORE: "BEFORE",
+    AFTER: "AFTER"
+}
 export const DocumentKeyEnum: Record<string, string> = {
     // Avant la formation
     CARTE_IDENTITE: "Carte d'identité",

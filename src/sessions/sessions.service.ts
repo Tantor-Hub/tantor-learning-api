@@ -263,7 +263,7 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
-    async uploadDocumentToSessionDTO(user: IJwtSignin, uploadDocumentDto: UploadDocumentToSessionDto): Promise<ResponseServer> {
+    async uploadDocumentToSessionDTO(user: IJwtSignin, uploadDocumentDto: UploadDocumentToSessionDto, group: string): Promise<ResponseServer> {
         const { id_session, key_document: document_type, description, document, piece_jointe } = uploadDocumentDto;
         try {
             const sess = await this.sessionModel.findOne({ where: { id: id_session } });
@@ -272,11 +272,12 @@ export class SessionsService {
             if (!userSession) return Responder({ status: HttpStatusCode.NotFound, data: "L'utilisateur ciblé n'a pas été retrouvé dans cette session !" });
 
             return this.documentModel.create({
-                id_session,
+                id_session: id_session as number,
                 id_student: user.id_user,
                 key_document: document_type,
                 document: document,
-                piece_jointe
+                piece_jointe,
+                group
             })
                 .then(doc => {
                     if (doc instanceof UploadDocument) {
@@ -419,71 +420,90 @@ export class SessionsService {
             })
             if (!session) return Responder({ status: HttpStatusCode.BadRequest, data: `The student is not associated to this session: ${idSession}` })
             const { id } = sessionStudent?.toJSON() as any
-            switch (group) {
-                case 'after':
-                    return this.apdocsModel.findOne({
-                        include: [
-                            'QuestionnaireSatisfactionDoc',
-                            'PaiementDoc',
-                            'DocumentsFinanceurDoc',
-                            'FicheControleFinaleDoc',
-                        ],
-                        where: {
-                            user_id: idStudent,
-                            session_id: id
-                        }
-                    })
-                        .then(pref => {
-                            if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
-                            else return Responder({ status: HttpStatusCode.Ok, data: {} })
-                        })
-                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-                    break;
+            return this.documentModel.findAll({
+                include: [
+                    {
+                        model: SessionSuivi,
+                        required: true,
+                        // attributes:
+                    },
+                    {
+                        model: Users,
+                        required: true,
+                        as: "Student",
+                        attributes: ['id', 'fs_name', 'ls_name', 'phone', 'email']
+                    }
+                ],
+                where: {
+                    group: String(group).toUpperCase(),
+                    id_student: idStudent,
+                    id_session: idSession
+                }
+            })
+                .then(pref => Responder({ status: HttpStatusCode.Ok, data: { length: pref.length, list: pref } }))
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            // switch (group) {
+            //     case 'after':
+            //         return this.documentModel.findAll({
+            //             include: [
+            //                 {
+            //                     model: StagiaireHasSession,
+            //                     required: true
+            //                 }
+            //             ],
+            //             where: {
+            //                 id_student: idStudent,
+            //                 id_session: id
+            //             }
+            //         })
+            //             .then(pref => Responder({ status: HttpStatusCode.Ok, data: { length: pref.length, list: pref } }))
+            //             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            //         break;
 
-                case 'before':
-                    return this.adocsModel.findOne({
-                        // include: [
-                        //     'QuestionnaireSatisfactionDoc',
-                        //     'PaiementDoc',
-                        //     'DocumentsFinanceurDoc',
-                        //     'FicheControleFinaleDoc',
-                        // ],
-                        where: {
-                            user_id: idStudent,
-                            session_id: id
-                        }
-                    })
-                        .then(pref => {
-                            if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
-                            else return Responder({ status: HttpStatusCode.Ok, data: {} })
-                        })
-                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-                    break;
+            //     case 'before':
+            //         return this.adocsModel.findOne({
+            //             // include: [
+            //             //     'QuestionnaireSatisfactionDoc',
+            //             //     'PaiementDoc',
+            //             //     'DocumentsFinanceurDoc',
+            //             //     'FicheControleFinaleDoc',
+            //             // ],
+            //             where: {
+            //                 user_id: idStudent,
+            //                 session_id: id
+            //             }
+            //         })
+            //             .then(pref => {
+            //                 if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
+            //                 else return Responder({ status: HttpStatusCode.Ok, data: {} })
+            //             })
+            //             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            //         break;
 
-                case 'during':
-                    return this.pdocsModel.findOne({
-                        // include: [
-                        //     'QuestionnaireSatisfactionDoc',
-                        //     'PaiementDoc',
-                        //     'DocumentsFinanceurDoc',
-                        //     'FicheControleFinaleDoc',
-                        // ],
-                        where: {
-                            user_id: idStudent,
-                            session_id: id
-                        }
-                    })
-                        .then(pref => {
-                            if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
-                            else return Responder({ status: HttpStatusCode.Ok, data: {} })
-                        })
-                        .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-                    break;
+            //     case 'during':
+            //         return this.pdocsModel.findOne({
+            //             // include: [
+            //             //     'QuestionnaireSatisfactionDoc',
+            //             //     'PaiementDoc',
+            //             //     'DocumentsFinanceurDoc',
+            //             //     'FicheControleFinaleDoc',
+            //             // ],
+            //             where: {
+            //                 user_id: idStudent,
+            //                 session_id: id
+            //             }
+            //         })
+            //             .then(pref => {
+            //                 if (pref instanceof ApresFormationDocs) return Responder({ status: HttpStatusCode.Ok, data: pref })
+            //                 else return Responder({ status: HttpStatusCode.Ok, data: {} })
+            //             })
+            //             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+            //         break;
 
-                default:
-                    return Responder({ status: HttpStatusCode.InternalServerError, data: `Key group must be included in before | during | after` })
-                    break;
-            }
+            //     default:
+            //         return Responder({ status: HttpStatusCode.InternalServerError, data: `Key group must be included in before | during | after` })
+            //         break;
+            // }
 
         } catch (error) {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
@@ -755,7 +775,7 @@ export class SessionsService {
                     },
                     {
                         model: Survey,
-                        required: true,
+                        required: false,
                         include: [
                             {
                                 model: Questionnaires,
@@ -1043,11 +1063,9 @@ export class SessionsService {
             start: designation_start,
             end: designation_end,
         });
-
         const uuid = this.allServices.generateUuid();
 
         try {
-
             const {
                 id_category,
                 prix,
@@ -1063,12 +1081,12 @@ export class SessionsService {
                 id_controleur,
                 text_reglement,
                 id_superviseur: [id_superviseur ?? 0],
-                prix: this.allServices.calcTotalAmount(prix as number),
+                prix: prix as number > 0 ? this.allServices.calcTotalAmount(prix as number) : 0,
                 initial_price: prix as number,
                 type_formation,
-                required_documents: required_documents ?? [...Object.values(RequiredDocument)],
+                required_documents: required_documents ?? [],
                 id_formation,
-                payment_methods,
+                payment_methods: payment_methods ?? [],
                 nb_places,
                 designation: designation.toUpperCase(),
                 date_mise_a_jour: null,

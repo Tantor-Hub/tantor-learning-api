@@ -57,12 +57,14 @@ export class CreateSessionPaiementDto {
     @IsBoolean()
     roi_accepted: boolean;
 
+    @IsOptional()
     @IsArray()
     @ArrayNotEmpty()
     @ValidateNested({ each: true })
     @Type(() => SurveyResponseDto)
     responses_survey: SurveyResponseDto[];
 
+    @IsOptional()
     @ValidateNested()
     @Type(() => PaymentDto)
     payment: PaymentDto;

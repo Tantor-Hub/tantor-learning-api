@@ -90,6 +90,5 @@ export class Formations extends Model<IFormation> {
         allowNull: true,
         defaultValue: 900 // Default price in euros
     })
-    prix?: number;
-
+    prix: number;
 }

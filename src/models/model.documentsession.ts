@@ -8,24 +8,29 @@ import {
 } from 'sequelize-typescript';
 import { Users } from './model.users';
 import { StagiaireHasSession } from './model.stagiairehassession';
-import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
+import { DocumentKeyEnum, StepsDocumentsSessionKeys } from 'src/utils/utiles.documentskeyenum';
 import { IUploadDocument, } from 'src/interface/interface.document';
+import { tables } from 'src/config/config.tablesname';
+import { SessionSuivi } from './model.suivisession';
 
-@Table({ tableName: 'upload_documents', timestamps: true })
+@Table({ tableName: tables['documentsstudents'], timestamps: true })
 export class UploadDocument extends Model<IUploadDocument> {
   @ForeignKey(() => Users)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_student: number;
 
-  @ForeignKey(() => StagiaireHasSession)
+  @ForeignKey(() => SessionSuivi)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_session: number;
 
   @Column({ type: DataType.STRING, allowNull: false })
-  document: string;
+  document: string; // non du document
 
   @Column({ type: DataType.STRING, allowNull: false })
   piece_jointe: string;
+
+  @Column({ type: DataType.ENUM(...Object.keys(StepsDocumentsSessionKeys)), allowNull: false })
+  group: string;
 
   @Column({ type: DataType.ENUM(...Object.keys(DocumentKeyEnum)), allowNull: false })
   key_document: string;
@@ -36,6 +41,6 @@ export class UploadDocument extends Model<IUploadDocument> {
   @BelongsTo(() => Users)
   Student: Users;
 
-  @BelongsTo(() => StagiaireHasSession)
-  Session: StagiaireHasSession;
+  @BelongsTo(() => SessionSuivi)
+  Session: SessionSuivi;
 }

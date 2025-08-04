@@ -24,6 +24,7 @@ import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
 import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
+import { log } from 'node:console';
 @Controller('sessions')
 export class SessionsController {
 
@@ -69,9 +70,9 @@ export class SessionsController {
             if (result) {
                 const { id, name, link, } = result
                 piece_jointe = link
-            }
-        }
-        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
+                return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "BEFORE");
+            } else return Responder({ status: HttpStatusCode.InternalServerError, data: "Impossible to upload file !" })
+        } else return Responder({ status: HttpStatusCode.BadRequest, data: "Please provide this document file !" })
     }
     @Put('session/document/during')
     @UseGuards(JwtAuthGuardAsStudent)
@@ -86,7 +87,7 @@ export class SessionsController {
                 piece_jointe = link
             }
         }
-        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
+        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "DURING");
     }
     @Put('session/document/after')
     @UseGuards(JwtAuthGuardAsStudent)
@@ -101,7 +102,7 @@ export class SessionsController {
                 piece_jointe = link
             }
         }
-        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document });
+        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "AFTER");
     }
     @Post('session/payment/card')
     @UseGuards(JwtAuthGuardAsStudent)

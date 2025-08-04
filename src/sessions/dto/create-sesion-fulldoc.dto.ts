@@ -70,24 +70,29 @@ export class CreateSessionFullStepDto {
     @Max(1000)
     nb_places: number;
 
+    @IsOptional()
     @IsArray()
     @IsEnum(PaymentMethod, {
         each: true,
         message: 'Chaque méthode de paiement doit être OPCO, CPF ou CARD',
     })
+    @IsOptional()
     payment_methods: PaymentMethod[];
 
+    @IsOptional()
     @IsArray()
     // @IsEnum(RequiredDocument, {
     //     each: true,
     //     message: 'Un ou plusieurs documents requis sont invalides'
     // })
     @IsValidRequiredDocuments()
+    @IsOptional()
     required_documents: RequiredDocument[];
 
     @IsString()
     text_reglement: string;
 
+    @IsOptional()
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateQuestionSurveyDto)

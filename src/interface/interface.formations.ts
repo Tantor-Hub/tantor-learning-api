@@ -15,7 +15,7 @@ export interface IFormation extends IGlobale {
     duree?: string;
     start_on?: Date;
     end_on?: Date;
-    prix?: number;
+    prix: number;
 }
 
 export interface IApresFormationDocs extends IGlobale {

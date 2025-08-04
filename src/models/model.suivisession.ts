@@ -39,14 +39,16 @@ export class SessionSuivi extends Model<ISessionSuivi> {
     @Column({
         type: DataType.ARRAY(DataType.STRING),
         allowNull: false,
-        defaultValue: ['CARD'],
+        defaultValue: [],
+        // 'CARD'
     })
     payment_methods: string[];
 
     @Column({
         type: DataType.ARRAY(DataType.STRING),
         allowNull: false,
-        defaultValue: [...Object.values(RequiredDocument)],
+        defaultValue: [],
+        // ...Object.values(RequiredDocument)
     })
     required_documents: string[];
 

@@ -5,7 +5,7 @@ import {
   IsIn,
   IsNumberString,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 
 export const DOCUMENT_KEYS = [
@@ -14,12 +14,11 @@ export const DOCUMENT_KEYS = [
 
 export class UploadDocumentToSessionDto {
   @IsNumberString()
-  @IsNotEmpty()
-  id_session: number;
+  id_session: number | string;
 
   @IsNumberString()
   @IsOptional()
-  id_student: number;
+  id_student?: number | string;
 
   @Transform(({ value }) => value?.toString())
   @IsString()
