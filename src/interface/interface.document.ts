@@ -18,4 +18,5 @@ export interface IUploadDocument extends IGlobale {
     description?: string;
     group?: string,
     piece_jointe?: string; 
+    id_session_student: number
 }

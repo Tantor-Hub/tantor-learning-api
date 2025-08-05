@@ -272,6 +272,7 @@ export class SessionsService {
             if (!userSession) return Responder({ status: HttpStatusCode.NotFound, data: "L'utilisateur ciblé n'a pas été retrouvé dans cette session !" });
 
             return this.documentModel.create({
+                id_session_student: userSession.id,
                 id_session: id_session as number,
                 id_student: user.id_user,
                 key_document: document_type,
@@ -437,7 +438,8 @@ export class SessionsService {
                 where: {
                     group: String(group).toUpperCase(),
                     id_student: idStudent,
-                    id_session: idSession
+                    id_session: idSession,
+                    id_session_student: id
                 }
             })
                 .then(pref => Responder({ status: HttpStatusCode.Ok, data: { length: pref.length, list: pref } }))
@@ -912,6 +914,7 @@ export class SessionsService {
                         const { titre } = Formation
 
                         return this.hasSessionStudentModel.findOrCreate({
+                            transaction,
                             where: {
                                 id_sessionsuivi: id_session,
                                 id_stagiaire: id_user
@@ -957,42 +960,50 @@ export class SessionsService {
                                         id_user: id_user,
                                         answer: response.answer,
                                     })), { transaction })
-                                    switch (payment['method']) {
-                                        case 'CARD':
-                                            const card = payment.card as CreatePaymentSessionDto;
-                                            await this.payementModel.create({
-                                                id_session: id_session as number,
-                                                id_session_student: id,
-                                                id_user: id_user,
-                                                full_name: fullname,
-                                                card_number: card.card_number,
-                                                amount: prix as number,
-                                                month: card.month,
-                                                year: card.year,
-                                                cvv: card.cvv,
-                                                id_stripe_payment: card.id_stripe_payment
-                                            }, { transaction })
-                                            return Responder({ status: HttpStatusCode.Created, data: record })
-                                        case 'OPCO':
-                                            const opco = payment.opco as PayementOpcoDto;
-                                            await this.payementOpcoModel.create({
-                                                id_session: id_session as number,
-                                                id_session_student: id as number,
-                                                id_user: id_user,
-                                                siren: opco.siren,
-                                                nom_opco: opco.nom_opco,
-                                                nom_entreprise: opco.nom_entreprise,
-                                                nom_responsable: opco.nom_responsable,
-                                                telephone_responsable: opco.telephone_responsable,
-                                                email_responsable: opco.email_responsable,
-                                            }, { transaction })
-                                            return Responder({ status: HttpStatusCode.Created, data: record })
-                                        case 'CPF':
-                                            const cpf = payment.cpf as CpfPaymentDto;
-                                            return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement CPF n'est pas en prise en charge" })
-                                        default:
-                                            await transaction.rollback();
-                                            return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement non prise en charge" })
+                                    if (payment['method'] && Array.from(payment['method']).length > 0) {
+                                        switch (payment['method']) {
+                                            case 'CARD':
+                                                const card = payment.card as CreatePaymentSessionDto;
+                                                await this.payementModel.create({
+                                                    id_session: id_session as number,
+                                                    id_session_student: id,
+                                                    id_user: id_user,
+                                                    full_name: fullname,
+                                                    card_number: card.card_number,
+                                                    amount: prix as number,
+                                                    month: card.month,
+                                                    year: card.year,
+                                                    cvv: card.cvv,
+                                                    id_stripe_payment: card.id_stripe_payment
+                                                }, { transaction })
+                                                await transaction.commit()
+                                                return Responder({ status: HttpStatusCode.Created, data: record })
+                                            case 'OPCO':
+                                                const opco = payment.opco as PayementOpcoDto;
+                                                await this.payementOpcoModel.create({
+                                                    id_session: id_session as number,
+                                                    id_session_student: id as number,
+                                                    id_user: id_user,
+                                                    siren: opco.siren,
+                                                    nom_opco: opco.nom_opco,
+                                                    nom_entreprise: opco.nom_entreprise,
+                                                    nom_responsable: opco.nom_responsable,
+                                                    telephone_responsable: opco.telephone_responsable,
+                                                    email_responsable: opco.email_responsable,
+                                                }, { transaction })
+                                                await transaction.commit()
+                                                return Responder({ status: HttpStatusCode.Created, data: record })
+                                            case 'CPF':
+                                                const cpf = payment.cpf as CpfPaymentDto;
+                                                await transaction.commit()
+                                                return Responder({ status: HttpStatusCode.Created, data: "Méthode de paiement CPF n'est pas en prise en charge, elle necissite des verifications supplementaires !" })
+                                            default:
+                                                await transaction.rollback();
+                                                return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement non prise en charge" })
+                                        }
+                                    } else {
+                                        await transaction.commit()
+                                        return Responder({ status: HttpStatusCode.Created, data: "Méthode de paiement CPF n'est pas en prise en charge, elle necissite des verifications supplementaires !" })
                                     }
                                 } else {
                                     return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
