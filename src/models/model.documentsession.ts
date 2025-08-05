@@ -24,7 +24,7 @@ export class UploadDocument extends Model<IUploadDocument> {
   id_session: number;
 
   @ForeignKey(() => StagiaireHasSession)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 2 })
   id_session_student: number;
 
   @Column({ type: DataType.STRING, allowNull: false })
@@ -42,12 +42,18 @@ export class UploadDocument extends Model<IUploadDocument> {
   @Column({ type: DataType.TEXT, allowNull: true })
   description?: string;
 
-  @BelongsTo(() => Users)
+  @BelongsTo(() => Users, {
+    onDelete: 'CASCADE',
+  })
   Student: Users;
 
-  @BelongsTo(() => SessionSuivi)
+  @BelongsTo(() => SessionSuivi, {
+    onDelete: 'CASCADE',
+  })
   Session: SessionSuivi;
 
-  @BelongsTo(() => StagiaireHasSession)
+  @BelongsTo(() => StagiaireHasSession, {
+    onDelete: 'CASCADE',
+  })
   SessionStagiaire: StagiaireHasSession;
 }
