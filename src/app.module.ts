@@ -78,7 +78,7 @@ import { SurveyResponse } from './models/model.surveyresponses';
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
-        autoLoadModels: true,
+        autoLoadModels: false,
         synchronize: false,
         logging: false,
       }),
@@ -139,9 +139,9 @@ export class AppModule implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.sequelize.authenticate();
-      this.sequelize.sync({ alter: true, force: false, })
+      this.sequelize.sync({ alter: false, force: false, })
         .then(_ => {
-          console.log('[Database] Connexion réussie', this.sequelize.getDatabaseName());
+          console.log('[ Database ] Connexion réussie', this.sequelize.getDatabaseName());
           // const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
           // const models = Object.keys(this.sequelize.models);
           // console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName());

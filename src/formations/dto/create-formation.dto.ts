@@ -52,4 +52,4 @@ export class CreateFormationDto {
     @IsNumberString()
     @IsOptional()
     id_formateur?: number
-};
+}
