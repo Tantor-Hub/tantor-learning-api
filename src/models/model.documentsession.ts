@@ -24,7 +24,10 @@ export class UploadDocument extends Model<IUploadDocument> {
   id_session: number;
 
   @ForeignKey(() => StagiaireHasSession)
-  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 2 })
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true
+  })
   id_session_student: number;
 
   @Column({ type: DataType.STRING, allowNull: false })

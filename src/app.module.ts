@@ -78,7 +78,7 @@ import { SurveyResponse } from './models/model.surveyresponses';
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
-        autoLoadModels: false,
+        autoLoadModels: true,
         synchronize: false,
         logging: false,
       }),

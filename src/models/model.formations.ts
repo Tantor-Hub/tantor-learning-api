@@ -12,7 +12,6 @@ import { tables } from 'src/config/config.tablesname';
 import { IFormation } from 'src/interface/interface.formations';
 import { Thematiques } from './model.groupeformations';
 import { SessionSuivi } from './model.suivisession';
-
 @Table({ tableName: tables['fromations'] })
 export class Formations extends Model<IFormation> {
     @Column({
