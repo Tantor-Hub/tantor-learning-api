@@ -15,7 +15,6 @@ import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
 import { Op } from 'sequelize';
-import { GetUserByRoleDto } from 'src/roles/dto/get-users-byrole.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
@@ -161,15 +160,13 @@ export class UsersService {
     async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
         const { id_user, uuid_user, roles_user } = user
         try {
-            StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
-            StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
-            Formations.belongsTo(Categories, { foreignKey: "id_category" })
-            Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
-
-            SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" });
-            SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
-
-            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
+            // StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
+            // StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
+            // Formations.belongsTo(Categories, { foreignKey: "id_category" })
+            // Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
+            // SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" });
+            // SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
+            // SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
 
             const mylistsession = await this.hasSessionModel.findAll({
                 include: [
@@ -204,7 +201,7 @@ export class UsersService {
                 return sess.toJSON().id
             }).filter(id => id !== undefined)
 
-            SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
+            // SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
             const nextLivesSessions = await this.hasseancesModel.findAll({
                 include: [
                     {
@@ -311,7 +308,6 @@ export class UsersService {
             })
 
         } catch (error) {
-            log(error)
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
@@ -340,7 +336,7 @@ export class UsersService {
     }
     async getAllUsers(): Promise<ResponseServer> {
 
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
         return this.userModel.findAll({
             include: [
                 {
@@ -372,7 +368,7 @@ export class UsersService {
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
     async getAllUsersByRole(group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary' | 'all'): Promise<ResponseServer> {
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.userModel.findAll({
             include: [
@@ -399,7 +395,7 @@ export class UsersService {
     }
     async signInAsStudent(signInStudentDto: SignInStudentDto): Promise<ResponseServer> {
         const { user_name, password } = signInStudentDto
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
         return this.userModel.findOne({
             include: [
                 {
@@ -711,7 +707,7 @@ export class UsersService {
     async setNewPassword(resetPasswordDto: ResetPasswordDto): Promise<ResponseServer> {
         const { new_password, repet_new_password, user_name, verification_code, description } = resetPasswordDto
 
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
         return this.userModel.findOne({
             include: [
                 {
@@ -811,7 +807,7 @@ export class UsersService {
     async verifyBeforeResetPassword(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
 
         const { email_user, verication_code } = verifyAsStudentDto
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.userModel.findOne({
             attributes: {
@@ -860,7 +856,7 @@ export class UsersService {
     async verifyAsStudent(verifyAsStudentDto: VerifyAsStudentDto): Promise<ResponseServer> {
 
         const { email_user, verication_code } = verifyAsStudentDto
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.userModel.findOne({
             attributes: {
@@ -947,7 +943,7 @@ export class UsersService {
     }
     async findByEmail(findByEmailDto: FindByEmailDto): Promise<ResponseServer> {
         const { email } = findByEmailDto
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.userModel.findOne({
             include: [
@@ -1020,7 +1016,7 @@ export class UsersService {
     async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
 
         const { id_user, roles_user, uuid_user, level_indicator } = user
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.userModel.findOne({
             include: [
@@ -1057,7 +1053,7 @@ export class UsersService {
         const uuid_user = this.allService.generateUuid()
 
         try {
-            Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+            // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
             return this.userModel.findOrCreate({
                 where: {
                     email

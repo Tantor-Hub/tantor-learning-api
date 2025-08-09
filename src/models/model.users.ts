@@ -64,12 +64,15 @@ export class Users extends Model<IUsers> {
     @HasMany(() => HasRoles)
     hasRoles: HasRoles[];
 
-    @BelongsToMany(() => Roles, () => HasRoles)
-    roles: Roles[];
+    @BelongsToMany(() => Roles, () => HasRoles, {
+        foreignKey: 'UserId',
+        otherKey: 'RoleId',
+    } as any)
+    roles!: Roles[];
 
     @Column({ type: DataType.INTEGER, defaultValue: 0 })
     can_update_password?: number
 
     @Column({ type: DataType.STRING, allowNull: true })
-    date_of_birth?: string
+    date_of_birth?: string;
 }

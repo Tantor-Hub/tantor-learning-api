@@ -168,7 +168,7 @@ export class CmsService {
     async getMessageByThread(user: IJwtSignin, thread: string): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         const id_user = user.id_user;
         return this.messageModel.findAll({
@@ -224,7 +224,7 @@ export class CmsService {
     async getMessageById(user: IJwtSignin, id_message: number): Promise<ResponseServer> {
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.messageModel.findOne({
             include: [
@@ -373,7 +373,7 @@ export class CmsService {
 
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver", })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender", })
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         const clause = this.allSercices.buildClauseMessage(typeMessages[groupe], id_user)
         return this.messageModel.findAndCountAll({
@@ -427,7 +427,7 @@ export class CmsService {
         const { id_user } = user
         Messages.belongsTo(Users, { foreignKey: "id_user_receiver" })
         Messages.belongsTo(Users, { foreignKey: "id_user_sender" })
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
         return this.messageModel.findAndCountAll({
             order: [["id", "DESC"]],

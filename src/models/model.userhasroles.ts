@@ -11,13 +11,13 @@ export class HasRoles extends Model<IUserHasRoles> {
     id?: number;
 
     @ForeignKey(() => Users)
-    @Column({ allowNull: false })
-    UserId: number;
+    @Column(DataType.INTEGER)
+    UserId!: number;
 
     @ForeignKey(() => Roles)
-    @Column({ allowNull: false })
-    RoleId: number;
+    @Column(DataType.INTEGER)
+    RoleId!: number;
 
     @Column({ allowNull: false })
-    status?: number;
+    status?: number
 }

@@ -611,7 +611,7 @@ export class CoursService {
     async assignFormateurToSession(manager: IJwtSignin, updateSessionDto: AssignFormateurToSessionDto): Promise<ResponseServer> {
         const { id_cours: id_session, id_user } = updateSessionDto;
 
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
         const user = await this.usersModel.findOne({
             where: { id: id_user },
             include: [

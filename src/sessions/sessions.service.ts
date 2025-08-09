@@ -116,6 +116,7 @@ export class SessionsService {
         private readonly serviceMail: MailService,
         @Inject(Sequelize) private readonly sequelize: Sequelize
     ) { }
+
     async createSessionFullStep(createSessionDto: CreateSessionFullStepDto, user: IJwtSignin): Promise<ResponseServer> {
         const transaction = await this.sequelize.transaction();
         try {
@@ -886,15 +887,15 @@ export class SessionsService {
     async applyToSession(applySessionDto: CreateSessionPaiementDto, user: IJwtSignin): Promise<ResponseServer> {
         const { id_session, payment, roi_accepted, responses_survey } = applySessionDto;
         const { id_user } = user;
+        const transaction = await this.sequelize.transaction();
+
         try {
             if (!roi_accepted) return Responder({ status: HttpStatusCode.BadRequest, data: "Vous devez accepter le ROI pour postuler à cette session !" })
             const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
             if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "Targeted user not found" });
             const { fs_name, ls_name } = student.toJSON();
             const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
-            const transaction = await this.sequelize.transaction();
 
-            SessionSuivi.belongsTo(Formations, { foreignKey: "id_formation" })
             return this.sessionModel.findOne({
                 include: [
                     {
@@ -1118,7 +1119,8 @@ export class SessionsService {
                 return { code: HttpStatusCode.Created, data: formation };
             }
 
-            Users.belongsToMany(Roles, { through: HasRoles, foreignKey: 'RoleId' });
+            // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: 'RoleId' });
+            // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: 'UserId', otherKey: 'RoleId' });
 
             const formateur = await this.usersModel.findOne({
                 include: [
@@ -1150,7 +1152,6 @@ export class SessionsService {
 
             return { code: HttpStatusCode.Created, data: formation };
         } catch (err) {
-            log('Error while creating session', err);
             return { code: HttpStatusCode.InternalServerError, data: err };
         }
     }
@@ -1490,7 +1491,7 @@ export class SessionsService {
     async assignFormateurToSession(updateSessionDto: AssignFormateurToSessionDto): Promise<ResponseServer> {
         const { id_cours, id_user } = updateSessionDto;
 
-        Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
+        // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
         const user = await this.usersModel.findOne({
             where: { id: id_user },
             include: [
