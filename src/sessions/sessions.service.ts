@@ -119,34 +119,27 @@ export class SessionsService {
 
     async createSessionFullStep(createSessionDto: CreateSessionFullStepDto, user: IJwtSignin): Promise<ResponseServer> {
         const transaction = await this.sequelize.transaction();
+
         try {
             const { questions } = createSessionDto;
-            return this.handleCreationOfSession(createSessionDto, transaction, user).then(async (session) => {
-                if (session.code === HttpStatusCode.Created) {
-                    const { id } = session.data as SessionSuivi;
-                    return this.handleCreationOfSurvey({ questions, id_session: id }, user, transaction)
-                        .then(async (survey) => {
-                            if (survey.code === HttpStatusCode.Created) {
-                                await transaction.commit();
-                                return Responder({ status: HttpStatusCode.Created, data: { session: session.data, survey: survey.data } });
-                            } else {
-                                await transaction.rollback();
-                                return Responder({ status: survey.code, data: survey.data });
-                            }
-                        })
-                        .catch(async (error) => {
-                            await transaction.rollback();
-                            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
-                        });
-                } else {
-                    await transaction.rollback();
-                    return Responder({ status: session.code, data: session.data });
-                }
-            })
-                .catch(async (error) => {
-                    await transaction.rollback();
-                    return Responder({ status: HttpStatusCode.InternalServerError, data: error });
-                });
+
+            const session = await this.handleCreationOfSession(createSessionDto, transaction, user);
+            if (session.code !== HttpStatusCode.Created) {
+                await transaction.rollback();
+                return Responder({ status: session.code, data: session.data });
+            }
+
+            const sessionId = (session.data as SessionSuivi).id;
+
+            const survey = await this.handleCreationOfSurvey({ questions, id_session: sessionId }, user, transaction);
+            if (survey.code !== HttpStatusCode.Created) {
+                await transaction.rollback();
+                return Responder({ status: survey.code, data: survey.data });
+            }
+
+            await transaction.commit();
+            return Responder({ status: HttpStatusCode.Created, data: { session: session.data, survey: survey.data } });
+
         } catch (error) {
             await transaction.rollback();
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
