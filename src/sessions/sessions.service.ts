@@ -946,15 +946,17 @@ export class SessionsService {
                 asAttachement: true
             });
 
-            await this.surveyResponseModel.bulkCreate(
-                responses_survey.map((r: ISurveyResponse) => ({
-                    id_question: r.id_question,
-                    id_stagiaire_session: id,
-                    id_user,
-                    answer: r.answer,
-                })),
-                { transaction }
-            );
+            if (responses_survey && responses_survey.length > 0) {
+                await this.surveyResponseModel.bulkCreate(
+                    responses_survey.map((r: ISurveyResponse) => ({
+                        id_question: r.id_question,
+                        id_stagiaire_session: id,
+                        id_user,
+                        answer: r.answer,
+                    })),
+                    { transaction }
+                );
+            }
 
             if (payment?.method) {
                 switch (payment.method) {
