@@ -890,136 +890,131 @@ export class SessionsService {
         const transaction = await this.sequelize.transaction();
 
         try {
-            if (!roi_accepted) return Responder({ status: HttpStatusCode.BadRequest, data: "Vous devez accepter le ROI pour postuler à cette session !" })
+            if (!roi_accepted) {
+                await transaction.rollback();
+                return Responder({ status: HttpStatusCode.BadRequest, data: "Vous devez accepter le ROI pour postuler à cette session !" });
+            }
+
             const student = await this.usersModel.findOne({ where: { id: id_user, status: 1 } });
-            if (!student) return Responder({ status: HttpStatusCode.NotFound, data: "Targeted user not found" });
-            const { fs_name, ls_name } = student.toJSON();
-            const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name })
+            if (!student) {
+                await transaction.rollback();
+                return Responder({ status: HttpStatusCode.NotFound, data: "Targeted user not found" });
+            }
 
-            return this.sessionModel.findOne({
-                include: [
-                    {
-                        model: Formations,
-                        required: true
-                    }
-                ],
-                where: {
-                    id: id_session
+            const { fs_name, ls_name, phone, email } = student.toJSON();
+            const fullname = this.allServices.fullName({ fs: fs_name, ls: ls_name });
+
+            const inst = await this.sessionModel.findOne({
+                include: [{ model: Formations, required: true }],
+                where: { id: id_session }
+            });
+
+            if (!(inst instanceof SessionSuivi)) {
+                await transaction.rollback();
+                return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvée !" });
+            }
+
+            const { id_formation, designation, Formation, prix, nb_places_disponible } = inst.toJSON() as any;
+            const { titre } = Formation;
+
+            const [record, isNew] = await this.hasSessionStudentModel.findOrCreate({
+                transaction,
+                where: { id_sessionsuivi: id_session, id_stagiaire: id_user },
+                defaults: {
+                    id_sessionsuivi: id_session,
+                    id_stagiaire: id_user,
+                    date_mise_a_jour: this.allServices.nowDate(),
+                    id_formation,
+                    status: 0,
                 }
-            })
-                .then(inst => {
-                    if (inst instanceof SessionSuivi) {
+            });
 
-                        const { id_formation, id_category, designation, Formation, prix } = inst.toJSON() as any
-                        const { phone, email } = student.toJSON();
-                        const { titre } = Formation
+            if (!isNew) {
+                await transaction.rollback();
+                return Responder({ status: HttpStatusCode.BadRequest, data: "Vous êtes déjà inscrit à cette session" });
+            }
 
-                        return this.hasSessionStudentModel.findOrCreate({
-                            transaction,
-                            where: {
-                                id_sessionsuivi: id_session,
-                                id_stagiaire: id_user
-                            },
-                            defaults: {
-                                id_sessionsuivi: id_session,
-                                id_stagiaire: id_user,
-                                date_mise_a_jour: this.allServices.nowDate(),
-                                id_formation,
-                                status: 0,
-                            }
-                        })
-                            .then(async ([record, isNew]) => {
-                                if (isNew) {
-                                    if (inst.nb_places_disponible <= 0) {
-                                        await transaction.rollback();
-                                        return Responder({ status: HttpStatusCode.Forbidden, data: "Il n'y a plus de place disponible pour cette session !" })
-                                    }
-                                    const { id } = record?.toJSON()
+            if (nb_places_disponible <= 0) {
+                await transaction.rollback();
+                return Responder({ status: HttpStatusCode.Forbidden, data: "Il n'y a plus de place disponible !" });
+            }
 
-                                    this.apdocsModel.create({
-                                        session_id: id as number,
-                                        user_id: id_user,
-                                    }, { transaction })
-                                    this.adocsModel.create({
-                                        session_id: id as number,
-                                        user_id: id_user,
-                                    }, { transaction })
-                                    this.pdocsModel.create({
-                                        session_id: id as number,
-                                        user_id: id_user,
-                                    }, { transaction })
-                                    this.serviceMail.onWelcomeToSessionStudent({
-                                        to: email,
-                                        formation_name: titre,
-                                        fullname,
-                                        session_name: designation,
-                                        asAttachement: true
-                                    })
-                                    this.surveyResponseModel.bulkCreate(responses_survey.map((response: ISurveyResponse) => ({
-                                        id_question: response.id_question,
-                                        id_stagiaire_session: record.id as number,
-                                        id_user: id_user,
-                                        answer: response.answer,
-                                    })), { transaction })
-                                    if (payment['method'] && Array.from(payment['method']).length > 0) {
-                                        switch (payment['method']) {
-                                            case 'CARD':
-                                                const card = payment.card as CreatePaymentSessionDto;
-                                                await this.payementModel.create({
-                                                    id_session: id_session as number,
-                                                    id_session_student: id,
-                                                    id_user: id_user,
-                                                    full_name: fullname,
-                                                    card_number: card.card_number,
-                                                    amount: prix as number,
-                                                    month: card.month,
-                                                    year: card.year,
-                                                    cvv: card.cvv,
-                                                    id_stripe_payment: card.id_stripe_payment
-                                                }, { transaction })
-                                                await transaction.commit()
-                                                return Responder({ status: HttpStatusCode.Created, data: record })
-                                            case 'OPCO':
-                                                const opco = payment.opco as PayementOpcoDto;
-                                                await this.payementOpcoModel.create({
-                                                    id_session: id_session as number,
-                                                    id_session_student: id as number,
-                                                    id_user: id_user,
-                                                    siren: opco.siren,
-                                                    nom_opco: opco.nom_opco,
-                                                    nom_entreprise: opco.nom_entreprise,
-                                                    nom_responsable: opco.nom_responsable,
-                                                    telephone_responsable: opco.telephone_responsable,
-                                                    email_responsable: opco.email_responsable,
-                                                }, { transaction })
-                                                await transaction.commit()
-                                                return Responder({ status: HttpStatusCode.Created, data: record })
-                                            case 'CPF':
-                                                const cpf = payment.cpf as CpfPaymentDto;
-                                                await transaction.commit()
-                                                return Responder({ status: HttpStatusCode.Created, data: "Méthode de paiement CPF n'est pas en prise en charge, elle necissite des verifications supplementaires !" })
-                                            default:
-                                                await transaction.rollback();
-                                                return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement non prise en charge" })
-                                        }
-                                    } else {
-                                        await transaction.commit()
-                                        return Responder({ status: HttpStatusCode.Created, data: "Méthode de paiement CPF n'est pas en prise en charge, elle necissite des verifications supplementaires !" })
-                                    }
-                                } else {
-                                    return Responder({ status: HttpStatusCode.BadRequest, data: "Vous vous êtes déjà inscrit à cette session de formation; vous ne pouvez le faire deux fois" })
-                                }
-                            })
-                            .catch(_ => Responder({ status: HttpStatusCode.InternalServerError, data: _ }))
-                    } else {
-                        return Responder({ status: HttpStatusCode.BadRequest, data: "La session ciblée n'a pas été retrouvé !" })
-                    }
-                })
-                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-        } catch (error: any) {
-            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+            const { id } = record.toJSON();
+
+            // await this.apdocsModel.create({ session_id: id, user_id: id_user }, { transaction });
+            // await this.adocsModel.create({ session_id: id, user_id: id_user }, { transaction });
+            // await this.pdocsModel.create({ session_id: id, user_id: id_user }, { transaction });
+
+            this.serviceMail.onWelcomeToSessionStudent({
+                to: email,
+                formation_name: titre,
+                fullname,
+                session_name: designation,
+                asAttachement: true
+            });
+
+            await this.surveyResponseModel.bulkCreate(
+                responses_survey.map((r: ISurveyResponse) => ({
+                    id_question: r.id_question,
+                    id_stagiaire_session: id,
+                    id_user,
+                    answer: r.answer,
+                })),
+                { transaction }
+            );
+
+            if (payment?.method) {
+                switch (payment.method) {
+                    case 'CARD':
+                        const card = payment.card as CreatePaymentSessionDto;
+                        await this.payementModel.create({
+                            id_session,
+                            id_session_student: id,
+                            id_user,
+                            full_name: fullname,
+                            card_number: card.card_number,
+                            amount: prix,
+                            month: card.month,
+                            year: card.year,
+                            cvv: card.cvv,
+                            id_stripe_payment: card.id_stripe_payment
+                        }, { transaction });
+                        break;
+
+                    case 'OPCO':
+                        const opco = payment.opco as PayementOpcoDto;
+                        await this.payementOpcoModel.create({
+                            id_session,
+                            id_session_student: id as number,
+                            id_user,
+                            siren: opco.siren,
+                            nom_opco: opco.nom_opco,
+                            nom_entreprise: opco.nom_entreprise,
+                            nom_responsable: opco.nom_responsable,
+                            telephone_responsable: opco.telephone_responsable,
+                            email_responsable: opco.email_responsable,
+                        }, { transaction });
+                        break;
+
+                    case 'CPF':
+                        await transaction.commit();
+                        return Responder({ status: HttpStatusCode.Created, data: "Méthode de paiement CPF non prise en charge" });
+
+                    default:
+                        await transaction.rollback();
+                        return Responder({ status: HttpStatusCode.BadRequest, data: "Méthode de paiement non prise en charge" });
+                }
+            }
+
+            await transaction.commit();
+            return Responder({ status: HttpStatusCode.Created, data: record });
+
+        } catch (error) {
+            await transaction.rollback();
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
+
     async getListePrestation(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesprestations.length, list: typesprestations } })
     }
