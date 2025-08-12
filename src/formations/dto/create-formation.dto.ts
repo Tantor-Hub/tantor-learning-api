@@ -8,7 +8,7 @@ export class CreateFormationDto {
     sous_titre: string;
 
     @IsNumberString()
-    id_category: number;
+    id_category: string;
 
     @IsNumberString()
     @IsOptional()
