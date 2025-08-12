@@ -34,8 +34,8 @@ export class CreateFormationDto {
     lien_contenu?: string;
 
     // @IsOptional()
-    @IsNumber()
-    prix: number;
+    @IsNumberString()
+    prix: string;
 
     @IsOptional()
     @IsString()
