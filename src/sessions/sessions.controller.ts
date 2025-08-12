@@ -75,6 +75,7 @@ export class SessionsController {
         } else return Responder({ status: HttpStatusCode.BadRequest, data: "Please provide this document file !" })
     }
     @Put('session/document/during')
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     @UseGuards(JwtAuthGuardAsStudent)
     async submitDocDuring(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
         const document = DocumentKeyEnum[payementSessionDto['key_document']];
@@ -85,12 +86,13 @@ export class SessionsController {
             if (result) {
                 const { id, name, link, } = result
                 piece_jointe = link
-            }
-        }
-        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "DURING");
+                return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "DURING");
+            } else return Responder({ status: HttpStatusCode.InternalServerError, data: "Impossible to upload file !" })
+        } else return Responder({ status: HttpStatusCode.BadRequest, data: "Please provide this document file !" })
     }
     @Put('session/document/after')
     @UseGuards(JwtAuthGuardAsStudent)
+    @UseInterceptors(FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }))
     async submitDocAfter(@Body() payementSessionDto: UploadDocumentToSessionDto, @User() user: IJwtSignin, @UploadedFile() file: Express.Multer.File) {
         const document = DocumentKeyEnum[payementSessionDto['key_document']];
         if (!DOCUMENT_KEYS_PHASES.apres_formation.includes(document)) return Responder({ status: HttpStatusCode.BadRequest, data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(",")}` })
@@ -100,9 +102,9 @@ export class SessionsController {
             if (result) {
                 const { id, name, link, } = result
                 piece_jointe = link
-            }
-        }
-        return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "AFTER");
+                return this.sessionsService.uploadDocumentToSessionDTO(user, { ...payementSessionDto, piece_jointe, document }, "AFTER");
+            } else return Responder({ status: HttpStatusCode.InternalServerError, data: "Impossible to upload file !" })
+        } else return Responder({ status: HttpStatusCode.BadRequest, data: "Please provide this document file !" })
     }
     @Post('session/payment/card')
     @UseGuards(JwtAuthGuardAsStudent)
