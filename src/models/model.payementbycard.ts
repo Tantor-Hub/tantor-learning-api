@@ -73,32 +73,32 @@ export class Payement extends Model<IPayemenMethode> {
 
     @Column({
         type: DataType.STRING,
-        allowNull: false,
+        allowNull: true,
     })
-    card_number: string;
+    card_number?: string;
 
     @Column({
         type: DataType.STRING,
-        allowNull: false,
+        allowNull: true,
     })
-    month: string;
+    month?: string;
 
     @Column({
         type: DataType.STRING,
-        allowNull: false,
+        allowNull: true,
     })
-    year: string;
+    year?: string;
 
     @Column({
         type: DataType.STRING,
-        allowNull: false,
+        allowNull: true,
     })
-    cvv: string;
+    cvv?: string;
 
     @Column({
         type: DataType.INTEGER,
         allowNull: false,
-        defaultValue: 0, // 1 paid, 0 not paid
+        defaultValue: 0, // 1 paid, 0 not paid 2 failed, 3 refunded, 4 disputed --- IGNORE ---
     })
     status: number;
 

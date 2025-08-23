@@ -7,6 +7,7 @@ import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
 import { ResponseInterceptor } from './strategy/strategy.responseinterceptor';
 import { MediasoupService } from './services/service.mediasoup';
+import * as bodyParser from 'body-parser';
 
 async function tantorAPP() {
 
@@ -20,14 +21,18 @@ async function tantorAPP() {
     credentials: true,
   });
   app.setGlobalPrefix('/api/');
+  app.use(
+    '/webhook/stripe/onpayment',
+    bodyParser.raw({ type: 'application/json' }),
+  );
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
     whitelist: true,
     forbidNonWhitelisted: true,
     transformOptions: {
-      enableImplicitConversion: true, // important si certains champs sont en string côté client
+      enableImplicitConversion: true,
     },
-    forbidUnknownValues: false, // essentiel pour nested
+    forbidUnknownValues: false,
     validationError: {
       target: false,
       value: false,

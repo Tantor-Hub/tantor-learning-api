@@ -1,4 +1,4 @@
-import { IsString, IsCreditCard, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsCreditCard, IsNotEmpty, IsNumber, IsOptional, IsUrl } from 'class-validator';
 
 export class CreatePaymentSessionDto {
 
@@ -12,25 +12,30 @@ export class CreatePaymentSessionDto {
     id_session?: number;
 
     @IsString()
-    @IsNotEmpty()
-    full_name: string;
+    @IsOptional()
+    full_name?: string;
 
     @IsCreditCard()
-    card_number: string;
+    @IsOptional()
+    card_number?: string;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
-    month: number;
+    month?: number;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
-    year: number;
+    year?: number;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsNumber()
-    cvv: number;
+    cvv?: number;
 
     @IsString()
+    @IsOptional()
     // Stripe payment ID
-    id_stripe_payment: string; 
+    id_stripe_payment?: string; 
+
+    @IsUrl()
+    callback: string;
 }

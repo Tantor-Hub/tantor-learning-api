@@ -33,6 +33,7 @@ import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsessi
 import { Options } from 'src/models/model.optionquestionnaires';
 import { Payementopco } from 'src/models/model.payementbyopco';
 import { SurveyResponse } from 'src/models/model.surveyresponses';
+import { StripeModule } from 'src/strategy/strategy.stripe';
 @Module({
   imports: [
     SequelizeModule.forFeature([UploadDocument, Payement, SurveyResponse, Payementopco, Questionnaires, Options, Survey, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork, Cours]),
@@ -47,6 +48,7 @@ import { SurveyResponse } from 'src/models/model.surveyresponses';
         },
       }),
     }),
+    StripeModule,
   ],
   controllers: [SessionsController],
   providers: [SessionsService, JwtService, GoogleDriveService, AllSercices, MailService, MediasoupService, DocsService]

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, ParseIntPipe, Post, Put, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -24,6 +24,7 @@ import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
 import { PayementOpcoDto } from './dto/payement-method-opco.dto';
 import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
 import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
+import Stripe from 'stripe';
 import { log } from 'node:console';
 @Controller('sessions')
 export class SessionsController {
@@ -31,7 +32,8 @@ export class SessionsController {
     constructor(
         private readonly googleDriveService: GoogleDriveService,
         private readonly sessionsService: SessionsService,
-        private readonly mediasoupService: MediasoupService
+        private readonly mediasoupService: MediasoupService,
+        @Inject('STRIPE_CLIENT') private readonly stripe: Stripe,
     ) { }
     @Delete('session/survey/:idsession')
     // @UseGuards(JwtAuthGuardAsSuperviseur)
@@ -193,6 +195,24 @@ export class SessionsController {
     @UseGuards(JwtAuthGuardAsStudent)
     async getAllSessionsByOwnerAndStatus(@User() user: IJwtSignin, @Param('status', ParseIntPipe) status: number) {
         return this.sessionsService.listAllSessionsByOwnAndStatus(user, status);
+    }
+    @Post()
+    @HttpCode(HttpStatusCode.Ok)
+    async handleWebhook(@Req() req: any, @Res() res: any) {
+        const sig = req.headers['stripe-signature'] as string;
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? '';
+        let event: Stripe.Event;
+
+        try {
+            event = this.stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+        } catch (err: any) {
+            console.error(`❌ Webhook signature verification failed: ${err.message}`);
+            return Responder({ status: HttpStatusCode.BadRequest, data: `Webhook Error: ${err.message}` });
+        }
+        // const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        await this.sessionsService.webhookStripePayment(event);
+
+        return Responder({ status: HttpStatusCode.Ok, data: 'Received' });
     }
     @Post('session/apply')
     @UseGuards(JwtAuthGuardAsStudent)

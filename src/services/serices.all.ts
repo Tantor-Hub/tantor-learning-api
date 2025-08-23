@@ -205,36 +205,41 @@ export class AllSercices {
     dateToUnixOnly(dateString: string): number {
         return moment(dateString).startOf('day').unix()
     };
-    async onPay({ currency, amount, payment_method_types }: { currency: string, amount: number, payment_method_types: string[] }): Promise<{ code: number, message: string, data: any }> {
+    async onPay({
+        currency,
+        amount,
+        payment_method_types,
+        return_url
+    }: {
+        currency: string,
+        amount: number,
+        payment_method_types?: string[],
+        return_url?: string
+    }): Promise<{ code: number, message: string, data: any }> {
         try {
-            return this.stripe.paymentIntents.create({
-                amount: amount,
-                currency: currency,
-                payment_method_types: payment_method_types,
-            })
-                .then((paymentIntent) => {
-                    return {
-                        code: 200,
-                        message: "Paiement créé avec succès",
-                        data: {
-                            clientSecret: paymentIntent.client_secret,
-                            id: paymentIntent.id,
-                            amount: this.renderAsLisibleNumber({ nombre: paymentIntent.amount }),
-                            currency: paymentIntent.currency,
-                            status: paymentIntent.status,
-                        },
-                    };
-                })
-                .catch((error) => {
-                    return {
-                        code: 500,
-                        message: "Erreur lors du paiement",
-                        data: {
-                            error: error.message,
-                        },
-                    };
-                });
-        } catch (error) {
+            const paymentIntent = await this.stripe.paymentIntents.create({
+                amount,
+                currency,
+                automatic_payment_methods: { enabled: true },
+                // ...(payment_method_types?.length
+                //     ? { payment_method_types }
+                //     : { automatic_payment_methods: { enabled: true } }),
+                // ...(return_url ? { return_url } : {}),
+            });
+
+            return {
+                code: 200,
+                message: "Paiement créé avec succès",
+                data: {
+                    clientSecret: paymentIntent.client_secret,
+                    id: paymentIntent.id,
+                    amount: this.renderAsLisibleNumber({ nombre: paymentIntent.amount }),
+                    currency: paymentIntent.currency,
+                    status: paymentIntent.status,
+                    nextAction: paymentIntent.next_action ?? null,
+                },
+            };
+        } catch (error: any) {
             return {
                 code: 500,
                 message: "Erreur lors du paiement",
@@ -243,7 +248,8 @@ export class AllSercices {
                 },
             };
         }
-    };
+    }
+
     calcTotalAmount(amount: number): number {
         const pourcentage = (this.stripeCommission); // 1.4%
         const fixe = (this.stripeCommissionFixed); // 10 centimes

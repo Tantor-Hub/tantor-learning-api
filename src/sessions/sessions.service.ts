@@ -50,6 +50,7 @@ import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
 import { RequiredDocument } from 'src/utils/utiles.documentskeyenum';
 import { SurveyResponse } from 'src/models/model.surveyresponses';
 import { ISurveyResponse } from 'src/interface/interface.stagiairehassession';
+import { Stripe } from 'stripe';
 
 @Injectable()
 export class SessionsService {
@@ -877,6 +878,51 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error })
         }
     }
+    async webhookStripePayment(event: Stripe.Event): Promise<ResponseServer> {
+        try {
+            if (event.type === 'payment_intent.succeeded' || event.type === 'payment_intent.payment_failed') {
+                const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+                const pay = await this.payementModel.findOne({ where: { id_stripe_payment: paymentIntent.id } });
+
+                if (pay instanceof Payement) {
+                    let newStatus = 0; // par défaut non payé
+
+                    switch (paymentIntent.status) {
+                        case 'succeeded':
+                            newStatus = 1; // payé
+                            break;
+                        case 'requires_payment_method':
+                        case 'requires_confirmation':
+                            newStatus = 0; // pas encore payé
+                            break;
+                        case 'requires_action':
+                        case 'processing':
+                            newStatus = 0; // en attente
+                            break;
+                        case 'canceled':
+                            newStatus = 2; // failed
+                            break;
+                        default:
+                            newStatus = 2; // failed (catch-all)
+                    }
+
+                    await pay.update({ status: newStatus });
+
+                    if (newStatus === 1) {
+                        await this.hasSessionStudentModel.update(
+                            { id_payement: pay.id, status: 1 },
+                            { where: { id: pay.id_session_student } },
+                        );
+                    }
+                }
+            }
+
+            return Responder({ status: HttpStatusCode.Ok, data: 'Event received' });
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error });
+        }
+    }
     async applyToSession(applySessionDto: CreateSessionPaiementDto, user: IJwtSignin): Promise<ResponseServer> {
         const { id_session, payment, roi_accepted, responses_survey } = applySessionDto;
         const { id_user } = user;
@@ -938,14 +984,6 @@ export class SessionsService {
             // await this.adocsModel.create({ session_id: id, user_id: id_user }, { transaction });
             // await this.pdocsModel.create({ session_id: id, user_id: id_user }, { transaction });
 
-            this.serviceMail.onWelcomeToSessionStudent({
-                to: email,
-                formation_name: titre,
-                fullname,
-                session_name: designation,
-                asAttachement: true
-            });
-
             if (responses_survey && responses_survey.length > 0) {
                 await this.surveyResponseModel.bulkCreate(
                     responses_survey.map((r: ISurveyResponse) => ({
@@ -962,6 +1000,24 @@ export class SessionsService {
                 switch (payment.method) {
                     case 'CARD':
                         const card = payment.card as CreatePaymentSessionDto;
+                        const base = String(card.callback).endsWith("/")
+                            ? String(card.callback)
+                            : String(card.callback) + "/";
+                        const stripeResp = await this.allServices.onPay({
+                            amount: parseFloat(prix as string) * 100,
+                            currency: 'eur',
+                            payment_method_types: ['card'],
+                            return_url: `${base}trainings/${id_formation}/${id_session}/success-payment?amount=${prix}&trainingId=${id_formation}&sessionId=${id_session}`
+                        });
+
+                        if (stripeResp.code !== 200) {
+                            await transaction.rollback();
+                            console.error(stripeResp.data);
+                            return Responder({ status: HttpStatusCode.BadRequest, data: "Erreur lors de la création du paiement Stripe" });
+                        }
+
+                        const { clientSecret, id: id_stripe_payment } = stripeResp.data;
+
                         await this.payementModel.create({
                             id_session,
                             id_session_student: id,
@@ -972,8 +1028,31 @@ export class SessionsService {
                             month: card.month,
                             year: card.year,
                             cvv: card.cvv,
-                            id_stripe_payment: card.id_stripe_payment
+                            id_stripe_payment: id_stripe_payment
                         }, { transaction });
+
+                        this.serviceMail.onWelcomeToSessionStudent({
+                            to: email,
+                            formation_name: titre,
+                            fullname,
+                            session_name: designation,
+                            asAttachement: true
+                        });
+                        await transaction.commit();
+                        return Responder({
+                            status: HttpStatusCode.Created,
+                            data: {
+                                message: "Inscription et paiement initiés avec succès",
+                                record,
+                                callback: {
+                                    clientSecret,
+                                    paymentId: id_stripe_payment,
+                                    amount: prix,
+                                    currency: 'eur',
+                                    returnUrl: `${base}trainings/${id_formation}/${id_session}/success-payment`
+                                }
+                            }
+                        });
                         break;
 
                     case 'OPCO':
@@ -992,6 +1071,11 @@ export class SessionsService {
                         break;
 
                     case 'CPF':
+                        this.allServices.onPay({
+                            amount: prix,
+                            currency: 'EUR',
+                            payment_method_types: ['card']
+                        })
                         await transaction.commit();
                         return Responder({ status: HttpStatusCode.Created, data: "Méthode de paiement CPF non prise en charge" });
 
@@ -1001,6 +1085,14 @@ export class SessionsService {
                 }
             }
 
+            this.serviceMail.onWelcomeToSessionStudent({
+                to: email,
+                formation_name: titre,
+                fullname,
+                session_name: designation,
+                asAttachement: true
+            });
+
             await transaction.commit();
             return Responder({ status: HttpStatusCode.Created, data: record });
 
@@ -1009,7 +1101,6 @@ export class SessionsService {
             return Responder({ status: HttpStatusCode.InternalServerError, data: error });
         }
     }
-
     async getListePrestation(): Promise<ResponseServer> {
         return Responder({ status: HttpStatusCode.Ok, data: { length: typesprestations.length, list: typesprestations } })
     }
