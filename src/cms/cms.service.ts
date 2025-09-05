@@ -492,7 +492,7 @@ export class CmsService {
         })
             .then(infos => {
                 this.mailService.sendMail({
-                    to: this.configService.get<string>('APPSMTPUSER') as string,
+                    to: "support@tantorlearning.com", //this.configService.get<string>('APPSMTPUSER') as string,
                     content,
                     subject,
                 })
@@ -501,6 +501,21 @@ export class CmsService {
                 return Responder({ status: HttpStatusCode.Created, data: infos })
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+    }
+    async getSubsribersOnTheNewsLetter(): Promise<ResponseServer> {
+        try {
+            return this.newsletterModel.findAll({
+                where: {
+                    status: 1
+                }
+            })
+                .then(list => {
+                    return Responder({ status: HttpStatusCode.Ok, data: { length: list.length, list } })
+                })
+                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
+        } catch (error) {
+            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+        }
     }
     async onSubscribeToNewsLetter(createNewsLetter: CreateNewsLetterDto): Promise<ResponseServer> {
         const { user_email } = createNewsLetter

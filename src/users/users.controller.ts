@@ -35,6 +35,11 @@ export class UsersController {
     async addNewSystemeUser(@Body() createUserDto: CreateUserDto) {
         return this.userService.registerAsNewUser(createUserDto);
     }
+    @Get('user/me')
+    @UseGuards(JwtAuthGuardAsFormateur)
+    async GetSystemeUserStatusAsAuthOrNot() {
+        return Responder({ status: HttpStatusCode.Ok, data: { isTokenValid: true } })
+    }
     @Post('user/add/magiclink')
     @UseGuards(JwtAuthGuardAsFormateur)
     async addNewSystemeUserSendMagicLink(@Body() createUserDto: CreateUserMagicLinkDto) {

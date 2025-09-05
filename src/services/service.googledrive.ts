@@ -1,79 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
 import { ConfigService } from '@nestjs/config';
-import { google } from 'googleapis';
-import * as path from 'path';
-import * as stream from 'stream';
 
 @Injectable()
 export class GoogleDriveService {
-  private drive: any;
-  private owner: string;
-
   constructor(private readonly configService: ConfigService) {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, '../../src/utils/utiles.googleservices.json'),
-      scopes: ['https://www.googleapis.com/auth/drive'],
+    cloudinary.config({
+      cloud_name: "dfjs9os9x", //this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
+      api_key: "132649767558245", //this.configService.get<string>('CLOUDINARY_API_KEY'),
+      api_secret: "N5tiVqxnZqZTjW7Kd9kjk0VGAh8"//this.configService.get<string>('CLOUDINARY_API_SECRET'),
     });
-
-    this.owner = this.configService.get<string>('APPSMTPUSER') || "tantorelearning@gmail.com";
-    this.drive = google.drive({ version: 'v3', auth });
   }
 
-  async uploadBufferFile(file: Express.Multer.File, folderId?: string): Promise<{
+  async uploadBufferFile(file: Express.Multer.File): Promise<{
     id: string;
     name: string;
     viewLink: string;
     link: string;
+    downloadLink?: string
   } | null> {
-    const fileMetadata: any = {
-      name: file.originalname,
-    };
-
-    if (folderId) {
-      fileMetadata.parents = [folderId];
-    }
-
-    const bufferStream = new stream.PassThrough();
-    bufferStream.end(file.buffer);
-
-    try {
-      const response = await this.drive.files.create({
-        requestBody: fileMetadata,
-        media: {
-          mimeType: file.mimetype,
-          body: bufferStream,
-        },
-        fields: 'id, name, webViewLink',
-      });
-
-      const fileId = response.data.id;
-
-      await this.drive.permissions.create({
-        fileId,
-        requestBody: {
-          role: 'reader',
-          type: 'anyone',
-        },
-      });
-
-      await this.drive.permissions.create({
-        fileId,
-        requestBody: {
-          role: 'reader',
-          type: 'user',
-          emailAddress: this.owner,
-        },
-      });
-
-      return {
-        id: fileId,
-        name: response.data.name,
-        viewLink: response.data.webViewLink,
-        link: `https://drive.google.com/uc?id=${fileId}&export=download`,
-      };
-    } catch (error) {
-      console.error('Erreur lors de l’upload sur Google Drive :', error?.message || error);
-      return null;
-    }
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream({ folder: '__tantorLearning' }, (error, result) => {
+          if (error) return reject(error);
+          resolve({
+            viewLink: result!.url,
+            link: result!.secure_url,
+            id: result!.public_id,
+            downloadLink: result!.secure_url,
+            name: result!.signature
+          });
+        })
+        .end(file.buffer);
+    });
   }
 }

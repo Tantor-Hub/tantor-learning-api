@@ -35,6 +35,10 @@ export class CmsController {
     async subscribeToNewsLetter(@Body() form: CreateNewsLetterDto) {
         return this.cmsService.onSubscribeToNewsLetter(form)
     }
+    @Get('newsletter/subscribers')
+    async newsLetterList() {
+        return this.cmsService.getSubsribersOnTheNewsLetter()
+    }
     @Get('events/e/list')
     @UseGuards(JwtAuthGuard)
     async getMyPlaning(@User() user: IJwtSignin) {
@@ -121,6 +125,6 @@ export class CmsController {
     @Get('/dashboard/performances')
     @UseGuards(JwtAuthGuardAsStudent)
     async onLoadScoresPerformances(@User() user: IJwtSignin) {
-        return this.usersService.loadPerformances(user)
+        return this.usersService.loadPerformances(user) //
     }
 }

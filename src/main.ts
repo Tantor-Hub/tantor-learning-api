@@ -21,10 +21,7 @@ async function tantorAPP() {
     credentials: true,
   });
   app.setGlobalPrefix('/api/');
-  app.use(
-    '/webhook/stripe/onpayment',
-    bodyParser.raw({ type: 'application/json' }),
-  );
+  app.use('/webhook/stripe/onpayment', bodyParser.raw({ type: 'application/json' }));
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
     whitelist: true,
@@ -81,7 +78,7 @@ async function tantorAPP() {
 
   await app.listen(port, () => {
     log("---------------------------------------");
-    log(`::: TANTOR APP [STATUS:RUNNING] ON PORT: ${port}`);
+    log(`::: TANTOR APP [STATUS:RUNNING] ON PORT ::: ${port}`);
     log("---------------------------------------");
   });
 }
