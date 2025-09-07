@@ -34,7 +34,8 @@ import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
-
+import { Response } from 'express';
+import { base64decode, base64encode } from 'nodejs-base64';
 @Injectable()
 export class UsersService {
     constructor(
@@ -1044,27 +1045,23 @@ export class UsersService {
             })
             .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
     }
-    async authWithGoogle(user: IAuthWithGoogle): Promise<ResponseServer> {
+    async authWithGoogle(user: IAuthWithGoogle, res: Response): Promise<any> {
         const { email, firstName, lastName, picture, accessToken } = user;
 
         const verif_code = this.allService.randomLongNumber({ length: 6 })
         const num_record = this.allService.randomLongNumber({ length: 8 })
         const hashed_password = await this.cryptoService.hashPassword((this.configService.get<string>('DEFAULTUSERPASSWORD') || '').concat(num_record) as string)
         const uuid_user = this.allService.generateUuid()
+        const base = "https://tantor-learning.vercel.app"
 
         try {
-            // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
             return this.userModel.findOrCreate({
-                where: {
-                    email
-                },
+                where: { email },
                 include: [
                     {
                         model: Roles,
                         required: false,
-                        attributes: {
-                            exclude: ['status', 'description']
-                        }
+                        attributes: { exclude: ['status', 'description'] }
                     }
                 ],
                 defaults: {
@@ -1075,7 +1072,7 @@ export class UsersService {
                     password: hashed_password,
                     avatar: picture,
                     nick_name: firstName,
-                    num_record: num_record,
+                    num_record,
                     phone: email,
                     uuid: uuid_user,
                     verification_code: verif_code
@@ -1083,79 +1080,84 @@ export class UsersService {
             })
                 .then(async ([student, isNewStudent]) => {
                     const { id: as_id_user, email, fs_name, ls_name, roles, uuid, is_verified } = student?.toJSON()
+
                     if (isNewStudent) {
                         return this.hasRoleModel.create({
-                            RoleId: 4, // this Means Student Or Stagiaire
+                            RoleId: 4,
                             UserId: as_id_user as number,
                             status: 1
                         })
                             .then(hasrole => {
                                 if (hasrole instanceof HasRoles) {
-                                    this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
-                                    const newInstance = student.toJSON();
+                                    const _roles = this.allService.formatRoles(roles as any)
+                                    return this.jwtService.signinPayloadAndEncrypt({
+                                        id_user: as_id_user as number,
+                                        roles_user: _roles,
+                                        uuid_user: uuid as string,
+                                        level_indicator: 90
+                                    })
+                                        .then(async ({ code, data, message }) => {
+                                            this.onWelcomeNewStudent({ to: email, otp: verif_code, nom: fs_name, postnom: ls_name, all: true })
+                                            const { hashed, cleared, refresh } = data
+                                            const newInstance = student.toJSON();
 
-                                    delete (newInstance as any).password;
-                                    delete (newInstance as any).verification_code;
-                                    delete (newInstance as any).last_login;
-                                    delete (newInstance as any).status;
-                                    delete (newInstance as any).is_verified;
-                                    delete (newInstance as any).createdAt;
-                                    delete (newInstance as any).updatedAt;
-                                    const record = this.allService.filterUserFields(newInstance)
-                                    return Responder({ status: HttpStatusCode.Created, data: { user: record } })
+                                            delete (newInstance as any).password;
+                                            delete (newInstance as any).verification_code;
+                                            delete (newInstance as any).last_login;
+                                            delete (newInstance as any).status;
+                                            delete (newInstance as any).is_verified;
+                                            delete (newInstance as any).createdAt;
+                                            delete (newInstance as any).updatedAt;
+                                            const record = this.allService.filterUserFields(newInstance)
+                                            return res.redirect(`${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: record, auth_token: hashed, refresh_token: refresh }))}`)
+                                        })
+                                        .catch(err => {
+                                            return res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: err?.toString() }))}`)
+                                        })
                                 } else {
-                                    return Responder({ status: HttpStatusCode.BadRequest })
+                                    return res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: null }))}`)
                                 }
                             })
                             .catch(err => {
-                                return Responder({ status: HttpStatusCode.Conflict, data: err })
+                                return res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: err?.toString() }))}`)
                             })
                     } else {
-                        if (is_verified === 1) {
-                            const _roles = this.allService.formatRoles(roles as any)
-                            return this.jwtService.signinPayloadAndEncrypt({
-                                id_user: as_id_user as number,
-                                roles_user: _roles,
-                                uuid_user: uuid as string,
-                                level_indicator: 90
+                        const _roles = this.allService.formatRoles(roles as any)
+                        return this.jwtService.signinPayloadAndEncrypt({
+                            id_user: as_id_user as number,
+                            roles_user: _roles,
+                            uuid_user: uuid as string,
+                            level_indicator: 90
+                        })
+                            .then(async ({ code, data, message }) => {
+                                const verif_code = this.allService.randomLongNumber({ length: 6 })
+                                return student.update({ verification_code: verif_code })
+                                    .then(_ => {
+                                        const newInstance = student.toJSON();
+
+                                        delete (newInstance as any).password;
+                                        delete (newInstance as any).verification_code;
+                                        delete (newInstance as any).last_login;
+                                        delete (newInstance as any).status;
+                                        delete (newInstance as any).is_verified;
+                                        delete (newInstance as any).createdAt;
+                                        delete (newInstance as any).updatedAt;
+                                        const { hashed, refresh, cleared } = data
+                                        // if (is_verified) this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
+                                        return res.redirect(`${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: student, auth_token: hashed, refresh_token: refresh }))}`)
+                                    })
+                                    .catch(err => res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: err?.toString() }))}`))
                             })
-                                .then(async ({ code, data, message }) => {
-                                    const { cleared, hashed } = data
-                                    const record = this.allService.filterUserFields(student.toJSON())
-                                    return Responder({ status: HttpStatusCode.Ok, data: { auth_token: hashed, user: record } })
-                                })
-                                .catch(err => {
-                                    return Responder({ status: 500, data: err })
-                                })
-                        } else {
-                            const verif_code = this.allService.randomLongNumber({ length: 6 })
-                            return student.update({
-                                verification_code: verif_code
+                            .catch(err => {
+                                return res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: err?.toString() }))}`)
                             })
-                                .then(_ => {
-
-                                    const newInstance = student.toJSON();
-
-                                    delete (newInstance as any).password;
-                                    delete (newInstance as any).verification_code;
-                                    delete (newInstance as any).last_login;
-                                    delete (newInstance as any).status;
-                                    delete (newInstance as any).is_verified;
-                                    delete (newInstance as any).createdAt;
-                                    delete (newInstance as any).updatedAt;
-
-                                    this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
-                                    return Responder({ status: HttpStatusCode.Unauthorized, data: { user: newInstance } })
-                                })
-                                .catch(err => Responder({ status: HttpStatusCode.InternalServerError, data: err }))
-                        }
                     }
                 })
                 .catch(err => {
-                    return Responder({ status: HttpStatusCode.InternalServerError, data: err })
+                    return res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: err?.toString() }))}`)
                 })
         } catch (error) {
-            return Responder({ status: HttpStatusCode.InternalServerError, data: error })
+            return res.redirect(`${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: "Impossible to initialize roles", data: error?.toString() }))}`)
         }
     }
 }

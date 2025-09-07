@@ -39,7 +39,7 @@ export class JwtService {
     });
     let hashed = this.allServices.base64Econde(signature)
     for (let index = 0; index < this.round; index++) hashed = this.allServices.base64Econde(hashed)
-    return hashed;
+    return hashed
   }
 
   async decryptWithRound(string: string): Promise<string> {

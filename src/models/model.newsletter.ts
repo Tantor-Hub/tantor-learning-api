@@ -6,4 +6,7 @@ import { INewsletter } from 'src/interface/interface.newsletter';
 export class Newsletter extends Model<INewsletter> {
     @Column({ type: DataType.STRING, allowNull: false })
     user_email: string;
+
+    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
+    status: string;
 }

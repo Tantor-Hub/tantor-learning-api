@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, Req, Request, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, Request, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
@@ -18,7 +18,8 @@ import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
-
+import { Response } from 'express';
+import { log } from 'console';
 @Controller('users')
 export class UsersController {
     constructor(
@@ -101,12 +102,12 @@ export class UsersController {
     }
     @Get('user/authwithgoogle')
     @UseGuards(AuthGuard('google'))
-    async googleAuth(@Req() req) { }
-
+    async googleAuth(@Req() req: any) { }
     @Get('/auth/google/callback')
     @UseGuards(AuthGuard('google'))
-    async googleAuthRedirect(@Req() req: any) {
-        return this.userService.authWithGoogle(req.user)
+    async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
+        log(" ===== >>>> ", req?.url)
+        await this.userService.authWithGoogle(req.user, res)
     }
     @Get("user/:email")
     @UseGuards(JwtAuthGuardAsFormateur)
