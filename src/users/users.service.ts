@@ -1690,7 +1690,8 @@ export class UsersService {
     );
     const uuid_user = this.allService.generateUuid();
     const base =
-      (process.env.BASECLIENTURL as string) || 'http://localhost:3000';
+      (process.env.BASECLIENTURL as string) ||
+      'https://tantor-learning.vercel.app';
     try {
       return this.userModel
         .findOrCreate({
