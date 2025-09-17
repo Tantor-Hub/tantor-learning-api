@@ -19,6 +19,9 @@ import { SignInStudentDto } from './dto/signin-student.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { FindByEmailDto } from './dto/find-by-email.dto';
+import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';
+import { LoginPasswordlessDto } from './dto/login-passwordless.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -53,6 +56,21 @@ export class UsersController {
   @Post('user/signup')
   async registerAsStudent(@Body() createUserDto: CreateUserDto) {
     return this.userService.registerAsStudent(createUserDto);
+  }
+
+  @Post('user/passwordless/register')
+  async registerPasswordless(@Body() registerDto: RegisterPasswordlessDto) {
+    return this.userService.registerPasswordless(registerDto);
+  }
+
+  @Post('user/passwordless/login')
+  async loginPasswordless(@Body() loginDto: LoginPasswordlessDto) {
+    return this.userService.loginPasswordless(loginDto);
+  }
+
+  @Post('user/passwordless/verify')
+  async verifyOtp(@Body() verifyDto: VerifyOtpDto) {
+    return this.userService.verifyOtp(verifyDto);
   }
   @Post('user/add')
   @UseGuards(JwtAuthGuardAsFormateur)
