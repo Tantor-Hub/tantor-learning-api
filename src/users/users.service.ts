@@ -34,6 +34,9 @@ import { HomeworksSession } from 'src/models/model.homework';
 import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
+import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';
+import { LoginPasswordlessDto } from './dto/login-passwordless.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Response } from 'express';
 import { base64decode, base64encode } from 'nodejs-base64';
 @Injectable()
@@ -520,7 +523,7 @@ export class UsersService {
           if (is_verified === 1) {
             const matched = await this.cryptoService.comparePassword(
               password,
-              as_hashed_password,
+              as_hashed_password || '',
             );
             if (matched) {
               return this.jwtService
@@ -572,8 +575,8 @@ export class UsersService {
 
                 this.onWelcomeNewStudent({
                   to: email,
-                  nom: fs_name,
-                  postnom: ls_name,
+                  nom: fs_name || 'User',
+                  postnom: ls_name || '',
                   otp: verif_code,
                   all: false,
                 });
@@ -613,7 +616,7 @@ export class UsersService {
       phone,
       uuid,
       verification_code,
-      date_of_birth,
+      date_of_birth: dateBirth,
     } = createUserDto;
     const existingUser = await this.userModel.findOne({ where: { email } });
     if (existingUser) {
@@ -637,11 +640,12 @@ export class UsersService {
         phone: phone,
         password: hashed_password,
         nick_name,
-        date_of_birth,
+        dateBirth,
         uuid: uuid_user,
         verification_code: verif_code,
         is_verified: 0,
         status: 1,
+        role: 'student',
       })
       .then((student) => {
         if (student instanceof Users) {
@@ -734,6 +738,7 @@ export class UsersService {
           verification_code: verif_code,
           is_verified: 0,
           status: 1,
+          role: 'student',
         })
         .then(async (u) => {
           if (u instanceof Users) {
@@ -934,7 +939,7 @@ export class UsersService {
             phone: phone,
             password: hashed_password,
             nick_name,
-            date_of_birth,
+            dateBirth,
             status: 1,
           },
           {
@@ -1489,6 +1494,163 @@ export class UsersService {
         Responder({ status: HttpStatusCode.InternalServerError, data: err }),
       );
   }
+  async registerPasswordless(
+    registerDto: RegisterPasswordlessDto,
+  ): Promise<ResponseServer> {
+    const {
+      email,
+      firstName,
+      lastName,
+      avatar,
+      address,
+      country,
+      city,
+      identityNumber,
+      dateBirth,
+    } = registerDto;
+
+    const existingUser = await this.userModel.findOne({ where: { email } });
+    if (existingUser) {
+      return Responder({
+        status: HttpStatusCode.Conflict,
+        data: `[Email]: ${email} est déjà utilisé`,
+      });
+    }
+
+    const otp = this.allService.randomLongNumber({ length: 6 });
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    const user = await this.userModel.create({
+      email,
+      fs_name: firstName,
+      ls_name: lastName,
+      avatar,
+      address,
+      country,
+      city,
+      identityNumber,
+      dateBirth,
+      role: 'student',
+      otp,
+      otpExpires,
+    });
+
+    // Send OTP email
+    this.mailService.sendMail({
+      content: this.mailService.templates({
+        as: 'otp',
+        nom: firstName || '',
+        postnom: lastName || '',
+        code: otp,
+      }),
+      to: email,
+      subject: 'Code de vérification pour inscription',
+    });
+
+    return Responder({
+      status: HttpStatusCode.Created,
+      data: {
+        message: "OTP envoyé à votre email pour finaliser l'inscription",
+      },
+    });
+  }
+
+  async loginPasswordless(
+    loginDto: LoginPasswordlessDto,
+  ): Promise<ResponseServer> {
+    const { email } = loginDto;
+
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) {
+      return Responder({
+        status: HttpStatusCode.NotFound,
+        data: 'Utilisateur non trouvé',
+      });
+    }
+
+    const otp = this.allService.randomLongNumber({ length: 6 });
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await user.update({ otp, otpExpires });
+
+    // Send OTP email
+    this.mailService.sendMail({
+      content: this.mailService.templates({
+        as: 'otp',
+        nom: user.firstName || '',
+        postnom: user.lastName || '',
+        code: otp,
+      }),
+      to: email,
+      subject: 'Code de vérification pour connexion',
+    });
+
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: { message: 'OTP envoyé à votre email' },
+    });
+  }
+
+  async verifyOtp(verifyDto: VerifyOtpDto): Promise<ResponseServer> {
+    const { email, otp } = verifyDto;
+
+    const user = await this.userModel.findOne({ where: { email } });
+    if (!user) {
+      return Responder({
+        status: HttpStatusCode.NotFound,
+        data: 'Utilisateur non trouvé',
+      });
+    }
+
+    if (
+      !user.otp ||
+      !user.otpExpires ||
+      user.otp !== otp ||
+      user.otpExpires < new Date()
+    ) {
+      return Responder({
+        status: HttpStatusCode.BadRequest,
+        data: 'OTP invalide ou expiré',
+      });
+    }
+
+    // Clear OTP
+    await user.update({ otp: undefined, otpExpires: undefined });
+
+    // Generate JWT
+    return this.jwtService
+      .signinPayloadAndEncrypt({
+        id_user: user.id,
+        roles_user: [this.roleMap[user.role] || 4],
+        uuid_user: user.uuid,
+        level_indicator: 90,
+      })
+      .then(({ code, data, message }) => {
+        const { cleared, hashed, refresh } = data;
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            auth_token: hashed,
+            refresh_token: refresh,
+            user: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName || user.fs_name,
+              lastName: user.lastName || user.ls_name,
+              avatar: user.avatar,
+              role: user.role,
+            },
+          },
+        });
+      })
+      .catch((err) => {
+        return Responder({
+          status: HttpStatusCode.InternalServerError,
+          data: err,
+        });
+      });
+  }
+
   async authWithGoogle(user: IAuthWithGoogle, res: Response): Promise<any> {
     const { email, firstName, lastName, picture, accessToken } = user;
 
@@ -1525,6 +1687,7 @@ export class UsersService {
             phone: email,
             uuid: uuid_user,
             verification_code: verif_code,
+            role: 'student',
           },
         })
         .then(async ([student, isNewStudent]) => {
