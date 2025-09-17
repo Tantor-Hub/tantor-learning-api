@@ -1,5 +1,5 @@
 export enum IAliasMail {
-    'welcome',
-    'verification',
-    'passwordset',
+  'welcome',
+  'verification',
+  'passwordset',
 }

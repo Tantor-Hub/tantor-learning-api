@@ -1,4 +1,12 @@
-import { Table, Column, Model, DataType, HasMany, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  HasMany,
+  ForeignKey,
+  BelongsTo,
+} from 'sequelize-typescript';
 import { IQuestionnaire } from 'src/interface/interface.cours';
 import { QuestionType } from 'src/utils/utiles.typesprestation';
 import { Options } from './model.optionquestionnaires';
@@ -6,7 +14,10 @@ import { Survey } from './model.questionspourquestionnaireinscription';
 import { table_prefix } from 'src/config/config.tablesname';
 import { SessionSuivi } from './model.suivisession';
 
-@Table({ tableName: `${table_prefix}questionnairesinscription`, timestamps: true })
+@Table({
+  tableName: `${table_prefix}questionnairesinscription`,
+  timestamps: true,
+})
 export class Questionnaires extends Model<IQuestionnaire> {
   @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
   id: number;
@@ -31,7 +42,7 @@ export class Questionnaires extends Model<IQuestionnaire> {
   id_questionnaire: number;
 
   @BelongsTo(() => Survey, {
-    onDelete: 'CASCADE'
+    onDelete: 'CASCADE',
   })
   Survey: Survey;
 

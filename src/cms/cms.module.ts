@@ -29,7 +29,24 @@ import { Listcours } from 'src/models/model.cours';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([AppInfos, SessionSuivi, Listcours, Newsletter, Users, Cours, Roles, HasRoles, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings]),
+    SequelizeModule.forFeature([
+      AppInfos,
+      SessionSuivi,
+      Listcours,
+      Newsletter,
+      Users,
+      Cours,
+      Roles,
+      HasRoles,
+      StagiaireHasSession,
+      HomeworksSession,
+      Messages,
+      StagiaireHasSessionSeances,
+      SeanceSessions,
+      StagiaireHasHomeWork,
+      Contacts,
+      Planings,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -43,6 +60,15 @@ import { Listcours } from 'src/models/model.cours';
     }),
   ],
   controllers: [CmsController],
-  providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService, MailService],
+  providers: [
+    AllSercices,
+    CmsService,
+    MailService,
+    CryptoService,
+    JwtService,
+    GoogleDriveService,
+    UsersService,
+    MailService,
+  ],
 })
-export class CmsModule { }
+export class CmsModule {}

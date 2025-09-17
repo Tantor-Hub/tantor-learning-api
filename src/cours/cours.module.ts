@@ -35,21 +35,53 @@ import { Question } from 'src/models/model.quiz';
 import { Option } from 'src/models/model.optionsquiz';
 
 @Module({
-    imports: [
-        SequelizeModule.forFeature([AppInfos, Chapitre, Newsletter, Documents, Users, Roles, HasRoles, Evaluation, Question, Option, StagiaireHasSession, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork, Contacts, Planings, Cours, Listcours, SessionSuivi, FormateurHasSession]),
-        ConfigModule,
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('APPJWTTOKEN', 'defaultSecret'),
-                signOptions: {
-                    expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h'),
-                },
-            }),
-        })
-    ],
-    controllers: [CoursController],
-    providers: [AllSercices, CmsService, MailService, CryptoService, JwtService, GoogleDriveService, UsersService, CoursService],
+  imports: [
+    SequelizeModule.forFeature([
+      AppInfos,
+      Chapitre,
+      Newsletter,
+      Documents,
+      Users,
+      Roles,
+      HasRoles,
+      Evaluation,
+      Question,
+      Option,
+      StagiaireHasSession,
+      HomeworksSession,
+      Messages,
+      StagiaireHasSessionSeances,
+      SeanceSessions,
+      StagiaireHasHomeWork,
+      Contacts,
+      Planings,
+      Cours,
+      Listcours,
+      SessionSuivi,
+      FormateurHasSession,
+    ]),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('APPJWTTOKEN', 'defaultSecret'),
+        signOptions: {
+          expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h'),
+        },
+      }),
+    }),
+  ],
+  controllers: [CoursController],
+  providers: [
+    AllSercices,
+    CmsService,
+    MailService,
+    CryptoService,
+    JwtService,
+    GoogleDriveService,
+    UsersService,
+    CoursService,
+  ],
 })
-export class CoursModule { }
+export class CoursModule {}

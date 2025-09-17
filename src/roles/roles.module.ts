@@ -27,6 +27,13 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
     }),
   ],
   controllers: [RolesController],
-  providers: [RolesService, MailService, CryptoService, AllSercices, JwtService, GoogleDriveService],
+  providers: [
+    RolesService,
+    MailService,
+    CryptoService,
+    AllSercices,
+    JwtService,
+    GoogleDriveService,
+  ],
 })
-export class RolesModule { }
+export class RolesModule {}

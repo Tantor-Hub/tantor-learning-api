@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, HttpException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  HttpException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { JwtService } from 'src/services/service.jwt';
@@ -7,28 +13,44 @@ import { AllSercices } from '../services/serices.all';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  keyname: string;
+  allowedTo: number[] = [4, 1, 2, 3];
+  accessLevel: number = 90; // c'est à dire que le niveau pour les utilisateurs
 
-    keyname: string;
-    allowedTo: number[] = [4, 1, 2, 3];
-    accessLevel: number = 90; // c'est à dire que le niveau pour les utilisateurs
+  constructor(
+    private readonly jwtService: JwtService,
+    private configService: ConfigService,
+    private readonly allSercices: AllSercices,
+  ) {
+    this.keyname = this.configService.get<string>('APPKEYAPINAME') as string;
+  }
 
-    constructor(private readonly jwtService: JwtService, private configService: ConfigService, private readonly allSercices: AllSercices) {
-        this.keyname = (this.configService.get<string>('APPKEYAPINAME')) as string
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const authHeader = request.headers[this.keyname] as string;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new CustomUnauthorizedException(
+        "Aucune clé d'authentification n'a éte fournie",
+      );
     }
-
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest<Request>();
-        const authHeader = request.headers[this.keyname] as string;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            throw new CustomUnauthorizedException("Aucune clé d'authentification n'a éte fournie");
-        }
-        const [_, token] = authHeader.split(" ");
-        const decoded = await this.jwtService.verifyTokenWithRound(token);
-        if (!decoded) throw new CustomUnauthorizedException("La clé d'authentification fournie a déjà expiré");
-        const { roles_user, level_indicator } = decoded
-        if (this.allSercices.checkIntersection({ arr_a: this.allowedTo, arr_b: roles_user })) {
-            request.user = decoded;
-            return true
-        } else throw new CustomUnauthorizedException("La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources");
-    }
+    const [_, token] = authHeader.split(' ');
+    const decoded = await this.jwtService.verifyTokenWithRound(token);
+    if (!decoded)
+      throw new CustomUnauthorizedException(
+        "La clé d'authentification fournie a déjà expiré",
+      );
+    const { roles_user, level_indicator } = decoded;
+    if (
+      this.allSercices.checkIntersection({
+        arr_a: this.allowedTo,
+        arr_b: roles_user,
+      })
+    ) {
+      request.user = decoded;
+      return true;
+    } else
+      throw new CustomUnauthorizedException(
+        "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+      );
+  }
 }

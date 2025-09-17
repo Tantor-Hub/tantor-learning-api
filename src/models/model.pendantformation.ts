@@ -1,4 +1,11 @@
-import { BelongsTo, Column, DataType, ForeignKey, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  Table,
+} from 'sequelize-typescript';
 import { StagiaireHasSession } from './model.stagiairehassession';
 import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
@@ -6,7 +13,6 @@ import { IPendantFormationDocs } from 'src/interface/interface.formations';
 
 @Table({ tableName: tables['pendant_formation_docs'] })
 export class PendantFormationDocs extends Model<IPendantFormationDocs> {
-
   @Column({ type: DataType.INTEGER, allowNull: true })
   @ForeignKey(() => StagiaireHasSession)
   session_id: number;
@@ -22,7 +28,7 @@ export class PendantFormationDocs extends Model<IPendantFormationDocs> {
   @Column fiches_emargement: string;
 
   @BelongsTo(() => StagiaireHasSession, 'session_id')
-  SessionStudent: StagiaireHasSession
+  SessionStudent: StagiaireHasSession;
 
   @BelongsTo(() => Users, 'user_id')
   Student: Users;

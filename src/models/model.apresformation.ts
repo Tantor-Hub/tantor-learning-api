@@ -1,4 +1,12 @@
-import { BelongsTo, Column, DataType, ForeignKey, HasOne, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  HasOne,
+  Model,
+  Table,
+} from 'sequelize-typescript';
 import { StagiaireHasSession } from './model.stagiairehassession';
 import { tables } from 'src/config/config.tablesname';
 import { UploadDocument } from './model.documentsession';
@@ -22,7 +30,7 @@ export class ApresFormationDocs extends Model<IApresFormationDocs> {
   @Column fiche_controle_finale?: string;
 
   @BelongsTo(() => StagiaireHasSession, 'session_id')
-  SessionStudent: StagiaireHasSession
+  SessionStudent: StagiaireHasSession;
 
   @BelongsTo(() => Users, 'user_id')
   Student: Users;

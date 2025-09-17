@@ -4,18 +4,20 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CryptoService {
-    private readonly saltRounds: number;
+  private readonly saltRounds: number;
 
-    constructor(private readonly configService: ConfigService) {
-        this.saltRounds = parseInt(this.configService.get<string>('APPSALTLENGTH', '10'), 10);
-    }
+  constructor(private readonly configService: ConfigService) {
+    this.saltRounds = parseInt(
+      this.configService.get<string>('APPSALTLENGTH', '10'),
+      10,
+    );
+  }
 
-    async hashPassword(password: string): Promise<string> {
-        return bcrypt.hash(password, this.saltRounds);
-    }
+  async hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, this.saltRounds);
+  }
 
-    async comparePassword(password: string, hash: string): Promise<boolean> {
-        return bcrypt.compare(password, hash);
-    }
+  async comparePassword(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash);
+  }
 }
-

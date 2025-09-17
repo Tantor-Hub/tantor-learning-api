@@ -1,24 +1,34 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsNumberString, IsDateString, IsInt, IsUUID, IsDate, IsISO8601 } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsNumberString,
+  IsDateString,
+  IsInt,
+  IsUUID,
+  IsDate,
+  IsISO8601,
+} from 'class-validator';
 
 export class AddHomeworkSessionDto {
-    
-    @IsNumberString()
-    id_session: number;
+  @IsNumberString()
+  id_session: number;
 
-    @IsNumberString()
-    id_cours: number;
+  @IsNumberString()
+  id_cours: number;
 
-    @IsNumberString()
-    homework_date_on: number;
+  @IsNumberString()
+  homework_date_on: number;
 
-    @IsOptional()
-    @IsNumber()
-    id_formation?: string;
+  @IsOptional()
+  @IsNumber()
+  id_formation?: string;
 
-    @IsOptional()
-    @IsString()
-    piece_jointe: string;
+  @IsOptional()
+  @IsString()
+  piece_jointe: string;
 
-    @IsNumberString()
-    score: string;
-};
+  @IsNumberString()
+  score: string;
+}

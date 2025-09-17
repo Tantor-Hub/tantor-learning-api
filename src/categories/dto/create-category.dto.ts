@@ -1,15 +1,14 @@
-import { IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateCategoryDto {
+  @IsNumber()
+  @IsOptional()
+  id_thematique: number;
 
-    @IsNumber()
-    @IsOptional()
-    id_thematique: number
+  @IsString()
+  category: string;
 
-    @IsString()
-    category: string
-
-    @IsString()
-    @IsOptional()
-    description?: string
+  @IsString()
+  @IsOptional()
+  description?: string;
 }

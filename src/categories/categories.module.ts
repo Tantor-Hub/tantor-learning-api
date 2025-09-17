@@ -18,7 +18,13 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users, Categories, Thematiques]),
+    SequelizeModule.forFeature([
+      Roles,
+      HasRoles,
+      Users,
+      Categories,
+      Thematiques,
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -31,6 +37,14 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
     }),
   ],
   controllers: [CategoriesController],
-  providers: [CategoriesService, RolesService, MailService, CryptoService, AllSercices, JwtService, GoogleDriveService]
+  providers: [
+    CategoriesService,
+    RolesService,
+    MailService,
+    CryptoService,
+    AllSercices,
+    JwtService,
+    GoogleDriveService,
+  ],
 })
-export class CategoriesModule { }
+export class CategoriesModule {}

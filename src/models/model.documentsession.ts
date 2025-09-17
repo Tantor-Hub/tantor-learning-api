@@ -8,8 +8,11 @@ import {
 } from 'sequelize-typescript';
 import { Users } from './model.users';
 import { StagiaireHasSession } from './model.stagiairehassession';
-import { DocumentKeyEnum, StepsDocumentsSessionKeys } from 'src/utils/utiles.documentskeyenum';
-import { IUploadDocument, } from 'src/interface/interface.document';
+import {
+  DocumentKeyEnum,
+  StepsDocumentsSessionKeys,
+} from 'src/utils/utiles.documentskeyenum';
+import { IUploadDocument } from 'src/interface/interface.document';
 import { tables } from 'src/config/config.tablesname';
 import { SessionSuivi } from './model.suivisession';
 
@@ -26,7 +29,7 @@ export class UploadDocument extends Model<IUploadDocument> {
   @ForeignKey(() => StagiaireHasSession)
   @Column({
     type: DataType.INTEGER,
-    allowNull: true
+    allowNull: true,
   })
   id_session_student: number;
 
@@ -36,10 +39,16 @@ export class UploadDocument extends Model<IUploadDocument> {
   @Column({ type: DataType.STRING, allowNull: false })
   piece_jointe: string;
 
-  @Column({ type: DataType.ENUM(...Object.keys(StepsDocumentsSessionKeys)), allowNull: false })
+  @Column({
+    type: DataType.ENUM(...Object.keys(StepsDocumentsSessionKeys)),
+    allowNull: false,
+  })
   group: string;
 
-  @Column({ type: DataType.ENUM(...Object.keys(DocumentKeyEnum)), allowNull: false })
+  @Column({
+    type: DataType.ENUM(...Object.keys(DocumentKeyEnum)),
+    allowNull: false,
+  })
   key_document: string;
 
   @Column({ type: DataType.TEXT, allowNull: true })

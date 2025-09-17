@@ -6,9 +6,9 @@ import { ConfigService } from '@nestjs/config';
 export class GoogleDriveService {
   constructor(private readonly configService: ConfigService) {
     cloudinary.config({
-      cloud_name: "dfjs9os9x", //this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
-      api_key: "132649767558245", //this.configService.get<string>('CLOUDINARY_API_KEY'),
-      api_secret: "N5tiVqxnZqZTjW7Kd9kjk0VGAh8"//this.configService.get<string>('CLOUDINARY_API_SECRET'),
+      cloud_name: 'dfjs9os9x', //this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
+      api_key: '132649767558245', //this.configService.get<string>('CLOUDINARY_API_KEY'),
+      api_secret: 'N5tiVqxnZqZTjW7Kd9kjk0VGAh8', //this.configService.get<string>('CLOUDINARY_API_SECRET'),
     });
   }
 
@@ -17,7 +17,7 @@ export class GoogleDriveService {
     name: string;
     viewLink: string;
     link: string;
-    downloadLink?: string
+    downloadLink?: string;
   } | null> {
     return new Promise((resolve, reject) => {
       cloudinary.uploader
@@ -28,7 +28,7 @@ export class GoogleDriveService {
             link: result!.secure_url,
             id: result!.public_id,
             downloadLink: result!.secure_url,
-            name: result!.signature
+            name: result!.signature,
           });
         })
         .end(file.buffer);

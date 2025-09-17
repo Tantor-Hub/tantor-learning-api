@@ -1,11 +1,10 @@
 import { IsString, IsOptional, IsEnum } from 'class-validator';
 
 export class CreateThematicFormationDto {
-    @IsString()
-    thematic: string;
+  @IsString()
+  thematic: string;
 
-    @IsOptional()
-    @IsString()
-    description?: string;
-
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

@@ -1,13 +1,13 @@
 import {
-    Table,
-    Model,
-    Column,
-    DataType,
-    Default,
-    AllowNull,
-    HasMany,
-    ForeignKey,
-    BelongsTo,
+  Table,
+  Model,
+  Column,
+  DataType,
+  Default,
+  AllowNull,
+  HasMany,
+  ForeignKey,
+  BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Documents } from './model.documents';
@@ -19,57 +19,63 @@ import { Chapitre } from './model.chapitres';
 
 @Table({ tableName: tables['sessionhascours'] })
 export class Cours extends Model<ICours> {
-    @Column({ type: DataType.INTEGER, allowNull: false, unique: true, autoIncrement: true, primaryKey: true })
-    id: number;
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    unique: true,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  id: number;
 
-    @ForeignKey(() => Listcours)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-    })
-    id_preset_cours: number
+  @ForeignKey(() => Listcours)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  id_preset_cours: number;
 
-    @AllowNull(true)
-    @Column(DataType.FLOAT)
-    duree: number; // en minutes
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  duree: number; // en minutes
 
-    @AllowNull(true)
-    @Column(DataType.FLOAT)
-    ponderation: number;
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  ponderation: number;
 
-    @Default(false)
-    @Column(DataType.BOOLEAN)
-    is_published: boolean;
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  is_published: boolean;
 
-    @AllowNull(true)
-    @Column(DataType.INTEGER)
-    @ForeignKey(() => Users)
-    createdBy: number;
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  @ForeignKey(() => Users)
+  createdBy: number;
 
-    @BelongsTo(() => Users, 'createdBy')
-    CreatedBy: Users
+  @BelongsTo(() => Users, 'createdBy')
+  CreatedBy: Users;
 
-    @ForeignKey(() => SessionSuivi)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-    })
-    id_session: number;
+  @ForeignKey(() => SessionSuivi)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  id_session: number;
 
-    @AllowNull(true)
-    @ForeignKey(() => Users)
-    @Column(DataType.INTEGER)
-    id_formateur?: number;
+  @AllowNull(true)
+  @ForeignKey(() => Users)
+  @Column(DataType.INTEGER)
+  id_formateur?: number;
 
-    @HasMany(() => Documents)
-    Documents: Documents[];
+  @HasMany(() => Documents)
+  Documents: Documents[];
 
-    @HasMany(() => Chapitre)
-    Chapitres: Chapitre[];
+  @HasMany(() => Chapitre)
+  Chapitres: Chapitre[];
 
-    @BelongsTo(() => SessionSuivi)
-    Session: SessionSuivi;
+  @BelongsTo(() => SessionSuivi)
+  Session: SessionSuivi;
 
-    @BelongsTo(() => Listcours)
-    Title: Listcours;
+  @BelongsTo(() => Listcours)
+  Title: Listcours;
 }

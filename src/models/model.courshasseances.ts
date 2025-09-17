@@ -35,7 +35,7 @@ export class SeanceSessions extends Model<ISeanceSession> {
     get() {
       const rawValue = this.getDataValue('seance_date_on');
       return rawValue ? Number(rawValue) : null;
-    }
+    },
   })
   seance_date_on: number;
 

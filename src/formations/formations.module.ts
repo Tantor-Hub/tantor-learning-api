@@ -26,6 +26,12 @@ import { JwtService } from 'src/services/service.jwt';
     }),
   ],
   controllers: [FormationsController],
-  providers: [FormationsService, GoogleDriveService, AllSercices, MailService, JwtService],
+  providers: [
+    FormationsService,
+    GoogleDriveService,
+    AllSercices,
+    MailService,
+    JwtService,
+  ],
 })
-export class FormationsModule { }
+export class FormationsModule {}

@@ -11,22 +11,29 @@ export class GoogleDriveService {
 
   constructor(private readonly configService: ConfigService) {
     const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, '../../src/utils/utiles.googleservices.json'),
+      keyFile: path.join(
+        __dirname,
+        '../../src/utils/utiles.googleservices.json',
+      ),
       scopes: ['https://www.googleapis.com/auth/drive'],
     });
 
-    this.owner = this.configService.get<string>('APPSMTPUSER') || "tantorelearning@gmail.com";
+    this.owner =
+      this.configService.get<string>('APPSMTPUSER') ||
+      'tantorelearning@gmail.com';
     this.drive = google.drive({ version: 'v3', auth });
   }
 
-  async uploadBufferFile(file: Express.Multer.File, folderId?: string): Promise<{
+  async uploadBufferFile(
+    file: Express.Multer.File,
+    folderId?: string,
+  ): Promise<{
     id: string;
     name: string;
     viewLink: string;
     link: string;
-    downloadLink?: string
+    downloadLink?: string;
   } | null> {
-    
     const fileMetadata: any = {
       name: file.originalname,
     };
@@ -72,10 +79,13 @@ export class GoogleDriveService {
         name: response.data.name,
         viewLink: response.data.webViewLink,
         link: `https://drive.google.com/uc?id=${fileId}`,
-        downloadLink: `https://drive.google.com/uc?id=${fileId}&export=download`
+        downloadLink: `https://drive.google.com/uc?id=${fileId}&export=download`,
       };
     } catch (error) {
-      console.error('Erreur lors de l’upload sur Google Drive :', error?.message || error);
+      console.error(
+        'Erreur lors de l’upload sur Google Drive :',
+        error?.message || error,
+      );
       return null;
     }
   }

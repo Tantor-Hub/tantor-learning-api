@@ -1,113 +1,127 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  HasMany,
+} from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { ISessionSuivi } from 'src/interface/interface.suivisession';
 import { Categories } from './model.categoriesformations';
 import { Users } from './model.users';
 import { Formations } from './model.formations';
-import { RequiredDocument, roiplaceholder } from 'src/utils/utiles.documentskeyenum';
+import {
+  RequiredDocument,
+  roiplaceholder,
+} from 'src/utils/utiles.documentskeyenum';
 import { Survey } from './model.questionspourquestionnaireinscription';
 
 @Table({ tableName: tables['sessionsuivi'], timestamps: true })
 export class SessionSuivi extends Model<ISessionSuivi> {
+  @Column({ type: DataType.UUID, allowNull: false, unique: true })
+  uuid?: string;
 
-    @Column({ type: DataType.UUID, allowNull: false, unique: true })
-    uuid?: string;
+  @Column({ type: DataType.STRING })
+  designation?: string;
 
-    @Column({ type: DataType.STRING })
-    designation?: string;
+  @Column({ type: DataType.INTEGER })
+  id_controleur?: number;
 
-    @Column({ type: DataType.INTEGER })
-    id_controleur?: number;
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  @ForeignKey(() => Users)
+  // id formateur ou superviseur dans le cas d'une session de suivi créée par un formateur ou un superviseur
+  createdBy?: number;
 
-    @Column({ type: DataType.INTEGER, allowNull: true })
-    @ForeignKey(() => Users)
-    // id formateur ou superviseur dans le cas d'une session de suivi créée par un formateur ou un superviseur
-    createdBy?: number;
+  @Column({ type: DataType.ARRAY(DataType.INTEGER), allowNull: true })
+  id_superviseur?: number[];
 
-    @Column({ type: DataType.ARRAY(DataType.INTEGER), allowNull: true })
-    id_superviseur?: number[];
+  @Column(DataType.DATE)
+  date_mise_a_jour?: Date;
 
-    @Column(DataType.DATE)
-    date_mise_a_jour?: Date;
+  @Column(DataType.STRING)
+  duree?: string;
 
-    @Column(DataType.STRING)
-    duree?: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+    defaultValue: roiplaceholder,
+  })
+  text_reglement?: string;
 
-    @Column({ type: DataType.TEXT, allowNull: true, defaultValue: roiplaceholder })
-    text_reglement?: string;
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    allowNull: false,
+    defaultValue: [],
+    // 'CARD'
+  })
+  payment_methods: string[];
 
-    @Column({
-        type: DataType.ARRAY(DataType.STRING),
-        allowNull: false,
-        defaultValue: [],
-        // 'CARD'
-    })
-    payment_methods: string[];
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    allowNull: false,
+    defaultValue: [],
+    // ...Object.values(RequiredDocument)
+  })
+  required_documents: string[];
 
-    @Column({
-        type: DataType.ARRAY(DataType.STRING),
-        allowNull: false,
-        defaultValue: [],
-        // ...Object.values(RequiredDocument)
-    })
-    required_documents: string[];
+  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
+  nb_places: number;
 
-    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
-    nb_places: number;
+  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
+  nb_places_disponible: number;
 
-    @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 20 })
-    nb_places_disponible: number;
+  @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
+  progression?: number;
 
-    @Column({ type: DataType.FLOAT, allowNull: true, defaultValue: 0 })
-    progression?: number;
+  @ForeignKey(() => Formations)
+  @Column({ type: DataType.INTEGER })
+  id_formation: number;
 
-    @ForeignKey(() => Formations)
-    @Column({ type: DataType.INTEGER })
-    id_formation: number;
+  @BelongsTo(() => Formations)
+  Formation: Formations;
 
-    @BelongsTo(() => Formations)
-    Formation: Formations;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  piece_jointe?: string;
 
-    @Column({
-        type: DataType.STRING,
-        allowNull: true,
-    })
-    piece_jointe?: string;
+  @Column({
+    type: DataType.ENUM('onLine', 'visionConference', 'presentiel', 'hybride'),
+    allowNull: false,
+  })
+  type_formation: string;
 
-    @Column({
-        type: DataType.ENUM('onLine', 'visionConference', 'presentiel', 'hybride'),
-        allowNull: false,
-    })
-    type_formation: string;
+  @ForeignKey(() => Categories)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  id_category: number;
 
-    @ForeignKey(() => Categories)
-    @Column({
-        type: DataType.INTEGER,
-        allowNull: false,
-    })
-    id_category: number;
+  @Column(DataType.DATE)
+  date_session_debut: Date;
 
-    @Column(DataType.DATE)
-    date_session_debut: Date;
+  @Column(DataType.DATE)
+  date_session_fin: Date;
 
-    @Column(DataType.DATE)
-    date_session_fin: Date;
+  @Column(DataType.TEXT)
+  description: string;
 
-    @Column(DataType.TEXT)
-    description: string
+  @Column(DataType.FLOAT)
+  prix?: number;
 
-    @Column(DataType.FLOAT)
-    prix?: number;
+  @Column(DataType.FLOAT)
+  initial_price?: number;
 
-    @Column(DataType.FLOAT)
-    initial_price?: number;
+  @Column({ type: DataType.FLOAT, defaultValue: 1, allowNull: true })
+  status?: number;
 
-    @Column({ type: DataType.FLOAT, defaultValue: 1, allowNull: true })
-    status?: number;
+  @BelongsTo(() => Users)
+  Creator: Users;
 
-    @BelongsTo(() => Users)
-    Creator: Users;
-
-    @HasMany(() => Survey)
-    Surveys: Survey[];
+  @HasMany(() => Survey)
+  Surveys: Survey[];
 }

@@ -8,7 +8,10 @@ import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateu
 
 @Controller('roles')
 export class RolesController {
-  constructor(private readonly rolesService: RolesService, private mailService: MailService) { }
+  constructor(
+    private readonly rolesService: RolesService,
+    private mailService: MailService,
+  ) {}
 
   @Put('role/attribute')
   @UseGuards(JwtAuthGuardAsManagerSystem)
@@ -25,6 +28,6 @@ export class RolesController {
   @Get('list')
   @UseGuards(JwtAuthGuardAsFormateur)
   async getRoles() {
-    return this.rolesService.getRoles()
+    return this.rolesService.getRoles();
   }
 }

@@ -1,1 +1,1 @@
-export const typesEvents = ['Examen', 'Cours', 'Réunion', 'Autre']
+export const typesEvents = ['Examen', 'Cours', 'Réunion', 'Autre'];

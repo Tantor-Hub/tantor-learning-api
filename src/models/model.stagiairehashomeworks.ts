@@ -1,13 +1,13 @@
 import {
-    Table,
-    Column,
-    Model,
-    DataType,
-    PrimaryKey,
-    AutoIncrement,
-    AllowNull,
-    ForeignKey,
-    Default,
+  Table,
+  Column,
+  Model,
+  DataType,
+  PrimaryKey,
+  AutoIncrement,
+  AllowNull,
+  ForeignKey,
+  Default,
 } from 'sequelize-typescript';
 import { StagiaireHasSession } from './model.stagiairehassession';
 import { Users } from './model.users';
@@ -17,58 +17,59 @@ import { tables } from 'src/config/config.tablesname';
 import { Cours } from './model.sessionshascours';
 
 @Table({
-    tableName: tables['homeworks'], timestamps: true,
+  tableName: tables['homeworks'],
+  timestamps: true,
 })
 export class StagiaireHasHomeWork extends Model<IHomeWorks> {
-    @PrimaryKey
-    @AutoIncrement
-    @Column(DataType.INTEGER)
-    id!: number;
+  @PrimaryKey
+  @AutoIncrement
+  @Column(DataType.INTEGER)
+  id!: number;
 
-    @ForeignKey(() => StagiaireHasSession) 
-    @AllowNull(false)
-    @Column(DataType.INTEGER)
-    id_session!: number;
+  @ForeignKey(() => StagiaireHasSession)
+  @AllowNull(false)
+  @Column(DataType.INTEGER)
+  id_session!: number;
 
-    @ForeignKey(() => Users)
-    @AllowNull(false)
-    @Column(DataType.INTEGER)
-    id_user!: number;
+  @ForeignKey(() => Users)
+  @AllowNull(false)
+  @Column(DataType.INTEGER)
+  id_user!: number;
 
-    @ForeignKey(() => Formations)
-    @AllowNull(true)
-    @Column(DataType.INTEGER)
-    id_formation?: number;
+  @ForeignKey(() => Formations)
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  id_formation?: number;
 
-    @ForeignKey(() => Cours)
-    @AllowNull(true)
-    @Column(DataType.INTEGER)
-    id_cours: number;
+  @ForeignKey(() => Cours)
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  id_cours: number;
 
-    @AllowNull(false)
-    @Column(DataType.DATE)
-    date_de_creation!: Date;
+  @AllowNull(false)
+  @Column(DataType.DATE)
+  date_de_creation!: Date;
 
-    @AllowNull(false)
-    @Column(DataType.BIGINT)
-    date_de_remise!: number;
+  @AllowNull(false)
+  @Column(DataType.BIGINT)
+  date_de_remise!: number;
 
-    @AllowNull(true)
-    @Column(DataType.STRING)
-    piece_jointe?: string;
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  piece_jointe?: string;
 
-    @AllowNull(false)
-    @Default(0)
-    @Column(DataType.INTEGER)
-    is_returned!: number;
+  @AllowNull(false)
+  @Default(0)
+  @Column(DataType.INTEGER)
+  is_returned!: number;
 
-    @AllowNull(false)
-    @Default(0)
-    @Column(DataType.FLOAT)
-    score!: number;
+  @AllowNull(false)
+  @Default(0)
+  @Column(DataType.FLOAT)
+  score!: number;
 
-    @AllowNull(false)
-    @Default(0)
-    @Column(DataType.FLOAT)
-    score_on!: number;
+  @AllowNull(false)
+  @Default(0)
+  @Column(DataType.FLOAT)
+  score_on!: number;
 }

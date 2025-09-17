@@ -8,9 +8,7 @@ import {
 import { Transform } from 'class-transformer';
 import { DocumentKeyEnum } from 'src/utils/utiles.documentskeyenum';
 
-export const DOCUMENT_KEYS = [
-  ...Object.keys(DocumentKeyEnum)
-]
+export const DOCUMENT_KEYS = [...Object.keys(DocumentKeyEnum)];
 
 export class UploadDocumentToSessionDto {
   @IsNumberString()

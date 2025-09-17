@@ -1,20 +1,23 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable } from '@nestjs/common';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 @Injectable()
 export class DocsService {
+  async generateROI({
+    fullname,
+  }: {
+    fullname: string;
+  }): Promise<{ filename: string; contentType: string; content: Buffer }> {
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontSize = 11;
+    const margin = 50;
+    const lineHeight = 14;
+    const pageHeight = 842;
+    const pageWidth = 595;
+    const usableHeight = pageHeight - 2 * margin;
 
-    async generateROI({ fullname }: { fullname: string }): Promise<{ filename: string; contentType: string; content: Buffer }> {
-        const pdfDoc = await PDFDocument.create();
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        const fontSize = 11;
-        const margin = 50;
-        const lineHeight = 14;
-        const pageHeight = 842;
-        const pageWidth = 595;
-        const usableHeight = pageHeight - 2 * margin;
-
-        const paragraphs = `
+    const paragraphs = `
       RÈGLEMENT INTÉRIEUR DU CENTRE DE FORMATION
       
       ________________________________________
@@ -125,49 +128,75 @@ export class DocsService {
       Le présent règlement intérieur doit être lu et signé par chaque stagiaire avant le démarrage de la formation.
       `.split('\n');
 
-        let page = pdfDoc.addPage([pageWidth, pageHeight]);
-        let y = pageHeight - margin;
+    let page = pdfDoc.addPage([pageWidth, pageHeight]);
+    let y = pageHeight - margin;
 
-        for (const paragraph of paragraphs) {
-            if (y <= margin + lineHeight) {
-                page = pdfDoc.addPage([pageWidth, pageHeight]);
-                y = pageHeight - margin;
-            }
-            page.drawText(paragraph, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
-            y -= lineHeight;
-        }
-
-        const form = pdfDoc.getForm();
-
-        // Dernière page pour les champs à remplir
-        if (y <= 150) {
-            page = pdfDoc.addPage([pageWidth, pageHeight]);
-            y = pageHeight - margin;
-        }
-
-        page.drawText('Fait à :', { x: margin, y: 100, size: fontSize, font });
-        const cityField = form.createTextField('lieu');
-        cityField.setText('');
-        cityField.addToPage(page, { x: margin + 50, y: 90, width: 200, height: 18 });
-
-        page.drawText('Le :', { x: margin, y: 70, size: fontSize, font });
-        const dateField = form.createTextField('date');
-        dateField.setText('');
-        dateField.addToPage(page, { x: margin + 50, y: 60, width: 200, height: 18 });
-
-        page.drawText('Signature du Stagiaire :', { x: margin, y: 40, size: fontSize, font });
-        const signatureField = form.createTextField('signature');
-        signatureField.setText('');
-        signatureField.addToPage(page, { x: margin + 140, y: 30, width: 300, height: 18 });
-
-        form.updateFieldAppearances(font);
-
-        const pdfBytes = await pdfDoc.save();
-        
-        return {
-            filename: 'tantor-roi.pdf',
-            contentType: 'application/pdf',
-            content: Buffer.from(pdfBytes)
-        }
+    for (const paragraph of paragraphs) {
+      if (y <= margin + lineHeight) {
+        page = pdfDoc.addPage([pageWidth, pageHeight]);
+        y = pageHeight - margin;
+      }
+      page.drawText(paragraph, {
+        x: margin,
+        y,
+        size: fontSize,
+        font,
+        color: rgb(0, 0, 0),
+      });
+      y -= lineHeight;
     }
+
+    const form = pdfDoc.getForm();
+
+    // Dernière page pour les champs à remplir
+    if (y <= 150) {
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
+      y = pageHeight - margin;
+    }
+
+    page.drawText('Fait à :', { x: margin, y: 100, size: fontSize, font });
+    const cityField = form.createTextField('lieu');
+    cityField.setText('');
+    cityField.addToPage(page, {
+      x: margin + 50,
+      y: 90,
+      width: 200,
+      height: 18,
+    });
+
+    page.drawText('Le :', { x: margin, y: 70, size: fontSize, font });
+    const dateField = form.createTextField('date');
+    dateField.setText('');
+    dateField.addToPage(page, {
+      x: margin + 50,
+      y: 60,
+      width: 200,
+      height: 18,
+    });
+
+    page.drawText('Signature du Stagiaire :', {
+      x: margin,
+      y: 40,
+      size: fontSize,
+      font,
+    });
+    const signatureField = form.createTextField('signature');
+    signatureField.setText('');
+    signatureField.addToPage(page, {
+      x: margin + 140,
+      y: 30,
+      width: 300,
+      height: 18,
+    });
+
+    form.updateFieldAppearances(font);
+
+    const pdfBytes = await pdfDoc.save();
+
+    return {
+      filename: 'tantor-roi.pdf',
+      contentType: 'application/pdf',
+      content: Buffer.from(pdfBytes),
+    };
+  }
 }

@@ -22,7 +22,18 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Roles, HasRoles, Users, StagiaireHasSession, StagiaireHasSessionSeances, HomeworksSession, Messages, StagiaireHasSessionSeances, SeanceSessions, StagiaireHasHomeWork]),
+    SequelizeModule.forFeature([
+      Roles,
+      HasRoles,
+      Users,
+      StagiaireHasSession,
+      StagiaireHasSessionSeances,
+      HomeworksSession,
+      Messages,
+      StagiaireHasSessionSeances,
+      SeanceSessions,
+      StagiaireHasHomeWork,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -36,6 +47,14 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService, MailService, AllSercices, CryptoService, JwtService, GoogleStrategy, GoogleDriveService],
+  providers: [
+    UsersService,
+    MailService,
+    AllSercices,
+    CryptoService,
+    JwtService,
+    GoogleStrategy,
+    GoogleDriveService,
+  ],
 })
-export class UsersModule { }
+export class UsersModule {}

@@ -6,5 +6,5 @@ export default registerAs('database', () => ({
   port: Number(process.env.APP_BD_PORT),
   username: process.env.APP_BD_USERNAME,
   password: process.env.APP_BD_PASSWORD,
-  database: process.env.APP_BD_NAME
+  database: process.env.APP_BD_NAME,
 }));

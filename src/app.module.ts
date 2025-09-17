@@ -61,12 +61,15 @@ import { Options } from './models/model.optionquestionnaires';
 import { Survey } from './models/model.questionspourquestionnaireinscription';
 import { Payementopco } from './models/model.payementbyopco';
 import { SurveyResponse } from './models/model.surveyresponses';
+import { ModuleDeFormation } from './models/model.moduledeformation';
+import { ModuleDeFormationModule } from './moduledeformation/moduledeformation.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig]
+      load: [databaseConfig],
     }),
     SequelizeModule.forRootAsync({
       imports: [ConfigModule],
@@ -119,7 +122,7 @@ import { SurveyResponse } from './models/model.surveyresponses';
       Survey,
       Questionnaires,
       Options,
-      SurveyResponse
+      SurveyResponse,
     ]),
     RolesModule,
     UsersModule,
@@ -127,26 +130,46 @@ import { SurveyResponse } from './models/model.surveyresponses';
     CategoriesModule,
     SessionsModule,
     CmsModule,
-    CoursModule
+    CoursModule,
+    StripeModule,
+    ModuleDeFormationModule,
   ],
-  providers: [AppService, MediasoupService, WebrtcGatewayService, GoogleDriveService, DocsService, CmsService, AllSercices, JwtService, NestJwtService, CryptoService, MailService, CoursService, UsersService, RolesService],
+  providers: [
+    AppService,
+    MediasoupService,
+    WebrtcGatewayService,
+    GoogleDriveService,
+    DocsService,
+    CmsService,
+    AllSercices,
+    JwtService,
+    NestJwtService,
+    CryptoService,
+    MailService,
+    CoursService,
+    UsersService,
+    RolesService,
+  ],
   controllers: [AppController],
 })
-
 export class AppModule implements OnModuleInit {
-  constructor(private readonly sequelize: Sequelize) { }
+  constructor(private readonly sequelize: Sequelize) {}
 
   async onModuleInit() {
     try {
       await this.sequelize.authenticate();
-      this.sequelize.sync({ alter: false, force: false, })
-        .then(_ => {
-          console.log('[ Database ] Connexion réussie', this.sequelize.getDatabaseName());
+      this.sequelize
+        .sync({ alter: false, force: false })
+        .then((_) => {
+          console.log(
+            '[ Database ] Connexion réussie',
+            this.sequelize.getDatabaseName(),
+          );
           // const connectionUri = this.sequelize.options['url'] || this.sequelize.options.host;
           // const models = Object.keys(this.sequelize.models);
           // console.log(`[ URL ] ${connectionUri} [ Database ] : `, this.sequelize.getDatabaseName());
         })
-        .catch(err => log("[ DB Error ]", err))
+        .catch((err) => log('[ DB Error ]', err));
     } catch (error) {
       console.error('[ Database ] Échec de connexion : ', error.message);
     }

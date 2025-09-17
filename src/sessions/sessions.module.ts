@@ -36,7 +36,32 @@ import { SurveyResponse } from 'src/models/model.surveyresponses';
 import { StripeModule } from 'src/strategy/strategy.stripe';
 @Module({
   imports: [
-    SequelizeModule.forFeature([UploadDocument, Payement, SurveyResponse, Payementopco, Questionnaires, Options, Survey, AvantFormationDocs, PendantFormationDocs, ApresFormationDocs, SessionSuivi, Users, HasRoles, Roles, FormateurHasSession, Formations, Categories, Thematiques, StagiaireHasSession, SeanceSessions, HomeworksSession, StagiaireHasSession, StagiaireHasHomeWork, Cours]),
+    SequelizeModule.forFeature([
+      UploadDocument,
+      Payement,
+      SurveyResponse,
+      Payementopco,
+      Questionnaires,
+      Options,
+      Survey,
+      AvantFormationDocs,
+      PendantFormationDocs,
+      ApresFormationDocs,
+      SessionSuivi,
+      Users,
+      HasRoles,
+      Roles,
+      FormateurHasSession,
+      Formations,
+      Categories,
+      Thematiques,
+      StagiaireHasSession,
+      SeanceSessions,
+      HomeworksSession,
+      StagiaireHasSession,
+      StagiaireHasHomeWork,
+      Cours,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -51,6 +76,14 @@ import { StripeModule } from 'src/strategy/strategy.stripe';
     StripeModule,
   ],
   controllers: [SessionsController],
-  providers: [SessionsService, JwtService, GoogleDriveService, AllSercices, MailService, MediasoupService, DocsService]
+  providers: [
+    SessionsService,
+    JwtService,
+    GoogleDriveService,
+    AllSercices,
+    MailService,
+    MediasoupService,
+    DocsService,
+  ],
 })
-export class SessionsModule { }
+export class SessionsModule {}

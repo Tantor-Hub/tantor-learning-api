@@ -1,16 +1,16 @@
 export const typesprestations = [
-    {
-        id: 1,
-        type: "Formation"
-    },
-    {
-        id: 2,
-        type: "Bilan de compétence"
-    }
-]
+  {
+    id: 1,
+    type: 'Formation',
+  },
+  {
+    id: 2,
+    type: 'Bilan de compétence',
+  },
+];
 
 export enum QuestionType {
-    QCM = 'QCM',
-    QCU = 'QCU',
-    TEXTE_LIBRE = 'TexteLibre',
+  QCM = 'QCM',
+  QCU = 'QCU',
+  TEXTE_LIBRE = 'TexteLibre',
 }

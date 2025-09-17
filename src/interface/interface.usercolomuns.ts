@@ -1,1 +1,16 @@
-export const userColumns: string[] = ['id', 'fs_name', 'ls_name', 'nick_name', 'email', 'phone', 'avatar', 'adresse_physique', 'pays_residance', 'ville_residance', 'date_of_birth', 'num_piece_identite', 'createdAt', 'roles',]
+export const userColumns: string[] = [
+  'id',
+  'fs_name',
+  'ls_name',
+  'nick_name',
+  'email',
+  'phone',
+  'avatar',
+  'adresse_physique',
+  'pays_residance',
+  'ville_residance',
+  'date_of_birth',
+  'num_piece_identite',
+  'createdAt',
+  'roles',
+];

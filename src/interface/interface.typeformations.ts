@@ -1,5 +1,5 @@
 export interface ITypeformation {
-    key?: string,
-    type: string,
-    description: string,
+  key?: string;
+  type: string;
+  description: string;
 }

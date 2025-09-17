@@ -1,5 +1,5 @@
 export interface ResponseServer {
-    status: number;
-    message: string;
-    data?: any;
+  status: number;
+  message: string;
+  data?: any;
 }
