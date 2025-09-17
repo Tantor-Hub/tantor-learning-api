@@ -135,8 +135,8 @@ export class StripeService {
       console.log('Creating payment record...');
       return this.payementModel
         .create({
-          id_session: session_id,
-          id_session_student: session?.id,
+          id_session: session_id as number,
+          id_session_student: session?.id as number,
           id_user: student.id_user,
           full_name,
           card_number,
@@ -226,7 +226,7 @@ export class StripeService {
           status: HttpStatusCode.NotFound,
           data: "L'utilisateur ciblé n'a pas été retrouvé dans cette session !",
         });
-      const student = await this.usersModel.findOne({
+      let student = await this.usersModel.findOne({
         where: { id: user.id_user },
         raw: true,
       });
@@ -238,7 +238,7 @@ export class StripeService {
       return this.payementOpcoModel
         .create({
           id_session: session_id,
-          id_session_student: userSession.id,
+          id_session_student: userSession.id as number,
           id_user: user.id_user,
           nom_opco,
           nom_entreprise,
@@ -377,7 +377,7 @@ export class StripeService {
         event.type === 'payment_intent.succeeded' ||
         event.type === 'payment_intent.payment_failed'
       ) {
-        const paymentIntent = event.data.object;
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
         const pay = await this.payementModel.findOne({
           where: { id_stripe_payment: paymentIntent.id },
