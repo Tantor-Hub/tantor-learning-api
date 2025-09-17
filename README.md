@@ -66,12 +66,28 @@ NestJS, SequelizeORM, postgreSQL
 
 "skipLibCheck": true, in tsconfig.js
 
-## Documentation link
+## API Documentation
 
-```https://documenter.getpostman.com/view/14319426/2sB2cVeh52```
+### Swagger/OpenAPI Documentation
 
-```https://tantor-learning.apimatic.dev/v/1_0#/http/step-by-step-tutorial```
+Interactive API documentation is available via Swagger UI:
+
+**URL:** `http://localhost:3737/api`
+
+The Swagger documentation provides:
+
+- Complete API endpoint documentation
+- Interactive testing interface
+- Request/response schemas
+- Authentication details
+- Real-time API exploration
+
+### Additional Documentation Links
+
+`https://documenter.getpostman.com/view/14319426/2sB2cVeh52`
+
+`https://tantor-learning.apimatic.dev/v/1_0#/http/step-by-step-tutorial`
 
 ## Distant DB
 
-```psql -h caboose.proxy.rlwy.net -p 53988 -U postgres -d railway```
+`psql -h caboose.proxy.rlwy.net -p 53988 -U postgres -d railway`

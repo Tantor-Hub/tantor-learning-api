@@ -34,6 +34,15 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { Response } from 'express';
 import { log } from 'console';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+
+@ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(
