@@ -5,7 +5,10 @@ import { Users } from 'src/models/model.users';
 import { InjectModel } from '@nestjs/sequelize';
 import { Roles } from 'src/models/model.roles';
 import { HasRoles } from 'src/models/model.userhasroles';
-import { Responder } from 'src/strategy/strategy.responder';
+import {
+  Responder,
+  PasswordlessLoginResponder,
+} from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
@@ -39,6 +42,7 @@ import { LoginPasswordlessDto } from './dto/login-passwordless.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Response } from 'express';
 import { base64decode, base64encode } from 'nodejs-base64';
+import { UserRole } from 'src/interface/interface.users';
 @Injectable()
 export class UsersService {
   constructor(
@@ -348,20 +352,24 @@ export class UsersService {
   protected async onWelcomeNewStudent({
     to,
     otp,
-    nom,
-    postnom,
+    firstName,
+    lastName,
     all,
   }: {
     to: string;
-    nom: string;
-    postnom: string;
+    firstName: string;
+    lastName: string;
     all?: boolean;
     otp: string;
   }): Promise<void> {
     if (all && all === true) {
       this.mailService
         .sendMail({
-          content: this.mailService.templates({ as: 'welcome', nom, postnom }),
+          content: this.mailService.templates({
+            as: 'welcome',
+            firstName: firstName ?? '',
+            lastName: lastName ?? '',
+          }),
           to,
           subject: 'Félicitations',
         })
@@ -371,8 +379,8 @@ export class UsersService {
       this.mailService.sendMail({
         content: this.mailService.templates({
           as: 'otp',
-          nom,
-          postnom,
+          firstName: firstName || '',
+          lastName: lastName || '',
           code: otp,
         }),
         to,
@@ -382,8 +390,8 @@ export class UsersService {
       this.mailService.sendMail({
         content: this.mailService.templates({
           as: 'otp',
-          nom,
-          postnom,
+          firstName,
+          lastName,
           code: otp,
         }),
         to,
@@ -528,7 +536,7 @@ export class UsersService {
             if (matched) {
               return this.jwtService
                 .signinPayloadAndEncrypt({
-                  id_user: id as number,
+                  id_user: id!,
                   roles_user: _roles,
                   uuid_user: uuid as string,
                   level_indicator: 90,
@@ -575,8 +583,8 @@ export class UsersService {
 
                 this.onWelcomeNewStudent({
                   to: email,
-                  nom: fs_name || 'User',
-                  postnom: ls_name || '',
+                  firstName: fs_name || 'User',
+                  lastName: ls_name || '',
                   otp: verif_code,
                   all: false,
                 });
@@ -616,13 +624,13 @@ export class UsersService {
       phone,
       uuid,
       verification_code,
-      date_of_birth: dateBirth,
+      date_of_birth,
     } = createUserDto;
     const existingUser = await this.userModel.findOne({ where: { email } });
     if (existingUser) {
-      return Responder({
+      return PasswordlessLoginResponder({
         status: HttpStatusCode.Conflict,
-        data: `[Email]: ${email} est déjà utilisé`,
+        message: `[Email]: ${email} est déjà utilisé`,
       });
     }
 
@@ -640,12 +648,12 @@ export class UsersService {
         phone: phone,
         password: hashed_password,
         nick_name,
-        dateBirth,
+        date_of_birth,
         uuid: uuid_user,
         verification_code: verif_code,
         is_verified: 0,
         status: 1,
-        role: 'student',
+        role: UserRole.STUDENT,
       })
       .then((student) => {
         if (student instanceof Users) {
@@ -661,8 +669,8 @@ export class UsersService {
                 this.onWelcomeNewStudent({
                   to: email,
                   otp: verif_code,
-                  nom: fs_name,
-                  postnom: ls_name,
+                  firstName: fs_name || '',
+                  lastName: ls_name || '',
                   all: true,
                 });
                 const newInstance = student.toJSON();
@@ -738,7 +746,7 @@ export class UsersService {
           verification_code: verif_code,
           is_verified: 0,
           status: 1,
-          role: 'student',
+          role: UserRole.STUDENT,
         })
         .then(async (u) => {
           if (u instanceof Users) {
@@ -763,7 +771,7 @@ export class UsersService {
                       const { hashed, refresh, cleared } = data;
                       this.mailService.onInviteViaMagicLink({
                         to: email,
-                        link: `https://tantor-learning-frontend-eight.vercel.app/auth/magic-link?email=${email}&verify=${hashed}`,
+                        link: `${process.env.BASECLIENTURL}/auth/magic-link?email=${email}&verify=${hashed}`,
                         role: as_role,
                       });
                       return Responder({
@@ -821,9 +829,9 @@ export class UsersService {
     } = createUserDto;
     const existingUser = await this.userModel.findOne({ where: { email } });
     if (existingUser) {
-      return Responder({
+      return PasswordlessLoginResponder({
         status: HttpStatusCode.Conflict,
-        data: `[Email]: ${email} est déjà utilisé`,
+        message: `[Email]: ${email} est déjà utilisé`,
       });
     }
 
@@ -846,6 +854,7 @@ export class UsersService {
         verification_code: verif_code,
         is_verified: id_role && id_role === 4 ? 0 : 1,
         status: 1,
+        role: UserRole.STUDENT,
       })
       .then((student) => {
         if (student instanceof Users) {
@@ -862,8 +871,8 @@ export class UsersService {
                   this.onWelcomeNewStudent({
                     to: email,
                     otp: verif_code,
-                    nom: fs_name,
-                    postnom: ls_name,
+                    firstName: fs_name,
+                    lastName: ls_name,
                     all: true,
                   });
                 const newInstance = student.toJSON();
@@ -939,7 +948,7 @@ export class UsersService {
             phone: phone,
             password: hashed_password,
             nick_name,
-            dateBirth,
+            date_of_birth,
             status: 1,
           },
           {
@@ -1132,8 +1141,8 @@ export class UsersService {
           } = student?.toJSON();
           this.onWelcomeNewStudent({
             to: email,
-            nom: fs_name,
-            postnom: ls_name,
+            firstName: fs_name || 'User',
+            lastName: ls_name || '',
             all: false,
             otp: verif_code,
           });
@@ -1513,46 +1522,64 @@ export class UsersService {
     if (existingUser) {
       return Responder({
         status: HttpStatusCode.Conflict,
-        data: `[Email]: ${email} est déjà utilisé`,
+        data: {
+          message: `[Email]: ${email} est déjà utilisé`,
+        },
       });
     }
 
     const otp = this.allService.randomLongNumber({ length: 6 });
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    const user = await this.userModel.create({
-      email,
-      fs_name: firstName,
-      ls_name: lastName,
-      avatar,
-      address,
-      country,
-      city,
-      identityNumber,
-      dateBirth,
-      role: 'student',
-      otp,
-      otpExpires,
-    });
+    try {
+      const user = await this.userModel.create({
+        email,
+        fs_name: firstName || '',
+        ls_name: lastName || '',
+        avatar,
+        address,
+        country,
+        city,
+        identityNumber,
+        dateBirth,
+        role: UserRole.STUDENT,
+        otp,
+        otpExpires,
+        status: 1,
+        is_verified: 0,
+        uuid: this.allService.generateUuid(),
+        num_record: this.allService.randomLongNumber({ length: 8 }),
+      });
 
-    // Send OTP email
-    this.mailService.sendMail({
-      content: this.mailService.templates({
-        as: 'otp',
-        nom: firstName || '',
-        postnom: lastName || '',
-        code: otp,
-      }),
-      to: email,
-      subject: 'Code de vérification pour inscription',
-    });
+      // Send OTP email
+      this.mailService.sendMail({
+        content: this.mailService.templates({
+          as: 'otp',
+          firstName: firstName || '',
+          lastName: lastName || '',
+          code: otp,
+        }),
+        to: email,
+        subject: 'Code de vérification pour inscription',
+      });
 
-    return Responder({
-      status: HttpStatusCode.Created,
-      data: {
-        message: "OTP envoyé à votre email pour finaliser l'inscription",
-      },
-    });
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: {
+          message:
+            "Inscription réussie. OTP envoyé à votre email pour finaliser l'inscription",
+          user: this.allService.filterUserFields(user.toJSON()),
+        },
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: "Erreur lors de l'inscription de l'utilisateur",
+          error,
+        },
+      });
+    }
   }
 
   async loginPasswordless(
@@ -1562,9 +1589,9 @@ export class UsersService {
 
     const user = await this.userModel.findOne({ where: { email } });
     if (!user) {
-      return Responder({
+      return PasswordlessLoginResponder({
         status: HttpStatusCode.NotFound,
-        data: 'Utilisateur non trouvé',
+        message: 'Utilisateur non trouvé',
       });
     }
 
@@ -1577,17 +1604,17 @@ export class UsersService {
     this.mailService.sendMail({
       content: this.mailService.templates({
         as: 'otp',
-        nom: user.firstName || '',
-        postnom: user.lastName || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
         code: otp,
       }),
       to: email,
       subject: 'Code de vérification pour connexion',
     });
 
-    return Responder({
+    return PasswordlessLoginResponder({
       status: HttpStatusCode.Ok,
-      data: { message: 'OTP envoyé à votre email' },
+      message: 'OTP envoyé à votre email',
     });
   }
 
@@ -1662,8 +1689,8 @@ export class UsersService {
       ),
     );
     const uuid_user = this.allService.generateUuid();
-    const base = 'https://tantor-learning.vercel.app';
-
+    const base =
+      (process.env.BASECLIENTURL as string) || 'http://localhost:3000';
     try {
       return this.userModel
         .findOrCreate({
@@ -1687,7 +1714,7 @@ export class UsersService {
             phone: email,
             uuid: uuid_user,
             verification_code: verif_code,
-            role: 'student',
+            role: UserRole.STUDENT,
           },
         })
         .then(async ([student, isNewStudent]) => {
@@ -1722,8 +1749,8 @@ export class UsersService {
                       this.onWelcomeNewStudent({
                         to: email,
                         otp: verif_code,
-                        nom: fs_name,
-                        postnom: ls_name,
+                        firstName: fs_name || 'User',
+                        lastName: ls_name || '',
                         all: true,
                       });
                       const { hashed, cleared, refresh } = data;

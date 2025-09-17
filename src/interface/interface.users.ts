@@ -1,5 +1,12 @@
+export enum UserRole {
+  INSTRUCTOR = 'instructor',
+  STUDENT = 'student',
+  ADMIN = 'admin',
+  SECRETARY = 'secretary',
+}
+
 export interface IUsers {
-  id?: string;
+  id?: number;
   uuid?: string;
   num_record?: string;
   avatar?: string;
@@ -11,10 +18,13 @@ export interface IUsers {
   password?: string;
   verification_code?: string;
   is_verified?: number;
-  roles?: number[];
-  last_login?: string;
-  can_update_password?: number;
   status?: number;
+  can_update_password?: number;
+  adresse_physique?: string;
+  pays_residance?: string;
+  ville_residance?: string;
+  num_piece_identite?: string;
+  date_of_birth?: string;
   firstName?: string;
   lastName?: string;
   address?: string;
@@ -22,7 +32,8 @@ export interface IUsers {
   city?: string;
   identityNumber?: number;
   dateBirth?: string;
-  role: 'instructor' | 'student' | 'admin' | 'secretary';
+  role: UserRole;
+  roles?: number[];
   otp?: string;
   otpExpires?: Date;
 }
