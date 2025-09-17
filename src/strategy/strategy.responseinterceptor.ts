@@ -16,29 +16,36 @@ export class ResponseInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map((data) => {
-        const status = data?.status || 200;
-        const HttpStatusMessages: Record<number, string> = {
-          200: 'Succès',
-          201: 'Création réussie',
-          400: 'Requête invalide',
-          401: 'Non autorisé',
-          403: 'Accès interdit',
-          404: 'Ressource introuvable',
-          500: 'Erreur interne du serveur',
-          ...CustomerMessageServer,
-        };
+        if (typeof data?.status === 'string') {
+          // Handle custom response like PasswordlessLoginResponder
+          const status = data?.statuscode || 200;
+          res.status(status);
+          return data;
+        } else {
+          const status = data?.status || 200;
+          const HttpStatusMessages: Record<number, string> = {
+            200: 'Succès',
+            201: 'Création réussie',
+            400: 'Requête invalide',
+            401: 'Non autorisé',
+            403: 'Accès interdit',
+            404: 'Ressource introuvable',
+            500: 'Erreur interne du serveur',
+            ...CustomerMessageServer,
+          };
 
-        const response = {
-          status,
-          message:
-            data?.customMessage ??
-            HttpStatusMessages[status] ??
-            'Unknown Error',
-          data: data?.data ?? null,
-        };
+          const response = {
+            status,
+            message:
+              data?.customMessage ??
+              HttpStatusMessages[status] ??
+              'Unknown Error',
+            data: data?.data ?? null,
+          };
 
-        res.status(status);
-        return response;
+          res.status(status);
+          return response;
+        }
       }),
     );
   }

@@ -15,10 +15,9 @@ import { Roles } from './model.roles';
 export class Users extends Model<IUsers> {
   @Column({
     type: DataType.INTEGER,
-    allowNull: false,
-    unique: true,
-    primaryKey: true,
     autoIncrement: true,
+    primaryKey: true,
+    unique: true,
   })
   id: number;
 

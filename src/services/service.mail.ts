@@ -73,16 +73,16 @@ export class MailService {
   }
   templates({
     as,
-    nom,
-    postnom,
+    firstName,
+    lastName,
     cours,
     dateOn,
     prixCours,
     code,
   }: {
     as: string;
-    nom?: string;
-    postnom?: string;
+    firstName?: string;
+    lastName?: string;
     cours?: string;
     dateOn?: string;
     prixCours?: string;
@@ -172,7 +172,7 @@ export class MailService {
                             <h1 class="color: #fff;">Code de vérification</h1>
                         </div>
                         <div class="content">
-                            <p>Bonjour <strong>${nom}</strong>,</p>
+                            <p>Bonjour <strong>${firstName}</strong>,</p>
                             <p>Nous avons reçu une demande de code de vérification. Voici votre code :</p>
                             
                             <div class="code-container">
@@ -273,10 +273,10 @@ export class MailService {
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>Bonjour, ${this.allSercices.capitalizeWords({ text: nom })} ${this.allSercices.capitalizeWords({ text: postnom })}!</h1>
+            <h1>Bonjour, ${this.allSercices.capitalizeWords({ text: firstName })} ${this.allSercices.capitalizeWords({ text: lastName })}!</h1>
         </div>
         <div class="content">
-            <p>Bonjour <span class="highlight">${this.allSercices.capitalizeWords({ text: nom })}</span>,</p>
+            <p>Bonjour <span class="highlight">${this.allSercices.capitalizeWords({ text: firstName })}</span>,</p>
             <p>Nous sommes ravis de vous accueillir sur <strong>${appname}</strong>, votre plateforme d'apprentissage en ligne.</p>
             <p>Chez <strong>${appname}</strong>, nous croyons que l'accès à la connaissance ne doit pas être limité par le temps ou l'espace. C'est pourquoi nous avons conçu une plateforme intuitive et riche en contenus de qualité pour vous accompagner dans votre apprentissage.</p>
             <p>Pourquoi lire et apprendre en ligne ? Voici quelques avantages :</p>

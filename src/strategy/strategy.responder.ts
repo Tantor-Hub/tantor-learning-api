@@ -26,3 +26,30 @@ export const Responder = ({
     data: data ?? null,
   };
 };
+
+export const PasswordlessLoginResponder = ({
+  status,
+  message,
+  data,
+}: {
+  status: number;
+  message: string;
+  data?: any;
+}) => {
+  const HttpStatusMessages: Record<number, string> = {
+    200: 'Succès',
+    201: 'Création réussie',
+    400: 'Requête invalide',
+    401: 'Non autorisé',
+    403: 'Accès interdit',
+    404: 'Ressource introuvable',
+    500: 'Erreur interne du serveur',
+    ...StatusMesage,
+  };
+
+  return {
+    status,
+    message: message ?? HttpStatusMessages[status] ?? 'Unknown Error',
+    data: data ?? null,
+  };
+};

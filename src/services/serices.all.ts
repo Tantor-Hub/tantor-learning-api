@@ -157,8 +157,11 @@ export class AllSercices {
   }): string {
     return String(' SESSION : ').concat(start).concat(' - ').concat(end);
   }
-  fullName({ fs, ls }: { fs: string; ls?: string }): string {
-    return fs.concat(' ').concat(ls ?? '');
+  fullName({ fs, ls }: { fs?: string; ls?: string }): string {
+    return (fs ?? '')
+      .concat(' ')
+      .concat(ls ?? '')
+      .trim();
   }
   filterUserFields(userInstance: Record<string, any>): Record<string, any> {
     const userFields = userColumns;
