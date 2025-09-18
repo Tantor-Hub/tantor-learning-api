@@ -16,7 +16,7 @@ import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized'
 @Global()
 export class JwtAuthGuardAsManagerSystem implements CanActivate {
   keyname: string;
-  allowedTo: number[] = [1];
+  allowedRoles: string[] = ['admin'];
   accessLevel: number = 91; // c'est à dire que le niveau pour les utilisateurs admins
 
   constructor(
@@ -41,18 +41,13 @@ export class JwtAuthGuardAsManagerSystem implements CanActivate {
       throw new CustomUnauthorizedException(
         "La clé d'authentification fournie a déjà expiré",
       );
-    const { roles_user, level_indicator } = decoded;
-    if (
-      this.allSercices.checkIntersection({
-        arr_a: this.allowedTo,
-        arr_b: roles_user,
-      })
-    ) {
-      request.user = decoded;
-      return true;
-    } else
+    const { role } = decoded;
+    if (!this.allowedRoles.includes(role)) {
       throw new CustomUnauthorizedException(
         "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
       );
+    }
+    request.user = decoded;
+    return true;
   }
 }

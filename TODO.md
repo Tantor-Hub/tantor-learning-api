@@ -17,3 +17,83 @@
 3. Update verifyOtp method in users.service.ts
 4. Update DTOs for consistency
 5. Test the improved flow
+
+## Completed Tasks
+
+- [x] Implement change role functionality
+  - [x] Create ChangeRoleDto with validation
+  - [x] Add changeRole method in users.service.ts
+  - [x] Add PUT /users/change-role endpoint in users.controller.ts
+  - [x] Create change-role.sh script for API testing
+  - [x] Add proper authentication with JwtAuthGuardAsFormateur
+
+## Testing
+
+To test the change role functionality:
+
+1. Start the application: `npm run start:dev`
+2. Use the change-role.sh script:
+   ```bash
+   ./src/users/change-role.sh user@example.com admin
+   ```
+3. Or make a direct API call:
+   ```bash
+   curl -X PUT http://localhost:3000/users/change-role \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -d '{"email": "user@example.com", "role": "admin"}'
+   ```
+
+Available roles: instructor, teacher, admin, student, secretary
+
+## New Endpoints: Get User Roles
+
+### Get Current User Role
+
+Added GET `/users/user-role` endpoint to retrieve the current authenticated user's role(s):
+
+```bash
+curl -X GET http://localhost:3000/users/user-role \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Response format:
+
+```json
+{
+  "statuscode": 200,
+  "status": "Success",
+  "data": {
+    "roles": [1, 4],
+    "userId": 123,
+    "uuid": "user-uuid-here"
+  }
+}
+```
+
+This endpoint is protected with JwtAuthGuard and returns the roles array from the JWT payload.
+
+### Get User Role by Email
+
+Added GET `/users/role/:email` endpoint to retrieve a user's role(s) by email (similar to change-role.sh logic):
+
+```bash
+curl -X GET http://localhost:3000/users/role/user@example.com \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Response format:
+
+```json
+{
+  "statuscode": 200,
+  "status": "Success",
+  "data": {
+    "email": "user@example.com",
+    "roles": [4],
+    "userId": 123
+  }
+}
+```
+
+This endpoint is protected with JwtAuthGuardAsFormateur and returns the roles from the database for the specified user.

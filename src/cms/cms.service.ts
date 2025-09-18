@@ -729,23 +729,53 @@ export class CmsService {
     createNewsLetter: CreateNewsLetterDto,
   ): Promise<ResponseServer> {
     const { user_email } = createNewsLetter;
-    return this.newsletterModel
-      .create({
+    try {
+      const existing = await this.newsletterModel.findOne({
+        where: { user_email, status: 1 },
+      });
+      if (existing) {
+        return Responder({
+          status: HttpStatusCode.Conflict,
+          data: 'Vous êtes déjà inscrit à la newsletter.',
+        });
+      }
+      const infos = await this.newsletterModel.create({
         user_email,
-      })
-      .then((infos) => {
-        // this.mailService.sendMail({
-        //     to: this.configService.get<string>('APPSMTPUSER') as string,
-        //     content,
-        //     subject,
-        // })
-        //     .then(_ => { })
-        //     .catch(__ => { })
-        return Responder({ status: HttpStatusCode.Created, data: infos });
-      })
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
+      });
+      return Responder({ status: HttpStatusCode.Created, data: infos });
+    } catch (err) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: err,
+      });
+    }
+  }
+  async unsubscribeFromNewsLetter(
+    createNewsLetter: CreateNewsLetterDto,
+  ): Promise<ResponseServer> {
+    const { user_email } = createNewsLetter;
+    try {
+      const result = await this.newsletterModel.update(
+        { status: 0 },
+        { where: { user_email } },
       );
+      if (result[0] > 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: 'Vous avez été désinscrit de la newsletter.',
+        });
+      } else {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Email non trouvé dans la newsletter.',
+        });
+      }
+    } catch (err) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: err,
+      });
+    }
   }
   async onGetAppInfos(): Promise<ResponseServer> {
     return this.appInfosModel

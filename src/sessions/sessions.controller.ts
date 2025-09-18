@@ -17,6 +17,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiBody, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -58,6 +59,27 @@ export class SessionsController {
 
   @Post('session/payment/create-intent')
   @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBody({
+    type: CreatePaymentSessionDto,
+    description: 'Payment session creation data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment intent created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 200 },
+        status: { type: 'string', example: 'Success' },
+        data: {
+          type: 'object',
+          properties: {
+            clientSecret: { type: 'string', example: 'some_client_secret' },
+          },
+        },
+      },
+    },
+  })
   async createPaymentIntent(
     @Body() createPaymentDto: CreatePaymentSessionDto,
     @User() user: IJwtSignin,
@@ -98,6 +120,10 @@ export class SessionsController {
   }
   @Post('session/addsurvey')
   @UseGuards(JwtAuthGuardAsSuperviseur)
+  @ApiBody({
+    type: CreateSurveyDto,
+    description: 'Survey creation data',
+  })
   async addNewSurvey(
     @Body() createSessionDto: CreateSurveyDto,
     @User() user: IJwtSignin,
@@ -128,6 +154,10 @@ export class SessionsController {
     FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
   )
   @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBody({
+    type: UploadDocumentToSessionDto,
+    description: 'Document upload data for before formation phase',
+  })
   async submitDocBefore(
     @Body() payementSessionDto: UploadDocumentToSessionDto,
     @User() user: IJwtSignin,
@@ -166,6 +196,10 @@ export class SessionsController {
     FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
   )
   @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBody({
+    type: UploadDocumentToSessionDto,
+    description: 'Document upload data for during formation phase',
+  })
   async submitDocDuring(
     @Body() payementSessionDto: UploadDocumentToSessionDto,
     @User() user: IJwtSignin,
@@ -204,6 +238,10 @@ export class SessionsController {
   @UseInterceptors(
     FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
   )
+  @ApiBody({
+    type: UploadDocumentToSessionDto,
+    description: 'Document upload data for after formation phase',
+  })
   async submitDocAfter(
     @Body() payementSessionDto: UploadDocumentToSessionDto,
     @User() user: IJwtSignin,
@@ -239,6 +277,10 @@ export class SessionsController {
   }
   @Post('session/payment/card')
   @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBody({
+    type: CreatePaymentSessionDto,
+    description: 'Payment session data for card payment',
+  })
   async payementSession(
     @Body() payementSessionDto: CreatePaymentSessionDto,
     @User() user: IJwtSignin,
@@ -247,6 +289,10 @@ export class SessionsController {
   }
   @Post('session/payment/opco')
   @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBody({
+    type: PayementOpcoDto,
+    description: 'Payment session data for OPCO payment',
+  })
   async payementSessionByOpco(
     @Body() payementSessionDto: PayementOpcoDto,
     @User() user: IJwtSignin,

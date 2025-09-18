@@ -11,7 +11,12 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
-  @ApiProperty({ required: false, example: 1, description: 'User ID' })
+  @ApiProperty({
+    required: false,
+    example: 1,
+    description: 'User ID',
+    default: 1,
+  })
   @IsOptional()
   id?: number;
 
@@ -19,32 +24,47 @@ export class CreateUserDto {
     required: false,
     example: 'uuid-string',
     description: 'User UUID',
+    default: 'uuid-string',
   })
   @IsOptional()
   uuid?: string;
 
-  @ApiProperty({ example: 'John', description: 'First name' })
+  @ApiProperty({ example: 'John', description: 'First name', default: 'John' })
   @IsNotEmpty()
   @IsString()
   fs_name: string;
 
-  @ApiProperty({ required: false, example: 1, description: 'Role ID' })
+  @ApiProperty({
+    required: false,
+    example: 1,
+    description: 'Role ID',
+    default: 1,
+  })
   @IsOptional()
   @IsNumber()
   id_role?: number;
 
-  @ApiProperty({ example: 'Doe', description: 'Last name' })
+  @ApiProperty({ example: 'Doe', description: 'Last name', default: 'Doe' })
   @IsNotEmpty()
   @IsString()
   ls_name: string;
 
-  @ApiProperty({ example: 'StrongPass123!', description: 'User password' })
+  @ApiProperty({
+    example: 'StrongPass123!',
+    description: 'User password',
+    default: 'StrongPass123!',
+  })
   @IsNotEmpty()
   @IsStrongPassword()
   @MinLength(6)
   password: string;
 
-  @ApiProperty({ required: false, example: 'Johnny', description: 'Nickname' })
+  @ApiProperty({
+    required: false,
+    example: 'Johnny',
+    description: 'Nickname',
+    default: 'Johnny',
+  })
   @IsOptional()
   @IsString()
   nick_name?: string;
@@ -52,6 +72,7 @@ export class CreateUserDto {
   @ApiProperty({
     example: 'john.doe@example.com',
     description: 'Email address',
+    default: 'john.doe@example.com',
   })
   @IsNotEmpty()
   @IsEmail()
@@ -61,6 +82,7 @@ export class CreateUserDto {
     required: false,
     example: '+1234567890',
     description: 'Phone number',
+    default: '+1234567890',
   })
   @IsOptional()
   @IsString()
@@ -70,6 +92,7 @@ export class CreateUserDto {
     required: false,
     example: '123456',
     description: 'Verification code',
+    default: '123456',
   })
   @IsOptional()
   @IsString()
@@ -79,6 +102,7 @@ export class CreateUserDto {
     required: false,
     example: '123 Main St',
     description: 'Physical address',
+    default: '123 Main St',
   })
   @IsOptional()
   @IsString()
@@ -88,6 +112,7 @@ export class CreateUserDto {
     required: false,
     example: 'France',
     description: 'Country of residence',
+    default: 'France',
   })
   @IsOptional()
   @IsString()
@@ -97,6 +122,7 @@ export class CreateUserDto {
     required: false,
     example: 'Paris',
     description: 'City of residence',
+    default: 'Paris',
   })
   @IsOptional()
   @IsString()
@@ -106,6 +132,7 @@ export class CreateUserDto {
     required: false,
     example: 'ID123456',
     description: 'Identity document number',
+    default: 'ID123456',
   })
   @IsOptional()
   @IsString()
@@ -115,6 +142,7 @@ export class CreateUserDto {
     required: false,
     example: '1990-01-01',
     description: 'Date of birth',
+    default: '1990-01-01',
   })
   @IsOptional()
   @IsString()

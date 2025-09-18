@@ -9,6 +9,7 @@ import {
   UseGuards,
   Inject,
 } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
 import { CreatePaymentSessionDto } from '../dto/payement-methode.dto';
 import { PayementOpcoDto } from '../sessions/dto/payement-method-opco.dto';
@@ -24,6 +25,18 @@ export class StripeController {
   ) {}
 
   @Post('payment/create-intent')
+  @ApiResponse({
+    status: 200,
+    description: 'Payment intent created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 200 },
+        status: { type: 'string', example: 'Success' },
+        data: { type: 'object' },
+      },
+    },
+  })
   async createPaymentIntent(
     @Body() createPaymentDto: CreatePaymentSessionDto,
     @User() user: IJwtSignin,
@@ -32,6 +45,18 @@ export class StripeController {
   }
 
   @Post('payment/card')
+  @ApiResponse({
+    status: 200,
+    description: 'Payment session processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 200 },
+        status: { type: 'string', example: 'Success' },
+        data: { type: 'object' },
+      },
+    },
+  })
   async payementSession(
     @Body() payementSessionDto: CreatePaymentSessionDto,
     @User() user: IJwtSignin,
@@ -40,6 +65,18 @@ export class StripeController {
   }
 
   @Post('payment/opco')
+  @ApiResponse({
+    status: 200,
+    description: 'Payment by Opco processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 200 },
+        status: { type: 'string', example: 'Success' },
+        data: { type: 'object' },
+      },
+    },
+  })
   async payementByOpco(
     @Body() payementOpcoDto: PayementOpcoDto,
     @User() user: IJwtSignin,
@@ -48,6 +85,18 @@ export class StripeController {
   }
 
   @Put('payment/validate/:idpayment')
+  @ApiResponse({
+    status: 200,
+    description: 'Payment validated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 200 },
+        status: { type: 'string', example: 'Success' },
+        data: { type: 'object' },
+      },
+    },
+  })
   async validatePayment(
     @Param('idpayment') id_payment: number,
     @User() user: IJwtSignin,

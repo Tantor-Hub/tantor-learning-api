@@ -10,7 +10,7 @@ import { INewsletter } from 'src/interface/interface.newsletter';
 
 @Table({ tableName: tables['newsletter'] })
 export class Newsletter extends Model<INewsletter> {
-  @Column({ type: DataType.STRING, allowNull: false })
+  @Column({ type: DataType.STRING, allowNull: false, unique: true })
   user_email: string;
 
   @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })

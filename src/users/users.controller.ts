@@ -32,6 +32,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
+import { ChangeRoleDto } from './dto/change-role.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
@@ -42,6 +43,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
 } from '@nestjs/swagger';
 
 @ApiTags('Users')
@@ -54,6 +56,19 @@ export class UsersController {
   ) {}
 
   @Post('user/signup')
+  @ApiResponse({
+    status: 201,
+    description: 'User registered successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 201 },
+        status: { type: 'string', example: 'Success' },
+        message: { type: 'string', example: 'User registered successfully' },
+        data: { type: 'object' },
+      },
+    },
+  })
   async registerAsStudent(@Body() createUserDto: CreateUserDto) {
     return this.userService.registerAsStudent(createUserDto);
   }
@@ -64,6 +79,20 @@ export class UsersController {
   }
 
   @Post('user/passwordless/login')
+  @ApiBody({ type: LoginPasswordlessDto })
+  @ApiOperation({ summary: 'Login passwordless user with OTP' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful login with OTP',
+    schema: {
+      type: 'object',
+      properties: {
+        statuscode: { type: 'integer', example: 200 },
+        status: { type: 'string', example: 'Succès' },
+        message: { type: 'string', example: 'OTP envoyé à votre email' },
+      },
+    },
+  })
   async loginPasswordless(@Body() loginDto: LoginPasswordlessDto) {
     return this.userService.loginPasswordless(loginDto);
   }
@@ -207,5 +236,34 @@ export class UsersController {
       });
     }
     return this.userService.getAllUsersByRole(group);
+  }
+
+  @Put('change-role')
+  async changeUserRole(@Body() changeRoleDto: ChangeRoleDto) {
+    return this.userService.changeRole(changeRoleDto);
+  }
+
+  @Put('public/change-role')
+  async publicChangeUserRole(@Body() changeRoleDto: ChangeRoleDto) {
+    return this.userService.changeRole(changeRoleDto);
+  }
+
+  @Get('user-role')
+  @UseGuards(JwtAuthGuard)
+  async getCurrentUserRole(@User() user: IJwtSignin) {
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: {
+        roles: user.roles_user,
+        userId: user.id_user,
+        uuid: user.uuid_user,
+      },
+    });
+  }
+
+  @Get('role/:email')
+  @UseGuards(JwtAuthGuardAsFormateur)
+  async getUserRoleByEmail(@Param('email') email: string) {
+    return this.userService.getUserRoleByEmail(email);
   }
 }

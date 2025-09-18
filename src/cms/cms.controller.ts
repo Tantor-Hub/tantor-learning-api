@@ -11,6 +11,13 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+} from '@nestjs/swagger';
 import { CmsService } from './cms.service';
 import { CreateAppInfosDto } from './dto/create-infos.dto';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
@@ -27,6 +34,7 @@ import { CreateEvenementDto } from './dto/create-planing.dto';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 
+@ApiTags('CMS')
 @Controller('cms')
 export class CmsController {
   constructor(
@@ -44,11 +52,33 @@ export class CmsController {
     return this.cmsService.onContactForm(form);
   }
   @Post('newsletter')
+  @ApiOperation({ summary: 'Subscribe to the newsletter' })
+  @ApiBody({ type: CreateNewsLetterDto })
+  @ApiResponse({ status: 201, description: 'Subscription successful' })
+  @ApiResponse({ status: 409, description: 'Already subscribed' })
   async subscribeToNewsLetter(@Body() form: CreateNewsLetterDto) {
     return this.cmsService.onSubscribeToNewsLetter(form);
   }
+  @Post('newsletter/unsubscribe')
+  @ApiOperation({ summary: 'Unsubscribe from the newsletter' })
+  @ApiBody({ type: CreateNewsLetterDto })
+  @ApiResponse({ status: 200, description: 'Unsubscription successful' })
+  @ApiResponse({ status: 404, description: 'Email not found' })
+  async unsubscribeFromNewsLetter(@Body() form: CreateNewsLetterDto) {
+    return this.cmsService.unsubscribeFromNewsLetter(form);
+  }
   @Get('newsletter/subscribers')
+  @ApiOperation({ summary: 'Get list of active newsletter subscribers' })
+  @ApiResponse({ status: 200, description: 'List of subscribers' })
   async newsLetterList() {
+    return this.cmsService.getSubsribersOnTheNewsLetter();
+  }
+  @Get('admin/newsletter/subscribers')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: Get list of active newsletter subscribers' })
+  @ApiResponse({ status: 200, description: 'List of subscribers' })
+  async adminNewsLetterList() {
     return this.cmsService.getSubsribersOnTheNewsLetter();
   }
   @Get('events/e/list')

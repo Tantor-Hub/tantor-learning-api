@@ -4,6 +4,7 @@ import { RolesService } from './roles.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Roles } from 'src/models/model.roles';
 import { HasRoles } from 'src/models/model.userhasroles';
+import { Users } from 'src/models/model.users';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from 'src/services/service.crypto';
 import { AllSercices } from '../services/serices.all';
@@ -25,6 +26,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
         },
       }),
     }),
+    SequelizeModule.forFeature([Users]),
   ],
   controllers: [RolesController],
   providers: [

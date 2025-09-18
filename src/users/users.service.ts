@@ -539,6 +539,7 @@ export class UsersService {
                   id_user: id!,
                   roles_user: _roles,
                   uuid_user: uuid as string,
+                  role: student.role,
                   level_indicator: 90,
                 })
                 .then(async ({ code, data, message }) => {
@@ -765,6 +766,7 @@ export class UsersService {
                       id_user: id as any,
                       roles_user: id_role as any,
                       uuid_user,
+                      role: u.role,
                       level_indicator: 95,
                     })
                     .then(({ data, code }) => {
@@ -1060,6 +1062,7 @@ export class UsersService {
                     id_user: id as number,
                     roles_user: _roles,
                     uuid_user: uuid as string,
+                    role: student.role,
                     level_indicator: 90,
                   })
                   .then(async ({ code, data, message }) => {
@@ -1582,9 +1585,7 @@ export class UsersService {
     }
   }
 
-  async loginPasswordless(
-    loginDto: LoginPasswordlessDto,
-  ): Promise<ResponseServer> {
+  async loginPasswordless(loginDto: LoginPasswordlessDto): Promise<any> {
     const { email } = loginDto;
 
     const user = await this.userModel.findOne({ where: { email } });
@@ -1604,8 +1605,8 @@ export class UsersService {
     this.mailService.sendMail({
       content: this.mailService.templates({
         as: 'otp',
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
+        firstName: user.fs_name || '',
+        lastName: user.ls_name || '',
         code: otp,
       }),
       to: email,
@@ -1676,6 +1677,88 @@ export class UsersService {
           data: err,
         });
       });
+  }
+  async changeRole(changeRoleDto: {
+    email: string;
+    role: string;
+  }): Promise<ResponseServer> {
+    const { email, role } = changeRoleDto;
+
+    const roleId = this.roleMap[role];
+    if (!roleId) {
+      return Responder({
+        status: HttpStatusCode.BadRequest,
+        data: `Rôle invalide: ${role}`,
+      });
+    }
+
+    const user = await this.userModel.findOne({
+      where: { email, status: 1 },
+    });
+
+    if (!user) {
+      return Responder({
+        status: HttpStatusCode.NotFound,
+        data: `Utilisateur avec l'email ${email} non trouvé`,
+      });
+    }
+
+    const userId = user.id;
+
+    // Update the role in the users table
+    await user.update({ role: role as UserRole });
+
+    // Check if the user already has a role assigned
+    const existingRole = await this.hasRoleModel.findOne({
+      where: { UserId: userId },
+    });
+
+    if (existingRole) {
+      // Update the existing role
+      await existingRole.update({ RoleId: roleId });
+    } else {
+      // Create a new role assignment
+      await this.hasRoleModel.create({
+        RoleId: roleId,
+        UserId: userId,
+        status: 1,
+      });
+    }
+
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: `Rôle de l'utilisateur ${email} changé avec succès à ${role}`,
+    });
+  }
+  async getUserRoleByEmail(email: string): Promise<ResponseServer> {
+    const user = await this.userModel.findOne({
+      include: [
+        {
+          model: Roles,
+          required: true,
+          attributes: ['id', 'role'],
+        },
+      ],
+      where: { email, status: 1 },
+    });
+
+    if (!user) {
+      return Responder({
+        status: HttpStatusCode.NotFound,
+        data: `Utilisateur avec l'email ${email} non trouvé`,
+      });
+    }
+
+    const roles = this.allService.formatRoles(user.toJSON().roles as any);
+
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: {
+        email: user.email,
+        roles: roles,
+        userId: user.id,
+      },
+    });
   }
 
   async authWithGoogle(user: IAuthWithGoogle, res: Response): Promise<any> {

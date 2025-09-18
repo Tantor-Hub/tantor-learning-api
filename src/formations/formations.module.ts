@@ -9,6 +9,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { JwtService } from 'src/services/service.jwt';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { JwtService } from 'src/services/service.jwt';
         },
       }),
     }),
+    UsersModule,
   ],
   controllers: [FormationsController],
   providers: [

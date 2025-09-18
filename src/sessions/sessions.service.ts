@@ -1324,6 +1324,12 @@ export class SessionsService {
         });
       }
 
+      // Decrement nb_places_disponible by 1
+      await this.sessionModel.update(
+        { nb_places_disponible: nb_places_disponible - 1 },
+        { where: { id: id_session }, transaction },
+      );
+
       const { id } = record.toJSON();
 
       // await this.apdocsModel.create({ session_id: id, user_id: id_user }, { transaction });
@@ -1559,6 +1565,7 @@ export class SessionsService {
           id_formation,
           payment_methods: payment_methods ?? [],
           nb_places,
+          nb_places_disponible: nb_places,
           designation: designation.toUpperCase(),
           date_mise_a_jour: null,
           status: 1,

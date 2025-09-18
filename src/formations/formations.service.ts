@@ -160,6 +160,7 @@ export class FormationsService {
         where: {
           status: 1,
         },
+        order: [['createdAt', 'DESC']],
       })
       .then((list) =>
         Responder({
@@ -187,6 +188,7 @@ export class FormationsService {
           status: 1,
           id_category: idCategory,
         },
+        order: [['createdAt', 'DESC']],
       })
       .then((list) =>
         Responder({

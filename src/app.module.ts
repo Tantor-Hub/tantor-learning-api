@@ -84,6 +84,7 @@ import { StripeModule } from './stripe/stripe.module';
         autoLoadModels: true,
         synchronize: false,
         logging: false,
+        // logging: console.log,
       }),
     }),
     SequelizeModule.forFeature([
