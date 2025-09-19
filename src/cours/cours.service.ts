@@ -12,6 +12,7 @@ import { MailService } from 'src/services/service.mail';
 import { Responder } from 'src/strategy/strategy.responder';
 import { CreateCoursDto } from './dto/create-cours.dto';
 import { CreatePresetCoursDto } from './dto/create-preset-cours.dto';
+import { UpdateCoursFormateursDto } from './dto/update-cours-formateurs.dto';
 import { CreationAttributes } from 'sequelize';
 import { AddHomeworkSessionDto } from 'src/sessions/dto/add-homework.dto';
 import { SeanceSessions } from 'src/models/model.courshasseances';
@@ -776,38 +777,62 @@ export class CoursService {
     user: IJwtSignin,
     createCoursDto: CreateCoursDto,
   ): Promise<ResponseServer> {
-    const {
-      is_published,
-      id_formateur,
-      id_preset_cours,
-      duree,
-      id_session,
-      ponderation,
-    } = createCoursDto;
+    const { title, description, is_published, id_formateurs, id_session } =
+      createCoursDto;
     try {
-      return this.coursModel
-        .create({
-          createdBy: id_formateur || user.id_user,
-          id_preset_cours,
-          id_session,
-          duree,
-          id_formateur,
-          is_published,
-          ponderation,
-          status: 1,
-        })
-        .then((cours) => {
-          if (cours instanceof Cours)
-            return Responder({ status: HttpStatusCode.Created, data: cours });
-          else
-            return Responder({
-              status: HttpStatusCode.InternalServerError,
-              data: cours,
-            });
-        })
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
+      // First, create the preset course
+      const presetData: CreationAttributes<Listcours> = {
+        title,
+        description,
+        createdBy: user.id_user,
+      };
+      const presetCours = await this.listcoursModel.create(presetData);
+      if (!(presetCours instanceof Listcours)) {
+        return Responder({
+          status: HttpStatusCode.InternalServerError,
+          data: 'Failed to create preset course',
+        });
+      }
+
+      // Create course session links for each formateur
+      const createdCourses: Cours[] = [];
+      for (const id_formateur of id_formateurs) {
+        try {
+          const cours = await this.coursModel.create({
+            createdBy: user.id_user,
+            id_preset_cours: presetCours.id,
+            id_session,
+            id_formateur,
+            is_published,
+            status: 1,
+          });
+          if (cours instanceof Cours) {
+            createdCourses.push(cours);
+          }
+        } catch (err) {
+          console.error(
+            `Failed to create course for formateur ${id_formateur}:`,
+            err,
+          );
+          // Continue with other formateurs even if one fails
+        }
+      }
+
+      if (createdCourses.length === 0) {
+        return Responder({
+          status: HttpStatusCode.InternalServerError,
+          data: 'Failed to create any courses',
+        });
+      }
+
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: {
+          preset_course: presetCours,
+          courses: createdCourses,
+          message: `Created ${createdCourses.length} course(s) for ${id_formateurs.length} formateur(s)`,
+        },
+      });
     } catch (error) {
       return Responder({
         status: HttpStatusCode.InternalServerError,
@@ -967,6 +992,125 @@ export class CoursService {
         .catch((err) =>
           Responder({ status: HttpStatusCode.InternalServerError, data: err }),
         );
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: error,
+      });
+    }
+  }
+
+  async updateCours(
+    user: IJwtSignin,
+    id_cours: number,
+    updateDto: UpdateCoursFormateursDto,
+  ): Promise<ResponseServer> {
+    const { id_formateurs, title, description } = updateDto;
+    try {
+      // First, check if the course exists and get its preset course and session
+      const course = await this.coursModel.findOne({
+        where: { id: id_cours },
+        include: [
+          {
+            model: Listcours,
+            required: true,
+          },
+        ],
+      });
+
+      if (!course) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Course not found',
+        });
+      }
+
+      const { id_preset_cours, id_session, createdBy } = course.toJSON();
+
+      // Check if user has permission (same as course creator or secretary)
+      if (createdBy !== user.id_user && !user.roles_user.includes(2)) {
+        return Responder({
+          status: HttpStatusCode.Unauthorized,
+          data: 'You do not have permission to update this course',
+        });
+      }
+
+      const updateResults: any = {};
+
+      // Update course title and description if provided
+      if (title || description) {
+        const presetCourse =
+          await this.listcoursModel.findByPk(id_preset_cours);
+        if (presetCourse) {
+          const updateData: any = {};
+          if (title) updateData.title = title;
+          if (description !== undefined) updateData.description = description;
+
+          await presetCourse.update(updateData);
+          updateResults.course_updated = true;
+        }
+      }
+
+      // Add formateurs if provided
+      let createdCourses: Cours[] = [];
+      if (id_formateurs && id_formateurs.length > 0) {
+        for (const id_formateur of id_formateurs) {
+          try {
+            // Check if this formateur is already assigned to this course
+            const existingCourse = await this.coursModel.findOne({
+              where: {
+                id_preset_cours,
+                id_session,
+                id_formateur,
+              },
+            });
+
+            if (existingCourse) {
+              continue; // Skip if already exists
+            }
+
+            const newCourse = await this.coursModel.create({
+              createdBy: user.id_user,
+              id_preset_cours,
+              id_session,
+              id_formateur,
+              is_published: course.is_published,
+              status: 1,
+            });
+
+            if (newCourse instanceof Cours) {
+              createdCourses.push(newCourse);
+            }
+          } catch (err) {
+            console.error(
+              `Failed to add formateur ${id_formateur} to course:`,
+              err,
+            );
+            // Continue with other formateurs even if one fails
+          }
+        }
+        updateResults.formateurs_added = createdCourses.length;
+      }
+
+      // Check if any updates were made
+      if (
+        !updateResults.course_updated &&
+        (!createdCourses || createdCourses.length === 0)
+      ) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: 'No updates were made',
+        });
+      }
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          message: 'Course updated successfully',
+          updates: updateResults,
+          added_courses: createdCourses,
+        },
+      });
     } catch (error) {
       return Responder({
         status: HttpStatusCode.InternalServerError,

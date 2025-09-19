@@ -2,20 +2,29 @@ import {
   IsInt,
   IsOptional,
   IsBoolean,
-  IsNumber,
   IsNotEmpty,
+  IsString,
+  IsArray,
+  ArrayNotEmpty,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCoursDto {
   @ApiProperty({
-    example: 1,
-    description: 'Preset course ID',
-    default: 1,
+    example: 'Course Title',
+    description: 'Title of the course',
   })
-  @IsInt()
+  @IsString()
   @IsNotEmpty()
-  id_preset_cours: number;
+  title: string;
+
+  @ApiProperty({
+    example: 'Course Description',
+    description: 'Description of the course',
+  })
+  @IsString()
+  @IsOptional()
+  description?: string;
 
   @ApiProperty({
     example: 1,
@@ -27,50 +36,13 @@ export class CreateCoursDto {
   id_session: number;
 
   @ApiProperty({
-    example: 1,
-    description: 'Category ID',
-    default: 1,
+    example: [1, 2],
+    description: 'Array of Formateur IDs',
   })
-  @IsInt()
-  @IsOptional()
-  id_category?: number;
-
-  @ApiProperty({
-    example: 1,
-    description: 'Thematic ID',
-    default: 1,
-  })
-  @IsInt()
-  @IsNotEmpty()
-  @IsOptional()
-  id_thematic?: number;
-
-  @ApiProperty({
-    example: 1,
-    description: 'Formateur ID',
-    default: 1,
-  })
-  @IsOptional()
-  @IsInt()
-  id_formateur?: number;
-
-  @ApiProperty({
-    example: 8,
-    description: 'Course duration in hours',
-    default: 8,
-  })
-  @IsOptional()
-  @IsNumber()
-  duree?: number;
-
-  @ApiProperty({
-    example: 1.5,
-    description: 'Course weighting',
-    default: 1.5,
-  })
-  @IsOptional()
-  @IsNumber()
-  ponderation?: number;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  id_formateurs: number[];
 
   @ApiProperty({
     example: true,
@@ -80,13 +52,4 @@ export class CreateCoursDto {
   @IsOptional()
   @IsBoolean()
   is_published?: boolean;
-
-  @ApiProperty({
-    example: 1,
-    description: 'User ID who created the course',
-    default: 1,
-  })
-  @IsOptional()
-  @IsInt()
-  createdBy?: number;
 }

@@ -20,6 +20,7 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { CreateCoursDto } from './dto/create-cours.dto';
 import { CreatePresetCoursDto } from './dto/create-preset-cours.dto';
+import { UpdateCoursFormateursDto } from './dto/update-cours-formateurs.dto';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -28,6 +29,8 @@ import * as path from 'path';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
 import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
+import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { ApiOperation, ApiBody } from '@nestjs/swagger';
 
 @Controller('courses')
 export class CoursController {
@@ -150,13 +153,60 @@ export class CoursController {
   ) {
     return this.coursService.addCoursToLibrairie(idcours, user);
   }
-  @Post('course/add')
-  @UseGuards(JwtAuthGuardAsFormateur)
+  @Post('create')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiOperation({ summary: 'Create a new course for a session' })
+  @ApiBody({
+    type: CreateCoursDto,
+    examples: {
+      default: {
+        summary: 'Create course example',
+        value: {
+          title: 'Introduction to Programming',
+          description: 'Basic programming concepts and fundamentals',
+          id_session: 1,
+          id_formateurs: [1, 2],
+          is_published: true,
+        },
+      },
+      minimal: {
+        summary: 'Minimal course creation',
+        value: {
+          title: 'Course Title',
+          id_session: 1,
+          id_formateurs: [1],
+        },
+      },
+    },
+  })
   async addCours(
     @User() user: IJwtSignin,
     @Body() createCoursDto: CreateCoursDto,
   ) {
     return this.coursService.addCoursToSession(user, createCoursDto);
+  }
+
+  @Put(':idcours/update')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiOperation({
+    summary:
+      'Update course details including formateurs, title, and description (Secretary only)',
+  })
+  @ApiBody({
+    type: UpdateCoursFormateursDto,
+    description:
+      'Course update data including formateurs, title, and description',
+  })
+  async updateCours(
+    @User() user: IJwtSignin,
+    @Param('idcours') idcours: string,
+    @Body() updateCoursFormateursDto: UpdateCoursFormateursDto,
+  ) {
+    return this.coursService.updateCours(
+      user,
+      Number(idcours),
+      updateCoursFormateursDto,
+    );
   }
   @Put('course/assign')
   @UseGuards(JwtAuthGuardAsManagerSystem)
