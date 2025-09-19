@@ -3,8 +3,6 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { ResponseServer } from 'src/interface/interface.response';
 import { InjectModel } from '@nestjs/sequelize';
 import { Users } from 'src/models/model.users';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import { MailService } from 'src/services/service.mail';
 import { AllSercices } from 'src/services/serices.all';
 import { CryptoService } from 'src/services/service.crypto';
@@ -23,12 +21,6 @@ export class CategoriesService {
   constructor(
     @InjectModel(Users)
     private readonly userModel: typeof Users,
-
-    @InjectModel(Roles)
-    private readonly rolesModel: typeof Roles,
-
-    @InjectModel(HasRoles)
-    private readonly hasRoleModel: typeof HasRoles,
 
     @InjectModel(Categories)
     private readonly categoriesModel: typeof Categories,

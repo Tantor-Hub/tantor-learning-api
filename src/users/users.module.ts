@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import { MailService } from 'src/services/service.mail';
 import { Users } from 'src/models/model.users';
 import { AllSercices } from 'src/services/serices.all';
@@ -23,8 +21,6 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 @Module({
   imports: [
     SequelizeModule.forFeature([
-      Roles,
-      HasRoles,
       Users,
       StagiaireHasSession,
       StagiaireHasSessionSeances,
@@ -56,5 +52,6 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
     GoogleStrategy,
     GoogleDriveService,
   ],
+  exports: [UsersService, SequelizeModule],
 })
 export class UsersModule {}

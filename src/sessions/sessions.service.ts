@@ -6,8 +6,7 @@ import { AllSercices } from '../services/serices.all';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { Users } from 'src/models/model.users';
-import { HasRoles } from 'src/models/model.userhasroles';
-import { Roles } from 'src/models/model.roles';
+
 import { FormateurHasSession } from 'src/models/model.formateurhassession';
 import { MailService } from '../services/service.mail';
 import { SessionSuivi } from 'src/models/model.suivisession';
@@ -1589,14 +1588,7 @@ export class SessionsService {
       // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: 'UserId', otherKey: 'RoleId' });
 
       const formateur = await this.usersModel.findOne({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            where: { id: 3 },
-          },
-        ],
-        where: { id: id_superviseur },
+        where: { id: id_superviseur, role: 'instructor' },
       });
 
       if (!formateur) {
@@ -2144,16 +2136,7 @@ export class SessionsService {
 
     // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
     const user = await this.usersModel.findOne({
-      where: { id: id_user },
-      include: [
-        {
-          model: Roles,
-          required: true,
-          where: {
-            id: 3,
-          },
-        },
-      ],
+      where: { id: id_user, role: 'instructor' },
     });
 
     if (!user)

@@ -23,8 +23,6 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
 import { Users } from 'src/models/model.users';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import { CreateDocumentDto } from './dto/create-documents.dto';
 import { Documents } from 'src/models/model.documents';
 import { CreateCoursContentDto } from './dto/create-cours-content.dto';
@@ -912,16 +910,7 @@ export class CoursService {
 
     // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
     const user = await this.usersModel.findOne({
-      where: { id: id_user },
-      include: [
-        {
-          model: Roles,
-          required: true,
-          where: {
-            id: 3,
-          },
-        },
-      ],
+      where: { id: id_user, role: 'instructor' },
     });
 
     if (!user)
@@ -961,7 +950,7 @@ export class CoursService {
     user: IJwtSignin,
     document: CreateDocumentDto,
   ): Promise<ResponseServer> {
-    const { id_user, roles_user } = user;
+    const { id_user } = user;
     const {
       document_name,
       id_lesson,
@@ -1028,11 +1017,25 @@ export class CoursService {
       const { id_preset_cours, id_session, createdBy } = course.toJSON();
 
       // Check if user has permission (same as course creator or secretary)
-      if (createdBy !== user.id_user && !user.roles_user.includes(2)) {
-        return Responder({
-          status: HttpStatusCode.Unauthorized,
-          data: 'You do not have permission to update this course',
+      if (createdBy !== user.id_user) {
+        // Fetch user roles from database
+        const dbUser = await this.usersModel.findOne({
+          where: { id: user.id_user },
         });
+
+        if (!dbUser) {
+          return Responder({
+            status: HttpStatusCode.Unauthorized,
+            data: 'User not found',
+          });
+        }
+
+        if (dbUser.role !== 'secretary') {
+          return Responder({
+            status: HttpStatusCode.Unauthorized,
+            data: 'You do not have permission to update this course',
+          });
+        }
       }
 
       const updateResults: any = {};

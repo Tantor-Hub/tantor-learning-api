@@ -251,10 +251,14 @@ export class UsersController {
   @Get('user-role')
   @UseGuards(JwtAuthGuard)
   async getCurrentUserRole(@User() user: IJwtSignin) {
+    // Fetch user roles from database using uuid
+    const dbUser = await this.userService.getUserWithRoles(user.uuid_user);
+    const userRoles = dbUser?.roles || [];
+
     return Responder({
       status: HttpStatusCode.Ok,
       data: {
-        roles: user.roles_user,
+        roles: userRoles,
         userId: user.id_user,
         uuid: user.uuid_user,
       },

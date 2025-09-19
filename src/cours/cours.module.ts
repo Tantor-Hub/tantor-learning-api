@@ -11,8 +11,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppInfos } from 'src/models/model.appinfos';
 import { Users } from 'src/models/model.users';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { HomeworksSession } from 'src/models/model.homework';
 import { Messages } from 'src/models/model.messages';
@@ -42,8 +40,6 @@ import { Option } from 'src/models/model.optionsquiz';
       Documents,
       Newsletter,
       Users,
-      Roles,
-      HasRoles,
       Evaluation,
       Question,
       Option,

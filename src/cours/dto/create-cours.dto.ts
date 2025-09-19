@@ -47,7 +47,7 @@ export class CreateCoursDto {
   @ApiProperty({
     example: true,
     description: 'Whether the course is published',
-    default: true,
+    default: false,
   })
   @IsOptional()
   @IsBoolean()

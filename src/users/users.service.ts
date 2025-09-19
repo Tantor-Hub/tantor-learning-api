@@ -3,8 +3,6 @@ import { ResponseServer } from 'src/interface/interface.response';
 import { CreateUserDto } from './dto/create-student.dto';
 import { Users } from 'src/models/model.users';
 import { InjectModel } from '@nestjs/sequelize';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import {
   Responder,
   PasswordlessLoginResponder,
@@ -49,12 +47,6 @@ export class UsersService {
     @InjectModel(Users)
     private readonly userModel: typeof Users,
 
-    @InjectModel(Roles)
-    private readonly rolesModel: typeof Roles,
-
-    @InjectModel(HasRoles)
-    private readonly hasRoleModel: typeof HasRoles,
-
     @InjectModel(StagiaireHasSession)
     private readonly hasSessionModel: typeof StagiaireHasSession,
 
@@ -85,7 +77,7 @@ export class UsersService {
     secretary: 2,
   };
   async loadPerformances(user: IJwtSignin) {
-    const { id_user, roles_user, level_indicator } = user;
+    const { id_user, level_indicator } = user;
     try {
     } catch (error) {
       return Responder({
@@ -95,7 +87,7 @@ export class UsersService {
     }
   }
   async loadScores(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user, roles_user, level_indicator } = user;
+    const { id_user, level_indicator } = user;
 
     try {
       const getSemesterScores = async (
@@ -173,7 +165,7 @@ export class UsersService {
     }
   }
   async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user, uuid_user, roles_user } = user;
+    const { id_user, uuid_user } = user;
     try {
       // StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
       // StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
@@ -270,7 +262,7 @@ export class UsersService {
     }
   }
   async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user, uuid_user, roles_user } = user;
+    const { id_user, uuid_user } = user;
     try {
       // card 1
       const enroledCours = await this.hasSessionModel.count({
@@ -403,15 +395,7 @@ export class UsersService {
     // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
     return this.userModel
       .findAll({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status', 'description'],
-            },
-          },
-        ],
+        include: [],
         attributes: {
           exclude: ['password', 'verification_code', 'status', 'is_verified'],
         },
@@ -454,18 +438,7 @@ export class UsersService {
 
     return this.userModel
       .findAll({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: ['id', 'role'],
-            ...(group !== 'all' && {
-              where: {
-                id: this.roleMap[group],
-              },
-            }),
-          },
-        ],
+        include: [],
         attributes: {
           exclude: [
             'password',
@@ -480,6 +453,7 @@ export class UsersService {
         },
         where: {
           status: 1,
+          ...(group !== 'all' && { role: group.toUpperCase() }),
         },
       })
       .then((list) =>
@@ -492,6 +466,19 @@ export class UsersService {
         Responder({ status: HttpStatusCode.InternalServerError, data: err }),
       );
   }
+
+  async getUserWithRoles(uuid: string): Promise<any> {
+    const user = await this.userModel.findOne({
+      where: { uuid, status: 1 },
+    });
+
+    if (!user) return null;
+
+    const json = user.toJSON();
+    const record = this.allService.filterUserFields(json);
+    // roles now derived from user.role only
+    return { ...record, roles: [this.roleMap[user.role] || 4] };
+  }
   async signInAsStudent(
     signInStudentDto: SignInStudentDto,
   ): Promise<ResponseServer> {
@@ -499,15 +486,7 @@ export class UsersService {
     // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
     return this.userModel
       .findOne({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status', 'description'],
-            },
-          },
-        ],
+        include: [],
         where: {
           status: 1,
           [Op.or]: [{ email: user_name }, { nick_name: user_name }],
@@ -537,9 +516,7 @@ export class UsersService {
               return this.jwtService
                 .signinPayloadAndEncrypt({
                   id_user: id!,
-                  roles_user: _roles,
                   uuid_user: uuid as string,
-                  role: student.role,
                   level_indicator: 90,
                 })
                 .then(async ({ code, data, message }) => {
@@ -659,43 +636,28 @@ export class UsersService {
       .then((student) => {
         if (student instanceof Users) {
           const { id: as_id_user, email } = student?.toJSON();
-          return this.hasRoleModel
-            .create({
-              RoleId: 4, // this Means Student Or Stagiaire
-              UserId: as_id_user as number,
-              status: 1,
-            })
-            .then((hasrole) => {
-              if (hasrole instanceof HasRoles) {
-                this.onWelcomeNewStudent({
-                  to: email,
-                  otp: verif_code,
-                  firstName: fs_name || '',
-                  lastName: ls_name || '',
-                  all: true,
-                });
-                const newInstance = student.toJSON();
+          // No role linking table; rely on Users.role
+          this.onWelcomeNewStudent({
+            to: email,
+            otp: verif_code,
+            firstName: fs_name || '',
+            lastName: ls_name || '',
+            all: true,
+          });
+          const newInstance = student.toJSON();
 
-                delete (newInstance as any).password;
-                delete (newInstance as any).verification_code;
-                delete (newInstance as any).last_login;
-                delete (newInstance as any).status;
-                delete (newInstance as any).is_verified;
-                delete (newInstance as any).createdAt;
-                delete (newInstance as any).updatedAt;
-                const record = this.allService.filterUserFields(newInstance);
-                return Responder({
-                  status: HttpStatusCode.Created,
-                  data: { user: record },
-                });
-              } else {
-                return Responder({ status: HttpStatusCode.BadRequest });
-              }
-            })
-            .catch((err) => {
-              log(err);
-              return Responder({ status: HttpStatusCode.Conflict, data: err });
-            });
+          delete (newInstance as any).password;
+          delete (newInstance as any).verification_code;
+          delete (newInstance as any).last_login;
+          delete (newInstance as any).status;
+          delete (newInstance as any).is_verified;
+          delete (newInstance as any).createdAt;
+          delete (newInstance as any).updatedAt;
+          const record = this.allService.filterUserFields(newInstance);
+          return Responder({
+            status: HttpStatusCode.Created,
+            data: { user: record },
+          });
         } else {
           return Responder({ status: HttpStatusCode.BadRequest, data: {} });
         }
@@ -714,7 +676,8 @@ export class UsersService {
     const { email, id_role } = createUserDto;
     try {
       const existingUser = await this.userModel.findOne({ where: { email } });
-      const role = await this.rolesModel.findOne({ where: { id: id_role } });
+      // No roles table now; validate role value against enum if needed
+      const role = { role: id_role ? id_role : 2 } as any;
       if (existingUser) {
         return Responder({
           status: HttpStatusCode.Conflict,
@@ -733,7 +696,7 @@ export class UsersService {
       const hashed_password = await this.cryptoService.hashPassword(password);
       const uuid_user = this.allService.generateUuid();
       const escape = this.configService.get<string>('ESCAPESTRING') || '---';
-      const { role: as_role } = role.toJSON();
+      const { role: as_role } = role as any;
 
       return this.userModel
         .create({
@@ -752,61 +715,42 @@ export class UsersService {
         .then(async (u) => {
           if (u instanceof Users) {
             const { id } = u.toJSON();
-            return this.hasRoleModel
-              .create({
-                RoleId: id_role || 2, // ie. sec. role
-                UserId: id as number,
-                status: 1,
+            const { id: uid } = u.toJSON();
+            return this.jwtService
+              .signinPayloadAndEncrypt({
+                id_user: uid as any,
+                uuid_user,
+                level_indicator: 95,
               })
-              .then((hasrole) => {
-                if (hasrole instanceof HasRoles) {
-                  const { id } = u.toJSON();
-                  return this.jwtService
-                    .signinPayloadAndEncrypt({
-                      id_user: id as any,
-                      roles_user: id_role as any,
-                      uuid_user,
-                      role: u.role,
-                      level_indicator: 95,
-                    })
-                    .then(({ data, code }) => {
-                      const { hashed, refresh, cleared } = data;
-                      this.mailService.onInviteViaMagicLink({
-                        to: email,
-                        link: `${process.env.BASECLIENTURL}/auth/magic-link?email=${email}&verify=${hashed}`,
-                        role: as_role,
-                      });
+              .then(({ data, code }) => {
+                const { hashed, refresh, cleared } = data;
+                this.mailService.onInviteViaMagicLink({
+                  to: email,
+                  link: `${process.env.BASECLIENTURL}/auth/magic-link?email=${email}&verify=${hashed}`,
+                  role: as_role,
+                });
 
-                      // Send welcome email after account creation
-                      this.mailService.sendMail({
-                        content: this.mailService.templates({
-                          as: 'welcome',
-                          firstName: escape,
-                          lastName: escape,
-                        }),
-                        to: email,
-                        subject: 'Bienvenue chez Tantor',
-                      });
+                // Send welcome email after account creation
+                this.mailService.sendMail({
+                  content: this.mailService.templates({
+                    as: 'welcome',
+                    firstName: escape,
+                    lastName: escape,
+                  }),
+                  to: email,
+                  subject: 'Bienvenue chez Tantor',
+                });
 
-                      return Responder({
-                        status: HttpStatusCode.Created,
-                        data: 'Magic link envoyé avec succès !',
-                      });
-                    })
-                    .catch((err) =>
-                      Responder({
-                        status: HttpStatusCode.InternalServerError,
-                        data: err,
-                      }),
-                    );
-                } else
-                  return Responder({
-                    status: HttpStatusCode.BadRequest,
-                    data: null,
-                  });
+                return Responder({
+                  status: HttpStatusCode.Created,
+                  data: 'Magic link envoyé avec succès !',
+                });
               })
-              .catch((err) =>
-                Responder({ status: HttpStatusCode.BadRequest, data: err }),
+              .catch((er) =>
+                Responder({
+                  status: HttpStatusCode.InternalServerError,
+                  data: er,
+                }),
               );
           } else {
             return Responder({
@@ -873,43 +817,28 @@ export class UsersService {
       .then((student) => {
         if (student instanceof Users) {
           const { id: as_id_user, email } = student?.toJSON();
-          return this.hasRoleModel
-            .create({
-              RoleId: id_role || 2, // ie. sec. role
-              UserId: as_id_user as number,
-              status: 1,
-            })
-            .then((hasrole) => {
-              if (hasrole instanceof HasRoles) {
-                this.onWelcomeNewStudent({
-                  to: email,
-                  otp: verif_code,
-                  firstName: fs_name,
-                  lastName: ls_name,
-                  all: true,
-                });
-                const newInstance = student.toJSON();
+          this.onWelcomeNewStudent({
+            to: email,
+            otp: verif_code,
+            firstName: fs_name,
+            lastName: ls_name,
+            all: true,
+          });
+          const newInstance = student.toJSON();
 
-                delete (newInstance as any).password;
-                delete (newInstance as any).verification_code;
-                delete (newInstance as any).last_login;
-                delete (newInstance as any).status;
-                delete (newInstance as any).is_verified;
-                delete (newInstance as any).createdAt;
-                delete (newInstance as any).updatedAt;
+          delete (newInstance as any).password;
+          delete (newInstance as any).verification_code;
+          delete (newInstance as any).last_login;
+          delete (newInstance as any).status;
+          delete (newInstance as any).is_verified;
+          delete (newInstance as any).createdAt;
+          delete (newInstance as any).updatedAt;
 
-                const record = this.allService.filterUserFields(newInstance);
-                return Responder({
-                  status: HttpStatusCode.Created,
-                  data: { user: record },
-                });
-              } else {
-                return Responder({ status: HttpStatusCode.BadRequest });
-              }
-            })
-            .catch((err) => {
-              return Responder({ status: HttpStatusCode.Conflict, data: err });
-            });
+          const record = this.allService.filterUserFields(newInstance);
+          return Responder({
+            status: HttpStatusCode.Created,
+            data: { user: record },
+          });
         } else {
           return Responder({ status: HttpStatusCode.BadRequest, data: {} });
         }
@@ -1027,15 +956,7 @@ export class UsersService {
     // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
     return this.userModel
       .findOne({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status'],
-            },
-          },
-        ],
+        include: [],
         attributes: {
           exclude: ['password'],
         },
@@ -1080,9 +1001,7 @@ export class UsersService {
                 return this.jwtService
                   .signinPayloadAndEncrypt({
                     id_user: id as number,
-                    roles_user: _roles,
                     uuid_user: uuid as string,
-                    role: student.role,
                     level_indicator: 90,
                   })
                   .then(async ({ code, data, message }) => {
@@ -1198,15 +1117,7 @@ export class UsersService {
         attributes: {
           exclude: ['password'],
         },
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status'],
-            },
-          },
-        ],
+        include: [],
         where: {
           status: 1,
           email: email_user,
@@ -1271,15 +1182,7 @@ export class UsersService {
         attributes: {
           exclude: ['password'],
         },
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status'],
-            },
-          },
-        ],
+        include: [],
         where: {
           status: 1,
           email: email_user,
@@ -1306,7 +1209,6 @@ export class UsersService {
               return this.jwtService
                 .signinPayloadAndEncrypt({
                   id_user: id as number,
-                  roles_user: [..._roles],
                   uuid_user: uuid as string,
                   level_indicator: 90,
                 })
@@ -1403,15 +1305,7 @@ export class UsersService {
 
     return this.userModel
       .findOne({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status'],
-            },
-          },
-        ],
+        include: [],
         attributes: {
           exclude: [
             'password',
@@ -1442,7 +1336,7 @@ export class UsersService {
     profile: any,
     req: Request,
   ): Promise<ResponseServer> {
-    const { id_user, roles_user, uuid_user, level_indicator } = user;
+    const { id_user, uuid_user, level_indicator } = user;
     if (Object.keys(profile as {}).length <= 0) {
       return Responder({
         status: HttpStatusCode.NotAcceptable,
@@ -1460,15 +1354,7 @@ export class UsersService {
 
     return this.userModel
       .findOne({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status'],
-            },
-          },
-        ],
+        include: [],
         where: {
           status: 1,
           id: id_user,
@@ -1488,20 +1374,12 @@ export class UsersService {
       );
   }
   async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user, roles_user, uuid_user, level_indicator } = user;
+    const { id_user, uuid_user, level_indicator } = user;
     // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
 
     return this.userModel
       .findOne({
-        include: [
-          {
-            model: Roles,
-            required: true,
-            attributes: {
-              exclude: ['status'],
-            },
-          },
-        ],
+        include: [],
         attributes: {
           exclude: [
             'password',
@@ -1680,7 +1558,6 @@ export class UsersService {
     return this.jwtService
       .signinPayloadAndEncrypt({
         id_user: user.id,
-        roles_user: [this.roleMap[user.role] || 4],
         uuid_user: user.uuid,
         level_indicator: 90,
       })
@@ -1739,23 +1616,6 @@ export class UsersService {
     // Update the role in the users table
     await user.update({ role: role as UserRole });
 
-    // Check if the user already has a role assigned
-    const existingRole = await this.hasRoleModel.findOne({
-      where: { UserId: userId },
-    });
-
-    if (existingRole) {
-      // Update the existing role
-      await existingRole.update({ RoleId: roleId });
-    } else {
-      // Create a new role assignment
-      await this.hasRoleModel.create({
-        RoleId: roleId,
-        UserId: userId,
-        status: 1,
-      });
-    }
-
     return Responder({
       status: HttpStatusCode.Ok,
       data: `Rôle de l'utilisateur ${email} changé avec succès à ${role}`,
@@ -1763,13 +1623,6 @@ export class UsersService {
   }
   async getUserRoleByEmail(email: string): Promise<ResponseServer> {
     const user = await this.userModel.findOne({
-      include: [
-        {
-          model: Roles,
-          required: true,
-          attributes: ['id', 'role'],
-        },
-      ],
       where: { email, status: 1 },
     });
 
@@ -1780,7 +1633,7 @@ export class UsersService {
       });
     }
 
-    const roles = this.allService.formatRoles(user.toJSON().roles as any);
+    const roles = [this.roleMap[user.role] || 4];
 
     return Responder({
       status: HttpStatusCode.Ok,
@@ -1804,19 +1657,11 @@ export class UsersService {
     );
     const uuid_user = this.allService.generateUuid();
     const base =
-      (process.env.BASECLIENTURL as string) ||
-      'https://tantor-learning.vercel.app';
+      (process.env.BASECLIENTURL as string) || 'http://localhost:3000';
     try {
       return this.userModel
         .findOrCreate({
           where: { email },
-          include: [
-            {
-              model: Roles,
-              required: false,
-              attributes: { exclude: ['status', 'description'] },
-            },
-          ],
           defaults: {
             email,
             ls_name: lastName,
@@ -1838,74 +1683,13 @@ export class UsersService {
             email,
             fs_name,
             ls_name,
-            roles,
             uuid,
             is_verified,
           } = student?.toJSON();
-
-          if (isNewStudent) {
-            return this.hasRoleModel
-              .create({
-                RoleId: 4,
-                UserId: as_id_user as number,
-                status: 1,
-              })
-              .then((hasrole) => {
-                if (hasrole instanceof HasRoles) {
-                  const _roles = this.allService.formatRoles(roles as any);
-                  return this.jwtService
-                    .signinPayloadAndEncrypt({
-                      id_user: as_id_user as number,
-                      roles_user: _roles,
-                      uuid_user: uuid as string,
-                      level_indicator: 90,
-                    })
-                    .then(async ({ code, data, message }) => {
-                      this.onWelcomeNewStudent({
-                        to: email,
-                        otp: verif_code,
-                        firstName: fs_name || 'User',
-                        lastName: ls_name || '',
-                        all: true,
-                      });
-                      const { hashed, cleared, refresh } = data;
-                      const newInstance = student.toJSON();
-
-                      delete (newInstance as any).password;
-                      delete (newInstance as any).verification_code;
-                      delete (newInstance as any).last_login;
-                      delete (newInstance as any).status;
-                      delete (newInstance as any).is_verified;
-                      delete (newInstance as any).createdAt;
-                      delete (newInstance as any).updatedAt;
-                      const record =
-                        this.allService.filterUserFields(newInstance);
-                      return res.redirect(
-                        `${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: record, auth_token: hashed, refresh_token: refresh }))}`,
-                      );
-                    })
-                    .catch((err) => {
-                      return res.redirect(
-                        `${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: 'Impossible to initialize roles', data: err?.toString() }))}`,
-                      );
-                    });
-                } else {
-                  return res.redirect(
-                    `${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: 'Impossible to initialize roles', data: null }))}`,
-                  );
-                }
-              })
-              .catch((err) => {
-                return res.redirect(
-                  `${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: 'Impossible to initialize roles', data: err?.toString() }))}`,
-                );
-              });
-          } else {
-            const _roles = this.allService.formatRoles(roles as any);
+          if (!isNewStudent) {
             return this.jwtService
               .signinPayloadAndEncrypt({
                 id_user: as_id_user as number,
-                roles_user: _roles,
                 uuid_user: uuid as string,
                 level_indicator: 90,
               })
@@ -1943,6 +1727,41 @@ export class UsersService {
                 );
               });
           }
+          // New student path: create token and welcome
+          return this.jwtService
+            .signinPayloadAndEncrypt({
+              id_user: as_id_user as number,
+              uuid_user: uuid as string,
+              level_indicator: 90,
+            })
+            .then(async ({ code, data, message }) => {
+              this.onWelcomeNewStudent({
+                to: email,
+                otp: verif_code,
+                firstName: fs_name || 'User',
+                lastName: ls_name || '',
+                all: true,
+              });
+              const { hashed, cleared, refresh } = data;
+              const newInstance = student.toJSON();
+
+              delete (newInstance as any).password;
+              delete (newInstance as any).verification_code;
+              delete (newInstance as any).last_login;
+              delete (newInstance as any).status;
+              delete (newInstance as any).is_verified;
+              delete (newInstance as any).createdAt;
+              delete (newInstance as any).updatedAt;
+              const record = this.allService.filterUserFields(newInstance);
+              return res.redirect(
+                `${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: record, auth_token: hashed, refresh_token: refresh }))}`,
+              );
+            })
+            .catch((err) => {
+              return res.redirect(
+                `${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: 'Impossible to initialize roles', data: err?.toString() }))}`,
+              );
+            });
         })
         .catch((err) => {
           return res.redirect(

@@ -5,9 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import databaseConfig from './config/config.database';
 import { Users } from './models/model.users';
-import { Roles } from './models/model.roles';
-import { HasRoles } from './models/model.userhasroles';
-import { RolesModule } from './roles/roles.module';
+
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
 import { FormationsModule } from './formations/formations.module';
@@ -55,7 +53,7 @@ import { Evaluation } from './models/model.evaluation';
 import { Question } from './models/model.quiz';
 import { Option } from './models/model.optionsquiz';
 import { UsersService } from './users/users.service';
-import { RolesService } from './roles/roles.service';
+
 import { Questionnaires } from './models/model.questionnaireoninscriptionsession';
 import { Options } from './models/model.optionquestionnaires';
 import { Survey } from './models/model.questionspourquestionnaireinscription';
@@ -94,8 +92,6 @@ import { DocumentModule } from './document/document.module';
       Evaluation,
       Question,
       Option,
-      Roles,
-      HasRoles,
       Categories,
       Formations,
       Planings,
@@ -126,7 +122,8 @@ import { DocumentModule } from './document/document.module';
       Options,
       SurveyResponse,
     ]),
-    RolesModule,
+    // Removed RolesModule as roles module is deleted
+    // RolesModule,
     UsersModule,
     FormationsModule,
     CategoriesModule,
@@ -150,7 +147,8 @@ import { DocumentModule } from './document/document.module';
     CryptoService,
     MailService,
     UsersService,
-    RolesService,
+    // Removed RolesService as roles module is deleted
+    // RolesService,
   ],
   controllers: [AppController],
 })

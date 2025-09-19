@@ -13,8 +13,6 @@ import { GoogleDriveService } from '../services/service.googledrive';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Users } from '../models/model.users';
-import { HasRoles } from '../models/model.userhasroles';
-import { Roles } from '../models/model.roles';
 import { FormateurHasSession } from '../models/model.formateurhassession';
 import { SessionSuivi } from '../models/model.suivisession';
 import { Formations } from '../models/model.formations';
@@ -52,8 +50,6 @@ import { SurveyResponse } from '../models/model.surveyresponses';
       ApresFormationDocs,
       SessionSuivi,
       Users,
-      HasRoles,
-      Roles,
       FormateurHasSession,
       Formations,
       Categories,

@@ -9,8 +9,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Users } from 'src/models/model.users';
-import { HasRoles } from 'src/models/model.userhasroles';
-import { Roles } from 'src/models/model.roles';
 import { FormateurHasSession } from 'src/models/model.formateurhassession';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
@@ -49,8 +47,6 @@ import { StripeModule } from 'src/strategy/strategy.stripe';
       ApresFormationDocs,
       SessionSuivi,
       Users,
-      HasRoles,
-      Roles,
       FormateurHasSession,
       Formations,
       Categories,

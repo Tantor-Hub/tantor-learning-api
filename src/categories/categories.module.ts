@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common';
 import { CategoriesController } from './categories.controller';
 import { CategoriesService } from './categories.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { JwtModule } from '@nestjs/jwt';
-import { RolesService } from 'src/roles/roles.service';
+
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from 'src/services/service.crypto';
 import { AllSercices } from 'src/services/serices.all';
@@ -18,13 +16,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([
-      Roles,
-      HasRoles,
-      Users,
-      Categories,
-      Thematiques,
-    ]),
+    SequelizeModule.forFeature([Users, Categories, Thematiques]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,7 +31,8 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
   controllers: [CategoriesController],
   providers: [
     CategoriesService,
-    RolesService,
+    // Removed RolesService as roles module is deleted
+    // RolesService,
     MailService,
     CryptoService,
     AllSercices,

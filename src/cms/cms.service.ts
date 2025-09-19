@@ -25,8 +25,6 @@ import { Newsletter } from 'src/models/model.newsletter';
 import { Cours } from 'src/models/model.sessionshascours';
 import { Listcours } from 'src/models/model.cours';
 import { SessionSuivi } from 'src/models/model.suivisession';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 
 @Injectable()
 export class CmsService {
@@ -235,15 +233,7 @@ export class CmsService {
               'phone',
             ],
             required: true,
-            include: [
-              {
-                model: Roles,
-                attributes: ['role'],
-                through: {
-                  attributes: [],
-                },
-              },
-            ],
+            include: [],
           },
           {
             model: Users,
@@ -257,15 +247,7 @@ export class CmsService {
               'phone',
             ],
             required: true,
-            include: [
-              {
-                model: Roles,
-                attributes: ['role'],
-                through: {
-                  attributes: [],
-                },
-              },
-            ],
+            include: [],
           },
         ],
         where: {
@@ -313,15 +295,7 @@ export class CmsService {
               'phone',
             ],
             required: true,
-            include: [
-              {
-                model: Roles,
-                attributes: ['role'],
-                through: {
-                  attributes: [],
-                },
-              },
-            ],
+            include: [],
           },
           {
             model: Users,
@@ -337,7 +311,7 @@ export class CmsService {
             required: true,
             include: [
               {
-                model: Roles,
+                // roles removed
                 attributes: ['role'],
                 through: {
                   attributes: [],
@@ -367,15 +341,7 @@ export class CmsService {
                   'phone',
                 ],
                 required: true,
-                include: [
-                  {
-                    model: Roles,
-                    attributes: ['role'],
-                    through: {
-                      attributes: [],
-                    },
-                  },
-                ],
+                include: [],
               },
               {
                 model: Users,
@@ -391,7 +357,7 @@ export class CmsService {
                 required: true,
                 include: [
                   {
-                    model: Roles,
+                    // roles removed
                     attributes: ['role'],
                     through: {
                       attributes: [],
@@ -547,15 +513,7 @@ export class CmsService {
               'phone',
             ],
             required: true,
-            include: [
-              {
-                model: Roles,
-                attributes: ['role'],
-                through: {
-                  attributes: [],
-                },
-              },
-            ],
+            include: [],
           },
           {
             model: Users,
@@ -569,15 +527,7 @@ export class CmsService {
               'phone',
             ],
             required: true,
-            include: [
-              {
-                model: Roles,
-                attributes: ['role'],
-                through: {
-                  attributes: [],
-                },
-              },
-            ],
+            include: [],
           },
         ],
         attributes: {
@@ -622,7 +572,7 @@ export class CmsService {
             required: true,
             include: [
               {
-                model: Roles,
+                // roles removed
                 attributes: ['role'],
                 through: {
                   attributes: [],
@@ -644,7 +594,7 @@ export class CmsService {
             required: true,
             include: [
               {
-                model: Roles,
+                // roles removed
                 attributes: ['role'],
                 through: {
                   attributes: [],

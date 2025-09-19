@@ -69,7 +69,41 @@ export class CmsController {
   }
   @Get('newsletter/subscribers')
   @ApiOperation({ summary: 'Get list of active newsletter subscribers' })
-  @ApiResponse({ status: 200, description: 'List of subscribers' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of subscribers',
+    schema: {
+      example: {
+        status: 200,
+        data: {
+          length: 3,
+          list: [
+            {
+              id: 1,
+              user_email: 'user1@example.com',
+              status: 1,
+              createdAt: '2025-01-15T10:30:00.000Z',
+              updatedAt: '2025-01-15T10:30:00.000Z',
+            },
+            {
+              id: 2,
+              user_email: 'user2@example.com',
+              status: 1,
+              createdAt: '2025-01-16T14:20:00.000Z',
+              updatedAt: '2025-01-16T14:20:00.000Z',
+            },
+            {
+              id: 3,
+              user_email: 'user3@example.com',
+              status: 1,
+              createdAt: '2025-01-17T09:15:00.000Z',
+              updatedAt: '2025-01-17T09:15:00.000Z',
+            },
+          ],
+        },
+      },
+    },
+  })
   async newsLetterList() {
     return this.cmsService.getSubsribersOnTheNewsLetter();
   }
@@ -77,7 +111,41 @@ export class CmsController {
   @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Admin: Get list of active newsletter subscribers' })
-  @ApiResponse({ status: 200, description: 'List of subscribers' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of subscribers',
+    schema: {
+      example: {
+        status: 200,
+        data: {
+          length: 3,
+          list: [
+            {
+              id: 1,
+              user_email: 'user1@example.com',
+              status: 1,
+              createdAt: '2025-01-15T10:30:00.000Z',
+              updatedAt: '2025-01-15T10:30:00.000Z',
+            },
+            {
+              id: 2,
+              user_email: 'user2@example.com',
+              status: 1,
+              createdAt: '2025-01-16T14:20:00.000Z',
+              updatedAt: '2025-01-16T14:20:00.000Z',
+            },
+            {
+              id: 3,
+              user_email: 'user3@example.com',
+              status: 1,
+              createdAt: '2025-01-17T09:15:00.000Z',
+              updatedAt: '2025-01-17T09:15:00.000Z',
+            },
+          ],
+        },
+      },
+    },
+  })
   async adminNewsLetterList() {
     return this.cmsService.getSubsribersOnTheNewsLetter();
   }

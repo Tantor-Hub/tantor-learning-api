@@ -8,8 +8,6 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IUsers } from 'src/interface/interface.users';
-import { HasRoles } from './model.userhasroles';
-import { Roles } from './model.roles';
 
 @Table({ tableName: tables['users'], timestamps: true })
 export class Users extends Model<IUsers> {
@@ -117,12 +115,5 @@ export class Users extends Model<IUsers> {
   @Column({ type: DataType.DATE, allowNull: true })
   otpExpires?: Date;
 
-  @HasMany(() => HasRoles)
-  hasRoles: HasRoles[];
-
-  @BelongsToMany(() => Roles, () => HasRoles, {
-    foreignKey: 'UserId',
-    otherKey: 'RoleId',
-  } as any)
-  roles!: Roles[];
+  // roles table removed; rely on single user.role
 }

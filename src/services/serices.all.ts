@@ -175,8 +175,8 @@ export class AllSercices {
       {} as Record<string, any>,
     );
   }
-  formatRoles(roles: any[]): number[] {
-    return roles.map((role) => role?.id);
+  formatRoles(roles: any[]): string[] {
+    return roles.map((role) => role?.role);
   }
   buildClauseMessage(groupe: number, id_user: number): any {
     switch (groupe) {

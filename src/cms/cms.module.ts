@@ -12,8 +12,6 @@ import { CryptoService } from 'src/services/service.crypto';
 import { MailService } from 'src/services/service.mail';
 import { UsersService } from 'src/users/users.service';
 import { Users } from 'src/models/model.users';
-import { Roles } from 'src/models/model.roles';
-import { HasRoles } from 'src/models/model.userhasroles';
 import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { Messages } from 'src/models/model.messages';
 import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
@@ -36,8 +34,6 @@ import { Listcours } from 'src/models/model.cours';
       Newsletter,
       Users,
       Cours,
-      Roles,
-      HasRoles,
       StagiaireHasSession,
       HomeworksSession,
       Messages,
