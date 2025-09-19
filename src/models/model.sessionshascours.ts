@@ -67,9 +67,6 @@ export class Cours extends Model<ICours> {
   @Column(DataType.INTEGER)
   id_formateur?: number;
 
-  @HasMany(() => Documents)
-  Documents: Documents[];
-
   @HasMany(() => Chapitre)
   Chapitres: Chapitre[];
 

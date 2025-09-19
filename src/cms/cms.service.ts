@@ -742,6 +742,22 @@ export class CmsService {
       const infos = await this.newsletterModel.create({
         user_email,
       });
+
+      // Send welcome email
+      try {
+        await this.mailService.sendMail({
+          to: user_email,
+          subject: 'Bienvenue dans notre newsletter !',
+          content: this.mailService.templates({ as: 'newsletter-subscribe' }),
+        });
+      } catch (emailError) {
+        // Log email error but don't fail the subscription
+        console.error(
+          'Failed to send newsletter subscription email:',
+          emailError,
+        );
+      }
+
       return Responder({ status: HttpStatusCode.Created, data: infos });
     } catch (err) {
       return Responder({
@@ -760,6 +776,23 @@ export class CmsService {
         { where: { user_email } },
       );
       if (result[0] > 0) {
+        // Send unsubscription confirmation email
+        try {
+          await this.mailService.sendMail({
+            to: user_email,
+            subject: 'Confirmation de désinscription',
+            content: this.mailService.templates({
+              as: 'newsletter-unsubscribe',
+            }),
+          });
+        } catch (emailError) {
+          // Log email error but don't fail the unsubscription
+          console.error(
+            'Failed to send newsletter unsubscription email:',
+            emailError,
+          );
+        }
+
         return Responder({
           status: HttpStatusCode.Ok,
           data: 'Vous avez été désinscrit de la newsletter.',

@@ -277,7 +277,7 @@ export class MailService {
         </div>
         <div class="content">
             <p>Bonjour <span class="highlight">${this.allSercices.capitalizeWords({ text: firstName })}</span>,</p>
-            <p>Nous sommes ravis de vous accueillir sur <strong>${appname}</strong>, votre plateforme d'apprentissage en ligne.</p>
+            <p>Votre compte a été créé avec succès. Nous sommes ravis de vous accueillir sur <strong>${appname}</strong>, votre plateforme d'apprentissage en ligne.</p>
             <p>Chez <strong>${appname}</strong>, nous croyons que l'accès à la connaissance ne doit pas être limité par le temps ou l'espace. C'est pourquoi nous avons conçu une plateforme intuitive et riche en contenus de qualité pour vous accompagner dans votre apprentissage.</p>
             <p>Pourquoi lire et apprendre en ligne ? Voici quelques avantages :</p>
             <ul>
@@ -305,6 +305,195 @@ export class MailService {
         break;
       case 'addformationtoenseignant':
         return '';
+        break;
+      case 'newsletter-subscribe':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Inscription à la newsletter - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>Bienvenue dans notre communauté !</h1>
+        </div>
+        <div class="content">
+            <p>Merci de vous être inscrit à notre newsletter !</p>
+            <p>Vous recevrez désormais régulièrement des informations sur nos dernières formations, actualités et conseils pour votre apprentissage.</p>
+            <p>Restez connecté avec <strong>${appname}</strong> et continuez votre parcours d'apprentissage avec nous.</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Découvrir nos formations</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>${appowner} (${appname})</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'newsletter-unsubscribe':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Désinscription de la newsletter - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>Au revoir !</h1>
+        </div>
+        <div class="content">
+            <p>Vous avez été désinscrit de notre newsletter.</p>
+            <p>Nous sommes tristes de vous voir partir, mais nous respectons votre choix.</p>
+            <p>Si vous changez d'avis, vous pouvez toujours vous réinscrire à tout moment.</p>
+            <p>Continuez votre apprentissage avec <strong>${appname}</strong> !</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Revenir sur la plateforme</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>${appowner} (${appname})</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
         break;
       default:
         return this.configService.get<string>('APPSMTPUSER') || '';

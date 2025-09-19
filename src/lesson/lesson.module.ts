@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AllSercices } from 'src/services/serices.all';
-import { CoursController } from './cours.controller';
+import { LessonController } from './lesson.controller';
 import { CmsService } from 'src/cms/cms.service';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from 'src/services/service.crypto';
@@ -22,25 +22,26 @@ import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Contacts } from 'src/models/model.contactform';
 import { Planings } from 'src/models/model.planings';
 import { JwtService } from 'src/services/service.jwt';
-import { CoursService } from './cours.service';
-import { Cours } from 'src/models/model.sessionshascours';
-import { Listcours } from 'src/models/model.cours';
+import { LessonService } from './lesson.service';
+import { Lesson } from 'src/models/model.lesson';
 import { SessionSuivi } from 'src/models/model.suivisession';
 import { FormateurHasSession } from 'src/models/model.formateurhassession';
+import { Documents } from 'src/models/model.documents';
 import { Newsletter } from 'src/models/model.newsletter';
 import { Chapitre } from 'src/models/model.chapitres';
-import { Documents } from 'src/models/model.documents';
 import { Evaluation } from 'src/models/model.evaluation';
 import { Question } from 'src/models/model.quiz';
 import { Option } from 'src/models/model.optionsquiz';
+import { Listcours } from 'src/models/model.cours';
+import { Cours } from 'src/models/model.sessionshascours';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([
       AppInfos,
       Chapitre,
-      Documents,
       Newsletter,
+      Documents,
       Users,
       Roles,
       HasRoles,
@@ -55,8 +56,9 @@ import { Option } from 'src/models/model.optionsquiz';
       StagiaireHasHomeWork,
       Contacts,
       Planings,
-      Cours,
+      Lesson,
       Listcours,
+      Cours,
       SessionSuivi,
       FormateurHasSession,
     ]),
@@ -72,7 +74,7 @@ import { Option } from 'src/models/model.optionsquiz';
       }),
     }),
   ],
-  controllers: [CoursController],
+  controllers: [LessonController],
   providers: [
     AllSercices,
     CmsService,
@@ -81,7 +83,7 @@ import { Option } from 'src/models/model.optionsquiz';
     JwtService,
     GoogleDriveService,
     UsersService,
-    CoursService,
+    LessonService,
   ],
 })
-export class CoursModule {}
+export class LessonModule {}

@@ -64,6 +64,8 @@ import { SurveyResponse } from './models/model.surveyresponses';
 import { ModuleDeFormation } from './models/model.moduledeformation';
 import { ModuleDeFormationModule } from './moduledeformation/moduledeformation.module';
 import { StripeModule } from './stripe/stripe.module';
+import { LessonModule } from './lesson/lesson.module';
+import { DocumentModule } from './document/document.module';
 
 @Module({
   imports: [
@@ -108,7 +110,6 @@ import { StripeModule } from './stripe/stripe.module';
       Cours,
       Chapitre,
       Listcours,
-      Documents,
       Payementopco,
       SeanceSessions,
       FormateurHasSession,
@@ -132,6 +133,8 @@ import { StripeModule } from './stripe/stripe.module';
     SessionsModule,
     CmsModule,
     CoursModule,
+    LessonModule,
+    DocumentModule,
     StripeModule,
     ModuleDeFormationModule,
   ],
@@ -141,13 +144,11 @@ import { StripeModule } from './stripe/stripe.module';
     WebrtcGatewayService,
     GoogleDriveService,
     DocsService,
-    CmsService,
     AllSercices,
     JwtService,
     NestJwtService,
     CryptoService,
     MailService,
-    CoursService,
     UsersService,
     RolesService,
   ],

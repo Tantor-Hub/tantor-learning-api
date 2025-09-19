@@ -343,10 +343,10 @@ export class CoursService {
       return this.docModel
         .findAll({
           where: {
-            id_cours: idcours,
+            id_lesson: idcours,
           },
           attributes: {
-            exclude: ['createdAt', 'updatedAt', 'id_cours', 'id_session'],
+            exclude: ['createdAt', 'updatedAt', 'id_lesson', 'id_session'],
           },
           // include: [
           //     {
@@ -939,7 +939,7 @@ export class CoursService {
     const { id_user, roles_user } = user;
     const {
       document_name,
-      id_cours,
+      id_lesson,
       id_document,
       piece_jointe,
       type,
@@ -950,7 +950,7 @@ export class CoursService {
         .create({
           file_name: document_name,
           url: piece_jointe,
-          id_cours,
+          id_lesson,
           id_session,
           type,
           createdBy: id_user,

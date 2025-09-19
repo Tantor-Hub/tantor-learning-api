@@ -8,7 +8,7 @@ import {
   AllowNull,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
-import { Cours } from './model.sessionshascours';
+import { Lesson } from './model.lesson';
 import { IDocument } from 'src/interface/interface.document';
 import { SessionSuivi } from './model.suivisession';
 import { Users } from './model.users';
@@ -36,9 +36,9 @@ export class Documents extends Model<IDocument> {
   @Column(DataType.STRING)
   type: string; // PDF, vidéo, Word...
 
-  @ForeignKey(() => Cours)
+  @ForeignKey(() => Lesson)
   @Column(DataType.INTEGER)
-  id_cours: number;
+  id_lesson: number;
 
   @ForeignKey(() => Users)
   @Column(DataType.INTEGER)
@@ -48,6 +48,6 @@ export class Documents extends Model<IDocument> {
   @Column(DataType.INTEGER)
   id_session: number;
 
-  @BelongsTo(() => Cours)
-  Cours: Cours;
+  @BelongsTo(() => Lesson)
+  lesson: Lesson;
 }

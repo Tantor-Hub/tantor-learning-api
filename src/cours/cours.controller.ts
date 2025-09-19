@@ -90,11 +90,7 @@ export class CoursController {
   ) {
     return this.coursService.getCoursById(idcours);
   }
-  @Get('course/getdocuments/:idcours')
-  // @UseGuards(JwtAuthGuard)
-  async getDocumentsByCours(@Param('idcours', ParseIntPipe) idcours: number) {
-    return this.coursService.getDocumentsByCours(idcours);
-  }
+
   @Post('course/addcontent')
   @UseGuards(JwtAuthGuardAsFormateur)
   async addContentToCourse(
@@ -169,32 +165,5 @@ export class CoursController {
     @Body() createCoursDto: AssignFormateurToSessionDto,
   ) {
     return this.coursService.assignFormateurToSession(user, createCoursDto);
-  }
-  @Post('course/adddocuments')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async addNewSeanceSession(
-    @User() user: IJwtSignin,
-    @Body() doc: CreateDocumentDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    let piece_jointe: any = null;
-    let type: string = '';
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        const extension = path.extname(file.originalname);
-        type = extension.replace('.', '').toLowerCase();
-        piece_jointe = link;
-      }
-    }
-    return this.coursService.addDocumentsToCours(user, {
-      ...doc,
-      piece_jointe,
-      type,
-    });
   }
 }

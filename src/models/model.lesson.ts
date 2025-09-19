@@ -9,11 +9,12 @@ import {
   BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
-import { IListcours } from 'src/interface/interface.cours';
-import { Users } from './model.users';
-import { Lesson } from './model.lesson';
-@Table({ tableName: tables['cours'] })
-export class Listcours extends Model<IListcours> {
+import { IListlesson } from 'src/interface/interface.lesson';
+import { Listcours } from './model.cours';
+import { Documents } from './model.documents';
+
+@Table({ tableName: tables['lesson'] })
+export class Lesson extends Model<IListlesson> {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -31,14 +32,13 @@ export class Listcours extends Model<IListcours> {
   @Column(DataType.TEXT)
   description?: string;
 
-  @AllowNull(true)
+  @ForeignKey(() => Listcours)
   @Column(DataType.INTEGER)
-  @ForeignKey(() => Users)
-  createdBy: number;
+  id_cours: number;
 
-  @BelongsTo(() => Users, 'createdBy')
-  CreatedBy: Users;
+  @BelongsTo(() => Listcours, 'id_cours')
+  cours: Listcours;
 
-  @HasMany(() => Lesson)
-  lessons: Lesson[];
+  @HasMany(() => Documents)
+  documents: Documents[];
 }

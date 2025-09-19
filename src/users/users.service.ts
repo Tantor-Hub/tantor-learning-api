@@ -776,6 +776,18 @@ export class UsersService {
                         link: `${process.env.BASECLIENTURL}/auth/magic-link?email=${email}&verify=${hashed}`,
                         role: as_role,
                       });
+
+                      // Send welcome email after account creation
+                      this.mailService.sendMail({
+                        content: this.mailService.templates({
+                          as: 'welcome',
+                          firstName: escape,
+                          lastName: escape,
+                        }),
+                        to: email,
+                        subject: 'Bienvenue chez Tantor',
+                      });
+
                       return Responder({
                         status: HttpStatusCode.Created,
                         data: 'Magic link envoyé avec succès !',
@@ -869,14 +881,13 @@ export class UsersService {
             })
             .then((hasrole) => {
               if (hasrole instanceof HasRoles) {
-                if (id_role && id_role === 4)
-                  this.onWelcomeNewStudent({
-                    to: email,
-                    otp: verif_code,
-                    firstName: fs_name,
-                    lastName: ls_name,
-                    all: true,
-                  });
+                this.onWelcomeNewStudent({
+                  to: email,
+                  otp: verif_code,
+                  firstName: fs_name,
+                  lastName: ls_name,
+                  all: true,
+                });
                 const newInstance = student.toJSON();
 
                 delete (newInstance as any).password;
@@ -972,6 +983,15 @@ export class UsersService {
             delete (newInstance as any).is_verified;
             delete (newInstance as any).createdAt;
             delete (newInstance as any).updatedAt;
+
+            // Send welcome email after completing registration
+            this.onWelcomeNewStudent({
+              to: existingUser.email,
+              otp: existingUser.verification_code || '000000',
+              firstName: existingUser.fs_name || '',
+              lastName: existingUser.ls_name || '',
+              all: true,
+            });
 
             return Responder({
               status: HttpStatusCode.Created,
@@ -1564,6 +1584,17 @@ export class UsersService {
         }),
         to: email,
         subject: 'Code de vérification pour inscription',
+      });
+
+      // Send welcome email after account creation
+      this.mailService.sendMail({
+        content: this.mailService.templates({
+          as: 'welcome',
+          firstName: firstName || '',
+          lastName: lastName || '',
+        }),
+        to: email,
+        subject: 'Bienvenue chez Tantor',
       });
 
       return Responder({

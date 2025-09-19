@@ -5,7 +5,7 @@ export interface IDocument extends IGlobale {
   file_name: string;
   url: string;
   type?: string; // ex: 'PDF', 'vidéo', 'Word'...
-  id_cours: number;
+  id_lesson: number;
   id_session: number;
   createdBy?: number;
 }
