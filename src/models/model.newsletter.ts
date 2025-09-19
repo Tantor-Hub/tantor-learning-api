@@ -14,5 +14,5 @@ export class Newsletter extends Model<INewsletter> {
   user_email: string;
 
   @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
-  status: string;
+  status: number;
 }

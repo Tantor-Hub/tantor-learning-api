@@ -730,15 +730,47 @@ export class CmsService {
   ): Promise<ResponseServer> {
     const { user_email } = createNewsLetter;
     try {
+      // Check for any existing record with this email (regardless of status)
       const existing = await this.newsletterModel.findOne({
-        where: { user_email, status: 1 },
+        where: { user_email },
       });
+
       if (existing) {
-        return Responder({
-          status: HttpStatusCode.Conflict,
-          data: 'Vous êtes déjà inscrit à la newsletter.',
-        });
+        if (existing.status === 1) {
+          // Already actively subscribed
+          return Responder({
+            status: HttpStatusCode.Conflict,
+            data: 'Vous êtes déjà inscrit à la newsletter.',
+          });
+        } else {
+          // Previously unsubscribed, reactivate subscription
+          await existing.update({ status: 1 });
+
+          // Send welcome email
+          try {
+            await this.mailService.sendMail({
+              to: user_email,
+              subject: 'Bienvenue dans notre newsletter !',
+              content: this.mailService.templates({
+                as: 'newsletter-subscribe',
+              }),
+            });
+          } catch (emailError) {
+            // Log email error but don't fail the subscription
+            console.error(
+              'Failed to send newsletter subscription email:',
+              emailError,
+            );
+          }
+
+          return Responder({
+            status: HttpStatusCode.Created,
+            data: existing,
+          });
+        }
       }
+
+      // Create new subscription
       const infos = await this.newsletterModel.create({
         user_email,
       });
@@ -760,6 +792,14 @@ export class CmsService {
 
       return Responder({ status: HttpStatusCode.Created, data: infos });
     } catch (err) {
+      // Handle Sequelize unique constraint error
+      if (err.name === 'SequelizeUniqueConstraintError') {
+        return Responder({
+          status: HttpStatusCode.Conflict,
+          data: 'Vous êtes déjà inscrit à la newsletter.',
+        });
+      }
+
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: err,
