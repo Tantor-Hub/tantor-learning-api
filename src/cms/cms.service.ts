@@ -17,14 +17,10 @@ import { Op } from 'sequelize';
 import { typeMessages } from 'src/utils/utiles.messagestypes';
 import { CreateMessageDto } from './dto/send-message.dto';
 import { Users } from 'src/models/model.users';
-import { CreateEvenementDto } from './dto/create-planing.dto';
-import { Planings } from 'src/models/model.planings';
 import { log } from 'console';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Cours } from 'src/models/model.sessionshascours';
-import { Listcours } from 'src/models/model.cours';
-import { SessionSuivi } from 'src/models/model.suivisession';
+import { Cours } from 'src/models/model.cours';
 
 @Injectable()
 export class CmsService {
@@ -40,20 +36,15 @@ export class CmsService {
     @InjectModel(Messages)
     private readonly messageModel: typeof Messages,
 
-    @InjectModel(Planings)
-    private readonly planingModel: typeof Planings,
-
     @InjectModel(Newsletter)
     private readonly newsletterModel: typeof Newsletter,
 
     @InjectModel(Cours)
     private readonly coursModel: typeof Cours,
 
-    @InjectModel(SessionSuivi)
-    private readonly sessionModel: typeof SessionSuivi,
 
-    @InjectModel(Listcours)
-    private readonly listcoursModel: typeof Listcours,
+    @InjectModel(Cours)
+    private readonly coursModel2: typeof Cours,
 
     private readonly configService: ConfigService,
   ) {}
@@ -66,17 +57,12 @@ export class CmsService {
           },
           include: [
             {
-              model: SessionSuivi,
-              required: true,
-              attributes: ['designation', 'duree', 'type_formation'],
-            },
-            {
               model: Users,
               required: true,
               attributes: ['id', 'fs_name', 'ls_name', 'email'],
             },
             {
-              model: Listcours,
+              model: Cours,
               required: true,
               attributes: ['id', 'title', 'description'],
             },
@@ -93,115 +79,6 @@ export class CmsService {
           Responder({ status: HttpStatusCode.InternalServerError, data: err }),
         );
     } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async myListAsFormateur(user: IJwtSignin): Promise<ResponseServer> {
-    try {
-      const { id_user } = user;
-      // Planings.belongsTo(Users, { foreignKey: 'id_cibling', as: "Concerned" })
-      return this.planingModel
-        .findAll({
-          include: [
-            {
-              model: Users,
-              as: 'Cibling',
-              attributes: ['id', 'fs_name', 'ls_name'],
-              required: false,
-            },
-          ],
-          where: {
-            status: 1,
-            createdBy: id_user,
-          },
-        })
-        .then((list) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: { length: list.length, list },
-          }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async myListAsStudent(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user } = user;
-    try {
-      // Planings.belongsTo(Users, { foreignKey: 'createdBy', as: "Createdby" }) // j'ai commenter ceci
-      return this.planingModel
-        .findAll({
-          include: [
-            {
-              model: Users,
-              as: 'Createdby',
-              attributes: ['id', 'fs_name', 'ls_name'],
-              required: false,
-            },
-          ],
-          where: {
-            status: 1,
-            [Op.or]: [
-              { id_cibling: id_user },
-              { id_cibling: null }, // null means all of us
-            ],
-          },
-        })
-        .then((list) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: { length: list.length, list },
-          }),
-        )
-        .catch((err) => {
-          log('List of all err whene getting List of Events', err);
-          return Responder({
-            status: HttpStatusCode.InternalServerError,
-            data: err,
-          });
-        });
-    } catch (error) {
-      log(error);
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async addPlaning(
-    planing: CreateEvenementDto,
-    user: IJwtSignin,
-  ): Promise<ResponseServer> {
-    const { description, titre, id_cibling, type, timeline } = planing;
-    const ons = timeline.map((time) => this.allSercices.dateToUnixOnly(time));
-    log('Line are ==> ', ons);
-    try {
-      return this.planingModel
-        .create({
-          description,
-          titre,
-          type,
-          id_cibling,
-          createdBy: user.id_user,
-          timeline: ons,
-        })
-        .then((plan) =>
-          Responder({ status: HttpStatusCode.Created, data: plan }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      log(error);
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: error,

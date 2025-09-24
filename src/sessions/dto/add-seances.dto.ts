@@ -10,6 +10,7 @@ import {
   IsDate,
   IsISO8601,
 } from 'class-validator';
+import { FormationType } from 'src/utils/utiles.typesformations';
 
 export class AddSeanceSessionDto {
   @IsNumberString()
@@ -26,8 +27,8 @@ export class AddSeanceSessionDto {
 
   @IsOptional()
   @IsString()
-  @IsEnum(['onLine', 'visionConference', 'presentiel', 'hybride'])
-  type_seance: string;
+  @IsEnum(FormationType)
+  type_seance: FormationType;
 
   @IsOptional()
   @IsNumber()

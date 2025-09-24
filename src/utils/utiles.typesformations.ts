@@ -1,25 +1,32 @@
 import { ITypeformation } from 'src/interface/interface.typeformations';
 
+export enum FormationType {
+  EN_LIGNE = 'En ligne',
+  VISION_CONFERENCE = 'Vision Conférence',
+  PRESENTIEL = 'En présentiel',
+  HYBRIDE = 'Hybride',
+}
+
 export const typeFormations: ITypeformation[] = [
   {
-    key: 'onLine',
-    type: 'En ligne',
+    key: 'EN_LIGNE',
+    type: FormationType.EN_LIGNE,
     description:
       'Une formation en ligne avec tous les supports en ligne, des videos des cours doivent être mis en la dispositions des apprenants',
   },
   {
-    key: 'visioConference',
-    type: 'Vision Conférence',
+    key: 'VISION_CONFERENCE',
+    type: FormationType.VISION_CONFERENCE,
     description: 'Une formation en vision conférence',
   },
   {
-    key: 'presentiel',
-    type: 'En présentiel',
+    key: 'PRESENTIEL',
+    type: FormationType.PRESENTIEL,
     description: "Une formation organisée au sein d'une centre de formation",
   },
   {
-    key: 'hybride',
-    type: 'Hybride',
+    key: 'HYBRIDE',
+    type: FormationType.HYBRIDE,
     description:
       "Il s'agit d'une formation qui peut etre dispensée en ligne en vision conference, soit en presentiel",
   },

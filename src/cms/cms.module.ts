@@ -12,36 +12,22 @@ import { CryptoService } from 'src/services/service.crypto';
 import { MailService } from 'src/services/service.mail';
 import { UsersService } from 'src/users/users.service';
 import { Users } from 'src/models/model.users';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { Messages } from 'src/models/model.messages';
-import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
-import { SeanceSessions } from 'src/models/model.courshasseances';
-import { HomeworksSession } from 'src/models/model.homework';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+
 import { Contacts } from 'src/models/model.contactform';
-import { Planings } from 'src/models/model.planings';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Cours } from 'src/models/model.sessionshascours';
-import { SessionSuivi } from 'src/models/model.suivisession';
-import { Listcours } from 'src/models/model.cours';
+import { Cours } from 'src/models/model.cours';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([
       AppInfos,
-      SessionSuivi,
-      Listcours,
       Newsletter,
       Users,
       Cours,
-      StagiaireHasSession,
-      HomeworksSession,
       Messages,
-      StagiaireHasSessionSeances,
-      SeanceSessions,
-      StagiaireHasHomeWork,
+
       Contacts,
-      Planings,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

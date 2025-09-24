@@ -23,16 +23,9 @@ import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
-import { SeanceSessions } from 'src/models/model.courshasseances';
 import { Formations } from 'src/models/model.formations';
-import { SessionSuivi } from 'src/models/model.suivisession';
-import { Categories } from 'src/models/model.categoriesformations';
-import { Thematiques } from 'src/models/model.groupeformations';
-import { HomeworksSession } from 'src/models/model.homework';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';
@@ -47,20 +40,8 @@ export class UsersService {
     @InjectModel(Users)
     private readonly userModel: typeof Users,
 
-    @InjectModel(StagiaireHasSession)
-    private readonly hasSessionModel: typeof StagiaireHasSession,
-
-    @InjectModel(HomeworksSession)
-    private readonly homeworkModel: typeof HomeworksSession,
-
-    @InjectModel(StagiaireHasHomeWork)
-    private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
-
     @InjectModel(Messages)
     private readonly messagesModel: typeof Messages,
-
-    @InjectModel(SeanceSessions)
-    private readonly hasseancesModel: typeof SeanceSessions,
 
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -118,33 +99,36 @@ export class UsersService {
           lastSemesterEnd = new Date(now.getFullYear(), 5, 30);
         }
 
+        // TODO: Implement homework scores when StagiaireHasHomeWork model is restored
         const [ongoing, last] = await Promise.all([
-          this.hashomeworkModel.findAll({
-            where: {
-              id_user,
-              date_de_creation: {
-                [Op.between]: [semesterStart, semesterEnd],
-              },
-            },
-            attributes: [
-              [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
-              [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
-            ],
-            raw: true,
-          }) as any,
-          this.hashomeworkModel.findAll({
-            where: {
-              id_user,
-              date_de_creation: {
-                [Op.between]: [lastSemesterStart, lastSemesterEnd],
-              },
-            },
-            attributes: [
-              [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
-              [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
-            ],
-            raw: true,
-          }) as any,
+          // this.hashomeworkModel.findAll({
+          //   where: {
+          //     id_user,
+          //     date_de_creation: {
+          //       [Op.between]: [semesterStart, semesterEnd],
+          //     },
+          //   },
+          //   attributes: [
+          //     [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
+          //     [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
+          //   ],
+          //   raw: true,
+          // }) as any,
+          [{ score: 0, total: 0 }] as any,
+          // this.hashomeworkModel.findAll({
+          //   where: {
+          //     id_user,
+          //     date_de_creation: {
+          //       [Op.between]: [lastSemesterStart, lastSemesterEnd],
+          //     },
+          //   },
+          //   attributes: [
+          //     [Sequelize.fn('SUM', Sequelize.col('score')), 'score'],
+          //     [Sequelize.fn('COUNT', Sequelize.col('id')), 'total'],
+          //   ],
+          //   raw: true,
+          // }) as any,
+          [{ score: 0, total: 0 }] as any,
         ]);
 
         return {
@@ -164,130 +148,29 @@ export class UsersService {
       });
     }
   }
-  async loadStudentNextLiveSession(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user, uuid_user } = user;
-    try {
-      // StagiaireHasSession.belongsTo(Formations, { foreignKey: "id_formation" })
-      // StagiaireHasSession.belongsTo(SessionSuivi, { foreignKey: "id_sessionsuivi" })
-      // Formations.belongsTo(Categories, { foreignKey: "id_category" })
-      // Formations.belongsTo(Thematiques, { foreignKey: "id_thematic" })
-      // SeanceSessions.belongsTo(SessionSuivi, { foreignKey: "id_session" });
-      // SeanceSessions.belongsTo(Formations, { foreignKey: "id_formation" })
-      // SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
-
-      const mylistsession = await this.hasSessionModel.findAll({
-        include: [
-          {
-            model: SessionSuivi,
-            required: true,
-          },
-          {
-            model: Formations,
-            required: true,
-            attributes: ['id', 'titre', 'sous_titre', 'description'],
-            include: [
-              {
-                model: Thematiques,
-                required: true,
-                attributes: ['id', 'thematic'],
-              },
-              {
-                model: Categories,
-                required: true,
-                attributes: ['id', 'category'],
-              },
-            ],
-          },
-        ],
-        where: {
-          id_stagiaire: id_user,
-        },
-      });
-
-      const mylistids = mylistsession
-        .map((sess) => {
-          return sess.toJSON().id;
-        })
-        .filter((id) => id !== undefined);
-
-      // SessionSuivi.belongsTo(Users, { foreignKey: "id_superviseur" })
-      const nextLivesSessions = await this.hasseancesModel.findAll({
-        include: [
-          {
-            model: SessionSuivi,
-            required: true,
-            attributes: ['id', 'designation', 'id_superviseur'],
-            include: [
-              {
-                model: Users,
-                required: false,
-              },
-            ],
-          },
-          {
-            model: Formations,
-            required: true,
-            attributes: ['id', 'titre', 'sous_titre', 'description'],
-          },
-        ],
-        attributes: {
-          exclude: ['createdAt', 'updatedAt'],
-        },
-        where: {
-          id: {
-            [Op.in]: [...mylistids],
-          },
-          seance_date_on: {
-            [Op.gte]: Date.now() / 1000,
-          },
-        },
-      });
-      return Responder({
-        status: HttpStatusCode.Ok,
-        data: nextLivesSessions.map((sessionLive) => {
-          const { seance_date_on } = sessionLive.toJSON();
-          const ins = sessionLive?.toJSON();
-          delete (ins as any).seance_date_on;
-          return {
-            date: this.allService.unixToDate({ stringUnix: seance_date_on }),
-            ...ins,
-          };
-        }),
-      });
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
   async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
     const { id_user, uuid_user } = user;
     try {
       // card 1
-      const enroledCours = await this.hasSessionModel.count({
-        where: { id_stagiaire: id_user },
-      });
-      const onGoingCours = await this.hasSessionModel.count({
-        where: { id_stagiaire: id_user, is_started: 1 },
-      });
+      // TODO: Implement session counts when StagiaireHasSession model is restored
+      const enroledCours = 0; // await this.hasSessionModel.count({ where: { id_stagiaire: id_user } });
+      const onGoingCours = 0; // await this.hasSessionModel.count({ where: { id_stagiaire: id_user, is_started: 1 } });
 
       // card 2
-      const enroledHomeworks = await this.hashomeworkModel.count({
-        where: { id_user, is_returned: 0 },
-      });
-      const allPendingHomeworks = await this.hashomeworkModel.findAll({
-        where: {
-          id_user,
-          is_returned: 0,
-          date_de_remise: { [Op.gte]: Date.now() / 1000 },
-        },
-        order: [['date_de_remise', 'ASC']],
-      });
+      // TODO: Implement homework counts when StagiaireHasHomeWork model is restored
+      const enroledHomeworks = 0; // await this.hashomeworkModel.count({ where: { id_user, is_returned: 0 } });
+      const allPendingHomeworks: IHomeWorks[] = []; // await this.hashomeworkModel.findAll({
+      //   where: {
+      //     id_user,
+      //     is_returned: 0,
+      //     date_de_remise: { [Op.gte]: Date.now() / 1000 },
+      //   },
+      //   order: [['date_de_remise', 'ASC']],
+      // });
 
       const grouped = allPendingHomeworks.reduce(
         (acc, hw) => {
-          const date = hw.date_de_remise;
+          const date = hw.date_de_remise?.toString() || 'unknown';
           if (!acc[date]) acc[date] = [];
           acc[date].push(hw);
           return acc;

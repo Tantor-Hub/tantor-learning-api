@@ -14,7 +14,7 @@ import { AllSercices } from '../services/serices.all';
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   keyname: string;
-  allowedTo: number[] = [4, 1, 2, 3];
+  allowedTo: string[] = ['student', 'admin', 'secretary', 'instructor'];
   accessLevel: number = 90; // c'est à dire que le niveau pour les utilisateurs
 
   constructor(
@@ -39,18 +39,20 @@ export class JwtAuthGuard implements CanActivate {
       throw new CustomUnauthorizedException(
         "La clé d'authentification fournie a déjà expiré",
       );
-    const { roles_user, level_indicator } = decoded;
-    if (
-      this.allSercices.checkIntersection({
-        arr_a: this.allowedTo,
-        arr_b: roles_user,
-      })
-    ) {
+    const { uuid_user } = decoded as any;
+    if (!uuid_user) {
+      throw new CustomUnauthorizedException(
+        "La clé d'authentification ne contient pas d'identifiant utilisateur",
+      );
+    }
+    // Backward compatibility: if roles_user exists, allow
+    const roles_user = (decoded as any).roles_user;
+    if (roles_user && roles_user.length) {
       request.user = decoded;
       return true;
-    } else
-      throw new CustomUnauthorizedException(
-        "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
-      );
+    }
+    // Otherwise, accept token presence (role checks handled in specific guards/routes)
+    request.user = decoded;
+    return true;
   }
 }

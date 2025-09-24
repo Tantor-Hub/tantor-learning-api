@@ -7,7 +7,6 @@ import {
   BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
-import { StagiaireHasSession } from './model.stagiairehassession';
 import { ISurveyResponse } from 'src/interface/interface.stagiairehassession';
 
 @Table({ tableName: tables['surveyresponse'], timestamps: true })
@@ -21,10 +20,4 @@ export class SurveyResponse extends Model<ISurveyResponse> {
   @Column({ type: DataType.TEXT })
   answer: string;
 
-  @ForeignKey(() => StagiaireHasSession)
-  @Column({ type: DataType.INTEGER })
-  id_stagiaire_session: number;
-
-  @BelongsTo(() => StagiaireHasSession)
-  SessionStagiaire: StagiaireHasSession;
 }

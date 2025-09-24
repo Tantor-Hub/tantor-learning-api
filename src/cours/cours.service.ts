@@ -3,38 +3,18 @@ import { InjectModel } from '@nestjs/sequelize';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { ResponseServer } from 'src/interface/interface.response';
-import { Listcours } from 'src/models/model.cours';
 import { Messages } from 'src/models/model.messages';
-import { Planings } from 'src/models/model.planings';
-import { Cours } from 'src/models/model.sessionshascours';
+import { Cours } from 'src/models/model.cours';
 import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { Responder } from 'src/strategy/strategy.responder';
 import { CreateCoursDto } from './dto/create-cours.dto';
-import { CreatePresetCoursDto } from './dto/create-preset-cours.dto';
-import { UpdateCoursFormateursDto } from './dto/update-cours-formateurs.dto';
+import { UpdateCoursDto } from './dto/update-cours.dto';
 import { CreationAttributes } from 'sequelize';
-import { AddHomeworkSessionDto } from 'src/sessions/dto/add-homework.dto';
-import { SeanceSessions } from 'src/models/model.courshasseances';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
-import { FormateurHasSession } from 'src/models/model.formateurhassession';
-import { HomeworksSession } from 'src/models/model.homework';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
-import { SessionSuivi } from 'src/models/model.suivisession';
 import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
 import { Users } from 'src/models/model.users';
-import { CreateDocumentDto } from './dto/create-documents.dto';
-import { Documents } from 'src/models/model.documents';
-import { CreateCoursContentDto } from './dto/create-cours-content.dto';
-import { Chapitre } from 'src/models/model.chapitres';
-import { IChapitres } from 'src/interface/interface.cours';
-import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
-import { Evaluation } from 'src/models/model.evaluation';
-import { Question } from 'src/models/model.quiz';
-import { Option } from 'src/models/model.optionsquiz';
 import {
   alloedMaterials,
-  typeEvaluation,
   typeFormations,
 } from 'src/utils/utiles.typesformations';
 
@@ -47,330 +27,13 @@ export class CoursService {
     @InjectModel(Messages)
     private readonly messageModel: typeof Messages,
 
-    @InjectModel(Planings)
-    private readonly planingModel: typeof Planings,
-
     @InjectModel(Cours)
     private readonly coursModel: typeof Cours,
 
-    @InjectModel(SeanceSessions)
-    private readonly seancesModel: typeof SeanceSessions,
-
-    @InjectModel(SessionSuivi)
-    private readonly sessionModel: typeof SessionSuivi,
-
-    @InjectModel(Listcours)
-    private readonly listcoursModel: typeof Listcours,
-
     @InjectModel(Users)
     private readonly usersModel: typeof Users,
-
-    @InjectModel(StagiaireHasSession)
-    private readonly hasSessionStudentModel: typeof StagiaireHasSession,
-
-    @InjectModel(FormateurHasSession)
-    private readonly hasSessionFormateurModel: typeof FormateurHasSession,
-
-    @InjectModel(HomeworksSession)
-    private readonly homeworkModel: typeof HomeworksSession,
-
-    @InjectModel(StagiaireHasHomeWork)
-    private readonly hashomeworkModel: typeof StagiaireHasHomeWork,
-
-    @InjectModel(Chapitre)
-    private readonly chapitrecoursModel: typeof Chapitre,
-
-    @InjectModel(Documents)
-    private readonly docModel: typeof Documents,
-
-    @InjectModel(Evaluation)
-    private readonly evaluationModel: typeof Evaluation,
-
-    @InjectModel(Question)
-    private readonly questionModel: typeof Question,
-
-    @InjectModel(Option)
-    private readonly optionModel: typeof Option,
   ) {}
 
-  async gettypesevaluation(user: IJwtSignin): Promise<ResponseServer> {
-    try {
-      const types = typeEvaluation;
-      return Responder({ status: HttpStatusCode.Ok, data: types });
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async getconditionsevaluation(user: IJwtSignin): Promise<ResponseServer> {
-    try {
-      const types = typeFormations;
-      return Responder({ status: HttpStatusCode.Ok, data: types });
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async getallowedmatosevaluation(user: IJwtSignin): Promise<ResponseServer> {
-    try {
-      const types = alloedMaterials;
-      return Responder({ status: HttpStatusCode.Ok, data: types });
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async deleteEvaluation(
-    user: IJwtSignin,
-    idevaluation: number,
-  ): Promise<ResponseServer> {
-    try {
-      const evaluation = await this.evaluationModel.findOne({
-        where: {
-          id: idevaluation,
-        },
-      });
-      if (!evaluation)
-        return Responder({
-          status: HttpStatusCode.NotFound,
-          data: 'The evaluation with ID not found in the list',
-        });
-      return evaluation
-        .destroy()
-        .then((_) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: 'The evaluation has been deleted successfully',
-          }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async getEvaluationById(idevaluation: number): Promise<ResponseServer> {
-    try {
-      return this.evaluationModel
-        .findOne({
-          where: {
-            id: idevaluation,
-          },
-          attributes: {
-            exclude: ['createdAt', 'updatedAt', 'id_cours'],
-          },
-          include: [
-            {
-              model: Question,
-              required: false,
-              attributes: ['id', 'content', 'type'],
-              include: [
-                {
-                  model: Option,
-                  required: false,
-                  attributes: ['id', 'text', 'is_correct'],
-                },
-              ],
-            },
-          ],
-        })
-        .then((evaluation) => {
-          if (evaluation instanceof Evaluation) {
-            return Responder({ status: HttpStatusCode.Ok, data: evaluation });
-          } else
-            return Responder({
-              status: HttpStatusCode.NotFound,
-              data: 'The item can not be found with the specifique ID',
-            });
-        })
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async getEvaluationsByCours(
-    idcours: number,
-    idsession: number,
-  ): Promise<ResponseServer> {
-    try {
-      return this.evaluationModel
-        .findAll({
-          where: {
-            id_cours: idcours,
-            id_session: idsession,
-          },
-          attributes: {
-            exclude: ['createdAt', 'updatedAt', 'id_cours'],
-          },
-          include: [
-            {
-              model: Question,
-              required: false,
-              attributes: ['id', 'content', 'type'],
-              include: [
-                {
-                  model: Option,
-                  required: false,
-                  attributes: ['id', 'text'],
-                },
-              ],
-            },
-          ],
-        })
-        .then((list) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: { length: list.length, rows: list },
-          }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async addEvaluationToCours(
-    user: IJwtSignin,
-    createEvaluationDto: CreateEvaluationFullDto,
-  ): Promise<ResponseServer> {
-    const {
-      id_cours,
-      title,
-      description,
-      estimatedDuration,
-      score,
-      Questions,
-      id_session,
-    } = createEvaluationDto;
-    try {
-      const cours = await this.coursModel.findOne({
-        where: {
-          id: id_cours,
-          id_session,
-        },
-      });
-      if (!cours)
-        return Responder({
-          status: HttpStatusCode.NotFound,
-          data: 'The course with ID not found in the list',
-        });
-      const { createdBy } = cours?.toJSON();
-      if (createdBy !== user.id_user)
-        return Responder({
-          status: HttpStatusCode.Unauthorized,
-          data: 'This course is not assigned to this User as Teacher',
-        });
-
-      return this.evaluationModel
-        .create(createEvaluationDto, {
-          include: [
-            {
-              model: Question,
-              required: true,
-              include: [
-                {
-                  required: true,
-                  model: Option,
-                },
-              ],
-            },
-          ],
-        })
-        .then((evaluation) => {
-          if (evaluation instanceof Evaluation) {
-            for (const question of Questions) {
-              const { content, type, Options } = question;
-              this.questionModel
-                .create({
-                  content,
-                  type,
-                  id_evaluation: evaluation.id,
-                })
-                .then(async (q) => {
-                  if (q instanceof Question) {
-                    for (const option of Options) {
-                      await this.optionModel.create({
-                        text: option.text,
-                        is_correct: option.isCorrect,
-                        id_question: q.id,
-                      });
-                    }
-                  }
-                });
-            }
-            return Responder({
-              status: HttpStatusCode.Created,
-              data: evaluation,
-            });
-          } else
-            return Responder({
-              status: HttpStatusCode.InternalServerError,
-              data: evaluation,
-            });
-        })
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async getDocumentsByCours(idcours: number): Promise<ResponseServer> {
-    try {
-      return this.docModel
-        .findAll({
-          where: {
-            id_lesson: idcours,
-          },
-          attributes: {
-            exclude: ['createdAt', 'updatedAt', 'id_lesson', 'id_session'],
-          },
-          // include: [
-          //     {
-          //         model: Users,
-          //         required: true,
-          //         attributes: ['id', 'fs_name', 'ls_name', 'email']
-          //     }
-          // ]
-        })
-        .then((list) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: { length: list.length, rows: list },
-          }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
   async getCoursById(idcours: number): Promise<ResponseServer> {
     try {
       return this.coursModel
@@ -383,36 +46,9 @@ export class CoursService {
           },
           include: [
             {
-              model: Chapitre,
-              required: false,
-            },
-            {
-              model: Documents,
-              required: false,
-              attributes: {
-                exclude: [
-                  'createdAt',
-                  'updatedAt',
-                  'id_cours',
-                  'id_session',
-                  'createdBy',
-                ],
-              },
-            },
-            {
-              model: SessionSuivi,
-              required: true,
-              attributes: ['designation', 'duree', 'type_formation'],
-            },
-            {
               model: Users,
               required: true,
               attributes: ['id', 'fs_name', 'ls_name', 'email'],
-            },
-            {
-              model: Listcours,
-              required: true,
-              attributes: ['id', 'title', 'description'],
             },
           ],
         })
@@ -436,57 +72,6 @@ export class CoursService {
       });
     }
   }
-  async addCoursContent(
-    user: IJwtSignin,
-    content: CreateCoursContentDto,
-  ): Promise<ResponseServer> {
-    const { content: contents, id_cours } = content;
-    try {
-      const cours = await this.coursModel.findOne({
-        where: {
-          id: id_cours,
-        },
-      });
-
-      if (!cours)
-        return Responder({
-          status: HttpStatusCode.NotFound,
-          data: 'The course with ID not found in the list',
-        });
-      const { createdBy } = cours?.toJSON();
-      if (createdBy !== user.id_user)
-        return Responder({
-          status: HttpStatusCode.Unauthorized,
-          data: 'This course is not assigned to this User as Teacher',
-        });
-
-      return await this.chapitrecoursModel
-        .bulkCreate(
-          contents.map((cont) => {
-            const { chapitre, paragraphes } = cont;
-            return {
-              chapitre,
-              id_cours,
-              paragraphes,
-            } as IChapitres;
-          }),
-        )
-        .then((bulk) => {
-          return Responder({ status: HttpStatusCode.Ok, data: bulk });
-        })
-        .catch((err) => {
-          return Responder({
-            status: HttpStatusCode.InternalServerError,
-            data: err,
-          });
-        });
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
   async getListCoursAllBySesson(idsession: number): Promise<ResponseServer> {
     try {
       return this.coursModel
@@ -496,20 +81,10 @@ export class CoursService {
           },
           include: [
             {
-              model: SessionSuivi,
-              required: true,
-              attributes: ['designation', 'duree', 'type_formation'],
-            },
-            {
               model: Users,
               required: true,
               as: 'CreatedBy',
               attributes: ['id', 'fs_name', 'ls_name', 'email'],
-            },
-            {
-              model: Listcours,
-              required: true,
-              attributes: ['id', 'title', 'description'],
             },
           ],
           where: {
@@ -545,20 +120,10 @@ export class CoursService {
           },
           include: [
             {
-              model: SessionSuivi,
-              required: true,
-              attributes: ['designation', 'duree', 'type_formation'],
-            },
-            {
               model: Users,
               required: true,
               as: 'CreatedBy',
               attributes: ['id', 'fs_name', 'ls_name', 'email'],
-            },
-            {
-              model: Listcours,
-              required: true,
-              attributes: ['id', 'title', 'description'],
             },
           ],
           where: {
@@ -593,20 +158,10 @@ export class CoursService {
           },
           include: [
             {
-              model: SessionSuivi,
-              required: true,
-              attributes: ['designation', 'duree', 'type_formation'],
-            },
-            {
               model: Users,
               required: true,
               as: 'CreatedBy',
               attributes: ['id', 'fs_name', 'ls_name', 'email'],
-            },
-            {
-              model: Listcours,
-              required: true,
-              attributes: ['id', 'title', 'description'],
             },
           ],
           where: {
@@ -631,7 +186,7 @@ export class CoursService {
   }
   async getListCours(): Promise<ResponseServer> {
     try {
-      return this.listcoursModel
+      return this.coursModel
         .findAll({
           attributes: {
             exclude: ['createdAt', 'updatedAt'],
@@ -663,324 +218,68 @@ export class CoursService {
   }
   async getListCoursAll(): Promise<ResponseServer> {
     try {
-      return this.coursModel
-        .findAll({
-          attributes: {
-            exclude: ['id_thematic', 'createdAt', 'updatedAt'],
+      // First, get all courses with their formateurs
+      const courses = await this.coursModel.findAll({
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'id_formateur',
+          'is_published',
+          'id_session',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'CreatedBy',
+            attributes: ['id', 'email'],
           },
-          include: [
-            {
-              model: SessionSuivi,
-              required: true,
-              attributes: ['designation', 'duree', 'type_formation'],
-            },
-            {
-              model: Users,
-              required: true,
-              as: 'CreatedBy',
-              attributes: ['id', 'fs_name', 'ls_name', 'email'],
-            },
-            {
-              model: Listcours,
-              required: true,
-              attributes: ['id', 'title', 'description'],
-            },
-          ],
-        })
-        .then((list) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: { length: list.length, rows: list },
-          }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
+        ],
+        order: [['createdAt', 'DESC']],
       });
-    }
-  }
-  async addPresetCours(
-    user: IJwtSignin,
-    createCoursDto: CreatePresetCoursDto,
-  ): Promise<ResponseServer> {
-    const { title, description } = createCoursDto;
-    try {
-      const data: CreationAttributes<Listcours> = {
-        title,
-        description,
-        createdBy: user.id_user,
-      };
-      return this.listcoursModel
-        .create(data)
-        .then((cours) => {
-          if (cours instanceof Listcours)
-            return Responder({ status: HttpStatusCode.Created, data: cours });
-          else
-            return Responder({
-              status: HttpStatusCode.InternalServerError,
-              data: cours,
-            });
-        })
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async addCoursToLibrairie(
-    idcours: number,
-    user: IJwtSignin,
-  ): Promise<ResponseServer> {
-    try {
-      const cours = await this.coursModel.findOne({
-        where: {
-          id: idcours,
-        },
-      });
-      if (!cours)
-        return Responder({
-          status: HttpStatusCode.NotFound,
-          data: 'The course with ID not found in the list',
-        });
-      const { createdBy, is_published } = cours?.toJSON();
-      if (createdBy !== user.id_user)
-        return Responder({
-          status: HttpStatusCode.Unauthorized,
-          data: 'This course is not assigned to this User as Teacher',
-        });
-      return cours
-        .update({
-          is_published: !is_published,
-        })
-        .then((_) => Responder({ status: HttpStatusCode.Ok, data: cours }))
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async addCoursToSession(
-    user: IJwtSignin,
-    createCoursDto: CreateCoursDto,
-  ): Promise<ResponseServer> {
-    const { title, description, is_published, id_formateurs, id_session } =
-      createCoursDto;
-    try {
-      // First, create the preset course
-      const presetData: CreationAttributes<Listcours> = {
-        title,
-        description,
-        createdBy: user.id_user,
-      };
-      const presetCours = await this.listcoursModel.create(presetData);
-      if (!(presetCours instanceof Listcours)) {
-        return Responder({
-          status: HttpStatusCode.InternalServerError,
-          data: 'Failed to create preset course',
-        });
-      }
 
-      // Create course session links for each formateur
-      const createdCourses: Cours[] = [];
-      for (const id_formateur of id_formateurs) {
-        try {
-          const cours = await this.coursModel.create({
-            createdBy: user.id_user,
-            id_preset_cours: presetCours.id,
-            id_session,
-            id_formateur,
-            is_published,
-            status: 1,
+      // Group courses by preset course to combine multiple formateurs
+      const groupedCourses = new Map();
+
+      for (const course of courses) {
+        const key = `${course.id}-${course.id_session}`;
+
+        if (!groupedCourses.has(key)) {
+          groupedCourses.set(key, {
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            is_published: course.is_published,
+            id_formateurs: [],
+            createdAt: course.createdAt,
           });
-          if (cours instanceof Cours) {
-            createdCourses.push(cours);
-          }
-        } catch (err) {
-          console.error(
-            `Failed to create course for formateur ${id_formateur}:`,
-            err,
-          );
-          // Continue with other formateurs even if one fails
         }
-      }
 
-      if (createdCourses.length === 0) {
-        return Responder({
-          status: HttpStatusCode.InternalServerError,
-          data: 'Failed to create any courses',
+        const courseGroup = groupedCourses.get(key);
+        courseGroup.id_formateurs.push({
+          id: course.CreatedBy?.uuid || course.id_formateur,
+          // fs_name: course.CreatedBy?.fs_name,
+          // ls_name: course.CreatedBy?.ls_name,
+          email: course.CreatedBy?.email,
         });
       }
 
+      const result = Array.from(groupedCourses.values());
+
+      // Sort the final result by createdAt in descending order (most recent first)
+      result.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
       return Responder({
-        status: HttpStatusCode.Created,
+        status: HttpStatusCode.Ok,
         data: {
-          preset_course: presetCours,
-          courses: createdCourses,
-          message: `Created ${createdCourses.length} course(s) for ${id_formateurs.length} formateur(s)`,
+          length: result.length,
+          rows: result,
         },
       });
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async createHomework(
-    addSeanceSessionDto: AddHomeworkSessionDto,
-  ): Promise<ResponseServer> {
-    const {
-      id_session,
-      piece_jointe,
-      id_formation,
-      homework_date_on,
-      score,
-      id_cours,
-    } = addSeanceSessionDto;
-    try {
-      const session = await this.sessionModel.findOne({
-        where: { id: id_session },
-      });
-      if (!session)
-        return Responder({
-          status: HttpStatusCode.NotFound,
-          data: "La session n'a pas été retrouvé !",
-        });
-      const allConcernedStudent = await this.hasSessionStudentModel.findAll({
-        where: { id_sessionsuivi: id_session },
-      });
-      const studentsIds = allConcernedStudent.map(
-        (s: any) => s.toJSON()['id_stagiaire'],
-      );
-
-      const { id_formation: as_id_formation } = session.toJSON();
-      return this.homeworkModel
-        .create({
-          id_session: id_session,
-          homework_date_on: Number(homework_date_on),
-          id_formation: as_id_formation,
-          piece_jointe,
-          score: Number(score),
-          id_cours,
-        })
-        .then((seance) => {
-          studentsIds.forEach((id) => {
-            this.hashomeworkModel.create({
-              date_de_creation: new Date(),
-              date_de_remise: homework_date_on,
-              id_session,
-              id_user: id,
-              id_formation: as_id_formation,
-              piece_jointe,
-              is_returned: 0,
-              score: Number(score),
-              score_on: 0,
-              id_cours,
-            });
-          });
-          return Responder({ status: HttpStatusCode.Created, data: seance });
-        })
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
-  async assignFormateurToSession(
-    manager: IJwtSignin,
-    updateSessionDto: AssignFormateurToSessionDto,
-  ): Promise<ResponseServer> {
-    const { id_cours: id_session, id_user } = updateSessionDto;
-
-    // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId", });
-    const user = await this.usersModel.findOne({
-      where: { id: id_user, role: 'instructor' },
-    });
-
-    if (!user)
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: "Une session ne peut être attribuer qu'à un formateur ! id_user passé ne correspond à aucun formateur !",
-      });
-    return this.sessionModel
-      .findOne({
-        where: {
-          id: id_session,
-        },
-      })
-      .then((inst) => {
-        if (inst instanceof SessionSuivi) {
-          const { id_superviseur } = inst.toJSON() || [];
-          return inst
-            .update({
-              id_superviseur: [...Array.from(id_superviseur), id_user],
-            })
-            .then((_) => Responder({ status: HttpStatusCode.Ok, data: inst }))
-            .catch((_) =>
-              Responder({ status: HttpStatusCode.BadRequest, data: _ }),
-            );
-        } else {
-          return Responder({
-            status: HttpStatusCode.NotFound,
-            data: `La session n'a pas été retrouvée [id]:${id_user}`,
-          });
-        }
-      })
-      .catch((_) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: _ }),
-      );
-  }
-  async addDocumentsToCours(
-    user: IJwtSignin,
-    document: CreateDocumentDto,
-  ): Promise<ResponseServer> {
-    const { id_user } = user;
-    const {
-      document_name,
-      id_lesson,
-      id_document,
-      piece_jointe,
-      type,
-      id_session,
-    } = document;
-    try {
-      return this.docModel
-        .create({
-          file_name: document_name,
-          url: piece_jointe,
-          id_lesson,
-          id_session,
-          type,
-          createdBy: id_user,
-        })
-        .then((doc) => {
-          if (doc instanceof Documents)
-            return Responder({ status: HttpStatusCode.Created, data: doc });
-          else
-            return Responder({
-              status: HttpStatusCode.InternalServerError,
-              data: doc,
-            });
-        })
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
     } catch (error) {
       return Responder({
         status: HttpStatusCode.InternalServerError,
@@ -992,19 +291,13 @@ export class CoursService {
   async updateCours(
     user: IJwtSignin,
     id_cours: number,
-    updateDto: UpdateCoursFormateursDto,
+    updateDto: UpdateCoursDto,
   ): Promise<ResponseServer> {
     const { id_formateurs, title, description } = updateDto;
     try {
       // First, check if the course exists and get its preset course and session
       const course = await this.coursModel.findOne({
         where: { id: id_cours },
-        include: [
-          {
-            model: Listcours,
-            required: true,
-          },
-        ],
       });
 
       if (!course) {
@@ -1014,7 +307,7 @@ export class CoursService {
         });
       }
 
-      const { id_preset_cours, id_session, createdBy } = course.toJSON();
+      const { id_session, createdBy } = course.toJSON();
 
       // Check if user has permission (same as course creator or secretary)
       if (createdBy !== user.id_user) {
@@ -1042,16 +335,12 @@ export class CoursService {
 
       // Update course title and description if provided
       if (title || description) {
-        const presetCourse =
-          await this.listcoursModel.findByPk(id_preset_cours);
-        if (presetCourse) {
-          const updateData: any = {};
-          if (title) updateData.title = title;
-          if (description !== undefined) updateData.description = description;
+        const updateData: any = {};
+        if (title) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
 
-          await presetCourse.update(updateData);
-          updateResults.course_updated = true;
-        }
+        await course.update(updateData);
+        updateResults.course_updated = true;
       }
 
       // Add formateurs if provided
@@ -1062,9 +351,9 @@ export class CoursService {
             // Check if this formateur is already assigned to this course
             const existingCourse = await this.coursModel.findOne({
               where: {
-                id_preset_cours,
                 id_session,
                 id_formateur,
+                title: course.title,
               },
             });
 
@@ -1074,11 +363,11 @@ export class CoursService {
 
             const newCourse = await this.coursModel.create({
               createdBy: user.id_user,
-              id_preset_cours,
+              title: course.title,
+              description: course.description,
               id_session,
               id_formateur,
               is_published: course.is_published,
-              status: 1,
             });
 
             if (newCourse instanceof Cours) {
@@ -1118,6 +407,123 @@ export class CoursService {
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: error,
+      });
+    }
+  }
+
+  async createCourse(
+    user: IJwtSignin,
+    createCoursDto: CreateCoursDto,
+  ): Promise<ResponseServer> {
+    const { title, description, is_published, id_formateurs, id_session } =
+      createCoursDto;
+
+    try {
+      // Validate input parameters
+      if (!title || !description) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: 'Title and description are required',
+        });
+      }
+
+      if (id_formateurs && id_formateurs.length > 0) {
+        for (const id_formateur of id_formateurs) {
+          const formateur = await this.usersModel.findOne({
+            where: { id: id_formateur, role: 'instructor' },
+          });
+
+          if (!formateur) {
+            return Responder({
+              status: HttpStatusCode.BadRequest,
+              data: `Formateur with ID ${id_formateur} not found or not an instructor`,
+            });
+          }
+        }
+      }
+
+      // Create the course
+      const courseData: CreationAttributes<Cours> = {
+        title,
+        description,
+        createdBy: user.id_user,
+        id_session,
+        is_published: is_published || false,
+      };
+
+      // Create course instances for each formateur (if provided)
+      const createdCourses: Cours[] = [];
+      const errors: string[] = [];
+
+      if (id_formateurs && id_formateurs.length > 0) {
+        for (const id_formateur of id_formateurs) {
+          try {
+            const cours = await this.coursModel.create({
+              ...courseData,
+              id_formateur,
+            });
+
+            if (cours instanceof Cours) {
+              createdCourses.push(cours);
+            }
+          } catch (err) {
+            const errorMessage = `Failed to create course for formateur ${id_formateur}: ${err.message}`;
+            console.error(errorMessage);
+            errors.push(errorMessage);
+          }
+        }
+      } else {
+        // Create a single course without formateur
+        try {
+          const cours = await this.coursModel.create(courseData);
+          if (cours instanceof Cours) {
+            createdCourses.push(cours);
+          }
+        } catch (err) {
+          const errorMessage = `Failed to create course: ${err.message}`;
+          console.error(errorMessage);
+          errors.push(errorMessage);
+        }
+      }
+
+      // Check if any courses were created successfully
+      if (createdCourses.length === 0) {
+        return Responder({
+          status: HttpStatusCode.InternalServerError,
+          data: {
+            message: 'Failed to create any courses',
+            errors: errors,
+          },
+        });
+      }
+
+      // Return success response
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: {
+          message: 'Course created successfully',
+          created_courses: createdCourses.map((course) => ({
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            id_formateur: course.id_formateur,
+            id_session: course.id_session,
+            is_published: course.is_published,
+            createdBy: course.createdBy,
+          })),
+          total_created: createdCourses.length,
+          total_requested: id_formateurs?.length || 1,
+          errors: errors.length > 0 ? errors : undefined,
+        },
+      });
+    } catch (error) {
+      console.error('Error creating course:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while creating course',
+          error: error.message,
+        },
       });
     }
   }

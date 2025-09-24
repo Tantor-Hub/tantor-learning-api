@@ -1,9 +1,10 @@
 import { IGlobale } from './interface.globale';
+import { FormationType } from 'src/utils/utiles.typesformations';
 
 export interface ISession extends IGlobale {
   id_formation: number;
   designation?: string; // as SESSION JJMMAAAA-JJMMAAAA
-  type_formation?: 'onLine' | 'visionConference' | 'presentiel' | 'hybride';
+  type_formation?: FormationType;
   piece_jointe?: string; // optionnel
   id_formateur?: number;
   description?: string;

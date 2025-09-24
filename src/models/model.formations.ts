@@ -7,11 +7,10 @@ import {
   HasMany,
   BelongsTo,
 } from 'sequelize-typescript';
-import { Categories } from './model.categoriesformations';
 import { tables } from 'src/config/config.tablesname';
 import { IFormation } from 'src/interface/interface.formations';
-import { Thematiques } from './model.groupeformations';
-import { SessionSuivi } from './model.suivisession';
+import { TrainingCategory } from './model.trainingcategory';
+import { FormationType } from 'src/utils/utiles.typesformations';
 
 @Table({ tableName: tables['fromations'] })
 export class Formations extends Model<IFormation> {
@@ -27,17 +26,13 @@ export class Formations extends Model<IFormation> {
   })
   sous_titre: string;
 
-  @ForeignKey(() => Categories)
+  @ForeignKey(() => TrainingCategory)
   @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
+    type: DataType.UUID,
+    allowNull: true,
   })
-  id_category: number;
+  id_training: string;
 
-  @BelongsTo(() => Categories, 'id_category')
-  Category: Categories;
-
-  @ForeignKey(() => Thematiques)
   @Column({
     type: DataType.INTEGER,
     allowNull: true,
@@ -47,7 +42,7 @@ export class Formations extends Model<IFormation> {
   @Column({
     type: DataType.STRING,
     allowNull: true,
-    defaultValue: 'onLine',
+    defaultValue: FormationType.EN_LIGNE,
   })
   type_formation: string;
 
@@ -75,9 +70,6 @@ export class Formations extends Model<IFormation> {
   })
   alternance: string;
 
-  @HasMany(() => SessionSuivi, 'id_formation')
-  Sessions: SessionSuivi[];
-
   @Column({
     type: DataType.INTEGER,
     allowNull: true,
@@ -91,4 +83,11 @@ export class Formations extends Model<IFormation> {
     defaultValue: 900, // Default price in euros
   })
   prix: number;
+
+  // Relationship: Many formations belong to one training category
+  @BelongsTo(() => TrainingCategory, {
+    foreignKey: 'id_training',
+    targetKey: 'id',
+  })
+  trainingCategory: TrainingCategory;
 }

@@ -25,9 +25,9 @@ export class CreateDocumentDto {
   @IsOptional()
   type?: string; // PDF, Word, etc.
 
-  @IsNumberString()
+  @IsString()
   @IsNotEmpty()
-  id_lesson: number;
+  id_lesson: string;
 
   @IsNumberString()
   @IsNotEmpty()

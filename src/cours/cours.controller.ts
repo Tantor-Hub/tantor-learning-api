@@ -19,18 +19,14 @@ import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { CreateCoursDto } from './dto/create-cours.dto';
-import { CreatePresetCoursDto } from './dto/create-preset-cours.dto';
-import { UpdateCoursFormateursDto } from './dto/update-cours-formateurs.dto';
+import { UpdateCoursDto } from './dto/update-cours.dto';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { AssignFormateurToSessionDto } from 'src/sessions/dto/attribute-session.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateDocumentDto } from './dto/create-documents.dto';
 import * as path from 'path';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { CreateCoursContentDto } from './dto/create-cours-content.dto';
-import { CreateEvaluationFullDto } from './dto/create-evaluation.dto';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
-import { ApiOperation, ApiBody } from '@nestjs/swagger';
+import { ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 
 @Controller('courses')
 export class CoursController {
@@ -39,120 +35,94 @@ export class CoursController {
     private readonly googleDriveService: GoogleDriveService,
     private readonly coursService: CoursService,
   ) {}
-  @Get('course/evaluations/conditions')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getConditionEvaluation(@User() user: IJwtSignin) {
-    return this.coursService.getconditionsevaluation(user);
-  }
-  @Get('course/evaluations/tools')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getMaterialsEvaluation(@User() user: IJwtSignin) {
-    return this.coursService.getallowedmatosevaluation(user);
-  }
-  @Get('course/evaluations/types')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getTypesEvaluation(@User() user: IJwtSignin) {
-    return this.coursService.gettypesevaluation(user);
-  }
-  @Delete('course/evaluations/evaluation/:idevaluation')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async deleteEvaluation(
-    @User() user: IJwtSignin,
-    @Param('idevaluation', ParseIntPipe) idevaluation: number,
-  ) {
-    return this.coursService.deleteEvaluation(user, idevaluation);
-  }
-  @Get('course/evaluations/evaluation/:idevaluation')
-  @UseGuards(JwtAuthGuard)
-  async getEvaluationById(
-    @Param('idevaluation', ParseIntPipe) idevaluation: number,
-  ) {
-    return this.coursService.getEvaluationById(idevaluation);
-  }
-  @Get('course/evaluations/:idsession/:idcours')
-  @UseGuards(JwtAuthGuard)
-  async getEvaluationsByCours(
-    @Param('idcours', ParseIntPipe) idcours: number,
-    @Param('idsession', ParseIntPipe) idsession: number,
-  ) {
-    return this.coursService.getEvaluationsByCours(idcours, idsession);
-  }
-  @Post('course/addevaluation')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async addEvaluationToCours(
-    @User() user: IJwtSignin,
-    @Body() createEvaluationDto: CreateEvaluationFullDto,
-  ) {
-    return this.coursService.addEvaluationToCours(user, createEvaluationDto);
-  }
-  @Get('course/:idcours')
-  @UseGuards(JwtAuthGuard)
-  async getCoursById(
-    @User() user: IJwtSignin,
-    @Param('idcours', ParseIntPipe) idcours: number,
-  ) {
-    return this.coursService.getCoursById(idcours);
-  }
+  // @Get('course/:idcours')
+  // @UseGuards(JwtAuthGuard)
+  // async getCoursById(
+  //   @User() user: IJwtSignin,
+  //   @Param('idcours', ParseIntPipe) idcours: number,
+  // ) {
+  //   return this.coursService.getCoursById(idcours);
+  // }
 
-  @Post('course/addcontent')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async addContentToCourse(
-    @User() user: IJwtSignin,
-    @Body() content: CreateCoursContentDto,
-  ) {
-    return this.coursService.addCoursContent(user, content);
-  }
-  @Get('listall/:idSession')
+  // @Get('listall/:idSession')
+  // @UseGuards(JwtAuthGuard)
+  // async listDeTousLesCoursParSesson(
+  //   @Param('idSession', ParseIntPipe) idSession: number,
+  // ) {
+  //   return this.coursService.getListCoursAllBySesson(idSession);
+  // }
+  // @Get('list')
+  // @UseGuards(JwtAuthGuard)
+  // async listDeTousLesCoursByConnectedUser(@User() user: IJwtSignin) {
+  //   return this.coursService.getListCoursAllByFormateurConnected(user);
+  // }
+  // @Get('listallby/:byformateur/:idSession')
+  // @UseGuards(JwtAuthGuard)
+  // async listDeTousLesCoursParSessionAndFormateur(
+  //   @Param('idSession', ParseIntPipe) idSession: number,
+  //   @User() user: IJwtSignin,
+  //   @Param('byformateur', ParseIntPipe) byformateur: number,
+  // ) {
+  //   return this.coursService.getListCoursAllBySessonAndByFormateur(
+  //     idSession,
+  //     byformateur,
+  //     user,
+  //   );
+  // }
+  @Get('getall')
   @UseGuards(JwtAuthGuard)
-  async listDeTousLesCoursParSesson(
-    @Param('idSession', ParseIntPipe) idSession: number,
-  ) {
-    return this.coursService.getListCoursAllBySesson(idSession);
-  }
-  @Get('list')
-  @UseGuards(JwtAuthGuard)
-  async listDeTousLesCoursByConnectedUser(@User() user: IJwtSignin) {
-    return this.coursService.getListCoursAllByFormateurConnected(user);
-  }
-  @Get('listallby/:byformateur/:idSession')
-  @UseGuards(JwtAuthGuard)
-  async listDeTousLesCoursParSessionAndFormateur(
-    @Param('idSession', ParseIntPipe) idSession: number,
-    @User() user: IJwtSignin,
-    @Param('byformateur', ParseIntPipe) byformateur: number,
-  ) {
-    return this.coursService.getListCoursAllBySessonAndByFormateur(
-      idSession,
-      byformateur,
-      user,
-    );
-  }
-  @Get('presets/list')
-  @UseGuards(JwtAuthGuard)
-  async listDeTousPresetsLesCours() {
-    return this.coursService.getListCours();
-  }
-  @Get('listall')
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all courses' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'List of all courses with id_formateur as object, ordered by latest first',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Success',
+        data: {
+          length: 2,
+          rows: [
+            {
+              id: 2,
+              id_formateur: {
+                id: 3,
+                fs_name: 'Jane',
+                ls_name: 'Doe',
+                email: 'jane.doe@example.com',
+              },
+              title: 'Advanced JavaScript',
+              description: 'Advanced JavaScript concepts and best practices',
+              is_published: false,
+            },
+            {
+              id: 1,
+              id_formateur: {
+                id: 2,
+                fs_name: 'John',
+                ls_name: 'Smith',
+                email: 'john.smith@example.com',
+              },
+              title: 'Introduction to Programming',
+              description: 'Basic programming concepts and fundamentals',
+              is_published: true,
+            },
+          ],
+        },
+      },
+    },
+  })
   async listDeTousLesCours() {
     return this.coursService.getListCoursAll();
   }
-  @Post('presets/add')
-  @UseGuards(JwtAuthGuardAsManagerSystem)
-  async addPresetCours(
-    @User() user: IJwtSignin,
-    @Body() createCoursDto: CreatePresetCoursDto,
-  ) {
-    return this.coursService.addPresetCours(user, createCoursDto);
-  }
-  @Put('course/:idcours')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async addCoursAsFreeToLibrairies(
-    @User() user: IJwtSignin,
-    @Param('idcours', ParseIntPipe) idcours: number,
-  ) {
-    return this.coursService.addCoursToLibrairie(idcours, user);
-  }
+  // @Put('course/:idcours')
+  // @UseGuards(JwtAuthGuardAsFormateur)
+  // async addCoursAsFreeToLibrairies(
+  //   @User() user: IJwtSignin,
+  //   @Param('idcours', ParseIntPipe) idcours: number,
+  // ) {
+  //   return this.coursService.addCoursToLibrairie(idcours, user);
+  // }
   @Post('create')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiOperation({ summary: 'Create a new course for a session' })
@@ -179,41 +149,122 @@ export class CoursController {
       },
     },
   })
+  @ApiResponse({
+    status: 201,
+    description: 'Course created successfully',
+    schema: {
+      example: {
+        status: 201,
+        message: 'Course created successfully',
+        data: {
+          message: 'Course created successfully',
+          preset_course: {
+            id: 1,
+            title: 'Course Title',
+            description: 'Course Description',
+            createdBy: 1,
+          },
+          created_courses: [
+            {
+              id: 1,
+              id_formateur: 1,
+              id_session: 1,
+              is_published: false,
+              duree: 120,
+              ponderation: 1.5,
+            },
+          ],
+          total_created: 1,
+          total_requested: 1,
+        },
+      },
+    },
+  })
   async addCours(
     @User() user: IJwtSignin,
     @Body() createCoursDto: CreateCoursDto,
   ) {
-    return this.coursService.addCoursToSession(user, createCoursDto);
+    console.log(
+      `[COURS CREATE] Starting course creation request by user ${user.id_user} (${user.uuid_user})`,
+    );
+    console.log(`[COURS CREATE] Course data:`, {
+      title: createCoursDto.title,
+      description: createCoursDto.description,
+      id_session: createCoursDto.id_session,
+      id_formateurs: createCoursDto.id_formateurs,
+      is_published: createCoursDto.is_published,
+    });
+
+    try {
+      const result = await this.coursService.createCourse(user, createCoursDto);
+      console.log(
+        `[COURS CREATE] ✅ Course creation successful! Created ${result.data?.total_created || 0} course(s) out of ${result.data?.total_requested || 0} requested.`,
+      );
+      console.log(`[COURS CREATE] Response:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[COURS CREATE] ❌ Course creation failed:`, error.message);
+      console.error(`[COURS CREATE] Error details:`, error);
+      throw error;
+    }
   }
 
-  @Put(':idcours/update')
+  @Put('update/:id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiOperation({
     summary:
       'Update course details including formateurs, title, and description (Secretary only)',
   })
   @ApiBody({
-    type: UpdateCoursFormateursDto,
+    type: UpdateCoursDto,
     description:
       'Course update data including formateurs, title, and description',
+    examples: {
+      default: {
+        summary: 'Update course example',
+        value: {
+          title: 'Updated Course Title',
+          description: 'Updated course description',
+          id_formateurs: ['1', '2', '3'],
+        },
+      },
+      minimal: {
+        summary: 'Minimal course update',
+        value: {
+          title: 'Updated Course Title',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Course updated successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Course updated successfully',
+        data: {
+          id: 1,
+          title: 'Updated Course Title',
+          description: 'Updated course description',
+          id_formateurs: [1, 2, 3],
+        },
+      },
+    },
   })
   async updateCours(
     @User() user: IJwtSignin,
-    @Param('idcours') idcours: string,
-    @Body() updateCoursFormateursDto: UpdateCoursFormateursDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateCoursDto: UpdateCoursDto,
   ) {
-    return this.coursService.updateCours(
-      user,
-      Number(idcours),
-      updateCoursFormateursDto,
-    );
+    return this.coursService.updateCours(user, id, updateCoursDto);
   }
-  @Put('course/assign')
-  @UseGuards(JwtAuthGuardAsManagerSystem)
-  async assignCours(
-    @User() user: IJwtSignin,
-    @Body() createCoursDto: AssignFormateurToSessionDto,
-  ) {
-    return this.coursService.assignFormateurToSession(user, createCoursDto);
-  }
+  // @Put('course/assign')
+  // @UseGuards(JwtAuthGuardAsManagerSystem)
+  // async assignCours(
+  //   @User() user: IJwtSignin,
+  //   @Body() createCoursDto: AssignFormateurToSessionDto,
+  // ) {
+  //   return this.coursService.assignFormateurToSession(user, createCoursDto);
+  // }
 }

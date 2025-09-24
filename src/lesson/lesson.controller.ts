@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
   UploadedFile,
@@ -26,6 +27,7 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { LessonService } from './lesson.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { DeleteLessonDto } from './dto/delete-lesson.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -69,7 +71,7 @@ export class LessonController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get lesson by ID' })
-  @ApiParam({ name: 'id', description: 'Lesson ID', type: Number })
+  @ApiParam({ name: 'id', description: 'Lesson ID', type: String })
   @ApiResponse({
     status: 200,
     description: 'Lesson details',
@@ -80,18 +82,18 @@ export class LessonController {
           id: 1,
           title: 'Introduction to Programming',
           description: 'Basic concepts of programming',
-          id_cours: 1,
+          id_cours: '550e8400-e29b-41d4-a716-446655440000',
           createdAt: '2025-01-15T10:30:00.000Z',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
       },
     },
   })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.lessonService.findLessonById(id);
   }
 
-  @Post()
+  @Post('/create')
   @UseGuards(JwtAuthGuardAsFormateur)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new lesson' })
@@ -120,40 +122,39 @@ export class LessonController {
     return this.lessonService.createLesson(createLessonDto, user);
   }
 
-  @Post('create')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new lesson (root route)' })
-  @ApiBody({ type: CreateLessonDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Lesson created successfully',
-    schema: {
-      example: {
-        status: 201,
-        data: {
-          id: 1,
-          title: 'Introduction to Programming',
-          description: 'Basic concepts of programming',
-          id_cours: 1,
-          createdAt: '2025-01-15T10:30:00.000Z',
-          updatedAt: '2025-01-15T10:30:00.000Z',
-        },
-      },
-    },
-  })
-  async createRoot(
-    @User() user: IJwtSignin,
-    @Body() createLessonDto: CreateLessonDto,
-  ) {
-    return this.lessonService.createLesson(createLessonDto, user);
-  }
+  // @Post('create')
+  // @UseGuards(JwtAuthGuardAsFormateur)
+  // @ApiBearerAuth()
+  // @ApiOperation({ summary: 'Create a new lesson (root route)' })
+  // @ApiBody({ type: CreateLessonDto })
+  // @ApiResponse({
+  //   status: 201,
+  //   description: 'Lesson created successfully',
+  //   schema: {
+  //     example: {
+  //       status: 201,
+  //       data: {
+  //         id: 1,
+  //         title: 'Introduction to Programming',
+  //         description: 'Basic concepts of programming',
+  //         id_cours: 1,
+  //         createdAt: '2025-01-15T10:30:00.000Z',
+  //         updatedAt: '2025-01-15T10:30:00.000Z',
+  //       },
+  //     },
+  //   },
+  // })
+  // async createRoot(
+  //   @User() user: IJwtSignin,
+  //   @Body() createLessonDto: CreateLessonDto,
+  // ) {
+  //   return this.lessonService.createLesson(createLessonDto, user);
+  // }
 
-  @Put(':id')
+  @Put('/update')
   @UseGuards(JwtAuthGuardAsFormateur)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update lesson by ID' })
-  @ApiParam({ name: 'id', description: 'Lesson ID', type: Number })
   @ApiBody({ type: UpdateLessonDto })
   @ApiResponse({
     status: 200,
@@ -165,55 +166,52 @@ export class LessonController {
           id: 1,
           title: 'Advanced Programming',
           description: 'Advanced concepts of programming',
-          id_cours: 1,
+          id_cours: '550e8400-e29b-41d4-a716-446655440000',
           createdAt: '2025-01-15T10:30:00.000Z',
           updatedAt: '2025-01-16T10:30:00.000Z',
         },
       },
     },
   })
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateLessonDto: UpdateLessonDto,
-  ) {
-    return this.lessonService.updateLesson(id, updateLessonDto);
+  async update(@Body() updateLessonDto: UpdateLessonDto) {
+    return this.lessonService.updateLesson(updateLessonDto);
   }
 
-  @Put(':id_lesson/update')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update lesson by ID (root route)' })
-  @ApiParam({ name: 'id_lesson', description: 'Lesson ID', type: Number })
-  @ApiBody({ type: UpdateLessonDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Lesson updated successfully',
-    schema: {
-      example: {
-        status: 200,
-        data: {
-          id: 1,
-          title: 'Advanced Programming',
-          description: 'Advanced concepts of programming',
-          id_cours: 1,
-          createdAt: '2025-01-15T10:30:00.000Z',
-          updatedAt: '2025-01-16T10:30:00.000Z',
-        },
-      },
-    },
-  })
-  async updateRoot(
-    @Param('id_lesson', ParseIntPipe) id: number,
-    @Body() updateLessonDto: UpdateLessonDto,
-  ) {
-    return this.lessonService.updateLesson(id, updateLessonDto);
-  }
+  // @Put(':id_lesson/update')
+  // @UseGuards(JwtAuthGuardAsFormateur)
+  // @ApiBearerAuth()
+  // @ApiOperation({ summary: 'Update lesson by ID (root route)' })
+  // @ApiParam({ name: 'id_lesson', description: 'Lesson ID', type: Number })
+  // @ApiBody({ type: UpdateLessonDto })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Lesson updated successfully',
+  //   schema: {
+  //     example: {
+  //       status: 200,
+  //       data: {
+  //         id: 1,
+  //         title: 'Advanced Programming',
+  //         description: 'Advanced concepts of programming',
+  //         id_cours: 1,
+  //         createdAt: '2025-01-15T10:30:00.000Z',
+  //         updatedAt: '2025-01-16T10:30:00.000Z',
+  //       },
+  //     },
+  //   },
+  // })
+  // async updateRoot(
+  //   @Param('id_lesson', ParseIntPipe) id: number,
+  //   @Body() updateLessonDto: UpdateLessonDto,
+  // ) {
+  //   return this.lessonService.updateLesson(id, updateLessonDto);
+  // }
 
-  @Delete(':id')
+  @Delete('/delete')
   @UseGuards(JwtAuthGuardAsFormateur)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete lesson by ID' })
-  @ApiParam({ name: 'id', description: 'Lesson ID', type: Number })
+  @ApiBody({ type: DeleteLessonDto })
   @ApiResponse({
     status: 200,
     description: 'Lesson deleted successfully',
@@ -224,93 +222,7 @@ export class LessonController {
       },
     },
   })
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.lessonService.deleteLesson(id);
-  }
-
-  @Get(':id/documents')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get documents for a lesson' })
-  @ApiParam({ name: 'id', description: 'Lesson ID', type: Number })
-  @ApiResponse({
-    status: 200,
-    description: 'List of documents for the lesson',
-    schema: {
-      example: {
-        status: 200,
-        data: [
-          {
-            id: 1,
-            title: 'Course Material',
-            description: 'PDF document',
-            id_lesson: 1,
-            piece_jointe: 'https://drive.google.com/file/d/...',
-            type: 'pdf',
-            createdAt: '2025-01-15T10:30:00.000Z',
-            updatedAt: '2025-01-15T10:30:00.000Z',
-          },
-        ],
-      },
-    },
-  })
-  async getDocuments(@Param('id', ParseIntPipe) id: number) {
-    return this.lessonService.getDocumentsByLesson(id);
-  }
-
-  @Post(':id/documents')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Add document to lesson' })
-  @ApiParam({ name: 'id', description: 'Lesson ID', type: Number })
-  @ApiBody({ type: CreateDocumentDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Document added successfully',
-    schema: {
-      example: {
-        status: 201,
-        data: {
-          id: 1,
-          title: 'Course Material',
-          description: 'PDF document',
-          id_lesson: 1,
-          piece_jointe: 'https://drive.google.com/file/d/...',
-          type: 'pdf',
-          createdAt: '2025-01-15T10:30:00.000Z',
-          updatedAt: '2025-01-15T10:30:00.000Z',
-        },
-      },
-    },
-  })
-  async addDocument(
-    @User() user: IJwtSignin,
-    @Param('id', ParseIntPipe) id: number,
-    @Body() doc: CreateDocumentDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    let piece_jointe: any = null;
-    let type: string = '';
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        const extension = name.split('.').pop();
-        type = extension ? extension.toLowerCase() : '';
-        piece_jointe = link;
-      }
-    }
-    return this.lessonService.addDocumentToLesson(
-      {
-        ...doc,
-        id_lesson: id,
-        piece_jointe,
-        type,
-      },
-      user,
-    );
+  async remove(@Body() deleteLessonDto: DeleteLessonDto) {
+    return this.lessonService.deleteLesson(deleteLessonDto.id);
   }
 }

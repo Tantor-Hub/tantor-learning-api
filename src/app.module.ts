@@ -9,12 +9,9 @@ import { Users } from './models/model.users';
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
 import { FormationsModule } from './formations/formations.module';
-import { CategoriesModule } from './categories/categories.module';
-import { Categories } from './models/model.categoriesformations';
 import { Formations } from './models/model.formations';
-import { Thematiques } from './models/model.groupeformations';
+import { TrainingCategory } from './models/model.trainingcategory';
 import { SessionsModule } from './sessions/sessions.module';
-import { SessionSuivi } from './models/model.suivisession';
 import { WebrtcGatewayService } from './services/service.webrtc';
 import { MediasoupService } from './services/service.mediasoup';
 import { GoogleDriveService } from './services/service.googledrive';
@@ -27,43 +24,32 @@ import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { CryptoService } from './services/service.crypto';
 import { JwtService } from './services/service.jwt';
 import { Dialect } from 'sequelize';
-import { StagiaireHasSession } from './models/model.stagiairehassession';
-import { StagiaireHasSessionSeances } from './models/model.stagiairesessionhasseances';
+
 import { log } from 'node:console';
 import { Contacts } from './models/model.contactform';
 import { MailService } from './services/service.mail';
 import { Messages } from './models/model.messages';
-import { Planings } from './models/model.planings';
 import { CoursService } from './cours/cours.service';
 import { CoursModule } from './cours/cours.module';
-import { Documents } from './models/model.documents';
-import { Cours } from './models/model.sessionshascours';
-import { Listcours } from './models/model.cours';
-import { SeanceSessions } from './models/model.courshasseances';
-import { FormateurHasSession } from './models/model.formateurhassession';
-import { HomeworksSession } from './models/model.homework';
-import { StagiaireHasHomeWork } from './models/model.stagiairehashomeworks';
+import { Cours } from './models/model.cours';
+import { Session } from './models/model.session';
+
 import { Newsletter } from './models/model.newsletter';
-import { UploadDocument } from './models/model.documentsession';
-import { ApresFormationDocs } from './models/model.apresformation';
-import { PendantFormationDocs } from './models/model.pendantformation';
-import { AvantFormationDocs } from './models/model.avantformation';
-import { Chapitre } from './models/model.chapitres';
-import { Evaluation } from './models/model.evaluation';
-import { Question } from './models/model.quiz';
-import { Option } from './models/model.optionsquiz';
 import { UsersService } from './users/users.service';
 
 import { Questionnaires } from './models/model.questionnaireoninscriptionsession';
-import { Options } from './models/model.optionquestionnaires';
 import { Survey } from './models/model.questionspourquestionnaireinscription';
 import { Payementopco } from './models/model.payementbyopco';
 import { SurveyResponse } from './models/model.surveyresponses';
 import { ModuleDeFormation } from './models/model.moduledeformation';
 import { ModuleDeFormationModule } from './moduledeformation/moduledeformation.module';
+import { TrainingCategoryModule } from './trainingcategory/trainingcategory.module';
+import { TrainingsModule } from './trainings/trainings.module';
+import { Training as TrainingModel } from './models/model.trainings';
 import { StripeModule } from './stripe/stripe.module';
 import { LessonModule } from './lesson/lesson.module';
-import { DocumentModule } from './document/document.module';
+import { LessondocumentModule } from './lessondocument/lessondocument.module';
+import { SessiondocumentModule } from './sessiondocument/sessiondocument.module';
 
 @Module({
   imports: [
@@ -89,51 +75,34 @@ import { DocumentModule } from './document/document.module';
     }),
     SequelizeModule.forFeature([
       Users,
-      Evaluation,
-      Question,
-      Option,
-      Categories,
       Formations,
-      Planings,
-      Thematiques,
-      SessionSuivi,
+      TrainingCategory,
+      TrainingModel,
       AppInfos,
-      StagiaireHasSession,
-      StagiaireHasSessionSeances,
       Contacts,
       Messages,
       Newsletter,
       Cours,
-      Chapitre,
-      Listcours,
+      Session,
       Payementopco,
-      SeanceSessions,
-      FormateurHasSession,
-      HomeworksSession,
-      StagiaireHasSession,
-      StagiaireHasSessionSeances,
-      StagiaireHasHomeWork,
-      UploadDocument,
-      AvantFormationDocs,
-      PendantFormationDocs,
-      ApresFormationDocs,
       Survey,
       Questionnaires,
-      Options,
       SurveyResponse,
     ]),
     // Removed RolesModule as roles module is deleted
     // RolesModule,
     UsersModule,
     FormationsModule,
-    CategoriesModule,
     SessionsModule,
     CmsModule,
     CoursModule,
     LessonModule,
-    DocumentModule,
+    LessondocumentModule,
+    SessiondocumentModule,
     StripeModule,
     ModuleDeFormationModule,
+    TrainingCategoryModule,
+    TrainingsModule,
   ],
   providers: [
     AppService,

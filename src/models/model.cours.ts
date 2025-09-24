@@ -9,11 +9,11 @@ import {
   BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
-import { IListcours } from 'src/interface/interface.cours';
+import { ICours } from 'src/interface/interface.cours';
 import { Users } from './model.users';
 import { Lesson } from './model.lesson';
 @Table({ tableName: tables['cours'] })
-export class Listcours extends Model<IListcours> {
+export class Cours extends Model<ICours> {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -23,9 +23,9 @@ export class Listcours extends Model<IListcours> {
   })
   id: number;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column(DataType.STRING)
-  title: string;
+  title?: string;
 
   @AllowNull(true)
   @Column(DataType.TEXT)
@@ -33,11 +33,27 @@ export class Listcours extends Model<IListcours> {
 
   @AllowNull(true)
   @Column(DataType.INTEGER)
+  ponderation?: number;
+
+  @AllowNull(true)
+  @Column(DataType.BOOLEAN)
+  is_published?: boolean;
+
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
   @ForeignKey(() => Users)
-  createdBy: number;
+  createdBy?: number;
 
   @BelongsTo(() => Users, 'createdBy')
-  CreatedBy: Users;
+  CreatedBy?: Users;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  id_session?: string;
+
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  id_formateur?: string;
 
   @HasMany(() => Lesson)
   lessons: Lesson[];

@@ -36,13 +36,14 @@ export class CreateCoursDto {
   id_session: number;
 
   @ApiProperty({
-    example: [1, 2],
+    example: ['1', '2'],
     description: 'Array of Formateur IDs',
+    required: false,
   })
+  @IsOptional()
   @IsArray()
-  @ArrayNotEmpty()
-  @IsInt({ each: true })
-  id_formateurs: number[];
+  @IsString({ each: true })
+  id_formateurs?: string[];
 
   @ApiProperty({
     example: true,

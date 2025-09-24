@@ -15,7 +15,7 @@ import { CustomUnauthorizedException } from 'src/strategy/strategy.unauthorized'
 @Injectable()
 export class JwtAuthGuardAsSuperviseur implements CanActivate {
   keyname: string;
-  allowedTo: number[] = [1, 2, 5];
+  allowedTo: string[] = ['admin', 'secretary', 'instructor'];
   accessLevel: number = 92; // c'est à dire que le niveau pour les utilisateurs admins
 
   constructor(
@@ -40,18 +40,21 @@ export class JwtAuthGuardAsSuperviseur implements CanActivate {
       throw new CustomUnauthorizedException(
         "La clé d'authentification fournie a déjà expiré",
       );
-    const { roles_user, level_indicator } = decoded;
-    if (
-      this.allSercices.checkIntersection({
-        arr_a: this.allowedTo,
-        arr_b: roles_user,
-      })
-    ) {
+    const roles_user = (decoded as any).roles_user as string[] | undefined;
+    if (roles_user && roles_user.length) {
+      const hasRole = (roles_user as string[]).some((r) =>
+        this.allowedTo.includes(r),
+      );
+      if (!hasRole) {
+        throw new CustomUnauthorizedException(
+          "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+        );
+      }
       request.user = decoded;
       return true;
-    } else
-      throw new CustomUnauthorizedException(
-        "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
-      );
+    }
+    // If no roles_user array, allow and let route-level checks handle permissions
+    request.user = decoded;
+    return true;
   }
 }

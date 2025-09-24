@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -65,17 +66,14 @@ export class FormationsController {
     return this.formationsService.getTypesFormations();
   }
 
-  @Get('list')
+  @Get('getlist')
   // @UseGuards(JwtAuthGuardAsFormateur)
   async getAllFormations() {
     return this.formationsService.gatAllFormations();
   }
 
-  @Get('list/bycategory/:idCategory')
-  // @UseGuards(JwtAuthGuardAsFormateur)
-  async getAllFormationsByCategory(
-    @Param('idCategory', ParseIntPipe) idCategory: number,
-  ) {
-    return this.formationsService.gatAllFormationsByCategory(idCategory);
+  @Delete('delete-all')
+  async deleteAllFormations() {
+    return this.formationsService.deleteAllFormations();
   }
 }

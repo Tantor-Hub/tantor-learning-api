@@ -3,13 +3,12 @@ import { InjectModel } from '@nestjs/sequelize';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { ResponseServer } from 'src/interface/interface.response';
 import { Formations } from 'src/models/model.formations';
+import { TrainingCategory } from 'src/models/model.trainingcategory';
 import { Responder } from 'src/strategy/strategy.responder';
 import { typeFormations } from 'src/utils/utiles.typesformations';
 import { CreateFormationDto } from './dto/create-formation.dto';
 import { AllSercices } from '../services/serices.all';
 import { MailService } from '../services/service.mail';
-import { Categories } from 'src/models/model.categoriesformations';
-import { SessionSuivi } from 'src/models/model.suivisession';
 
 @Injectable()
 export class FormationsService {
@@ -23,18 +22,6 @@ export class FormationsService {
   async getFormationById(idSession: number): Promise<ResponseServer> {
     return this.formationModel
       .findOne({
-        include: [
-          {
-            model: Categories,
-            required: true,
-            attributes: ['id', 'category'],
-          },
-          {
-            model: SessionSuivi,
-            required: false,
-            // attributes
-          },
-        ],
         where: {
           id: idSession,
         },
@@ -90,7 +77,7 @@ export class FormationsService {
     createFormationDto: CreateFormationDto,
   ): Promise<ResponseServer> {
     const {
-      id_category,
+      id_training,
       sous_titre,
       titre,
       type_formation,
@@ -119,7 +106,7 @@ export class FormationsService {
         duree: duree || '',
         end_on: e_on as any,
         start_on: s_on as any,
-        id_category: id_category as any as number,
+        id_training: id_training as any as string,
         id_formateur: id_formateur || (0 as number),
         prix: prix as any as number,
         sous_titre,
@@ -150,16 +137,15 @@ export class FormationsService {
   async gatAllFormations(): Promise<ResponseServer> {
     return this.formationModel
       .findAll({
-        include: [
-          {
-            model: Categories,
-            required: true,
-            attributes: ['id', 'category'],
-          },
-        ],
         where: {
           status: 1,
         },
+        include: [
+          {
+            model: TrainingCategory,
+            as: 'trainingCategory',
+          },
+        ],
         order: [['createdAt', 'DESC']],
       })
       .then((list) =>
@@ -172,32 +158,75 @@ export class FormationsService {
         Responder({ status: HttpStatusCode.InternalServerError, data: err }),
       );
   }
-  async gatAllFormationsByCategory(
-    idCategory: number,
-  ): Promise<ResponseServer> {
-    return this.formationModel
-      .findAll({
-        include: [
-          {
-            model: Categories,
-            required: true,
-            attributes: ['id', 'category'],
-          },
-        ],
-        where: {
-          status: 1,
-          id_category: idCategory,
-        },
-        order: [['createdAt', 'DESC']],
-      })
-      .then((list) =>
-        Responder({
-          status: HttpStatusCode.Ok,
-          data: { length: list.length, list },
-        }),
-      )
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
+
+  /**
+   * Delete all data from formations table
+   * WARNING: This will permanently delete all formations data and related records!
+   */
+  async deleteAllFormations(): Promise<ResponseServer> {
+    try {
+      console.log(
+        '[FORMATIONS DELETE ALL] Starting to delete all formations data',
       );
+
+      // Disable foreign key constraints temporarily to delete all formations
+      console.log(
+        '[FORMATIONS DELETE ALL] Disabling foreign key constraints...',
+      );
+      await this.formationModel.sequelize?.query(
+        'SET session_replication_role = replica;',
+      );
+      console.log(
+        '[FORMATIONS DELETE ALL] ✅ Foreign key constraints disabled',
+      );
+
+      // Delete all formations data
+      console.log('[FORMATIONS DELETE ALL] Deleting all formations...');
+      const deleteAllSQL = 'DELETE FROM ___tbl_tantor_formationsascours';
+      const result = await this.formationModel.sequelize?.query(deleteAllSQL);
+
+      // Re-enable foreign key constraints
+      console.log(
+        '[FORMATIONS DELETE ALL] Re-enabling foreign key constraints...',
+      );
+      await this.formationModel.sequelize?.query(
+        'SET session_replication_role = DEFAULT;',
+      );
+      console.log(
+        '[FORMATIONS DELETE ALL] ✅ Foreign key constraints re-enabled',
+      );
+
+      console.log(
+        '[FORMATIONS DELETE ALL] ✅ Successfully deleted all formations data',
+      );
+      console.log('[FORMATIONS DELETE ALL] Result:', result);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          message: 'All formations data deleted successfully',
+          result: result,
+          sqlCommand: deleteAllSQL,
+        },
+        customMessage: 'All formations data deleted successfully',
+      });
+    } catch (error) {
+      console.error(
+        '[FORMATIONS DELETE ALL] ❌ Error deleting all formations data:',
+      );
+      console.error('[FORMATIONS DELETE ALL] Error message:', error.message);
+      console.error('[FORMATIONS DELETE ALL] Error stack:', error.stack);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+          originalError: error.original || null,
+        },
+        customMessage: 'Failed to delete all formations data',
+      });
+    }
   }
 }

@@ -10,14 +10,14 @@ import {
 import { IQuestioninscriptionSession } from 'src/interface/interface.cours';
 import { table_prefix } from 'src/config/config.tablesname';
 import { Questionnaires } from './model.questionnaireoninscriptionsession';
-import { SessionSuivi } from './model.suivisession';
+import { Session } from './model.session';
 
 @Table({ tableName: `${table_prefix}questionssurvey`, timestamps: true })
 export class Survey extends Model<IQuestioninscriptionSession> {
   @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
   id: number;
 
-  @ForeignKey(() => SessionSuivi)
+  @ForeignKey(() => Session)
   @Column({ type: DataType.INTEGER })
   id_session: number;
 
@@ -30,8 +30,8 @@ export class Survey extends Model<IQuestioninscriptionSession> {
   @Column({ type: DataType.INTEGER, allowNull: true })
   created_by: number;
 
-  @BelongsTo(() => SessionSuivi, {
+  @BelongsTo(() => Session, {
     onDelete: 'CASCADE',
   })
-  Session: SessionSuivi;
+  Session: Session;
 }

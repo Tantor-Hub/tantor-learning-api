@@ -30,7 +30,6 @@ import { CreateContactDto } from './dto/contact-form.dto';
 import { CreateMessageDto } from './dto/send-message.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from '../services/service.googledrive';
-import { CreateEvenementDto } from './dto/create-planing.dto';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 
@@ -149,24 +148,6 @@ export class CmsController {
   async adminNewsLetterList() {
     return this.cmsService.getSubsribersOnTheNewsLetter();
   }
-  @Get('events/e/list')
-  @UseGuards(JwtAuthGuard)
-  async getMyPlaning(@User() user: IJwtSignin) {
-    return this.cmsService.myListAsStudent(user);
-  }
-  @Get('events/a/list')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getMyPlaningAsManager(@User() user: IJwtSignin) {
-    return this.cmsService.myListAsFormateur(user);
-  }
-  @Post('events/event/add')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async onCreateEvent(
-    @Body() form: CreateEvenementDto,
-    @User() user: IJwtSignin,
-  ) {
-    return this.cmsService.addPlaning(form, user);
-  }
   @Get('messages/list')
   @UseGuards(JwtAuthGuard)
   async messagesListAll(@User() user: IJwtSignin) {
@@ -248,11 +229,6 @@ export class CmsController {
   @UseGuards(JwtAuthGuardAsStudent)
   async onLoadStudentDashboard(@User() user: IJwtSignin) {
     return this.usersService.loadStudentDashboard(user);
-  }
-  @Get('dashboard/nextlivessessions')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async onLoadNextLivesSessions(@User() user: IJwtSignin) {
-    return this.usersService.loadStudentNextLiveSession(user);
   }
   @Get('/dashboard/averages')
   @UseGuards(JwtAuthGuardAsStudent)

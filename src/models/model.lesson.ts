@@ -10,8 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IListlesson } from 'src/interface/interface.lesson';
-import { Listcours } from './model.cours';
-import { Documents } from './model.documents';
+import { Cours } from './model.cours';
 
 @Table({ tableName: tables['lesson'] })
 export class Lesson extends Model<IListlesson> {
@@ -32,13 +31,10 @@ export class Lesson extends Model<IListlesson> {
   @Column(DataType.TEXT)
   description?: string;
 
-  @ForeignKey(() => Listcours)
-  @Column(DataType.INTEGER)
-  id_cours: number;
+  @ForeignKey(() => Cours)
+  @Column(DataType.UUID)
+  id_cours: string;
 
-  @BelongsTo(() => Listcours, 'id_cours')
-  cours: Listcours;
-
-  @HasMany(() => Documents)
-  documents: Documents[];
+  @BelongsTo(() => Cours, 'id_cours')
+  cours: Cours;
 }

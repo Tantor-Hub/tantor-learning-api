@@ -9,22 +9,11 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Users } from 'src/models/model.users';
-import { FormateurHasSession } from 'src/models/model.formateurhassession';
-import { SessionSuivi } from 'src/models/model.suivisession';
 import { Formations } from 'src/models/model.formations';
-import { Categories } from 'src/models/model.categoriesformations';
-import { Thematiques } from 'src/models/model.groupeformations';
 import { MediasoupService } from 'src/services/service.mediasoup';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
 import { DocsService } from 'src/services/service.docs';
-import { SeanceSessions } from 'src/models/model.courshasseances';
-import { HomeworksSession } from 'src/models/model.homework';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
-import { UploadDocument } from 'src/models/model.documentsession';
-import { AvantFormationDocs } from 'src/models/model.avantformation';
-import { PendantFormationDocs } from 'src/models/model.pendantformation';
-import { ApresFormationDocs } from 'src/models/model.apresformation';
-import { Cours } from 'src/models/model.sessionshascours';
+import { Cours } from 'src/models/model.cours';
+import { Session } from 'src/models/model.session';
 import { Payement } from 'src/models/model.payementbycard';
 import { Survey } from 'src/models/model.questionspourquestionnaireinscription';
 import { Questionnaires } from 'src/models/model.questionnaireoninscriptionsession';
@@ -35,28 +24,16 @@ import { StripeModule } from 'src/strategy/strategy.stripe';
 @Module({
   imports: [
     SequelizeModule.forFeature([
-      UploadDocument,
       Payement,
       SurveyResponse,
       Payementopco,
       Questionnaires,
       Options,
       Survey,
-      AvantFormationDocs,
-      PendantFormationDocs,
-      ApresFormationDocs,
-      SessionSuivi,
       Users,
-      FormateurHasSession,
       Formations,
-      Categories,
-      Thematiques,
-      StagiaireHasSession,
-      SeanceSessions,
-      HomeworksSession,
-      StagiaireHasSession,
-      StagiaireHasHomeWork,
       Cours,
+      Session,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

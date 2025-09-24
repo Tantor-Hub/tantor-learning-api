@@ -3,6 +3,7 @@ import { FormationsService } from './formations.service';
 import { FormationsController } from './formations.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Formations } from 'src/models/model.formations';
+import { TrainingCategory } from 'src/models/model.trainingcategory';
 import { Users } from 'src/models/model.users';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -14,7 +15,7 @@ import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Formations, Users]),
+    SequelizeModule.forFeature([Formations, TrainingCategory, Users]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

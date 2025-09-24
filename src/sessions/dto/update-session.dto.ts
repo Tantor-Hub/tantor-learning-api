@@ -11,6 +11,7 @@ import {
   IsDate,
   IsISO8601,
 } from 'class-validator';
+import { FormationType } from 'src/utils/utiles.typesformations';
 
 export class UpdateSessionDto {
   @IsOptional()
@@ -22,8 +23,8 @@ export class UpdateSessionDto {
   id_controleur?: number;
 
   @IsOptional()
-  @IsNumberString()
-  id_superviseur?: number;
+  @IsNumber({}, { each: true })
+  id_superviseur?: number[];
 
   @IsNumberString()
   @IsOptional()
@@ -33,14 +34,9 @@ export class UpdateSessionDto {
   @IsString()
   piece_jointe?: string;
 
-  @IsEnum(['onLine', 'visionConference', 'presentiel', 'hybride'])
+  @IsEnum(FormationType)
   @IsOptional()
-  type_formation:
-    | string
-    | 'onLine'
-    | 'visionConference'
-    | 'presentiel'
-    | 'hybride';
+  type_formation: FormationType;
 
   @IsNumberString()
   @IsOptional()

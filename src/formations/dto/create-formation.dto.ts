@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsNumberString,
 } from 'class-validator';
+import { FormationType } from 'src/utils/utiles.typesformations';
 
 export class CreateFormationDto {
   @IsString()
@@ -13,15 +14,16 @@ export class CreateFormationDto {
   @IsString()
   sous_titre: string;
 
-  @IsNumberString()
-  id_category: string;
+  @IsString()
+  @IsOptional()
+  id_training?: string;
 
   @IsNumberString()
   @IsOptional()
   id_thematic?: number;
 
-  @IsEnum(['onLine', 'visioConference', 'presentiel', 'hybride'])
-  type_formation: string;
+  @IsEnum(FormationType)
+  type_formation: FormationType;
 
   @IsString()
   description: string;

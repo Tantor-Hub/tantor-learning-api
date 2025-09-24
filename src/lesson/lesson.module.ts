@@ -11,52 +11,26 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppInfos } from 'src/models/model.appinfos';
 import { Users } from 'src/models/model.users';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
-import { HomeworksSession } from 'src/models/model.homework';
 import { Messages } from 'src/models/model.messages';
-import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
-import { SeanceSessions } from 'src/models/model.courshasseances';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+
 import { Contacts } from 'src/models/model.contactform';
-import { Planings } from 'src/models/model.planings';
 import { JwtService } from 'src/services/service.jwt';
 import { LessonService } from './lesson.service';
 import { Lesson } from 'src/models/model.lesson';
-import { SessionSuivi } from 'src/models/model.suivisession';
-import { FormateurHasSession } from 'src/models/model.formateurhassession';
-import { Documents } from 'src/models/model.documents';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Chapitre } from 'src/models/model.chapitres';
-import { Evaluation } from 'src/models/model.evaluation';
-import { Question } from 'src/models/model.quiz';
-import { Option } from 'src/models/model.optionsquiz';
-import { Listcours } from 'src/models/model.cours';
-import { Cours } from 'src/models/model.sessionshascours';
+import { Cours } from 'src/models/model.cours';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([
       AppInfos,
-      Chapitre,
       Newsletter,
-      Documents,
       Users,
-      Evaluation,
-      Question,
-      Option,
-      StagiaireHasSession,
-      HomeworksSession,
       Messages,
-      StagiaireHasSessionSeances,
-      SeanceSessions,
-      StagiaireHasHomeWork,
+
       Contacts,
-      Planings,
       Lesson,
-      Listcours,
       Cours,
-      SessionSuivi,
-      FormateurHasSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

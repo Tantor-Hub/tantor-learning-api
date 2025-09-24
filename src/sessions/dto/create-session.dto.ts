@@ -11,6 +11,7 @@ import {
   IsISO8601,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { FormationType } from 'src/utils/utiles.typesformations';
 
 export class CreateSessionDto {
   @ApiProperty({
@@ -41,13 +42,14 @@ export class CreateSessionDto {
   uuid: string;
 
   @ApiProperty({
-    example: 2,
-    description: 'Supervisor ID',
-    default: 2,
+    example: [2, 3],
+    description: 'Supervisor IDs',
+    type: [Number],
+    default: [2],
   })
   @IsOptional()
-  @IsNumber()
-  id_superviseur?: number;
+  @IsNumber({}, { each: true })
+  id_superviseur?: number[];
 
   @ApiProperty({
     example: '2024-01-01',
@@ -59,24 +61,31 @@ export class CreateSessionDto {
   date_mise_a_jour?: Date;
 
   @ApiProperty({
-    example: 'presentiel',
+    example: FormationType.PRESENTIEL,
     description: 'Training type',
-    enum: ['onLine', 'visioConference', 'presentiel', 'hybride'],
-    default: 'presentiel',
+    enum: FormationType,
+    default: FormationType.PRESENTIEL,
   })
-  @IsEnum(['onLine', 'visioConference', 'presentiel', 'hybride'])
+  @IsEnum(FormationType)
   @IsOptional()
-  type_formation: string;
+  type_formation: FormationType;
 
   @ApiProperty({
-    example: 'CPF',
-    description: 'Payment method',
-    enum: ['OPCO', 'CPF', 'CARD'],
-    default: 'CPF',
+    example: ['CPF', 'OPCO'],
+    description: 'Payment methods',
+    type: [String],
+    default: ['CPF'],
   })
-  @IsEnum(['OPCO', 'CPF', 'CARD'])
   @IsOptional()
-  payment_method: string;
+  payment_methods: string[];
+
+  @ApiProperty({
+    example: '40 hours',
+    description: 'Session duration',
+    default: '40 hours',
+  })
+  @IsString()
+  duree: string;
 
   @ApiProperty({
     example: 1,

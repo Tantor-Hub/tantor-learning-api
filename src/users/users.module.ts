@@ -11,25 +11,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
 import { GoogleDriveService } from 'src/services/service.googledrive';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
-import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
 import { Messages } from 'src/models/model.messages';
-import { SeanceSessions } from 'src/models/model.courshasseances';
-import { HomeworksSession } from 'src/models/model.homework';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([
-      Users,
-      StagiaireHasSession,
-      StagiaireHasSessionSeances,
-      HomeworksSession,
-      Messages,
-      StagiaireHasSessionSeances,
-      SeanceSessions,
-      StagiaireHasHomeWork,
-    ]),
+    SequelizeModule.forFeature([Users, Messages]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

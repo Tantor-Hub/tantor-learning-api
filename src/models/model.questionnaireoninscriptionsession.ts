@@ -12,7 +12,7 @@ import { QuestionType } from 'src/utils/utiles.typesprestation';
 import { Options } from './model.optionquestionnaires';
 import { Survey } from './model.questionspourquestionnaireinscription';
 import { table_prefix } from 'src/config/config.tablesname';
-import { SessionSuivi } from './model.suivisession';
+import { Session } from './model.session';
 
 @Table({
   tableName: `${table_prefix}questionnairesinscription`,
@@ -46,7 +46,7 @@ export class Questionnaires extends Model<IQuestionnaire> {
   })
   Survey: Survey;
 
-  @ForeignKey(() => SessionSuivi)
+  @ForeignKey(() => Session)
   @Column({ type: DataType.INTEGER, allowNull: true })
   id_session: number;
 }

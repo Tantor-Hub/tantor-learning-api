@@ -4,642 +4,91 @@ import {
   Delete,
   Get,
   HttpCode,
-  Inject,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Post,
   Put,
-  Query,
-  Req,
-  Res,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBody, ApiResponse } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBody, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
-import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionsService } from './sessions.service';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
-import { MediasoupService } from '../services/service.mediasoup';
 import { UpdateSessionDto } from './dto/update-session.dto';
-import { AddSeanceSessionDto } from './dto/add-seances.dto';
-import { AddHomeworkSessionDto } from './dto/add-homework.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
-import { AssignFormateurToSessionDto } from './dto/attribute-session.dto';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { CreatePaymentSessionDto } from '../dto/payement-methode.dto';
-import { UploadDocumentToSessionDto } from './dto/add-document-session.dto';
-import {
-  DOCUMENT_KEYS_PHASES,
-  DocumentKeyEnum,
-} from 'src/utils/utiles.documentskeyenum';
-import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
-import { CreateSurveyDto } from './dto/create-session-questionnaire.dto';
-import { PayementOpcoDto } from './dto/payement-method-opco.dto';
-import { CreateSessionFullStepDto } from './dto/create-sesion-fulldoc.dto';
-import { CreateSessionPaiementDto } from './dto/create-payment-full-dto';
-import Stripe from 'stripe';
-import { log } from 'node:console';
+
+@ApiTags('Sessions')
 @Controller('sessions')
 export class SessionsController {
-  constructor(
-    private readonly googleDriveService: GoogleDriveService,
-    private readonly sessionsService: SessionsService,
-    private readonly mediasoupService: MediasoupService,
-    @Inject('STRIPE_CLIENT') private readonly stripe: Stripe,
-  ) {}
+  constructor(private readonly sessionsService: SessionsService) {}
 
-  @Post('session/payment/create-intent')
-  @UseGuards(JwtAuthGuardAsStudent)
-  @ApiBody({
-    type: CreatePaymentSessionDto,
-    description: 'Payment session creation data',
+  @Post()
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiBody({ type: CreateSessionDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Session created successfully',
   })
+  async create(
+    @Body() createSessionDto: CreateSessionDto,
+    @User() user: IJwtSignin,
+  ) {
+    return this.sessionsService.createSession(createSessionDto, user);
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    description: 'Payment intent created successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        statuscode: { type: 'integer', example: 200 },
-        status: { type: 'string', example: 'Success' },
-        data: {
-          type: 'object',
-          properties: {
-            clientSecret: { type: 'string', example: 'some_client_secret' },
-          },
-        },
-      },
-    },
+    description: 'List of all sessions',
   })
-  async createPaymentIntent(
-    @Body() createPaymentDto: CreatePaymentSessionDto,
-    @User() user: IJwtSignin,
-  ) {
-    try {
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: createPaymentDto.amount,
-        currency: createPaymentDto.currency,
-        payment_method_types: ['card'],
-        metadata: {
-          userId: user.id_user.toString(),
-          sessionId: createPaymentDto.session_id.toString(),
-        },
-      });
-      return Responder({
-        status: HttpStatusCode.Ok,
-        data: {
-          clientSecret: paymentIntent.client_secret,
-        },
-      });
-    } catch (error) {
-      log('Error creating payment intent:', error);
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: 'Failed to create payment intent',
-      });
-    }
+  async findAll() {
+    return this.sessionsService.getAllSessions();
   }
-  @Delete('session/survey/:idsession')
-  // @UseGuards(JwtAuthGuardAsSuperviseur)
-  async deleteSurvey(@Param('idsession', ParseIntPipe) idsession: number) {
-    return this.sessionsService.deleteSurveyById(idsession);
-  }
-  @Get('session/survey/:idsession')
-  // @UseGuards(JwtAuthGuardAsSuperviseur)
-  async getSurvey(@Param('idsession', ParseIntPipe) idsession: number) {
-    return this.sessionsService.getSurveyByIdSession(idsession);
-  }
-  @Post('session/addsurvey')
-  @UseGuards(JwtAuthGuardAsSuperviseur)
-  @ApiBody({
-    type: CreateSurveyDto,
-    description: 'Survey creation data',
-  })
-  async addNewSurvey(
-    @Body() createSessionDto: CreateSurveyDto,
-    @User() user: IJwtSignin,
-  ) {
-    return this.sessionsService.addSurveyToSession(
-      { ...createSessionDto },
-      user,
-    );
-  }
-  @Get('payments/:status')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async getPaymentsListAll(
-    @User() user: IJwtSignin,
-    @Param('status', ParseIntPipe) status: number,
-  ) {
-    return this.sessionsService.getPaymentsAll(user, status);
-  }
-  @Put('session/payment/validate/:idpayment')
-  @UseGuards(JwtAuthGuardAsSuperviseur)
-  async validatePayment(
-    @Param('idpayment', ParseIntPipe) idpayment: number,
-    @User() user: IJwtSignin,
-  ) {
-    return this.sessionsService.validatePayment(idpayment, user);
-  }
-  @Put('session/document/before')
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  @UseGuards(JwtAuthGuardAsStudent)
-  @ApiBody({
-    type: UploadDocumentToSessionDto,
-    description: 'Document upload data for before formation phase',
-  })
-  async submitDocBefore(
-    @Body() payementSessionDto: UploadDocumentToSessionDto,
-    @User() user: IJwtSignin,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    const document = DocumentKeyEnum[payementSessionDto['key_document']];
-    if (!DOCUMENT_KEYS_PHASES.avant_formation.includes(document))
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(',')}`,
-      });
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-        return this.sessionsService.uploadDocumentToSessionDTO(
-          user,
-          { ...payementSessionDto, piece_jointe, document },
-          'BEFORE',
-        );
-      } else
-        return Responder({
-          status: HttpStatusCode.InternalServerError,
-          data: 'Impossible to upload file !',
-        });
-    } else
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: 'Please provide this document file !',
-      });
-  }
-  @Put('session/document/during')
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  @UseGuards(JwtAuthGuardAsStudent)
-  @ApiBody({
-    type: UploadDocumentToSessionDto,
-    description: 'Document upload data for during formation phase',
-  })
-  async submitDocDuring(
-    @Body() payementSessionDto: UploadDocumentToSessionDto,
-    @User() user: IJwtSignin,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    const document = DocumentKeyEnum[payementSessionDto['key_document']];
-    if (!DOCUMENT_KEYS_PHASES.pendant_formation.includes(document))
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(',')}`,
-      });
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-        return this.sessionsService.uploadDocumentToSessionDTO(
-          user,
-          { ...payementSessionDto, piece_jointe, document },
-          'DURING',
-        );
-      } else
-        return Responder({
-          status: HttpStatusCode.InternalServerError,
-          data: 'Impossible to upload file !',
-        });
-    } else
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: 'Please provide this document file !',
-      });
-  }
-  @Put('session/document/after')
-  @UseGuards(JwtAuthGuardAsStudent)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  @ApiBody({
-    type: UploadDocumentToSessionDto,
-    description: 'Document upload data for after formation phase',
-  })
-  async submitDocAfter(
-    @Body() payementSessionDto: UploadDocumentToSessionDto,
-    @User() user: IJwtSignin,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    const document = DocumentKeyEnum[payementSessionDto['key_document']];
-    if (!DOCUMENT_KEYS_PHASES.apres_formation.includes(document))
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: `Le ${document} document envoyé n'est pas autorisé pour cette phase de la formation. ${DOCUMENT_KEYS_PHASES.avant_formation.join(',')}`,
-      });
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-        return this.sessionsService.uploadDocumentToSessionDTO(
-          user,
-          { ...payementSessionDto, piece_jointe, document },
-          'AFTER',
-        );
-      } else
-        return Responder({
-          status: HttpStatusCode.InternalServerError,
-          data: 'Impossible to upload file !',
-        });
-    } else
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: 'Please provide this document file !',
-      });
-  }
-  @Post('session/payment/card')
-  @UseGuards(JwtAuthGuardAsStudent)
-  @ApiBody({
-    type: CreatePaymentSessionDto,
-    description: 'Payment session data for card payment',
-  })
-  async payementSession(
-    @Body() payementSessionDto: CreatePaymentSessionDto,
-    @User() user: IJwtSignin,
-  ) {
-    return this.sessionsService.payementSession(user, payementSessionDto);
-  }
-  @Post('session/payment/opco')
-  @UseGuards(JwtAuthGuardAsStudent)
-  @ApiBody({
-    type: PayementOpcoDto,
-    description: 'Payment session data for OPCO payment',
-  })
-  async payementSessionByOpco(
-    @Body() payementSessionDto: PayementOpcoDto,
-    @User() user: IJwtSignin,
-  ) {
-    return this.sessionsService.payementByOpco(user, payementSessionDto);
-  }
-  @Get('byidformation/:idformation')
-  async getAllSessionByIdFormation(
-    @Param('idformation', ParseIntPipe) idformation: number,
-  ) {
-    return this.sessionsService.getAllSessionByIdFormation(idformation);
-  }
-  @Get('session/documents/:idstudent/:idsession/:group')
+
+  @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async getDocumentsList(
-    @Param('group') group: 'after' | 'during',
-    @Param('idstudent', ParseIntPipe) idstudent: number,
-    @Param('idsession', ParseIntPipe) idsession: number,
-  ) {
-    return this.sessionsService.GetDocumentsByGroup(
-      idsession,
-      idstudent,
-      group,
-    );
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Session details',
+  })
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.sessionsService.getSessionById(id);
   }
-  @Get('session/:idsession')
-  // @UseGuards(JwtAuthGuard)
-  async getSessionById(@Param('idsession', ParseIntPipe) idsession: number) {
-    return this.sessionsService.getSessionById(idsession);
-  }
-  @Get('students/list/:idsession')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async listeDesApprenantsParIdSession(
-    @Param('idsession', ParseIntPipe) idsession: number,
-  ) {
-    return this.sessionsService.listOfLearnerByIdSession(idsession);
-  }
-  @Get('students/list')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async listeDesApprenantsOnAllSessions(@User() user: IJwtSignin) {
-    return this.sessionsService.listOfLearnerByConnectedFormateur(user);
-  }
-  @Put('session/assign')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async attributeSessionToUser(
-    @Body() assignFormateurToSessionDto: AssignFormateurToSessionDto,
-  ) {
-    return this.sessionsService.assignFormateurToSession(
-      assignFormateurToSessionDto,
-    );
-  }
-  @Get('list/listebyformateur')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async loadMySessionsAsFormateur(@User() user) {
-    return this.sessionsService.listAllSessionsByOwnAsFormateur(user);
-  }
-  @Get('list/listebyformateur/:idinstructor')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async loadMySessionsByIdFormateur(
-    @Param('idinstructor', ParseIntPipe) idinstructor: number,
-  ) {
-    return this.sessionsService.listAllSessionsByIdInstructor(idinstructor);
-  }
-  @Get('list/bygroups/:group')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async getAllSessionsByGroupe(
-    @User() user,
-    @Param('group') group: 'active' | 'upcoming' | 'completed',
-  ) {
-    return this.sessionsService.listAllSessionByGroupe(user, group);
-  }
-  @Get('list/bykeyword')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async getAllSessionsByKeyword(
-    @User() user,
-    @Query('keyword') keyword: string,
-  ) {
-    if (!keyword)
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: "Le mot de recherche n'est pas envoyé dans la requete !",
-      });
-    return this.sessionsService.listAllSessionByKeyword(user, keyword);
-  }
-  @Post('session/addhomework')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async addNewHomeWorkSession(
-    @Body() createSessionDto: AddHomeworkSessionDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-      }
-    }
-    return this.sessionsService.createHomework({
-      ...createSessionDto,
-      piece_jointe,
-    });
-  }
-  @Get('mylist')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async getAllSessionsByOwner(@User() user: IJwtSignin) {
-    return this.sessionsService.listAllSessionsByOwn(user);
-  }
-  @Get('mylist/status/:status')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async getAllSessionsByOwnerAndStatus(
-    @User() user: IJwtSignin,
-    @Param('status', ParseIntPipe) status: number,
-  ) {
-    return this.sessionsService.listAllSessionsByOwnAndStatus(user, status);
-  }
-  @Post()
-  @HttpCode(HttpStatusCode.Ok)
-  async handleWebhook(@Req() req: any, @Res() res: any) {
-    const sig = req.headers['stripe-signature'] as string;
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? '';
-    let event: Stripe.Event;
 
-    try {
-      event = this.stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err: any) {
-      console.error(`❌ Webhook signature verification failed: ${err.message}`);
-      return Responder({
-        status: HttpStatusCode.BadRequest,
-        data: `Webhook Error: ${err.message}`,
-      });
-    }
-    // const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    await this.sessionsService.webhookStripePayment(event);
-
-    return Responder({ status: HttpStatusCode.Ok, data: 'Received' });
-  }
-  @Post('session/apply')
-  @UseGuards(JwtAuthGuardAsStudent)
-  async applyToSession(
-    @User() user: IJwtSignin,
-    @Body() applySessionDto: CreateSessionPaiementDto,
-  ) {
-    return this.sessionsService.applyToSession(applySessionDto, user);
-  }
-  @Get('listprestations')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getListePrestations() {
-    return this.sessionsService.getListePrestation();
-  }
-  @Get('listrelances')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getListeRelances() {
-    return this.sessionsService.getListeRealnce();
-  }
-  @Get('listactions')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async getListeActions() {
-    return this.sessionsService.getListeActions();
-  }
-  @Get('rtpcapabilities')
-  async getRtpCapabilities() {
-    const router = this.mediasoupService.getRouter();
-    if (!router) {
-      throw new NotFoundException('Router not found');
-    }
-    const rtpCapabilities = router.rtpCapabilities;
-    return rtpCapabilities;
-  }
-  @Post('sendtransport')
-  async createSendTransport(@Body() body: { clientId: string }) {
-    const transportOptions = await this.mediasoupService.createSendTransport(
-      body.clientId,
-    );
-    return { transportOptions };
-  }
-  @Post('connecttransport')
-  async connectTransport(
-    @Body()
-    body: {
-      clientId: string;
-      dtlsParameters: any;
-      transportType: 'send' | 'recv';
-    },
-  ) {
-    const transport = this.mediasoupService.getTransport(
-      body.clientId,
-      body.transportType,
-    );
-    if (!transport) throw new Error('Transport not found');
-    await transport.connect({ dtlsParameters: body.dtlsParameters });
-    return { connected: true };
-  }
-  @Get('list')
-  async getAllSessions() {
-    return this.sessionsService.listAllSession();
-  }
-  @Delete('session/:idSession')
-  @UseGuards(JwtAuthGuardAsManagerSystem)
-  async deleteSession(@Param('idSession', ParseIntPipe) idSession: number) {
-    return this.sessionsService.deleteSession(idSession);
-  }
-  @Put('session/:idSession')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async updateSession(
+  @Put(':id')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiBody({ type: UpdateSessionDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Session updated successfully',
+  })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateSessionDto: UpdateSessionDto,
-    @Param('idSession', ParseIntPipe) idSession: number,
-    @UploadedFile() file: Express.Multer.File,
   ) {
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-      }
-    }
-    return this.sessionsService.updateSession(
-      { ...updateSessionDto, piece_jointe },
-      idSession,
-    );
+    return this.sessionsService.updateSession(id, updateSessionDto);
   }
-  @Post('session/add')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async addNewSession(@Body() createSessionDto: CreateSessionDto) {
-    return this.sessionsService.createSession({ ...createSessionDto });
-  }
-  @Post('session/create')
-  @UseGuards(JwtAuthGuardAsSuperviseur)
-  async createSession(
-    @Body() createSessionDto: CreateSessionFullStepDto,
-    @User() user: IJwtSignin,
-  ) {
-    return this.sessionsService.createSessionFullStep(
-      { ...createSessionDto },
-      user,
-    );
-  }
-  @Get(':idsession/:idcours/seances')
-  @UseGuards(JwtAuthGuard)
-  async getSeancesList(
-    @Param('idsession', ParseIntPipe) idsession: number,
-    @Param('idcours', ParseIntPipe) idcours: number,
-  ) {
-    return this.sessionsService.listAllSeancesBySession(idsession, idcours);
-  }
-  @Post('session/addseance')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async addNewSeanceSession(
-    @Body() createSessionDto: AddSeanceSessionDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-      }
-    }
-    return this.sessionsService.createSeance({
-      ...createSessionDto,
-      piece_jointe,
-    });
-  }
-  @Post('session/addhomework')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async addNewHomeworkSession(
-    @Body() createSessionDto: AddSeanceSessionDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-      }
-    }
-    return this.sessionsService.createSeance({
-      ...createSessionDto,
-      piece_jointe,
-    });
-  }
-  @Delete('session/addseance/:idSeance')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  async deleteSeanceSession(@Param('idSeance', ParseIntPipe) idSeance: number) {
-    return this.sessionsService.deleteseance(idSeance);
-  }
-  @Put('session/addseance/:idSeance')
-  @UseGuards(JwtAuthGuardAsFormateur)
-  @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
-  )
-  async updateSeanceSession(
-    @Body() createSessionDto: any,
-    @UploadedFile() file: Express.Multer.File,
-    @Param('idSeance', ParseIntPipe) idSeance: number,
-  ) {
-    let piece_jointe: any = null;
-    if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
-      if (result) {
-        const { id, name, link } = result;
-        piece_jointe = link;
-      }
-    }
-    return this.sessionsService.updateSeance(
-      { ...createSessionDto, piece_jointe },
-      idSeance,
-    );
-  }
-  @Get('list/bythematic/:idThematic')
-  async getAllFormationsByThematic(
-    @Param('idThematic', ParseIntPipe) idThematic: number,
-  ) {
-    return this.sessionsService.gatAllSessionsByThematic(idThematic);
-  }
-  @Get('list/bycategory/:idCategory')
-  async getAllFormationsByCategory(
-    @Param('idCategory', ParseIntPipe) idCategory: number,
-  ) {
-    return this.sessionsService.gatAllSessionsByCategory(idCategory);
-  }
-  @Get('list/by/:idThematic/:idCategory')
-  async getAllFormationsByThematicAndCategory(
-    @Param('idCategory', ParseIntPipe) idCategory: number,
-    @Param('idThematic', ParseIntPipe) idThematic: number,
-  ) {
-    return this.sessionsService.gatAllSessionsByThematicAndCategory(
-      idThematic,
-      idCategory,
-    );
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Session deleted successfully',
+  })
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    return this.sessionsService.deleteSession(id);
   }
 }

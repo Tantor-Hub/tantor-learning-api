@@ -11,50 +11,24 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppInfos } from 'src/models/model.appinfos';
 import { Users } from 'src/models/model.users';
-import { StagiaireHasSession } from 'src/models/model.stagiairehassession';
-import { HomeworksSession } from 'src/models/model.homework';
 import { Messages } from 'src/models/model.messages';
-import { StagiaireHasSessionSeances } from 'src/models/model.stagiairesessionhasseances';
-import { SeanceSessions } from 'src/models/model.courshasseances';
-import { StagiaireHasHomeWork } from 'src/models/model.stagiairehashomeworks';
+
 import { Contacts } from 'src/models/model.contactform';
-import { Planings } from 'src/models/model.planings';
 import { JwtService } from 'src/services/service.jwt';
 import { CoursService } from './cours.service';
-import { Cours } from 'src/models/model.sessionshascours';
-import { Listcours } from 'src/models/model.cours';
-import { SessionSuivi } from 'src/models/model.suivisession';
-import { FormateurHasSession } from 'src/models/model.formateurhassession';
+import { Cours } from 'src/models/model.cours';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Chapitre } from 'src/models/model.chapitres';
-import { Documents } from 'src/models/model.documents';
-import { Evaluation } from 'src/models/model.evaluation';
-import { Question } from 'src/models/model.quiz';
-import { Option } from 'src/models/model.optionsquiz';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([
       AppInfos,
-      Chapitre,
-      Documents,
       Newsletter,
       Users,
-      Evaluation,
-      Question,
-      Option,
-      StagiaireHasSession,
-      HomeworksSession,
       Messages,
-      StagiaireHasSessionSeances,
-      SeanceSessions,
-      StagiaireHasHomeWork,
+
       Contacts,
-      Planings,
       Cours,
-      Listcours,
-      SessionSuivi,
-      FormateurHasSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

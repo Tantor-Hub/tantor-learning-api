@@ -12,8 +12,7 @@ import { Responder } from './strategy/strategy.responder';
 import { ResponseInterceptor } from './strategy/strategy.responseinterceptor';
 import { MediasoupService } from './services/service.mediasoup';
 import * as bodyParser from 'body-parser';
-
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerConfig } from './swagger';
 
 async function tantorAPP() {
   const app = await NestFactory.create(AppModule);
@@ -21,10 +20,32 @@ async function tantorAPP() {
   const port = configService.get<number>('TANTORPORT', 3000);
 
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: true, // Allow all origins
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: '*', // Allow all headers
+    exposedHeaders: '*', // Expose all headers
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    maxAge: 86400, // Cache preflight for 24 hours
   });
+
+  // Additional CORS middleware for edge cases
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header(
+      'Access-Control-Allow-Methods',
+      'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    );
+    res.header('Access-Control-Allow-Headers', '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
   app.setGlobalPrefix('/api/');
   app.use(
     '/webhook/stripe/onpayment',
@@ -89,14 +110,7 @@ async function tantorAPP() {
   app.enableShutdownHooks();
 
   // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('Tantor API')
-    .setDescription('API documentation for Tantor Learning')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerConfig.setup(app);
 
   await app.listen(port, '0.0.0.0', () => {
     log('---------------------------------------');

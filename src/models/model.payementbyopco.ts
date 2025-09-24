@@ -9,8 +9,7 @@ import {
 import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
 import { IPayementopco } from 'src/interface/interface.payementmethode';
-import { SessionSuivi } from './model.suivisession';
-import { StagiaireHasSession } from './model.stagiairehassession';
+import { Session } from './model.session';
 
 @Table({ tableName: tables['opcopayement'], timestamps: true })
 export class Payementopco extends Model<IPayementopco> {
@@ -36,12 +35,11 @@ export class Payementopco extends Model<IPayementopco> {
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_user: number;
 
-  @ForeignKey(() => SessionSuivi)
+  @ForeignKey(() => Session)
   @Column({ type: DataType.INTEGER, allowNull: false })
   id_session: number;
 
   @Column({ type: DataType.INTEGER, allowNull: false })
-  @ForeignKey(() => StagiaireHasSession)
   id_session_student: number;
 
   @Column({
@@ -54,9 +52,6 @@ export class Payementopco extends Model<IPayementopco> {
   @BelongsTo(() => Users)
   Student: Users;
 
-  @BelongsTo(() => SessionSuivi)
-  Formation: SessionSuivi;
-
-  @BelongsTo(() => StagiaireHasSession)
-  Session: StagiaireHasSession;
+  @BelongsTo(() => Session)
+  Formation: Session;
 }
