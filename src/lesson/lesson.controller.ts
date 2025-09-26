@@ -52,10 +52,10 @@ export class LessonController {
         status: 200,
         data: [
           {
-            id: 1,
+            id: '550e8400-e29b-41d4-a716-446655440000',
             title: 'Introduction to Programming',
             description: 'Basic concepts of programming',
-            id_cours: 1,
+            id_cours: '550e8400-e29b-41d4-a716-446655440001',
             createdAt: '2025-01-15T10:30:00.000Z',
             updatedAt: '2025-01-15T10:30:00.000Z',
           },
@@ -79,10 +79,10 @@ export class LessonController {
       example: {
         status: 200,
         data: {
-          id: 1,
+          id: '550e8400-e29b-41d4-a716-446655440000',
           title: 'Introduction to Programming',
           description: 'Basic concepts of programming',
-          id_cours: '550e8400-e29b-41d4-a716-446655440000',
+          id_cours: '550e8400-e29b-41d4-a716-446655440001',
           createdAt: '2025-01-15T10:30:00.000Z',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
@@ -105,10 +105,10 @@ export class LessonController {
       example: {
         status: 201,
         data: {
-          id: 1,
+          id: '550e8400-e29b-41d4-a716-446655440000',
           title: 'Introduction to Programming',
           description: 'Basic concepts of programming',
-          id_cours: 1,
+          id_cours: '550e8400-e29b-41d4-a716-446655440001',
           createdAt: '2025-01-15T10:30:00.000Z',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
@@ -163,10 +163,10 @@ export class LessonController {
       example: {
         status: 200,
         data: {
-          id: 1,
+          id: '550e8400-e29b-41d4-a716-446655440000',
           title: 'Advanced Programming',
           description: 'Advanced concepts of programming',
-          id_cours: '550e8400-e29b-41d4-a716-446655440000',
+          id_cours: '550e8400-e29b-41d4-a716-446655440001',
           createdAt: '2025-01-15T10:30:00.000Z',
           updatedAt: '2025-01-16T10:30:00.000Z',
         },

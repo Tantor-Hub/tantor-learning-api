@@ -7,7 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -238,7 +238,7 @@ export class LessondocumentController {
       },
     },
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.lessondocumentService.findOne(id);
   }
 
@@ -320,7 +320,7 @@ export class LessondocumentController {
   })
   update(
     @User() user: IJwtSignin,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateLessondocumentDto: UpdateLessondocumentDto,
   ) {
     return this.lessondocumentService.update(user, id, updateLessondocumentDto);
@@ -363,7 +363,7 @@ export class LessondocumentController {
       },
     },
   })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.lessondocumentService.remove(id);
   }
 }

@@ -42,6 +42,8 @@ import { Training as TrainingModel } from './models/model.trainings';
 import { StripeModule } from './stripe/stripe.module';
 import { LessonModule } from './lesson/lesson.module';
 import { LessondocumentModule } from './lessondocument/lessondocument.module';
+import { SessionDocumentModule } from './sessiondocument/sessiondocument.module';
+import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
 
 @Module({
   imports: [
@@ -88,6 +90,8 @@ import { LessondocumentModule } from './lessondocument/lessondocument.module';
     TrainingSessionModule,
     StudentSessionModule,
     SessionCoursModule,
+    SessionDocumentModule,
+    SurveyQuestionModule,
   ],
   providers: [
     AppService,

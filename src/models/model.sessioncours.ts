@@ -16,7 +16,7 @@ import { Users } from './model.users';
 import { Lesson } from './model.lesson';
 import { TrainingSession } from './model.trainingssession';
 
-@Table({ tableName: tables['sessioncours'], timestamps: true })
+@Table({ tableName: tables['cours'], timestamps: true })
 export class SessionCours extends Model<ISessionCours> {
   @PrimaryKey
   @Default(DataType.UUIDV4)

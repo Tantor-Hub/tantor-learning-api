@@ -12,6 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { Messages } from 'src/models/model.messages';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { Messages } from 'src/models/model.messages';
     JwtService,
     GoogleStrategy,
     GoogleDriveService,
+    JwtAuthGuardAsSuperviseur,
   ],
   exports: [UsersService, SequelizeModule],
 })

@@ -14,13 +14,13 @@ import { Users } from './model.users';
 @Table({ tableName: tables['lessondocument'] })
 export class Lessondocument extends Model {
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
     unique: true,
-    autoIncrement: true,
     primaryKey: true,
+    defaultValue: DataType.UUIDV4,
   })
-  id: number;
+  id: string;
 
   @AllowNull(false)
   @Column(DataType.STRING)

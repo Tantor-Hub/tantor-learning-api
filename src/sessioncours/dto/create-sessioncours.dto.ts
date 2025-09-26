@@ -1,4 +1,10 @@
-import { IsString, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsBoolean,
+  IsArray,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSessionCoursDto {
@@ -25,4 +31,23 @@ export class CreateSessionCoursDto {
   })
   @IsUUID()
   id_session: string;
+
+  @ApiProperty({
+    description: 'Whether the session course is published',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  is_published?: boolean;
+
+  @ApiProperty({
+    description: 'Array of formateur IDs assigned to this session course',
+    example: ['1', '2', '3'],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  id_formateur?: string[];
 }

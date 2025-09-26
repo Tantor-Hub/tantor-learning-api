@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
 import { SignInStudentDto } from './dto/signin-student.dto';
@@ -38,12 +39,17 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { Response } from 'express';
 import { log } from 'console';
+import { Users } from 'src/models/model.users';
+import { UserRole, ALL_ROLES } from 'src/interface/interface.userrole';
+import { IListUserByRoleResponse } from 'src/interface/interface.listuserbyroleresponse';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Users')
@@ -53,6 +59,8 @@ export class UsersController {
   constructor(
     private readonly userService: UsersService,
     private readonly googleDriveService: GoogleDriveService,
+    @InjectModel(Users)
+    private readonly usersModel: typeof Users,
   ) {}
 
   @Post('user/signup')
@@ -223,19 +231,143 @@ export class UsersController {
   async getAllUsersAsSImplifiedList() {
     return this.userService.getAllUsersAsSimplifiedList();
   }
-  @Get('list/bygroup/:group')
+  @Get('byrole')
   @UseGuards(JwtAuthGuardAsSuperviseur)
-  async getAllUsersByRole(
-    @Param('group')
-    group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary' | 'all',
-  ) {
-    if (![...Object.keys(this.userService.roleMap), 'all'].includes(group)) {
-      return Responder({
+  @ApiOperation({
+    summary: 'Get all users by specific role',
+    description:
+      'Retrieve users filtered by their role. Use query parameter ?role=<role> to filter users. Examples: GET /api/users/byrole?role=student, GET /api/users/byrole?role=admin, GET /api/users/byrole?role=all',
+  })
+  @ApiQuery({
+    name: 'role',
+    description: 'User role to filter by. Add as query parameter: ?role=<role>',
+    enum: ALL_ROLES,
+    example: UserRole.STUDENT,
+    required: true,
+    examples: {
+      student: {
+        summary: 'Get students',
+        description: 'GET /api/users/byrole?role=student',
+        value: 'student',
+      },
+      admin: {
+        summary: 'Get admins',
+        description: 'GET /api/users/byrole?role=admin',
+        value: 'admin',
+      },
+      all: {
+        summary: 'Get all users',
+        description: 'GET /api/users/byrole?role=all',
+        value: 'all',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Users retrieved successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Users retrieved successfully',
+        data: [
+          {
+            id: 1,
+            uuid: '550e8400-e29b-41d4-a716-446655440001',
+            email: 'student1@example.com',
+            fs_name: 'John',
+            ls_name: 'Doe',
+            role: 'student',
+          },
+          {
+            id: 2,
+            uuid: '550e8400-e29b-41d4-a716-446655440002',
+            email: 'student2@example.com',
+            fs_name: 'Jane',
+            ls_name: 'Smith',
+            role: 'student',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role parameter',
+    schema: {
+      example: {
+        status: 400,
+        message:
+          'Invalid role: teacher. Valid roles are: admin, student, instructor, secretary, all',
+        data: [],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - insufficient permissions',
+    schema: {
+      example: {
+        status: 401,
+        message:
+          "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+      },
+    },
+  })
+  async getUsersByRole(
+    @Query('role') role: string,
+  ): Promise<IListUserByRoleResponse> {
+    console.log('=== getUsersByRole: Starting ===');
+    console.log('Requested role:', role);
+    console.log('Valid roles:', ALL_ROLES);
+
+    if (!ALL_ROLES.includes(role)) {
+      console.log('=== getUsersByRole: Invalid role ===');
+      console.log('Role validation failed for:', role);
+      return {
         status: HttpStatusCode.BadRequest,
-        data: `Invalid group: ${group}`,
-      });
+        message: `Invalid role: ${role}. Valid roles are: ${ALL_ROLES.join(', ')}`,
+        data: [],
+      };
     }
-    return this.userService.getAllUsersByRole(group);
+
+    console.log('=== getUsersByRole: Calling service ===');
+    console.log('Calling userService.getAllUsersByRole with role:', role);
+
+    try {
+      const result = await this.userService.getAllUsersByRole(role as any);
+      console.log('=== getUsersByRole: Service response ===');
+      console.log('Service result status:', result.status);
+      console.log('Service result message:', result.message);
+      console.log('Service result data type:', typeof result.data);
+      console.log('Service result data:', result.data);
+      console.log('Users count:', result.data?.list?.length || 0);
+
+      const response = {
+        status: result.status,
+        message: result.message || 'Users retrieved successfully',
+        data: result.data?.list || [],
+      };
+
+      console.log('=== getUsersByRole: Final response ===');
+      console.log('Response status:', response.status);
+      console.log('Response message:', response.message);
+      console.log('Response data length:', response.data.length);
+
+      return response;
+    } catch (error) {
+      console.error('=== getUsersByRole: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return {
+        status: HttpStatusCode.InternalServerError,
+        message: 'Internal server error while retrieving users by role',
+        data: [],
+      };
+    }
   }
 
   @Put('change-role')

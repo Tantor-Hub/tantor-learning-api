@@ -15,13 +15,13 @@ import { SessionCours } from './model.sessioncours';
 @Table({ tableName: tables['lesson'] })
 export class Lesson extends Model<IListlesson> {
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
     unique: true,
-    autoIncrement: true,
     primaryKey: true,
+    defaultValue: DataType.UUIDV4,
   })
-  id: number;
+  id: string;
 
   @AllowNull(false)
   @Column(DataType.STRING)

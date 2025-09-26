@@ -24,7 +24,9 @@ export const TrainingSessionCreateApiOperation = () =>
   title: string;                  // Required
   nb_places: number;              // Required (minimum: 1)
   available_places: number;       // Required (minimum: 0)
-  required_document?: string[];   // Optional
+  required_document_before?: string[];   // Optional
+  required_document_during?: string[];   // Optional
+  required_document_after?: string[];    // Optional
   payment_method?: string[];      // Optional
   survey?: string[];              // Optional
   regulation_text: string;        // Required
@@ -46,7 +48,9 @@ export const TrainingSessionCreateApiBody = () =>
           title: 'Advanced React Development Session',
           nb_places: 30,
           available_places: 25,
-          required_document: ['CV', 'Diploma', 'ID Card'],
+          required_document_before: ['CV', 'Diploma', 'ID Card'],
+          required_document_during: ['Attendance Sheet', 'Progress Report'],
+          required_document_after: ['Certificate Request', 'Feedback Form'],
           payment_method: ['Credit Card', 'Bank Transfer'],
           survey: ['Experience Level', 'Learning Goals'],
           regulation_text:
@@ -115,7 +119,9 @@ export const TrainingSessionUpdateApiOperation = () =>
   title?: string;                 // Optional (same as create)
   nb_places?: number;             // Optional (same as create)
   available_places?: number;      // Optional (same as create)
-  required_document?: string[];   // Optional (same as create)
+  required_document_before?: string[];   // Optional (same as create)
+  required_document_during?: string[];   // Optional (same as create)
+  required_document_after?: string[];    // Optional (same as create)
   payment_method?: string[];      // Optional (same as create)
   survey?: string[];              // Optional (same as create)
   regulation_text?: string;       // Optional (same as create)
@@ -146,6 +152,28 @@ export const TrainingSessionUpdateApiBody = () =>
           id: '550e8400-e29b-41d4-a716-446655440001',
           begining_date: '2024-03-20T09:00:00.000Z',
           ending_date: '2024-03-25T17:00:00.000Z',
+        },
+      },
+      example3: {
+        summary: 'Update required documents',
+        value: {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          required_document_before: [
+            'CV',
+            'Diploma',
+            'ID Card',
+            'Cover Letter',
+          ],
+          required_document_during: [
+            'Attendance Sheet',
+            'Progress Report',
+            'Assignment Submissions',
+          ],
+          required_document_after: [
+            'Certificate Request',
+            'Feedback Form',
+            'Final Project',
+          ],
         },
       },
     },
@@ -226,11 +254,23 @@ export const TrainingSessionFindByTrainingIdApiResponse = () =>
                 example: 25,
                 description: 'Number of available places',
               },
-              required_document: {
+              required_document_before: {
                 type: 'array',
                 items: { type: 'string' },
                 example: ['CV', 'Diploma', 'ID Card'],
-                description: 'List of required documents',
+                description: 'List of required documents before training',
+              },
+              required_document_during: {
+                type: 'array',
+                items: { type: 'string' },
+                example: ['Attendance Sheet', 'Progress Report'],
+                description: 'List of required documents during training',
+              },
+              required_document_after: {
+                type: 'array',
+                items: { type: 'string' },
+                example: ['Certificate Request', 'Feedback Form'],
+                description: 'List of required documents after training',
               },
               payment_method: {
                 type: 'array',
@@ -311,7 +351,9 @@ export const TrainingSessionFindByTrainingIdApiResponse = () =>
             title: 'Advanced React Development Session',
             nb_places: 30,
             available_places: 25,
-            required_document: ['CV', 'Diploma', 'ID Card'],
+            required_document_before: ['CV', 'Diploma', 'ID Card'],
+            required_document_during: ['Attendance Sheet', 'Progress Report'],
+            required_document_after: ['Certificate Request', 'Feedback Form'],
             payment_method: ['Credit Card', 'Bank Transfer'],
             survey: ['Experience Level', 'Learning Goals'],
             regulation_text:

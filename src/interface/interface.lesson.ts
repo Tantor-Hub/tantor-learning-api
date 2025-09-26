@@ -1,7 +1,7 @@
 import { IGlobale } from './interface.globale';
 
 export interface IListlesson extends IGlobale {
-  id?: number;
+  id?: string;
   title: string;
   description?: string;
   id_cours: string;

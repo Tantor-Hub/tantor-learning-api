@@ -25,4 +25,6 @@ export enum tables {
   trainingssession = `${table_prefix}trainingssession`,
   studentsession = `${table_prefix}studentsession`,
   sessioncours = `${table_prefix}sessioncours`,
+  sessiondocuments = `${table_prefix}sessiondocuments`,
+  surveyquestions = `${table_prefix}surveyquestions`,
 }

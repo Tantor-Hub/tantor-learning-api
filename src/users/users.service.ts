@@ -314,9 +314,21 @@ export class UsersService {
       );
   }
   async getAllUsersByRole(
-    group: 'instructor' | 'teacher' | 'admin' | 'student' | 'secretary' | 'all',
+    group: 'instructor' | 'admin' | 'student' | 'secretary' | 'all',
   ): Promise<ResponseServer> {
-    // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
+    console.log('=== getAllUsersByRole: Starting ===');
+    console.log('Requested group:', group);
+    console.log('Group type:', typeof group);
+
+    const whereCondition = {
+      status: 1,
+      ...(group !== 'all' && { role: group.toLowerCase() }),
+    };
+
+    console.log('=== getAllUsersByRole: Database query ===');
+    console.log('Where condition:', JSON.stringify(whereCondition, null, 2));
+    console.log('Group to lowercase:', group.toLowerCase());
+    console.log('Is group "all"?', group === 'all');
 
     return this.userModel
       .findAll({
@@ -333,20 +345,44 @@ export class UsersService {
             'last_login',
           ],
         },
-        where: {
-          status: 1,
-          ...(group !== 'all' && { role: group.toUpperCase() }),
-        },
+        where: whereCondition,
       })
-      .then((list) =>
-        Responder({
+      .then((list) => {
+        console.log('=== getAllUsersByRole: Database success ===');
+        console.log('Found users count:', list.length);
+        console.log(
+          'Users data:',
+          list.map((user) => ({
+            id: user.uuid,
+            fs_name: user.fs_name,
+            ls_name: user.ls_name,
+          })),
+        );
+
+        const response = Responder({
           status: HttpStatusCode.Ok,
           data: { length: list.length, list },
-        }),
-      )
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-      );
+        });
+
+        console.log('=== getAllUsersByRole: Response created ===');
+        console.log('Response status:', response.status);
+        console.log('Response data length:', response.data?.length);
+
+        return response;
+      })
+      .catch((err) => {
+        console.error('=== getAllUsersByRole: Database error ===');
+        console.error('Error type:', typeof err);
+        console.error('Error name:', err.name);
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+        console.error('Full error object:', JSON.stringify(err, null, 2));
+
+        return Responder({
+          status: HttpStatusCode.InternalServerError,
+          data: err,
+        });
+      });
   }
 
   async getUserWithRoles(uuid: string): Promise<any> {

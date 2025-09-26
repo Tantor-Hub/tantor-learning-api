@@ -1,4 +1,4 @@
 export interface IGlobale {
-  id?: number;
-  status?: number;
+  id?: number | string;
+  status?: number | string;
 }

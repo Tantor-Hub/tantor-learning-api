@@ -71,7 +71,7 @@ export class LessondocumentService {
     }
   }
 
-  async findOne(id: number): Promise<ResponseServer> {
+  async findOne(id: string): Promise<ResponseServer> {
     try {
       const lessondocument = await this.lessondocumentModel.findByPk(id, {
         attributes: [
@@ -197,7 +197,7 @@ export class LessondocumentService {
 
   async update(
     user: IJwtSignin,
-    id: number,
+    id: string,
     updateLessondocumentDto: UpdateLessondocumentDto,
   ): Promise<ResponseServer> {
     try {
@@ -262,7 +262,7 @@ export class LessondocumentService {
     }
   }
 
-  async remove(id: number): Promise<ResponseServer> {
+  async remove(id: string): Promise<ResponseServer> {
     try {
       const lessondocument = await this.lessondocumentModel.findByPk(id);
       if (!lessondocument) {
