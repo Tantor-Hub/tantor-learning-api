@@ -16,7 +16,6 @@ import { Messages } from 'src/models/model.messages';
 
 import { Contacts } from 'src/models/model.contactform';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Cours } from 'src/models/model.cours';
 
 @Module({
   imports: [
@@ -24,9 +23,7 @@ import { Cours } from 'src/models/model.cours';
       AppInfos,
       Newsletter,
       Users,
-      Cours,
       Messages,
-
       Contacts,
     ]),
     ConfigModule,

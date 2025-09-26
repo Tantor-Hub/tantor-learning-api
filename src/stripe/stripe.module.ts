@@ -5,7 +5,6 @@ import { StripeModule as StripeClientModule } from '../strategy/strategy.stripe'
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Payement } from '../models/model.payementbycard';
 import { Payementopco } from '../models/model.payementbyopco';
-import { SessionsService } from '../sessions/sessions.service';
 import { JwtService } from '../services/service.jwt';
 import { MailService } from '../services/service.mail';
 import { AllSercices } from '../services/serices.all';
@@ -13,32 +12,14 @@ import { GoogleDriveService } from '../services/service.googledrive';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Users } from '../models/model.users';
-import { Formations } from '../models/model.formations';
 import { MediasoupService } from '../services/service.mediasoup';
 import { DocsService } from '../services/service.docs';
-
-import { Cours } from '../models/model.cours';
-import { Survey } from '../models/model.questionspourquestionnaireinscription';
-import { Questionnaires } from '../models/model.questionnaireoninscriptionsession';
-import { SurveyResponse } from '../models/model.surveyresponses';
-import { Session } from '../models/model.session';
 import { Options } from '../models/model.optionquestionnaires';
 
 @Module({
   imports: [
     StripeClientModule,
-    SequelizeModule.forFeature([
-      Payement,
-      SurveyResponse,
-      Payementopco,
-      Questionnaires,
-      Survey,
-      Users,
-      Formations,
-      Cours,
-      Session,
-      Options,
-    ]),
+    SequelizeModule.forFeature([Payement, Payementopco, Users, Options]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -54,7 +35,6 @@ import { Options } from '../models/model.optionquestionnaires';
   controllers: [StripeController],
   providers: [
     StripeService,
-    SessionsService,
     JwtService,
     GoogleDriveService,
     AllSercices,

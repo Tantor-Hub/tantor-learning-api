@@ -6,10 +6,12 @@ import {
   PrimaryKey,
   ForeignKey,
   BelongsTo,
+  HasMany,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { ITraining, TrainingType } from '../interface/interface.trainings';
 import { TrainingCategory } from './model.trainingcategory';
+import { TrainingSession } from './model.trainingssession';
 
 @Table({ tableName: tables['trainings'] })
 export class Training extends Model<ITraining> {
@@ -98,4 +100,11 @@ export class Training extends Model<ITraining> {
     targetKey: 'id',
   })
   trainingCategory: TrainingCategory;
+
+  // Relationship: One training can have many training sessions
+  @HasMany(() => TrainingSession, {
+    foreignKey: 'id_trainings',
+    sourceKey: 'id',
+  })
+  trainingSessions: TrainingSession[];
 }

@@ -25,7 +25,6 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
-import { Formations } from 'src/models/model.formations';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';

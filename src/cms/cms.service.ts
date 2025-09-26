@@ -20,7 +20,6 @@ import { Users } from 'src/models/model.users';
 import { log } from 'console';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Cours } from 'src/models/model.cours';
 
 @Injectable()
 export class CmsService {
@@ -39,52 +38,8 @@ export class CmsService {
     @InjectModel(Newsletter)
     private readonly newsletterModel: typeof Newsletter,
 
-    @InjectModel(Cours)
-    private readonly coursModel: typeof Cours,
-
-
-    @InjectModel(Cours)
-    private readonly coursModel2: typeof Cours,
-
     private readonly configService: ConfigService,
   ) {}
-  async LibrairiesFreeBooks() {
-    try {
-      return this.coursModel
-        .findAll({
-          attributes: {
-            exclude: ['id_thematic', 'createdAt', 'updatedAt'],
-          },
-          include: [
-            {
-              model: Users,
-              required: true,
-              attributes: ['id', 'fs_name', 'ls_name', 'email'],
-            },
-            {
-              model: Cours,
-              required: true,
-              attributes: ['id', 'title', 'description'],
-            },
-          ],
-          where: { is_published: true },
-        })
-        .then((list) =>
-          Responder({
-            status: HttpStatusCode.Ok,
-            data: { length: list.length, rows: list },
-          }),
-        )
-        .catch((err) =>
-          Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-        );
-    } catch (error) {
-      return Responder({
-        status: HttpStatusCode.InternalServerError,
-        data: error,
-      });
-    }
-  }
   async getMessageByThread(
     user: IJwtSignin,
     thread: string,

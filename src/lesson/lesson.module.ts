@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AllSercices } from 'src/services/serices.all';
 import { LessonController } from './lesson.controller';
-import { CmsService } from 'src/cms/cms.service';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from 'src/services/service.crypto';
 import { JwtModule } from '@nestjs/jwt';
@@ -18,7 +17,7 @@ import { JwtService } from 'src/services/service.jwt';
 import { LessonService } from './lesson.service';
 import { Lesson } from 'src/models/model.lesson';
 import { Newsletter } from 'src/models/model.newsletter';
-import { Cours } from 'src/models/model.cours';
+import { SessionCours } from 'src/models/model.sessioncours';
 
 @Module({
   imports: [
@@ -30,7 +29,7 @@ import { Cours } from 'src/models/model.cours';
 
       Contacts,
       Lesson,
-      Cours,
+      SessionCours,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -47,7 +46,6 @@ import { Cours } from 'src/models/model.cours';
   controllers: [LessonController],
   providers: [
     AllSercices,
-    CmsService,
     MailService,
     CryptoService,
     JwtService,

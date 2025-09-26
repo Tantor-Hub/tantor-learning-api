@@ -12,7 +12,7 @@ import {
 import { ApiResponse } from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
 import { CreatePaymentSessionDto } from '../dto/payement-methode.dto';
-import { PayementOpcoDto } from '../sessions/dto/payement-method-opco.dto';
+import { PayementOpcoDto } from '../dto/payement-opco.dto';
 import { IJwtSignin } from '../interface/interface.payloadjwtsignin';
 import { User } from '../strategy/strategy.globaluser';
 import Stripe from 'stripe';

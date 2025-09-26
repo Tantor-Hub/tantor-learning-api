@@ -34,21 +34,4 @@ export class CreateLessondocumentDto {
   @IsString()
   @IsNotEmpty()
   id_lesson: string;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the user who created it',
-    required: false,
-  })
-  @IsInt()
-  @IsOptional()
-  createdBy?: number;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the session',
-  })
-  @IsInt()
-  @IsNotEmpty()
-  id_session: number;
 }

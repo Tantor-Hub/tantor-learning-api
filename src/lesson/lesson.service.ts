@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Lesson } from 'src/models/model.lesson';
 import { Users } from 'src/models/model.users';
+import { SessionCours } from 'src/models/model.sessioncours';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -14,6 +15,8 @@ export class LessonService {
     private lessonModel: typeof Lesson,
     @InjectModel(Users)
     private userModel: typeof Users,
+    @InjectModel(SessionCours)
+    private sessionCoursModel: typeof SessionCours,
   ) {}
 
   async createLesson(
@@ -30,6 +33,7 @@ export class LessonService {
     return this.lessonModel.findAll({
       include: [
         { model: Users, as: 'CreatedBy' },
+        { model: SessionCours, as: 'sessionCours' },
       ],
     });
   }
@@ -38,6 +42,7 @@ export class LessonService {
     return this.lessonModel.findByPk(id, {
       include: [
         { model: Users, as: 'CreatedBy' },
+        { model: SessionCours, as: 'sessionCours' },
       ],
     });
   }
@@ -57,5 +62,4 @@ export class LessonService {
       await lesson.destroy();
     }
   }
-
 }

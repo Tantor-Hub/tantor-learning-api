@@ -11,7 +11,6 @@ import {
 import { tables } from 'src/config/config.tablesname';
 import { IPayemenMethode } from 'src/interface/interface.payementmethode';
 import { Users } from './model.users';
-import { Session } from './model.session';
 
 @Table({
   tableName: tables['payementmethode'],
@@ -43,7 +42,6 @@ export class Payement extends Model<IPayemenMethode> {
   })
   id_user: number;
 
-  @ForeignKey(() => Session)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -101,7 +99,4 @@ export class Payement extends Model<IPayemenMethode> {
 
   @BelongsTo(() => Users)
   Stagiaire: Users;
-
-  @BelongsTo(() => Session)
-  Formation: Session;
 }

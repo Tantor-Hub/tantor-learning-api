@@ -1,0 +1,431 @@
+import { Injectable, Inject } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { SessionCours } from 'src/models/model.sessioncours';
+import { Users } from 'src/models/model.users';
+import { TrainingSession } from 'src/models/model.trainingssession';
+import { CreateSessionCoursDto } from './dto/create-sessioncours.dto';
+import { UpdateSessionCoursDto } from './dto/update-sessioncours.dto';
+import { ISessionCours } from 'src/interface/interface.sessioncours';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { Responder } from 'src/strategy/strategy.responder';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
+import { ResponseServer } from 'src/interface/interface.response';
+
+@Injectable()
+export class SessionCoursService {
+  constructor(
+    @InjectModel(SessionCours)
+    private readonly sessionCoursModel: typeof SessionCours,
+    @InjectModel(Users)
+    private readonly usersModel: typeof Users,
+    @InjectModel(TrainingSession)
+    private readonly trainingSessionModel: typeof TrainingSession,
+  ) {}
+
+  async create(
+    user: IJwtSignin,
+    createSessionCoursDto: CreateSessionCoursDto,
+  ): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours create: Starting ===');
+      console.log('Create DTO:', createSessionCoursDto);
+      console.log('User:', user);
+
+      const sessionCoursData: Omit<ISessionCours, 'id'> = {
+        ...createSessionCoursDto,
+        createdBy: user.uuid_user,
+      };
+
+      const createdSessionCours =
+        await this.sessionCoursModel.create(sessionCoursData);
+
+      console.log('=== SessionCours create: Success ===');
+      console.log('Created session cours:', createdSessionCours.toJSON());
+
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: createdSessionCours,
+        customMessage: 'Session course created successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours create: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while creating session course',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findAll(): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours findAll: Starting ===');
+
+      const sessionCours = await this.sessionCoursModel.findAll({
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'is_published',
+          'id_session',
+          'id_formateur',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'CreatedBy',
+            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+          },
+          {
+            model: TrainingSession,
+            required: false,
+            as: 'trainingSession',
+            attributes: [
+              'id',
+              'title',
+              'nb_places',
+              'available_places',
+              'begining_date',
+              'ending_date',
+            ],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      console.log('=== SessionCours findAll: Success ===');
+      console.log('Session cours found:', sessionCours.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: sessionCours.length,
+          rows: sessionCours,
+        },
+        customMessage: 'Session courses retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours findAll: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while fetching session courses',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findBySessionId(sessionId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours findBySessionId: Starting ===');
+      console.log('Session ID:', sessionId);
+
+      // First, validate that the session exists
+      const sessionExists = await this.trainingSessionModel.findByPk(sessionId);
+      if (!sessionExists) {
+        console.log('=== SessionCours findBySessionId: Session not found ===');
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session not found',
+        });
+      }
+
+      const sessionCours = await this.sessionCoursModel.findAll({
+        where: { id_session: sessionId },
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'is_published',
+          'id_formateur',
+          'createdAt',
+          'updatedAt',
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      console.log('=== SessionCours findBySessionId: Success ===');
+      console.log('Session cours found:', sessionCours.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: sessionCours.length,
+          rows: sessionCours,
+        },
+      });
+    } catch (error) {
+      console.error('=== SessionCours findBySessionId: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving session courses',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findOne(id: string): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours findOne: Starting ===');
+      console.log('Session cours ID:', id);
+
+      const sessionCours = await this.sessionCoursModel.findByPk(id, {
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'is_published',
+          'id_session',
+          'id_formateur',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'CreatedBy',
+            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+          },
+          {
+            model: TrainingSession,
+            required: false,
+            as: 'trainingSession',
+            attributes: [
+              'id',
+              'title',
+              'nb_places',
+              'available_places',
+              'begining_date',
+              'ending_date',
+            ],
+          },
+        ],
+      });
+
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Session course not found',
+        });
+      }
+
+      console.log('=== SessionCours findOne: Success ===');
+      console.log('Session cours found:', sessionCours.toJSON());
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: sessionCours,
+        customMessage: 'Session course retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours findOne: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while fetching session course',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async update(
+    user: IJwtSignin,
+    id: string,
+    updateSessionCoursDto: UpdateSessionCoursDto,
+  ): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours update: Starting ===');
+      console.log('Session cours ID:', id);
+      console.log('Update DTO:', updateSessionCoursDto);
+      console.log('User:', user);
+
+      const sessionCours = await this.sessionCoursModel.findByPk(id);
+
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Session course not found',
+        });
+      }
+
+      // Check if user has permission (same as course creator or secretary)
+      if (sessionCours.createdBy !== user.uuid_user) {
+        const dbUser = await this.usersModel.findOne({
+          where: { uuid: user.uuid_user },
+        });
+
+        if (!dbUser || dbUser.role !== 'secretary') {
+          return Responder({
+            status: HttpStatusCode.Forbidden,
+            data: 'You do not have permission to update this session course',
+          });
+        }
+      }
+
+      await sessionCours.update(updateSessionCoursDto);
+
+      const updatedSessionCours = await this.sessionCoursModel.findByPk(id, {
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'is_published',
+          'id_session',
+          'id_formateur',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'CreatedBy',
+            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+          },
+          {
+            model: TrainingSession,
+            required: false,
+            as: 'trainingSession',
+            attributes: [
+              'id',
+              'title',
+              'nb_places',
+              'available_places',
+              'begining_date',
+              'ending_date',
+            ],
+          },
+        ],
+      });
+
+      console.log('=== SessionCours update: Success ===');
+      console.log('Updated session cours:', updatedSessionCours?.toJSON());
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: updatedSessionCours,
+        customMessage: 'Session course updated successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours update: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while updating session course',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async remove(user: IJwtSignin, id: string): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours remove: Starting ===');
+      console.log('Session cours ID:', id);
+      console.log('User:', user);
+
+      const sessionCours = await this.sessionCoursModel.findByPk(id);
+
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Session course not found',
+        });
+      }
+
+      // Check if user has permission (same as course creator or secretary)
+      if (sessionCours.createdBy !== user.uuid_user) {
+        const dbUser = await this.usersModel.findOne({
+          where: { uuid: user.uuid_user },
+        });
+
+        if (!dbUser || dbUser.role !== 'secretary') {
+          return Responder({
+            status: HttpStatusCode.Forbidden,
+            data: 'You do not have permission to delete this session course',
+          });
+        }
+      }
+
+      await sessionCours.destroy();
+
+      console.log('=== SessionCours remove: Success ===');
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: { message: 'Session course deleted successfully' },
+        customMessage: 'Session course deleted successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours remove: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while deleting session course',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+}

@@ -5,5 +5,6 @@ export interface IListlesson extends IGlobale {
   title: string;
   description?: string;
   id_cours: string;
+  sessionCours?: any;
   createdBy?: number;
 }

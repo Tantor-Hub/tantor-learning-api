@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { ResponseServer } from 'src/interface/interface.response';
 import { TrainingCategory } from 'src/models/model.trainingcategory';
-import { Formations } from 'src/models/model.formations';
 import { Responder } from 'src/strategy/strategy.responder';
 import { CreateTrainingCategoryDto } from './dto/create-trainingcategory.dto';
 import { UpdateTrainingCategoryDto } from './dto/update-trainingcategory.dto';
@@ -14,8 +13,6 @@ export class TrainingCategoryService {
   constructor(
     @InjectModel(TrainingCategory)
     private readonly trainingCategoryModel: typeof TrainingCategory,
-    @InjectModel(Formations)
-    private readonly formationsModel: typeof Formations,
   ) {}
 
   async create(

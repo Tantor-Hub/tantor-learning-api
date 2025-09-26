@@ -8,7 +8,6 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { ITrainingCategory } from 'src/interface/interface.trainingcategory';
-import { Formations } from './model.formations';
 
 @Table({ tableName: tables['trainingcategory'], timestamps: false })
 export class TrainingCategory extends Model<ITrainingCategory> {
@@ -31,8 +30,4 @@ export class TrainingCategory extends Model<ITrainingCategory> {
     allowNull: false,
   })
   description: string;
-
-  // Relationship: One training category can have many formations
-  @HasMany(() => Formations, { foreignKey: 'id_training', sourceKey: 'id' })
-  formations: Formations[];
 }

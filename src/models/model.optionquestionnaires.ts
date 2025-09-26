@@ -1,18 +1,9 @@
-import {
-  Table,
-  Column,
-  Model,
-  ForeignKey,
-  BelongsTo,
-  DataType,
-} from 'sequelize-typescript';
-import { IOption } from 'src/interface/interface.cours';
+import { Table, Column, Model, DataType } from 'sequelize-typescript';
+import { IOption } from 'src/interface/interface.optionquestionnaires';
 import { table_prefix } from 'src/config/config.tablesname';
-import { Questionnaires } from './model.questionnaireoninscriptionsession';
 
 @Table({ tableName: `${table_prefix}optionsquestionnaires`, timestamps: true })
 export class Options extends Model<IOption> {
-  @ForeignKey(() => Questionnaires)
   @Column
   id_question: number;
 

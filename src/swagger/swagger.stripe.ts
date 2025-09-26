@@ -17,7 +17,7 @@ export class PaymentMethodOpcoDto {
 
   @ApiProperty({
     example: 1,
-    description: 'Session ID',
+    description: 'Training ID',
   })
   id_session: number;
 

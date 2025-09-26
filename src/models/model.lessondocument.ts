@@ -9,7 +9,6 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Lesson } from './model.lesson';
-import { Session } from './model.session';
 import { Users } from './model.users';
 
 @Table({ tableName: tables['lessondocument'] })
@@ -42,10 +41,6 @@ export class Lessondocument extends Model {
   @ForeignKey(() => Users)
   @Column(DataType.INTEGER)
   createdBy: number;
-
-  @ForeignKey(() => Session)
-  @Column(DataType.INTEGER)
-  id_session: number;
 
   @BelongsTo(() => Lesson)
   lesson: Lesson;

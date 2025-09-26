@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IListlesson } from 'src/interface/interface.lesson';
-import { Cours } from './model.cours';
+import { SessionCours } from './model.sessioncours';
 
 @Table({ tableName: tables['lesson'] })
 export class Lesson extends Model<IListlesson> {
@@ -31,10 +31,10 @@ export class Lesson extends Model<IListlesson> {
   @Column(DataType.TEXT)
   description?: string;
 
-  @ForeignKey(() => Cours)
+  @ForeignKey(() => SessionCours)
   @Column(DataType.UUID)
   id_cours: string;
 
-  @BelongsTo(() => Cours, 'id_cours')
-  cours: Cours;
+  @BelongsTo(() => SessionCours, 'id_cours')
+  sessionCours: SessionCours;
 }

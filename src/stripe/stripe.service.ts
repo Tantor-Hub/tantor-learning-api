@@ -10,7 +10,7 @@ import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
 import { IJwtSignin } from '../interface/interface.payloadjwtsignin';
 import { CreatePaymentSessionDto } from '../dto/payement-methode.dto';
-import { PayementOpcoDto } from '../sessions/dto/payement-method-opco.dto';
+import { PayementOpcoDto } from '../dto/payement-opco.dto';
 import { ResponseServer } from '../interface/interface.response';
 import { Sequelize } from 'sequelize-typescript';
 

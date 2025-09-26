@@ -62,8 +62,14 @@ import {
 - `LessonResponse` - Lesson entity response
 - `CourseResponse` - Course entity response
 - `FormationResponse` - Formation entity response
-- `SessionResponse` - Session entity response
-- `SessionDocumentResponse` - Session document response
+- `TrainingSessionResponse` - Training session entity response
+- `TrainingSessionApiTags` - Training session API tags
+- `TrainingSessionCreateApiOperation` - Create training session operation
+- `TrainingSessionFindAllApiOperation` - Get all training sessions operation
+- `TrainingSessionFindByTrainingIdApiOperation` - Get sessions by training ID operation
+- `TrainingSessionFindOneApiOperation` - Get training session by ID operation
+- `TrainingSessionUpdateApiOperation` - Update training session operation
+- `TrainingSessionDeleteApiOperation` - Delete training session operation
 - `ModuleDeFormationResponse` - Module de formation response
 - `NewsletterResponse` - Newsletter subscription response
 

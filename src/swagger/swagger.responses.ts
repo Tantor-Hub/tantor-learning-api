@@ -201,224 +201,80 @@ export class LessonResponse {
   updatedAt: string;
 }
 
-// Course Response Schemas
-export class CourseResponse {
+// Training Session Response Schemas
+export class TrainingSessionResponse {
   @ApiProperty({
-    example: 1,
-    description: 'Course ID',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+    description: 'Training session ID',
   })
-  id: number;
+  id: string;
 
   @ApiProperty({
-    example: 'JavaScript Fundamentals',
-    description: 'Course title',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Training ID that this session belongs to',
   })
-  title: string;
+  id_trainings: string;
 
   @ApiProperty({
-    example: 'Complete JavaScript development course',
-    description: 'Course description',
-  })
-  description: string;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the formation this course belongs to',
-  })
-  id_formation: number;
-
-  @ApiProperty({
-    example: [1, 2],
-    description: 'Array of formateur IDs',
-  })
-  id_formateurs: number[];
-
-  @ApiProperty({
-    example: true,
-    description: 'Whether the course is active',
-  })
-  isActive: boolean;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Creation timestamp',
-  })
-  createdAt: string;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Last update timestamp',
-  })
-  updatedAt: string;
-}
-
-// Formation Response Schemas
-export class FormationResponse {
-  @ApiProperty({
-    example: 1,
-    description: 'Formation ID',
-  })
-  id: number;
-
-  @ApiProperty({
-    example: 'JavaScript Development',
-    description: 'Formation title',
+    example: 'Advanced React Development Session',
+    description: 'Title of the training session',
   })
   title: string;
 
   @ApiProperty({
-    example: 'Complete JavaScript development course',
-    description: 'Formation description',
+    example: 30,
+    description: 'Total number of places available',
   })
-  description: string;
+  nb_places: number;
 
   @ApiProperty({
-    example: 1,
-    description: 'ID of the category this formation belongs to',
+    example: 25,
+    description: 'Number of available places',
   })
-  id_category: number;
+  available_places: number;
 
   @ApiProperty({
-    example: 1500,
-    description: 'Formation price',
-  })
-  prix: number;
-
-  @ApiProperty({
-    example: 40,
-    description: 'Duration in hours',
-  })
-  duree: number;
-
-  @ApiProperty({
-    example: '2024-01-01',
-    description: 'Start date',
-  })
-  date_debut: string;
-
-  @ApiProperty({
-    example: '2024-06-30',
-    description: 'End date',
-  })
-  date_fin: string;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Creation timestamp',
-  })
-  createdAt: string;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Last update timestamp',
-  })
-  updatedAt: string;
-}
-
-// Session Response Schemas
-export class SessionResponse {
-  @ApiProperty({
-    example: 1,
-    description: 'Session ID',
-  })
-  id: number;
-
-  @ApiProperty({
-    example: 'Session Title',
-    description: 'Session title',
-  })
-  title: string;
-
-  @ApiProperty({
-    example: 'Session Description',
-    description: 'Session description',
-  })
-  description: string;
-
-  @ApiProperty({
-    example: '2024-01-01',
-    description: 'Session start date',
-  })
-  date_debut: string;
-
-  @ApiProperty({
-    example: '2024-06-30',
-    description: 'Session end date',
-  })
-  date_fin: string;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the course this session belongs to',
-  })
-  id_cours: number;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Creation timestamp',
-  })
-  createdAt: string;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Last update timestamp',
-  })
-  updatedAt: string;
-}
-
-// Session Document Response Schemas
-export class SessionDocumentResponse {
-  @ApiProperty({
-    example: 1,
-    description: 'Session document ID',
-  })
-  id: number;
-
-  @ApiProperty({
-    example: 'Session Document Title',
-    description: 'Session document title',
-  })
-  title: string;
-
-  @ApiProperty({
-    example: 'Description of the session document',
-    description: 'Session document description',
+    example: ['CV', 'Diploma', 'ID Card'],
+    description: 'List of required documents',
     required: false,
+    type: [String],
   })
-  description?: string;
+  required_document?: string[];
 
   @ApiProperty({
-    example: 'https://example.com/document.pdf',
-    description: 'Document attachment URL',
-  })
-  piece_jointe: string;
-
-  @ApiProperty({
-    example: 'pdf',
-    description: 'Document type',
+    example: ['Credit Card', 'Bank Transfer', 'OPCO'],
+    description: 'List of accepted payment methods',
     required: false,
+    type: [String],
   })
-  type?: string;
+  payment_method?: string[];
 
   @ApiProperty({
-    example: 'pendant',
-    description: 'Document category',
-    enum: ['pendant', 'durant', 'apres'],
-  })
-  category: string;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the session',
-  })
-  id_session: number;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the user who created it',
+    example: ['Experience Level', 'Learning Goals', 'Availability'],
+    description: 'List of survey questions',
     required: false,
+    type: [String],
   })
-  createdBy?: number;
+  survey?: string[];
+
+  @ApiProperty({
+    example:
+      'This training session follows our standard regulations and policies.',
+    description: 'Regulation text for the training session',
+  })
+  regulation_text: string;
+
+  @ApiProperty({
+    example: '2024-03-15T09:00:00.000Z',
+    description: 'Beginning date and time of the training session',
+  })
+  begining_date: string;
+
+  @ApiProperty({
+    example: '2024-03-20T17:00:00.000Z',
+    description: 'Ending date and time of the training session',
+  })
+  ending_date: string;
 
   @ApiProperty({
     example: '2025-01-15T10:30:00.000Z',
@@ -431,6 +287,25 @@ export class SessionDocumentResponse {
     description: 'Last update timestamp',
   })
   updatedAt: string;
+
+  @ApiProperty({
+    description: 'Associated training information',
+    type: 'object',
+    properties: {
+      title: { type: 'string', example: 'Advanced React Development' },
+      subtitle: { type: 'string', example: 'Learn advanced React concepts' },
+      description: {
+        type: 'string',
+        example:
+          'This comprehensive training covers advanced React concepts including hooks, context, performance optimization, and modern development practices.',
+      },
+    },
+  })
+  trainings: {
+    title: string;
+    subtitle: string;
+    description: string;
+  };
 }
 
 // Module de Formation Response Schemas
