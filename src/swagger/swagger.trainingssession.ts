@@ -32,6 +32,7 @@ export const TrainingSessionCreateApiOperation = () =>
   regulation_text: string;        // Required
   begining_date: string;          // Required (ISO date string)
   ending_date: string;            // Required (ISO date string)
+  cpf_link?: string;              // Optional (CPF link for the session)
 }
 \`\`\`
     `,

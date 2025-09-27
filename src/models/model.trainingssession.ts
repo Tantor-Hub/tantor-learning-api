@@ -96,6 +96,12 @@ export class TrainingSession extends Model<ITrainingSession> {
   ending_date: Date;
 
   @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  cpf_link?: string;
+
+  @Column({
     type: DataType.DATE,
     allowNull: true,
   })

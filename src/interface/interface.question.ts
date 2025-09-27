@@ -5,7 +5,7 @@ export interface QuestionOption {
 
 export interface SurveyQuestionData {
   id: string;
-  type: 'multiple_choice' | 'text' | 'rating' | 'yes_no';
+  type: 'multiple_choice' | 'text';
   question: string;
   options?: QuestionOption[]; // Only for multiple choice questions
   required: boolean;

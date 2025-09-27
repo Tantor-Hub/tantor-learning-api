@@ -120,4 +120,13 @@ export class CreateTrainingSessionDto {
   })
   @IsDateString()
   ending_date: string;
+
+  @ApiProperty({
+    example: 'https://cpf.example.com/session/123',
+    description: 'CPF link for the training session',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  cpf_link?: string;
 }

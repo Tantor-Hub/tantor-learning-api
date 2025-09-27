@@ -12,6 +12,7 @@ export interface ITrainingSession {
   regulation_text: string;
   begining_date: Date;
   ending_date: Date;
+  cpf_link?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

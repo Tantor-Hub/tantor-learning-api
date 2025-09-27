@@ -48,10 +48,10 @@ export class SurveyQuestionDataDto {
   @ApiProperty({
     example: 'multiple_choice',
     description: 'Type of question',
-    enum: ['multiple_choice', 'text', 'rating', 'yes_no'],
+    enum: ['multiple_choice', 'text'],
   })
-  @IsEnum(['multiple_choice', 'text', 'rating', 'yes_no'])
-  type: 'multiple_choice' | 'text' | 'rating' | 'yes_no';
+  @IsEnum(['multiple_choice', 'text'])
+  type: 'multiple_choice' | 'text';
 
   @ApiProperty({
     example: 'What is your current experience level with React?',
@@ -138,17 +138,24 @@ export class CreateSurveyQuestionSwaggerDto {
       },
       {
         id: 'q3',
-        type: 'rating',
-        question: 'Rate your satisfaction with the training (1-5)',
+        type: 'text',
+        question: 'What was your overall satisfaction with the training?',
         required: true,
         order: 3,
       },
       {
         id: 'q4',
-        type: 'yes_no',
+        type: 'multiple_choice',
         question: 'Would you recommend this training to others?',
+        options: [
+          { id: 'opt1', text: 'Yes, definitely' },
+          { id: 'opt2', text: 'Yes, probably' },
+          { id: 'opt3', text: 'No, probably not' },
+          { id: 'opt4', text: 'No, definitely not' },
+        ],
         required: true,
         order: 4,
+        maxSelections: 1,
       },
     ],
   })
@@ -285,7 +292,7 @@ export const SurveyQuestionApiOperations = {
   CREATE: {
     summary: 'Create a new survey question',
     description:
-      'Create a new survey question with support for multiple question types: multiple choice (with options), text input, rating scales, and yes/no questions. Each question can be marked as required and ordered within the survey.',
+      'Create a new survey question with support for multiple question types: multiple choice (with options) and text input. Each question can be marked as required and ordered within the survey.',
   },
   FIND_ALL: {
     summary: 'Get all survey questions',
@@ -387,20 +394,26 @@ export const SurveyQuestionExamples = {
     summary: 'Rating Scale Question',
     value: {
       id: 'q3',
-      type: 'rating',
-      question: 'Rate your current skill level in this subject (1-10)',
+      type: 'text',
+      question: 'Describe your current skill level in this subject',
       required: true,
       order: 3,
     },
   },
-  YES_NO: {
-    summary: 'Yes/No Question',
+  SINGLE_CHOICE: {
+    summary: 'Single Choice Question',
     value: {
       id: 'q4',
-      type: 'yes_no',
+      type: 'multiple_choice',
       question: 'Have you attended similar training before?',
+      options: [
+        { id: 'opt1', text: 'Yes, multiple times' },
+        { id: 'opt2', text: 'Yes, once' },
+        { id: 'opt3', text: 'No, this is my first time' },
+      ],
       required: true,
       order: 4,
+      maxSelections: 1,
     },
   },
   MULTIPLE_SELECTION: {

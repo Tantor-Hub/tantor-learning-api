@@ -26,7 +26,7 @@ export class JwtService {
           message: 'SignedIn with status successfuly',
           data: this.jwtService.sign(payload, {
             secret: this.configService.get<string>('APPJWTTOKEN'),
-            expiresIn: this.configService.get<string>('APPJWTMAXLIFE', '1h'),
+            expiresIn: this.configService.get<string>('APPJWTMAXLIFE', '24h'),
           }),
         });
       } catch (error) {
@@ -44,8 +44,8 @@ export class JwtService {
         ? this.configService.get<string>('APPJWTREFRESHTOKEN')
         : this.configService.get<string>('APPJWTTOKEN'),
       expiresIn: isRefres
-        ? this.configService.get<string>('APPJWTREFRESHLIFE', '1h')
-        : this.configService.get<string>('APPJWTMAXLIFE', '1h'),
+        ? this.configService.get<string>('APPJWTREFRESHLIFE', '24h')
+        : this.configService.get<string>('APPJWTMAXLIFE', '24h'),
     });
     let hashed = this.allServices.base64Econde(signature);
     for (let index = 0; index < this.round; index++)

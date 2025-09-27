@@ -21,7 +21,7 @@ import { JwtService } from 'src/services/service.jwt';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('APPJWTTOKEN', 'defaultSecret'),
         signOptions: {
-          expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h'),
+          expiresIn: configService.get<string>('APPJWTMAXLIFE', '24h'),
         },
       }),
     }),

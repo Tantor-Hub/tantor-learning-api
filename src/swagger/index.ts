@@ -9,4 +9,5 @@ export * from './swagger.moduledeformation';
 export * from './swagger.trainingssession';
 export * from './swagger.sessioncours';
 export * from './swagger.surveyquestion';
+export * from './swagger.event';
 export * from './swagger.responses';

@@ -2,18 +2,27 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SessionDocumentService } from './sessiondocument.service';
-import { SessionDocumentController } from './sessiondocument.controller';
-import { SessionDocument } from 'src/models/model.sessiondocument';
-import { Users } from 'src/models/model.users';
+import { EventService } from './event.service';
+import { EventController } from './event.controller';
+import { Event } from 'src/models/model.event';
+import { Training } from 'src/models/model.trainings';
 import { TrainingSession } from 'src/models/model.trainingssession';
-import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { SessionCours } from 'src/models/model.sessioncours';
+import { Lesson } from 'src/models/model.lesson';
+import { Users } from 'src/models/model.users';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionDocument, Users, TrainingSession]),
+    SequelizeModule.forFeature([
+      Event,
+      Training,
+      TrainingSession,
+      SessionCours,
+      Lesson,
+      Users,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -26,8 +35,8 @@ import { JwtService } from 'src/services/service.jwt';
       }),
     }),
   ],
-  controllers: [SessionDocumentController],
-  providers: [SessionDocumentService, AllSercices, JwtService],
-  exports: [SessionDocumentService],
+  controllers: [EventController],
+  providers: [EventService, AllSercices, JwtService],
+  exports: [EventService],
 })
-export class SessionDocumentModule {}
+export class EventModule {}

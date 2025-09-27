@@ -44,6 +44,8 @@ import { LessonModule } from './lesson/lesson.module';
 import { LessondocumentModule } from './lessondocument/lessondocument.module';
 import { SessionDocumentModule } from './sessiondocument/sessiondocument.module';
 import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
+import { EventModule } from './event/event.module';
+import { JwtStrategy } from './strategy/strategy.jwt';
 
 @Module({
   imports: [
@@ -92,6 +94,7 @@ import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
     SessionCoursModule,
     SessionDocumentModule,
     SurveyQuestionModule,
+    EventModule,
   ],
   providers: [
     AppService,
@@ -105,6 +108,7 @@ import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
     CryptoService,
     MailService,
     UsersService,
+    JwtStrategy,
     // Removed RolesService as roles module is deleted
     // RolesService,
   ],

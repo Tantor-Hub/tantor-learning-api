@@ -35,7 +35,6 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 @ApiTags('Survey Questions')
 @ApiBearerAuth()
 @Controller('surveyquestion')
-@UseGuards(JwtAuthGuard)
 export class SurveyQuestionController {
   constructor(private readonly surveyQuestionService: SurveyQuestionService) {}
 
@@ -84,15 +83,22 @@ export class SurveyQuestionController {
           questions: [
             {
               id: 'q1',
-              type: 'rating',
-              question: 'Rate your satisfaction with the training (1-5)',
+              type: 'text',
+              question: 'What was your overall satisfaction with the training?',
               required: true,
               order: 1,
             },
             {
               id: 'q2',
-              type: 'yes_no',
+              type: 'multiple_choice',
               question: 'Would you recommend this training to others?',
+              options: [
+                { id: 'opt1', text: 'Yes, definitely' },
+                { id: 'opt2', text: 'Yes, probably' },
+                { id: 'opt3', text: 'No, probably not' },
+                { id: 'opt4', text: 'No, definitely not' },
+              ],
+              maxSelections: 1,
               required: true,
               order: 2,
             },
@@ -311,8 +317,8 @@ export class SurveyQuestionController {
               },
               {
                 id: 'q3',
-                type: 'rating',
-                question: 'Rate your current skill level in React (1-10)',
+                type: 'text',
+                question: 'Describe your current skill level in React',
                 required: true,
                 order: 3,
               },
@@ -358,15 +364,22 @@ export class SurveyQuestionController {
             questions: [
               {
                 id: 'q1',
-                type: 'rating',
-                question: 'How well do you understand the current topic? (1-5)',
+                type: 'text',
+                question: 'How well do you understand the current topic?',
                 required: true,
                 order: 1,
               },
               {
                 id: 'q2',
-                type: 'yes_no',
+                type: 'multiple_choice',
                 question: 'Are you finding the pace appropriate?',
+                options: [
+                  { id: 'opt1', text: 'Yes, perfect pace' },
+                  { id: 'opt2', text: 'Yes, but could be faster' },
+                  { id: 'opt3', text: 'Yes, but could be slower' },
+                  { id: 'opt4', text: 'No, not appropriate' },
+                ],
+                maxSelections: 1,
                 required: true,
                 order: 2,
               },
@@ -410,9 +423,9 @@ export class SurveyQuestionController {
             questions: [
               {
                 id: 'q1',
-                type: 'rating',
+                type: 'text',
                 question:
-                  'Rate your overall satisfaction with the training (1-10)',
+                  'What was your overall satisfaction with the training?',
                 required: true,
                 order: 1,
               },
@@ -616,15 +629,21 @@ export class SurveyQuestionController {
             },
             {
               id: 'q3',
-              type: 'rating',
-              question: 'Rate your current skill level (1-10)',
+              type: 'text',
+              question: 'Describe your current skill level',
               required: true,
               order: 3,
             },
             {
               id: 'q4',
-              type: 'yes_no',
+              type: 'multiple_choice',
               question: 'Have you worked with React before?',
+              options: [
+                { id: 'opt1', text: 'Yes, extensively' },
+                { id: 'opt2', text: 'Yes, some experience' },
+                { id: 'opt3', text: 'No, this is my first time' },
+              ],
+              maxSelections: 1,
               required: true,
               order: 4,
             },
@@ -719,8 +738,8 @@ export class SurveyQuestionController {
           questions: [
             {
               id: 'q1',
-              type: 'rating',
-              question: 'Rate your current skill level (1-10)',
+              type: 'text',
+              question: 'Describe your current skill level',
               required: true,
               order: 1,
             },
