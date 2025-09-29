@@ -5,6 +5,7 @@ import { SessionCoursController } from './sessioncours.controller';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Users } from 'src/models/model.users';
 import { TrainingSession } from 'src/models/model.trainingssession';
+import { Lesson } from 'src/models/model.lesson';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AllSercices } from 'src/services/serices.all';
@@ -12,7 +13,7 @@ import { JwtService } from 'src/services/service.jwt';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionCours, Users, TrainingSession]),
+    SequelizeModule.forFeature([SessionCours, Users, TrainingSession, Lesson]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

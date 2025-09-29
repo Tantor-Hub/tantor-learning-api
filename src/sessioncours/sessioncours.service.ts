@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Users } from 'src/models/model.users';
 import { TrainingSession } from 'src/models/model.trainingssession';
+import { Lesson } from 'src/models/model.lesson';
 import { CreateSessionCoursDto } from './dto/create-sessioncours.dto';
 import { UpdateSessionCoursDto } from './dto/update-sessioncours.dto';
 import { ISessionCours } from 'src/interface/interface.sessioncours';
@@ -20,6 +21,8 @@ export class SessionCoursService {
     private readonly usersModel: typeof Users,
     @InjectModel(TrainingSession)
     private readonly trainingSessionModel: typeof TrainingSession,
+    @InjectModel(Lesson)
+    private readonly lessonModel: typeof Lesson,
   ) {}
 
   async create(
@@ -189,6 +192,84 @@ export class SessionCoursService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while retrieving session courses',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findByFormateurId(formateurId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours findByFormateurId: Starting ===');
+      console.log('Formateur ID:', formateurId);
+
+      const sessionCours = await this.sessionCoursModel.findAll({
+        where: {
+          id_formateur: {
+            [require('sequelize').Op.contains]: [formateurId],
+          },
+        },
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'is_published',
+          'id_session',
+          'id_formateur',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'CreatedBy',
+            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+          },
+          {
+            model: TrainingSession,
+            required: false,
+            as: 'trainingSession',
+            attributes: [
+              'id',
+              'title',
+              'nb_places',
+              'available_places',
+              'begining_date',
+              'ending_date',
+            ],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      console.log('=== SessionCours findByFormateurId: Success ===');
+      console.log('Session cours found:', sessionCours.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: sessionCours.length,
+          rows: sessionCours,
+        },
+        customMessage: 'Session courses retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours findByFormateurId: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message:
+            'Internal server error while retrieving session courses by formateur',
           errorType: error.name,
           errorMessage: error.message,
           timestamp: new Date().toISOString(),

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateTrainingSessionDto } from '../trainingssession/dto/create-trainingssession.dto';
 import { UpdateTrainingSessionDto } from '../trainingssession/dto/update-trainingssession.dto';
+import { UpdatePaymentDto } from '../trainingssession/dto/update-payment.dto';
 import { TrainingSessionResponse } from './swagger.responses';
 
 // TrainingSession Swagger Decorators
@@ -398,6 +399,76 @@ export const TrainingSessionDeleteApiResponse = () =>
         status: 200,
         data: { id: '550e8400-e29b-41d4-a716-446655440001' },
         message: 'Training session deleted successfully',
+      },
+    },
+  });
+
+// Payment Update API Decorators
+export const TrainingSessionUpdatePaymentApiOperation = () =>
+  ApiOperation({
+    summary: 'Update payment information for training session',
+    description: `
+**UpdatePaymentDto Structure:**
+\`\`\`typescript
+{
+  id: string;                    // Required: Training session UUID
+  payment_method?: string[];     // Optional: Array of payment methods
+  cpf_link?: string;            // Optional: CPF payment link
+}
+\`\`\`
+
+**Features:**
+- Updates only payment-related fields (payment_method and cpf_link)
+- Other training session data remains unchanged
+- Flexible: can update one or both payment fields
+- Full validation and error handling
+    `,
+  });
+
+export const TrainingSessionUpdatePaymentApiBody = () =>
+  ApiBody({
+    type: UpdatePaymentDto,
+    examples: {
+      updatePaymentMethods: {
+        summary: 'Update Payment Methods Only',
+        value: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          payment_method: ['Credit Card', 'Bank Transfer', 'PayPal'],
+        },
+      },
+      updateCpfLink: {
+        summary: 'Update CPF Link Only',
+        value: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          cpf_link: 'https://cpf.example.com/payment-link',
+        },
+      },
+      updateBoth: {
+        summary: 'Update Both Payment Fields',
+        value: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          payment_method: ['Credit Card', 'Bank Transfer'],
+          cpf_link: 'https://cpf.example.com/payment-link',
+        },
+      },
+    },
+  });
+
+export const TrainingSessionUpdatePaymentApiResponse = () =>
+  ApiResponse({
+    status: 200,
+    description: 'Payment information updated successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Payment information updated successfully',
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          title: 'React Training Session',
+          payment_method: ['Credit Card', 'Bank Transfer'],
+          cpf_link: 'https://cpf.example.com/payment-link',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+        },
       },
     },
   });

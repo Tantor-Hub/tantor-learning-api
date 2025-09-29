@@ -12,6 +12,7 @@ import {
 import { TrainingSessionService } from './trainingssession.service';
 import { CreateTrainingSessionDto } from './dto/create-trainingssession.dto';
 import { UpdateTrainingSessionDto } from './dto/update-trainingssession.dto';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import {
   ApiTags,
@@ -33,6 +34,9 @@ import {
   TrainingSessionFindOneApiParam,
   TrainingSessionUpdateApiOperation,
   TrainingSessionUpdateApiBody,
+  TrainingSessionUpdatePaymentApiOperation,
+  TrainingSessionUpdatePaymentApiBody,
+  TrainingSessionUpdatePaymentApiResponse,
   TrainingSessionDeleteApiOperation,
   TrainingSessionDeleteApiParam,
   TrainingSessionCreateApiResponse,
@@ -114,6 +118,19 @@ export class TrainingSessionController {
       updateTrainingSessionDto.id,
       updateTrainingSessionDto,
     );
+  }
+
+  @Patch('update-payment')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @TrainingSessionUpdatePaymentApiOperation()
+  @TrainingSessionUpdatePaymentApiBody()
+  @TrainingSessionUpdatePaymentApiResponse()
+  @TrainingSessionBadRequestApiResponse()
+  @TrainingSessionNotFoundApiResponse()
+  @TrainingSessionInternalServerErrorApiResponse()
+  updatePayment(@Body() updatePaymentDto: UpdatePaymentDto) {
+    return this.trainingSessionService.updatePayment(updatePaymentDto);
   }
 
   @Delete(':id')

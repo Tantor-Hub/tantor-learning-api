@@ -4,6 +4,7 @@ import { TrainingSession } from '../models/model.trainingssession';
 import { Training } from '../models/model.trainings';
 import { CreateTrainingSessionDto } from './dto/create-trainingssession.dto';
 import { UpdateTrainingSessionDto } from './dto/update-trainingssession.dto';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { IInternalResponse } from '../interface/interface.internalresponse';
 import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
@@ -276,6 +277,43 @@ export class TrainingSessionService {
         status: HttpStatusCode.InternalServerError,
         data: { message: error.message },
         customMessage: 'Error updating training session',
+      });
+    }
+  }
+
+  async updatePayment(updatePaymentDto: UpdatePaymentDto) {
+    try {
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        updatePaymentDto.id,
+      );
+      if (!trainingSession) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Training session not found',
+        });
+      }
+
+      // Only update payment-related fields
+      const updateData: any = {};
+      if (updatePaymentDto.payment_method !== undefined) {
+        updateData.payment_method = updatePaymentDto.payment_method;
+      }
+      if (updatePaymentDto.cpf_link !== undefined) {
+        updateData.cpf_link = updatePaymentDto.cpf_link;
+      }
+
+      await trainingSession.update(updateData);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: trainingSession,
+        customMessage: 'Payment information updated successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error updating payment information',
       });
     }
   }

@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
+import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { LessonService } from './lesson.service';
@@ -91,6 +92,61 @@ export class LessonController {
   })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.lessonService.findLessonById(id);
+  }
+
+  @Get('cours/:id/lessons')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get lessons by course ID' })
+  @ApiParam({ name: 'id', description: 'Course ID', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Lessons retrieved successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Lessons retrieved successfully',
+        data: {
+          length: 2,
+          rows: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              title: 'Introduction to Programming',
+              description: 'Basic concepts of programming',
+              duration: 60,
+              order: 1,
+              is_published: true,
+              createdAt: '2025-01-15T10:30:00.000Z',
+              updatedAt: '2025-01-15T10:30:00.000Z',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              title: 'Variables and Data Types',
+              description: 'Understanding variables and data types',
+              duration: 45,
+              order: 2,
+              is_published: true,
+              createdAt: '2025-01-15T11:30:00.000Z',
+              updatedAt: '2025-01-15T11:30:00.000Z',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - authentication required',
+    schema: {
+      example: {
+        status: 401,
+        message: "Aucune clé d'authentification n'a été fournie",
+        data: null,
+      },
+    },
+  })
+  async findLessonsByCoursId(@Param('id', ParseUUIDPipe) id: string) {
+    return this.lessonService.findLessonsByCoursId(id);
   }
 
   @Post('/create')

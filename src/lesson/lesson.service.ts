@@ -7,6 +7,8 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
+import { Responder } from 'src/strategy/strategy.responder';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
 
 @Injectable()
 export class LessonService {
@@ -60,6 +62,60 @@ export class LessonService {
     const lesson = await this.lessonModel.findByPk(id);
     if (lesson) {
       await lesson.destroy();
+    }
+  }
+
+  async findLessonsByCoursId(id: string) {
+    try {
+      console.log('=== Lesson findLessonsByCoursId: Starting ===');
+      console.log('Cours ID:', id);
+
+      const lessons = await this.lessonModel.findAll({
+        where: { id_cours: id },
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'duration',
+          'order',
+          'is_published',
+          'createdAt',
+          'updatedAt',
+        ],
+        order: [
+          ['order', 'ASC'],
+          ['createdAt', 'DESC'],
+        ],
+      });
+
+      console.log('=== Lesson findLessonsByCoursId: Success ===');
+      console.log('Lessons found:', lessons.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: lessons.length,
+          rows: lessons,
+        },
+        customMessage: 'Lessons retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Lesson findLessonsByCoursId: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving lessons by course',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
   }
 }

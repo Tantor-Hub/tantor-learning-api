@@ -9,13 +9,30 @@ import {
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
+import {
+  SessionCoursCreateApiResponse,
+  SessionCoursGetAllApiResponse,
+  SessionCoursFindBySessionIdApiResponse,
+  SessionCoursFindByFormateurIdApiResponse,
+  SessionCoursGetByIdApiResponse,
+  SessionCoursUpdateApiResponse,
+  SessionCoursDeleteApiResponse,
+} from '../swagger/swagger.sessioncours';
 import { SessionCoursService } from './sessioncours.service';
 import { CreateSessionCoursDto } from './dto/create-sessioncours.dto';
 import { UpdateSessionCoursDto } from './dto/update-sessioncours.dto';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @ApiTags('Session Courses')
 @Controller('sessioncours')
@@ -219,6 +236,16 @@ export class SessionCoursController {
   })
   async findBySessionId(@Param('sessionId') sessionId: string) {
     return this.sessionCoursService.findBySessionId(sessionId);
+  }
+
+  @Get('formateur/:formateurId')
+  @UseGuards(JwtAuthGuardAsSuperviseur)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get session courses by formateur ID' })
+  @ApiParam({ name: 'formateurId', description: 'Formateur ID', type: String })
+  @SessionCoursFindByFormateurIdApiResponse()
+  async findByFormateurId(@Param('formateurId') formateurId: string) {
+    return this.sessionCoursService.findByFormateurId(formateurId);
   }
 
   @Get(':id')
