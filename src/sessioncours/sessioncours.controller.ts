@@ -248,6 +248,79 @@ export class SessionCoursController {
     return this.sessionCoursService.findByFormateurId(formateurId);
   }
 
+  @Get(':id/lessons')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiOperation({ summary: 'Get lessons by session course ID' })
+  @ApiParam({ name: 'id', description: 'Session course ID', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Lessons retrieved successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Lessons retrieved successfully',
+        data: {
+          length: 3,
+          rows: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              title: 'Introduction to React',
+              description: 'Basic concepts of React framework',
+              id_cours: '550e8400-e29b-41d4-a716-446655440000',
+              createdAt: '2025-01-25T10:00:00.000Z',
+              updatedAt: '2025-01-25T10:00:00.000Z',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440002',
+              title: 'React Components',
+              description: 'Understanding React components and props',
+              id_cours: '550e8400-e29b-41d4-a716-446655440000',
+              createdAt: '2025-01-25T11:00:00.000Z',
+              updatedAt: '2025-01-25T11:00:00.000Z',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440003',
+              title: 'React State Management',
+              description: 'Managing state in React applications',
+              id_cours: '550e8400-e29b-41d4-a716-446655440000',
+              createdAt: '2025-01-25T12:00:00.000Z',
+              updatedAt: '2025-01-25T12:00:00.000Z',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session course not found',
+    schema: {
+      example: {
+        status: 404,
+        message: 'Session course not found',
+        data: null,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        data: {
+          message: 'Internal server error while retrieving lessons',
+          errorType: 'SequelizeDatabaseError',
+          errorMessage: 'Error message',
+          timestamp: '2025-01-25T10:00:00.000Z',
+        },
+      },
+    },
+  })
+  async findLessonsByCourseId(@Param('id', ParseUUIDPipe) id: string) {
+    return this.sessionCoursService.findLessonsByCourseId(id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiOperation({ summary: 'Get a session course by ID' })

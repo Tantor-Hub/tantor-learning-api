@@ -509,4 +509,63 @@ export class SessionCoursService {
       });
     }
   }
+
+  async findLessonsByCourseId(id_cours: string): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours findLessonsByCourseId: Starting ===');
+      console.log('Course ID:', id_cours);
+
+      // First, validate that the session course exists
+      const sessionCours = await this.sessionCoursModel.findByPk(id_cours);
+      if (!sessionCours) {
+        console.log('=== SessionCours findLessonsByCourseId: Course not found ===');
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session course not found',
+        });
+      }
+
+      const lessons = await this.lessonModel.findAll({
+        where: { id_cours: id_cours },
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'id_cours',
+          'createdAt',
+          'updatedAt',
+        ],
+        order: [['createdAt', 'ASC']],
+      });
+
+      console.log('=== SessionCours findLessonsByCourseId: Success ===');
+      console.log('Lessons found:', lessons.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: lessons.length,
+          rows: lessons,
+        },
+        customMessage: 'Lessons retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours findLessonsByCourseId: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving lessons',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
 }
