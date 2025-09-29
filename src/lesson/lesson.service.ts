@@ -76,16 +76,11 @@ export class LessonService {
           'id',
           'title',
           'description',
-          'duration',
-          'order',
-          'is_published',
+          'id_cours',
           'createdAt',
           'updatedAt',
         ],
-        order: [
-          ['order', 'ASC'],
-          ['createdAt', 'DESC'],
-        ],
+        order: [['createdAt', 'ASC']],
       });
 
       console.log('=== Lesson findLessonsByCoursId: Success ===');
