@@ -23,6 +23,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "pre-commit": "node -e \"require('child_process').execSync('scripts/pre-commit-check.bat', {stdio: 'inherit'})\"",
+    "security-audit": "npm audit --audit-level=moderate",
+    "type-check": "tsc --noEmit",
     "dev:hot": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts",
     "postinstall": "npm rebuild --arch=x64 --platform=linux sharp"
   },
