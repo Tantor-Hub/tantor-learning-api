@@ -32,6 +32,7 @@ import { DeleteLessonDto } from './dto/delete-lesson.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GoogleDriveService } from 'src/services/service.googledrive';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @ApiTags('Lessons')
 @Controller('lesson')
@@ -41,7 +42,7 @@ export class LessonController {
     private readonly googleDriveService: GoogleDriveService,
   ) {}
 
-  @Get()
+  @Get('getall')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all lessons' })
@@ -95,7 +96,7 @@ export class LessonController {
   }
 
   @Get('cours/:id/lessons')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsSuperviseur)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get lessons by course ID' })
   @ApiParam({ name: 'id', description: 'Course ID', type: String })
