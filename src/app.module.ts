@@ -45,6 +45,7 @@ import { LessondocumentModule } from './lessondocument/lessondocument.module';
 import { SessionDocumentModule } from './sessiondocument/sessiondocument.module';
 import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
 import { EventModule } from './event/event.module';
+import { ChatModule } from './chat/chat.module';
 import { JwtStrategy } from './strategy/strategy.jwt';
 
 @Module({
@@ -95,6 +96,7 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     SessionDocumentModule,
     SurveyQuestionModule,
     EventModule,
+    ChatModule,
   ],
   providers: [
     AppService,
