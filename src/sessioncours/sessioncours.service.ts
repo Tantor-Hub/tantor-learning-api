@@ -518,7 +518,9 @@ export class SessionCoursService {
       // First, validate that the session course exists
       const sessionCours = await this.sessionCoursModel.findByPk(id_cours);
       if (!sessionCours) {
-        console.log('=== SessionCours findLessonsByCourseId: Course not found ===');
+        console.log(
+          '=== SessionCours findLessonsByCourseId: Course not found ===',
+        );
         return Responder({
           status: HttpStatusCode.NotFound,
           customMessage: 'Session course not found',
