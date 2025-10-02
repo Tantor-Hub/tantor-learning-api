@@ -28,7 +28,7 @@ export class SessionDocumentService {
     try {
       // Validate that the student exists
       const student = await this.userModel.findOne({
-        where: { uuid: createSessionDocumentDto.id_student },
+        where: { id: createSessionDocumentDto.id_student },
       });
       if (!student) {
         return Responder({
@@ -74,7 +74,7 @@ export class SessionDocumentService {
           {
             model: Users,
             as: 'student',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: TrainingSession,
@@ -106,7 +106,7 @@ export class SessionDocumentService {
           {
             model: Users,
             as: 'student',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: TrainingSession,
@@ -154,7 +154,7 @@ export class SessionDocumentService {
       // If updating student, validate that the student exists
       if (updateSessionDocumentDto.id_student) {
         const student = await this.userModel.findOne({
-          where: { uuid: updateSessionDocumentDto.id_student },
+          where: { id: updateSessionDocumentDto.id_student },
         });
         if (!student) {
           return Responder({
@@ -254,7 +254,7 @@ export class SessionDocumentService {
           {
             model: Users,
             as: 'student',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],

@@ -34,7 +34,7 @@ export class StudentSessionService {
 
       // Verify that the student (user) exists
       const student = await this.usersModel.findOne({
-        where: { uuid: createStudentSessionDto.id_student },
+        where: { id: createStudentSessionDto.id_student },
       });
       if (!student) {
         return Responder({
@@ -82,7 +82,7 @@ export class StudentSessionService {
             {
               model: Users,
               as: 'student',
-              attributes: ['id', 'uuid', 'fs_name', 'ls_name', 'email'],
+              attributes: ['id', 'firstName', 'lastName', 'email'],
             },
           ],
         },
@@ -114,7 +114,7 @@ export class StudentSessionService {
           {
             model: Users,
             as: 'student',
-            attributes: ['uuid', 'fs_name', 'ls_name'],
+            attributes: ['id', 'firstName', 'lastName'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -153,7 +153,7 @@ export class StudentSessionService {
           {
             model: Users,
             as: 'student',
-            attributes: ['id', 'uuid_user', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
       });
@@ -205,7 +205,7 @@ export class StudentSessionService {
       // If updating student reference, verify it exists
       if (updateStudentSessionDto.id_student) {
         const student = await this.usersModel.findOne({
-          where: { uuid: updateStudentSessionDto.id_student },
+          where: { id: updateStudentSessionDto.id_student },
         });
         if (!student) {
           return Responder({
@@ -237,7 +237,7 @@ export class StudentSessionService {
             {
               model: Users,
               as: 'student',
-              attributes: ['id', 'uuid', 'fs_name', 'ls_name', 'email'],
+              attributes: ['id', 'firstName', 'lastName', 'email'],
             },
           ],
         },
@@ -298,7 +298,7 @@ export class StudentSessionService {
           {
             model: Users,
             as: 'student',
-            attributes: ['id', 'uuid_user', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'ASC']],
@@ -340,7 +340,7 @@ export class StudentSessionService {
           {
             model: Users,
             as: 'student',
-            attributes: ['id', 'uuid_user', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],

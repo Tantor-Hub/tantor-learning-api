@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op, literal } from 'sequelize';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Users } from 'src/models/model.users';
 import { TrainingSession } from 'src/models/model.trainingssession';
@@ -36,7 +37,7 @@ export class SessionCoursService {
 
       const sessionCoursData: Omit<ISessionCours, 'id'> = {
         ...createSessionCoursDto,
-        createdBy: user.uuid_user,
+        createdBy: user.id_user,
       };
 
       const createdSessionCours =
@@ -91,7 +92,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: TrainingSession,
@@ -200,15 +201,17 @@ export class SessionCoursService {
     }
   }
 
-  async findByFormateurId(formateurId: string): Promise<ResponseServer> {
+  async findByFormateurId(user: IJwtSignin): Promise<ResponseServer> {
     try {
       console.log('=== SessionCours findByFormateurId: Starting ===');
-      console.log('Formateur ID:', formateurId);
+      console.log('User:', user);
+      console.log('Formateur ID from token:', user.id_user);
 
+      // Filter session courses where the current user is assigned as instructor
       const sessionCours = await this.sessionCoursModel.findAll({
         where: {
           id_formateur: {
-            [require('sequelize').Op.contains]: [formateurId],
+            [Op.contains]: [user.id_user],
           },
         },
         attributes: [
@@ -227,26 +230,20 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: TrainingSession,
             required: false,
             as: 'trainingSession',
-            attributes: [
-              'id',
-              'title',
-              'nb_places',
-              'available_places',
-              'begining_date',
-              'ending_date',
-            ],
+            attributes: ['id', 'title', 'description', 'startDate', 'endDate'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       console.log('=== SessionCours findByFormateurId: Success ===');
+      console.log('Session cours found:', sessionCours);
       console.log('Session cours found:', sessionCours.length);
 
       return Responder({
@@ -300,7 +297,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: TrainingSession,
@@ -374,9 +371,9 @@ export class SessionCoursService {
       }
 
       // Check if user has permission (same as course creator or secretary)
-      if (sessionCours.createdBy !== user.uuid_user) {
+      if (sessionCours.createdBy !== user.id_user) {
         const dbUser = await this.usersModel.findOne({
-          where: { uuid: user.uuid_user },
+          where: { id: user.id_user },
         });
 
         if (!dbUser || dbUser.role !== 'secretary') {
@@ -406,7 +403,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: TrainingSession,
@@ -468,9 +465,9 @@ export class SessionCoursService {
       }
 
       // Check if user has permission (same as course creator or secretary)
-      if (sessionCours.createdBy !== user.uuid_user) {
+      if (sessionCours.createdBy !== user.id_user) {
         const dbUser = await this.usersModel.findOne({
-          where: { uuid: user.uuid_user },
+          where: { id: user.id_user },
         });
 
         if (!dbUser || dbUser.role !== 'secretary') {
