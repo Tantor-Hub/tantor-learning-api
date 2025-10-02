@@ -45,10 +45,9 @@ export interface IChatResponse {
   createdAt: Date;
   updatedAt: Date;
   sender?: {
-    id: number;
-    fs_name: string;
-    ls_name: string;
+    id: string;
+    firstName: string;
+    lastName: string;
     email: string;
-    uuid: string;
   };
 }
