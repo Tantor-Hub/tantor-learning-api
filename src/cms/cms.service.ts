@@ -56,28 +56,14 @@ export class CmsService {
           {
             model: Users,
             as: 'Sender',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [],
           },
           {
             model: Users,
             as: 'Receiver',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [],
           },
@@ -85,8 +71,8 @@ export class CmsService {
         where: {
           thread: thread,
           [Op.and]: [
-            literal(`NOT (${id_user} = ANY("is_deletedto"))`),
-            literal(`NOT (${id_user} = ANY("is_archievedto"))`),
+            literal(`NOT ('${id_user}' = ANY("is_deletedto"))`),
+            literal(`NOT ('${id_user}' = ANY("is_archievedto"))`),
           ],
         },
       })
@@ -118,28 +104,14 @@ export class CmsService {
           {
             model: Users,
             as: 'Sender',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [],
           },
           {
             model: Users,
             as: 'Receiver',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [
               {
@@ -164,28 +136,14 @@ export class CmsService {
               {
                 model: Users,
                 as: 'Sender',
-                attributes: [
-                  'id',
-                  'fs_name',
-                  'ls_name',
-                  'nick_name',
-                  'email',
-                  'phone',
-                ],
+                attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
                 required: true,
                 include: [],
               },
               {
                 model: Users,
                 as: 'Receiver',
-                attributes: [
-                  'id',
-                  'fs_name',
-                  'ls_name',
-                  'nick_name',
-                  'email',
-                  'phone',
-                ],
+                attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
                 required: true,
                 include: [
                   {
@@ -292,7 +250,7 @@ export class CmsService {
           content,
           date_d_envoie: this.allSercices.nowDate(),
           id_user_sender: id_user,
-          id_user_receiver: id_user_receiver || 0,
+          id_user_receiver: id_user_receiver || '',
           is_readed: 0,
           piece_jointe: piece_jointe || null,
           is_replied_to,
@@ -336,28 +294,14 @@ export class CmsService {
           {
             model: Users,
             as: 'Sender',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [],
           },
           {
             model: Users,
             as: 'Receiver',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [],
           },
@@ -393,14 +337,7 @@ export class CmsService {
           {
             model: Users,
             as: 'Sender',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [
               {
@@ -415,14 +352,7 @@ export class CmsService {
           {
             model: Users,
             as: 'Receiver',
-            attributes: [
-              'id',
-              'fs_name',
-              'ls_name',
-              'nick_name',
-              'email',
-              'phone',
-            ],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
             required: true,
             include: [
               {
