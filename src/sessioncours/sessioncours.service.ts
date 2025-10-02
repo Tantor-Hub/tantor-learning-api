@@ -236,7 +236,7 @@ export class SessionCoursService {
             model: TrainingSession,
             required: false,
             as: 'trainingSession',
-            attributes: ['id', 'title', 'description', 'startDate', 'endDate'],
+            attributes: ['id', 'title', 'begining_date', 'ending_date'],
           },
         ],
         order: [['createdAt', 'DESC']],
