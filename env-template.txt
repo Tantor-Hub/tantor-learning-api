@@ -1,0 +1,25 @@
+# Database Configuration Template
+# Copy this content to your .env file and update with your actual database credentials
+
+APP_BD_DIALECT=postgres
+APP_BD_HOST=localhost
+APP_BD_PORT=5432
+APP_BD_USERNAME=postgres
+APP_BD_PASSWORD=your_new_password_here
+APP_BD_NAME=your_database_name_here
+APP_BD_NAME_TEST=your_test_database_name_here
+APP_BD_SSL=false
+
+# Application Configuration
+NODE_ENV=development
+PORT=3737
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_here
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name_here
+CLOUDINARY_API_KEY=your_cloudinary_api_key_here
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret_here
+
+# Other environment variables as needed

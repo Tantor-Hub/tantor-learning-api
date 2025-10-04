@@ -1,8 +1,7 @@
 export const userColumns: string[] = [
   'id',
-  'fs_name',
-  'ls_name',
-  'nick_name',
+  'firstName',
+  'lastName',
   'email',
   'phone',
   'avatar',

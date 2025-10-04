@@ -34,10 +34,10 @@ export class Chat extends Model<Chat> {
   @Column({ type: DataType.UUID, allowNull: false })
   id_user_sender: string;
 
-  @Column({ 
-    type: DataType.ARRAY(DataType.UUID), 
+  @Column({
+    type: DataType.ARRAY(DataType.UUID),
     allowNull: false,
-    defaultValue: []
+    defaultValue: [],
   })
   id_user_receiver: string[];
 
@@ -49,10 +49,10 @@ export class Chat extends Model<Chat> {
   @Column({ type: DataType.TEXT })
   content?: string;
 
-  @Column({ 
-    type: DataType.ARRAY(DataType.UUID), 
+  @Column({
+    type: DataType.ARRAY(DataType.UUID),
     allowNull: true,
-    defaultValue: []
+    defaultValue: [],
   })
   reader?: string[];
 
@@ -63,20 +63,20 @@ export class Chat extends Model<Chat> {
   })
   status: ChatStatus;
 
-  @Column({ 
-    type: DataType.ARRAY(DataType.UUID), 
+  @Column({
+    type: DataType.ARRAY(DataType.UUID),
     allowNull: true,
-    defaultValue: []
+    defaultValue: [],
   })
   dontshowme?: string[];
 
-  @Column({ 
-    type: DataType.ARRAY(DataType.STRING), 
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
     allowNull: true,
-    defaultValue: []
+    defaultValue: [],
   })
   piece_joint?: string[];
 
-  @BelongsTo(() => Users, { foreignKey: 'id_user_sender' })
+  @BelongsTo(() => Users, { foreignKey: 'id_user_sender', targetKey: 'id' })
   sender: Users;
 }

@@ -6,6 +6,8 @@ import {
   AllowNull,
   PrimaryKey,
   BelongsToMany,
+  ForeignKey,
+  BelongsTo,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IEvent } from 'src/interface/interface.event';
@@ -39,28 +41,40 @@ export class Event extends Model<IEvent> {
   id_cible_training?: string[];
 
   @AllowNull(true)
-  @Column(DataType.ARRAY(DataType.UUID))
-  id_cible_session?: string[];
+  @Column(DataType.UUID)
+  @ForeignKey(() => TrainingSession)
+  id_cible_session?: string;
 
   @AllowNull(true)
-  @Column(DataType.ARRAY(DataType.UUID))
-  id_cible_cours?: string[];
+  @Column(DataType.UUID)
+  @ForeignKey(() => SessionCours)
+  id_cible_cours?: string;
 
   @AllowNull(true)
-  @Column(DataType.ARRAY(DataType.UUID))
-  id_cible_lesson?: string[];
+  @Column(DataType.UUID)
+  @ForeignKey(() => Lesson)
+  id_cible_lesson?: string;
 
   @AllowNull(true)
   @Column(DataType.ARRAY(DataType.UUID))
   id_cible_user?: string[];
 
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  @ForeignKey(() => Users)
+  createdBy?: string;
+
   @AllowNull(false)
   @Column(DataType.DATE)
   begining_date: Date;
 
-  @AllowNull(true)
-  @Column(DataType.DATE)
-  ending_date?: Date;
+  @AllowNull(false)
+  @Column(DataType.STRING)
+  beginning_hour: string;
+
+  @AllowNull(false)
+  @Column(DataType.STRING)
+  ending_hour: string;
 
   @Column({
     type: DataType.DATE,
@@ -82,29 +96,26 @@ export class Event extends Model<IEvent> {
   })
   trainings?: Training[];
 
-  // Relationships - Many-to-Many with TrainingSession
-  @BelongsToMany(() => TrainingSession, {
-    through: 'EventTrainingSession',
-    foreignKey: 'eventId',
-    otherKey: 'sessionId',
+  // Relationship - Belongs to TrainingSession
+  @BelongsTo(() => TrainingSession, {
+    foreignKey: 'id_cible_session',
+    targetKey: 'id',
   })
-  trainingSessions?: TrainingSession[];
+  trainingSession?: TrainingSession;
 
-  // Relationships - Many-to-Many with SessionCours
-  @BelongsToMany(() => SessionCours, {
-    through: 'EventSessionCours',
-    foreignKey: 'eventId',
-    otherKey: 'coursId',
+  // Relationship - Belongs to SessionCours
+  @BelongsTo(() => SessionCours, {
+    foreignKey: 'id_cible_cours',
+    targetKey: 'id',
   })
-  sessionCours?: SessionCours[];
+  sessionCours?: SessionCours;
 
-  // Relationships - Many-to-Many with Lesson
-  @BelongsToMany(() => Lesson, {
-    through: 'EventLesson',
-    foreignKey: 'eventId',
-    otherKey: 'lessonId',
+  // Relationship - Belongs to Lesson
+  @BelongsTo(() => Lesson, {
+    foreignKey: 'id_cible_lesson',
+    targetKey: 'id',
   })
-  lessons?: Lesson[];
+  lesson?: Lesson;
 
   // Relationships - Many-to-Many with Users
   @BelongsToMany(() => Users, {
@@ -113,4 +124,11 @@ export class Event extends Model<IEvent> {
     otherKey: 'userId',
   })
   users?: Users[];
+
+  // Relationship - Belongs to User (Creator)
+  @BelongsTo(() => Users, {
+    foreignKey: 'createdBy',
+    targetKey: 'id',
+  })
+  creator?: Users;
 }

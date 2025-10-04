@@ -178,14 +178,14 @@ export class AllSercices {
   formatRoles(roles: any[]): string[] {
     return roles.map((role) => role?.role);
   }
-  buildClauseMessage(groupe: number, id_user: number): any {
+  buildClauseMessage(groupe: number, id_user: string): any {
     switch (groupe) {
       case 1: // Messages envoyés, ni archivés ni supprimés
         return {
           id_user_sender: id_user,
           [Op.and]: [
-            literal(`NOT (${id_user} = ANY("is_deletedto"))`),
-            literal(`NOT (${id_user} = ANY("is_archievedto"))`),
+            literal(`NOT ('${id_user}' = ANY("is_deletedto"))`),
+            literal(`NOT ('${id_user}' = ANY("is_archievedto"))`),
           ],
         };
 
@@ -193,8 +193,8 @@ export class AllSercices {
         return {
           [Op.or]: [{ id_user_sender: id_user }, { id_user_receiver: id_user }],
           [Op.and]: [
-            literal(`${id_user} = ANY("is_archievedto")`),
-            literal(`NOT (${id_user} = ANY("is_deletedto"))`),
+            literal(`'${id_user}' = ANY("is_archievedto")`),
+            literal(`NOT ('${id_user}' = ANY("is_deletedto"))`),
           ],
         };
 
@@ -202,15 +202,15 @@ export class AllSercices {
         return {
           id_user_receiver: id_user,
           [Op.and]: [
-            literal(`NOT (${id_user} = ANY("is_deletedto"))`),
-            literal(`NOT (${id_user} = ANY("is_archievedto"))`),
+            literal(`NOT ('${id_user}' = ANY("is_deletedto"))`),
+            literal(`NOT ('${id_user}' = ANY("is_archievedto"))`),
           ],
         };
 
       case 4: // Messages supprimés
         return {
           [Op.or]: [{ id_user_sender: id_user }, { id_user_receiver: id_user }],
-          [Op.and]: [literal(`${id_user} = ANY("is_deletedto")`)],
+          [Op.and]: [literal(`'${id_user}' = ANY("is_deletedto")`)],
         };
 
       case 5:

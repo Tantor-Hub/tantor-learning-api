@@ -65,14 +65,6 @@ export class RegisterPasswordlessDto {
   city?: string;
 
   @ApiProperty({
-    example: 123456789,
-    description: 'Identity number',
-    default: 123456789,
-  })
-  @IsOptional()
-  identityNumber?: number;
-
-  @ApiProperty({
     example: '1990-01-01',
     description: 'Date of birth',
     default: '1990-01-01',

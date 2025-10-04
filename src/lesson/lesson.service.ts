@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Lesson } from 'src/models/model.lesson';
 import { Users } from 'src/models/model.users';
@@ -25,16 +25,41 @@ export class LessonService {
     createLessonDto: CreateLessonDto,
     user: IJwtSignin,
   ): Promise<Lesson> {
-    return this.lessonModel.create({
+    console.log('=== createLesson: Starting ===');
+    console.log('id_cours:', createLessonDto.id_cours);
+    console.log('user:', user);
+
+    // Check if the SessionCours exists
+    const sessionCours = await this.sessionCoursModel.findByPk(
+      createLessonDto.id_cours,
+    );
+    console.log('sessionCours found:', !!sessionCours);
+    if (sessionCours) {
+      console.log('sessionCours id:', sessionCours.id);
+    }
+
+    if (!sessionCours) {
+      console.log(
+        '=== createLesson: SessionCours not found, throwing error ===',
+      );
+      throw new BadRequestException(
+        `SessionCours with id ${createLessonDto.id_cours} does not exist.`,
+      );
+    }
+
+    console.log('=== createLesson: Creating lesson ===');
+    const lesson = await this.lessonModel.create({
       ...createLessonDto,
       createdBy: (user as any).id,
     });
+    console.log('=== createLesson: Lesson created successfully ===');
+    return lesson;
   }
 
   async findAllLessons(): Promise<Lesson[]> {
     return this.lessonModel.findAll({
       include: [
-        { model: Users, as: 'CreatedBy' },
+        { model: Users, as: 'creator' },
         { model: SessionCours, as: 'sessionCours' },
       ],
     });
@@ -43,7 +68,7 @@ export class LessonService {
   async findLessonById(id: string): Promise<Lesson | null> {
     return this.lessonModel.findByPk(id, {
       include: [
-        { model: Users, as: 'CreatedBy' },
+        { model: Users, as: 'creator' },
         { model: SessionCours, as: 'sessionCours' },
       ],
     });

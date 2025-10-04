@@ -11,6 +11,7 @@ import {
 import { tables } from 'src/config/config.tablesname';
 import { IListlesson } from 'src/interface/interface.lesson';
 import { SessionCours } from './model.sessioncours';
+import { Users } from './model.users';
 
 @Table({ tableName: tables['lesson'] })
 export class Lesson extends Model<IListlesson> {
@@ -37,4 +38,11 @@ export class Lesson extends Model<IListlesson> {
 
   @BelongsTo(() => SessionCours, 'id_cours')
   sessionCours: SessionCours;
+
+  @ForeignKey(() => Users)
+  @Column(DataType.UUID)
+  createdBy: string;
+
+  @BelongsTo(() => Users, { foreignKey: 'createdBy', targetKey: 'id' })
+  creator: Users;
 }

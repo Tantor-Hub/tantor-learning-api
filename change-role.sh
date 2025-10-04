@@ -56,4 +56,6 @@ else
 
 
 
-# Invoke-WebRequest -Uri http://localhost:3737/api/users/change-role -Method PUT -ContentType "application/json" -Body '{"email": "birushandegeya@gmail.com", "role": "admin"}'
+# Invoke-WebRequest -Uri http://localhost:3737/api/users/change-role -Method PUT -ContentType "application/json" -Body '{"email": "birushandegeya@gmail.com", "role": "instructor"}'
+
+# cloudflared tunnel --url http://localhost:3737

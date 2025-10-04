@@ -39,7 +39,7 @@ export class StripeService {
         currency: createPaymentDto.currency,
         payment_method_types: ['card'],
         metadata: {
-          userId: user.id_user.toString(),
+          userId: user.id_user,
           sessionId: createPaymentDto.session_id.toString(),
         },
       });
@@ -127,8 +127,8 @@ export class StripeService {
       console.log('Creating payment record...');
       return this.payementModel
         .create({
-          id_session: session_id as number,
-          id_session_student: (session?.id as number) || 0,
+          id_session: session_id,
+          id_session_student: (session?.id as string) || '',
           id_user: student.id_user,
           full_name,
           card_number,
@@ -148,8 +148,8 @@ export class StripeService {
             const p = await this.serviceMail.onPayementSession({
               to: user.email,
               fullname: this.allServices.fullName({
-                fs: user.fs_name,
-                ls: user.ls_name,
+                fs: user.firstName,
+                ls: user.lastName,
               }),
               session: (sess?.designation as string) || 'Unknown Session',
               amount: (sess?.prix as number) || 0,
@@ -228,7 +228,7 @@ export class StripeService {
       return this.payementOpcoModel
         .create({
           id_session: session_id,
-          id_session_student: (userSession?.id as number) || 0,
+          id_session_student: (userSession?.id as string) || '',
           id_user: user.id_user,
           nom_opco,
           nom_entreprise,
@@ -242,8 +242,8 @@ export class StripeService {
             const p = await this.serviceMail.onPayementSession({
               to: student.email,
               fullname: this.allServices.fullName({
-                fs: student.fs_name,
-                ls: student.ls_name,
+                fs: student.firstName,
+                ls: student.lastName,
               }),
               session: (sess?.designation as string) || 'Unknown Session',
               amount: (sess?.prix as number) || 0,
@@ -321,7 +321,7 @@ export class StripeService {
           {
             model: Users,
             required: true,
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
       });
@@ -332,7 +332,7 @@ export class StripeService {
           {
             model: Users,
             required: true,
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
       });

@@ -44,7 +44,7 @@ export class StudentSession extends Model<IStudentSession> {
 
   @BelongsTo(() => Users, {
     foreignKey: 'id_student',
-    targetKey: 'uuid',
+    targetKey: 'id',
   })
   student: Users;
 

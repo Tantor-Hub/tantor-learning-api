@@ -9,6 +9,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
+import { GoogleDriveService } from 'src/services/service.googledrive';
+import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 
 @Module({
   imports: [
@@ -26,7 +28,13 @@ import { AllSercices } from 'src/services/serices.all';
     }),
   ],
   controllers: [LessondocumentController],
-  providers: [LessondocumentService, JwtService, AllSercices],
+  providers: [
+    LessondocumentService,
+    JwtService,
+    AllSercices,
+    GoogleDriveService,
+    JwtAuthGuardAsInstructor,
+  ],
   exports: [LessondocumentService],
 })
 export class LessondocumentModule {}

@@ -210,12 +210,10 @@ export const SessionCoursFindBySessionIdApiResponse = () =>
 // Get SessionCours by Formateur ID
 export const SessionCoursFindByFormateurIdApiResponse = () =>
   applyDecorators(
-    ApiOperation({ summary: 'Get all session courses by formateur ID' }),
-    ApiParam({
-      name: 'formateurId',
-      description: 'Formateur (trainer/instructor) ID',
-      example: '1',
+    ApiOperation({
+      summary: 'Get session courses for the authenticated formateur',
     }),
+    ApiBearerAuth(),
     ApiResponse({
       status: 200,
       description: 'Session courses retrieved successfully',

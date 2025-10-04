@@ -31,14 +31,14 @@ export class Payementopco extends Model<IPayementopco> {
   email_responsable: string;
 
   @ForeignKey(() => Users)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_user: number;
+  @Column({ type: DataType.UUID, allowNull: false })
+  id_user: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_session: number;
+  @Column({ type: DataType.UUID, allowNull: false })
+  id_session: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  id_session_student: number;
+  @Column({ type: DataType.UUID, allowNull: false })
+  id_session_student: string;
 
   @Column({
     type: DataType.INTEGER,
@@ -47,6 +47,6 @@ export class Payementopco extends Model<IPayementopco> {
   })
   status: number;
 
-  @BelongsTo(() => Users)
+  @BelongsTo(() => Users, { foreignKey: 'id_user', targetKey: 'id' })
   Student: Users;
 }

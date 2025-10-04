@@ -24,6 +24,8 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { RepliesChatStatus } from 'src/models/model.replieschat';
+import { User } from 'src/strategy/strategy.globaluser';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @ApiTags('RepliesChat')
 @Controller('replieschat')
@@ -32,9 +34,13 @@ import { RepliesChatStatus } from 'src/models/model.replieschat';
 export class RepliesChatController {
   constructor(private readonly repliesChatService: RepliesChatService) {}
 
-  @Post()
+  @Post('create')
   @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Create a new reply to a chat message' })
+  @ApiOperation({
+    summary: 'Create a new reply to a chat message',
+    description:
+      "Create a new reply to a chat message. The id_sender is automatically set from the authenticated user's JWT token.",
+  })
   @ApiResponse({
     status: 201,
     description: 'Reply created successfully',
@@ -80,8 +86,15 @@ export class RepliesChatController {
       },
     },
   })
-  create(@Body() createRepliesChatDto: CreateRepliesChatDto) {
-    return this.repliesChatService.create(createRepliesChatDto);
+  create(
+    @Body() createRepliesChatDto: CreateRepliesChatDto,
+    @User() user: IJwtSignin,
+  ) {
+    const replyData = {
+      ...createRepliesChatDto,
+      id_sender: user.id_user,
+    };
+    return this.repliesChatService.create(replyData);
   }
 
   @Get()

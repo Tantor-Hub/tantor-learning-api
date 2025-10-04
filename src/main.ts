@@ -47,6 +47,8 @@ async function tantorAPP() {
   });
 
   app.setGlobalPrefix('/api/');
+  app.use(bodyParser.json({ limit: '500mb' }));
+  app.use(bodyParser.urlencoded({ limit: '500mb', extended: true }));
   app.use(
     '/webhook/stripe/onpayment',
     bodyParser.raw({ type: 'application/json' }),

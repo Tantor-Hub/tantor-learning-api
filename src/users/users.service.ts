@@ -11,7 +11,6 @@ import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AllSercices } from 'src/services/serices.all';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from '../services/service.crypto';
-import { SignInStudentDto } from './dto/signin-student.dto';
 import { JwtService } from 'src/services/service.jwt';
 import { log } from 'console';
 import { FindByEmailDto } from './dto/find-by-email.dto';
@@ -22,7 +21,6 @@ import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
 import { Sequelize } from 'sequelize-typescript';
@@ -71,7 +69,7 @@ export class UsersService {
 
     try {
       const getSemesterScores = async (
-        id_user: number,
+        id_user: string,
       ): Promise<{
         scoreOngoingSemester: number;
         totalOngoingSemester: number;
@@ -148,7 +146,7 @@ export class UsersService {
     }
   }
   async loadStudentDashboard(user: IJwtSignin): Promise<ResponseServer> {
-    const { id_user, uuid_user } = user;
+    const { id_user } = user;
     try {
       // card 1
       // TODO: Implement session counts when StagiaireHasSession model is restored
@@ -279,11 +277,9 @@ export class UsersService {
       .findAll({
         include: [],
         attributes: {
-          exclude: ['password', 'verification_code', 'status', 'is_verified'],
+          exclude: ['verification_code', 'is_verified'],
         },
-        where: {
-          status: 1,
-        },
+        where: {},
       })
       .then((list) =>
         Responder({
@@ -298,10 +294,8 @@ export class UsersService {
   async getAllUsersAsSimplifiedList(): Promise<ResponseServer> {
     return this.userModel
       .findAll({
-        attributes: ['id', 'fs_name', 'ls_name', 'avatar'],
-        where: {
-          status: 1,
-        },
+        attributes: ['id', 'firstName', 'lastName', 'avatar'],
+        where: {},
       })
       .then((list) =>
         Responder({
@@ -321,7 +315,6 @@ export class UsersService {
     console.log('Group type:', typeof group);
 
     const whereCondition = {
-      status: 1,
       ...(group !== 'all' && { role: group.toLowerCase() }),
     };
 
@@ -335,13 +328,10 @@ export class UsersService {
         include: [],
         attributes: {
           exclude: [
-            'password',
             'verification_code',
-            'status',
             'is_verified',
             'createdAt',
             'updatedAt',
-            'can_update_password',
             'last_login',
           ],
         },
@@ -353,9 +343,9 @@ export class UsersService {
         console.log(
           'Users data:',
           list.map((user) => ({
-            id: user.uuid,
-            fs_name: user.fs_name,
-            ls_name: user.ls_name,
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
           })),
         );
 
@@ -385,9 +375,9 @@ export class UsersService {
       });
   }
 
-  async getUserWithRoles(uuid: string): Promise<any> {
+  async getUserWithRoles(id: string): Promise<any> {
     const user = await this.userModel.findOne({
-      where: { uuid, status: 1 },
+      where: { id },
     });
 
     if (!user) return null;
@@ -397,191 +387,68 @@ export class UsersService {
     // roles now derived from user.role only
     return { ...record, roles: [this.roleMap[user.role] || 4] };
   }
-  async signInAsStudent(
-    signInStudentDto: SignInStudentDto,
-  ): Promise<ResponseServer> {
-    const { user_name, password } = signInStudentDto;
-    // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
-    return this.userModel
-      .findOne({
-        include: [],
-        where: {
-          status: 1,
-          [Op.or]: [{ email: user_name }, { nick_name: user_name }],
-        },
-      })
-      .then(async (student) => {
-        if (student instanceof Users) {
-          const {
-            email,
-            fs_name,
-            ls_name,
-            nick_name,
-            password: as_hashed_password,
-            is_verified,
-            uuid,
-            id,
-            roles,
-          } = student?.toJSON();
-          const _roles = this.allService.formatRoles(roles as any);
-
-          if (is_verified === 1) {
-            const matched = await this.cryptoService.comparePassword(
-              password,
-              as_hashed_password || '',
-            );
-            if (matched) {
-              return this.jwtService
-                .signinPayloadAndEncrypt({
-                  id_user: id!,
-                  uuid_user: uuid as string,
-                  level_indicator: 90,
-                })
-                .then(async ({ code, data, message }) => {
-                  const { cleared, hashed, refresh } = data;
-                  const record = this.allService.filterUserFields(
-                    student.toJSON(),
-                  );
-                  return Responder({
-                    status: HttpStatusCode.Ok,
-                    data: {
-                      auth_token: hashed,
-                      refresh_token: refresh,
-                      user: record,
-                    },
-                  });
-                })
-                .catch((err) => {
-                  return Responder({ status: 500, data: err });
-                });
-            } else {
-              return Responder({
-                status: HttpStatusCode.Forbidden,
-                data: "Mot de passe ou nom d'utilisateur incorrect !",
-              });
-            }
-          } else {
-            const verif_code = this.allService.randomLongNumber({ length: 6 });
-            return student
-              .update({
-                verification_code: verif_code,
-              })
-              .then((_) => {
-                const newInstance = student.toJSON();
-
-                delete (newInstance as any).password;
-                delete (newInstance as any).verification_code;
-                delete (newInstance as any).last_login;
-                delete (newInstance as any).status;
-                delete (newInstance as any).is_verified;
-                delete (newInstance as any).createdAt;
-                delete (newInstance as any).updatedAt;
-
-                this.onWelcomeNewStudent({
-                  to: email,
-                  firstName: fs_name || 'User',
-                  lastName: ls_name || '',
-                  otp: verif_code,
-                  all: false,
-                });
-                return Responder({
-                  status: HttpStatusCode.Unauthorized,
-                  data: null,
-                });
-              })
-              .catch((err) =>
-                Responder({
-                  status: HttpStatusCode.InternalServerError,
-                  data: err,
-                }),
-              );
-          }
-        } else {
-          return Responder({
-            status: HttpStatusCode.Forbidden,
-            data: "Mot de passe ou nom d'utilisateur incorrect !",
-          });
-        }
-      })
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-      );
-  }
   async registerAsStudent(
     createUserDto: CreateUserDto,
   ): Promise<ResponseServer> {
     const {
       email,
-      fs_name,
-      ls_name,
-      password,
+      firstName,
+      lastName,
       id,
-      nick_name,
       phone,
       uuid,
       verification_code,
-      date_of_birth,
+      dateBirth,
     } = createUserDto;
     const existingUser = await this.userModel.findOne({ where: { email } });
     if (existingUser) {
-      return PasswordlessLoginResponder({
+      return Responder({
         status: HttpStatusCode.Conflict,
-        message: `[Email]: ${email} est déjà utilisé`,
+        data: `[Email]: ${email} est déjà utilisé`,
       });
     }
 
     const verif_code = this.allService.randomLongNumber({ length: 6 });
-    const num_record = this.allService.randomLongNumber({ length: 8 });
-    const hashed_password = await this.cryptoService.hashPassword(password);
-    const uuid_user = this.allService.generateUuid();
 
     return this.userModel
       .create({
-        num_record: num_record,
         email,
-        fs_name,
-        ls_name,
-        phone: phone,
-        password: hashed_password,
-        nick_name,
-        date_of_birth,
-        uuid: uuid_user,
+        firstName,
+        lastName,
+        phone: phone ?? '',
+        dateBirth: dateBirth ?? '',
         verification_code: verif_code,
-        is_verified: 0,
-        status: 1,
+        is_verified: false,
         role: UserRole.STUDENT,
-      })
+      } as any)
       .then((student) => {
         if (student instanceof Users) {
           const { id: as_id_user, email } = student?.toJSON();
-          // No role linking table; rely on Users.role
           this.onWelcomeNewStudent({
             to: email,
             otp: verif_code,
-            firstName: fs_name || '',
-            lastName: ls_name || '',
+            firstName: firstName,
+            lastName: lastName,
             all: true,
           });
           const newInstance = student.toJSON();
 
-          delete (newInstance as any).password;
           delete (newInstance as any).verification_code;
           delete (newInstance as any).last_login;
-          delete (newInstance as any).status;
           delete (newInstance as any).is_verified;
           delete (newInstance as any).createdAt;
           delete (newInstance as any).updatedAt;
+
           const record = this.allService.filterUserFields(newInstance);
           return Responder({
             status: HttpStatusCode.Created,
-            data: { user: record },
+            data: { user: record as any } as any,
           });
         } else {
           return Responder({ status: HttpStatusCode.BadRequest, data: {} });
         }
       })
       .catch((err) => {
-        log(err);
         return Responder({
           status: HttpStatusCode.InternalServerError,
           data: err,
@@ -608,26 +475,18 @@ export class UsersService {
           data: `Ce role n'est pas configurable`,
         });
 
-      const password = '123456';
       const verif_code = this.allService.randomLongNumber({ length: 6 });
-      const num_record = this.allService.randomLongNumber({ length: 8 });
-      const hashed_password = await this.cryptoService.hashPassword(password);
       const uuid_user = this.allService.generateUuid();
       const escape = this.configService.get<string>('ESCAPESTRING') || '---';
       const { role: as_role } = role as any;
 
       return this.userModel
         .create({
-          num_record: num_record,
           email,
-          fs_name: escape,
-          ls_name: escape,
-          password: hashed_password,
-          nick_name: escape,
-          uuid: uuid_user,
+          firstName: escape,
+          lastName: escape,
           verification_code: verif_code,
-          is_verified: 0,
-          status: 1,
+          is_verified: false,
           role: UserRole.STUDENT,
         })
         .then(async (u) => {
@@ -692,62 +551,51 @@ export class UsersService {
   ): Promise<ResponseServer> {
     const {
       email,
-      fs_name,
-      ls_name,
-      password,
+      firstName,
+      lastName,
       id,
-      nick_name,
       phone,
       uuid,
       verification_code,
       id_role,
-      date_of_birth,
+      dateBirth,
     } = createUserDto;
     const existingUser = await this.userModel.findOne({ where: { email } });
     if (existingUser) {
-      return PasswordlessLoginResponder({
+      return Responder({
         status: HttpStatusCode.Conflict,
-        message: `[Email]: ${email} est déjà utilisé`,
+        data: `[Email]: ${email} est déjà utilisé`,
       });
     }
 
     const verif_code = this.allService.randomLongNumber({ length: 6 });
-    const num_record = this.allService.randomLongNumber({ length: 8 });
-    const hashed_password = await this.cryptoService.hashPassword(password);
     const uuid_user = this.allService.generateUuid();
 
     return this.userModel
       .create({
-        num_record: num_record,
         email,
-        fs_name,
-        ls_name,
-        phone: phone,
-        password: hashed_password,
-        nick_name,
-        uuid: uuid_user,
-        date_of_birth,
+        firstName,
+        lastName,
+        phone: phone || '',
+        dateBirth: dateBirth || '',
         verification_code: verif_code,
-        is_verified: id_role && id_role === 4 ? 0 : 1,
-        status: 1,
+        is_verified: id_role && id_role === 4 ? false : true,
         role: UserRole.STUDENT,
-      })
+      } as any)
       .then((student) => {
         if (student instanceof Users) {
           const { id: as_id_user, email } = student?.toJSON();
           this.onWelcomeNewStudent({
             to: email,
             otp: verif_code,
-            firstName: fs_name,
-            lastName: ls_name,
+            firstName: firstName,
+            lastName: lastName,
             all: true,
           });
           const newInstance = student.toJSON();
 
-          delete (newInstance as any).password;
           delete (newInstance as any).verification_code;
           delete (newInstance as any).last_login;
-          delete (newInstance as any).status;
           delete (newInstance as any).is_verified;
           delete (newInstance as any).createdAt;
           delete (newInstance as any).updatedAt;
@@ -755,7 +603,7 @@ export class UsersService {
           const record = this.allService.filterUserFields(newInstance);
           return Responder({
             status: HttpStatusCode.Created,
-            data: { user: record },
+            data: { user: record } as any,
           });
         } else {
           return Responder({ status: HttpStatusCode.BadRequest, data: {} });
@@ -775,15 +623,13 @@ export class UsersService {
   ): Promise<ResponseServer> {
     const {
       email,
-      fs_name,
-      ls_name,
-      password,
+      firstName,
+      lastName,
       id,
-      nick_name,
       phone,
       uuid,
       verification_code,
-      date_of_birth,
+      dateBirth,
     } = createUserDto;
     const decoded: IJwtSignin =
       await this.jwtService.checkTokenWithRound(token);
@@ -798,19 +644,15 @@ export class UsersService {
     });
 
     if (existingUser) {
-      const hashed_password = await this.cryptoService.hashPassword(password);
       return this.userModel
         .update(
           {
             email,
-            fs_name,
-            ls_name,
-            phone: phone,
-            password: hashed_password,
-            nick_name,
-            date_of_birth,
-            status: 1,
-          },
+            firstName,
+            lastName,
+            phone: phone || '',
+            dateBirth: dateBirth || '',
+          } as any,
           {
             where: {
               email,
@@ -823,10 +665,8 @@ export class UsersService {
             const { id: as_id_user, email } = student?.toJSON();
             const newInstance = student.toJSON();
 
-            delete (newInstance as any).password;
             delete (newInstance as any).verification_code;
             delete (newInstance as any).last_login;
-            delete (newInstance as any).status;
             delete (newInstance as any).is_verified;
             delete (newInstance as any).createdAt;
             delete (newInstance as any).updatedAt;
@@ -835,14 +675,14 @@ export class UsersService {
             this.onWelcomeNewStudent({
               to: existingUser.email,
               otp: existingUser.verification_code || '000000',
-              firstName: existingUser.fs_name || '',
-              lastName: existingUser.ls_name || '',
+              firstName: existingUser.firstName || '',
+              lastName: existingUser.lastName || '',
               all: true,
             });
 
             return Responder({
               status: HttpStatusCode.Created,
-              data: { user: newInstance },
+              data: { user: newInstance } as any,
             });
           } else {
             return Responder({ status: HttpStatusCode.BadRequest, data: {} });
@@ -860,114 +700,6 @@ export class UsersService {
         data: `Les informations fournies ne sont pas conformes`,
       });
   }
-  async setNewPassword(
-    resetPasswordDto: ResetPasswordDto,
-  ): Promise<ResponseServer> {
-    const {
-      new_password,
-      repet_new_password,
-      user_name,
-      verification_code,
-      description,
-    } = resetPasswordDto;
-
-    // Users.belongsToMany(Roles, { through: HasRoles, foreignKey: "RoleId" });
-    return this.userModel
-      .findOne({
-        include: [],
-        attributes: {
-          exclude: ['password'],
-        },
-        where: {
-          status: 1,
-          [Op.or]: [{ email: user_name }, { nick_name: user_name }],
-        },
-      })
-      .then(async (student) => {
-        if (student instanceof Users) {
-          const {
-            email,
-            fs_name,
-            ls_name,
-            nick_name,
-            password: as_hashed_password,
-            is_verified,
-            uuid,
-            id,
-            verification_code: as_code,
-            roles,
-            can_update_password,
-          } = student?.toJSON();
-          if (can_update_password === 1) {
-            if (repet_new_password && repet_new_password.length > 0) {
-              if (new_password !== repet_new_password)
-                return Responder({
-                  status: HttpStatusCode.BadRequest,
-                  data: 'Les deux mot de passe ne sont pas identiques !',
-                });
-            }
-
-            const hashed_password =
-              await this.cryptoService.hashPassword(new_password);
-            const _roles = this.allService.formatRoles(roles as any);
-
-            return student
-              .update({
-                password: hashed_password,
-              })
-              .then((_) => {
-                return this.jwtService
-                  .signinPayloadAndEncrypt({
-                    id_user: id as number,
-                    uuid_user: uuid as string,
-                    level_indicator: 90,
-                  })
-                  .then(async ({ code, data, message }) => {
-                    const { cleared, hashed, refresh } = data;
-                    const newInstance = student.toJSON();
-
-                    delete (newInstance as any).password;
-                    delete (newInstance as any).verification_code;
-                    delete (newInstance as any).last_login;
-                    delete (newInstance as any).status;
-                    delete (newInstance as any).is_verified;
-                    delete (newInstance as any).createdAt;
-                    delete (newInstance as any).updatedAt;
-
-                    return Responder({
-                      status: HttpStatusCode.Ok,
-                      data: {
-                        auth_token: hashed,
-                        refresh_token: refresh,
-                        user: newInstance,
-                      },
-                    });
-                  })
-
-                  .catch((err) => {
-                    return Responder({ status: 500, data: err });
-                  });
-              })
-              .catch((err) =>
-                Responder({
-                  status: HttpStatusCode.InternalServerError,
-                  data: err,
-                }),
-              );
-          } else {
-            return Responder({
-              status: HttpStatusCode.Forbidden,
-              data: `Le code de vérification envoyé n'est pas correct !`,
-            });
-          }
-        } else {
-          return Responder({ status: HttpStatusCode.Forbidden, data: null });
-        }
-      })
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-      );
-  }
   async resentVerificationCode(
     resentCodeDto: ResentCodeDto,
     forgetPasswordCase: boolean = false,
@@ -978,31 +710,26 @@ export class UsersService {
     return this.userModel
       .findOne({
         attributes: {
-          exclude: ['password'],
+          exclude: ['verification_code', 'is_verified', 'last_login'],
         },
         where: {
-          status: 1,
-          [Op.or]: [{ email: user_email }, { nick_name: user_email }],
+          [Op.or]: [{ email: user_email }],
         },
       })
       .then(async (student) => {
         if (student instanceof Users) {
           const {
             email,
-            fs_name,
-            ls_name,
-            nick_name,
-            password: as_hashed_password,
+            firstName,
+            lastName,
             is_verified,
-            uuid,
             id,
             verification_code: as_code,
-            roles,
           } = student?.toJSON();
           this.onWelcomeNewStudent({
             to: email,
-            firstName: fs_name || 'User',
-            lastName: ls_name || '',
+            firstName: firstName || 'User',
+            lastName: lastName || '',
             all: false,
             otp: verif_code,
           });
@@ -1011,7 +738,7 @@ export class UsersService {
           });
           return Responder({
             status: HttpStatusCode.Ok,
-            data: { fs_name, ls_name, email, nick_name },
+            data: { firstName, lastName, email },
           });
         } else {
           return Responder({
@@ -1033,11 +760,10 @@ export class UsersService {
     return this.userModel
       .findOne({
         attributes: {
-          exclude: ['password'],
+          exclude: ['verification_code', 'is_verified', 'last_login'],
         },
         include: [],
         where: {
-          status: 1,
           email: email_user,
         },
       })
@@ -1045,21 +771,15 @@ export class UsersService {
         if (student instanceof Users) {
           const {
             email,
-            fs_name,
-            ls_name,
-            nick_name,
-            password: as_hashed_password,
+            firstName,
+            lastName,
             is_verified,
-            uuid,
             id,
             verification_code: as_code,
-            roles,
           } = student?.toJSON();
-          const _roles = this.allService.formatRoles(roles as any);
           if (1) {
             if (as_code?.toString() === verication_code.toString()) {
               student.update({
-                can_update_password: 1,
                 verification_code: '000000',
               });
               return Responder({
@@ -1098,11 +818,10 @@ export class UsersService {
     return this.userModel
       .findOne({
         attributes: {
-          exclude: ['password'],
+          exclude: ['verification_code', 'is_verified', 'last_login'],
         },
         include: [],
         where: {
-          status: 1,
           email: email_user,
         },
       })
@@ -1110,30 +829,25 @@ export class UsersService {
         if (student instanceof Users) {
           const {
             email,
-            fs_name,
-            ls_name,
-            nick_name,
-            password: as_hashed_password,
+            firstName,
+            lastName,
             is_verified,
-            uuid,
             id,
             verification_code: as_code,
-            roles,
           } = student?.toJSON();
-          const _roles = this.allService.formatRoles(roles as any);
 
-          if (is_verified === 0) {
+          if (is_verified === false) {
             if (as_code?.toString() === verication_code.toString()) {
               return this.jwtService
                 .signinPayloadAndEncrypt({
-                  id_user: id as number,
-                  uuid_user: uuid as string,
+                  id_user: id!,
+                  uuid_user: id!,
                   level_indicator: 90,
                 })
                 .then(async ({ code, data, message }) => {
                   const { cleared, hashed, refresh } = data;
                   student.update({
-                    is_verified: 1,
+                    is_verified: true,
                   });
                   return Responder({
                     status: HttpStatusCode.Ok,
@@ -1225,15 +939,9 @@ export class UsersService {
       .findOne({
         include: [],
         attributes: {
-          exclude: [
-            'password',
-            'verification_code',
-            'is_verified',
-            'last_login',
-          ],
+          exclude: ['verification_code', 'is_verified', 'last_login'],
         },
         where: {
-          status: 1,
           email: email,
         },
       })
@@ -1262,7 +970,6 @@ export class UsersService {
       });
     }
 
-    delete profile.password;
     delete profile.avatar;
     delete profile.verification_code;
     delete profile.is_verified;
@@ -1274,7 +981,6 @@ export class UsersService {
       .findOne({
         include: [],
         where: {
-          status: 1,
           id: id_user,
         },
       })
@@ -1299,15 +1005,9 @@ export class UsersService {
       .findOne({
         include: [],
         attributes: {
-          exclude: [
-            'password',
-            'verification_code',
-            'is_verified',
-            'last_login',
-          ],
+          exclude: ['verification_code', 'is_verified', 'last_login'],
         },
         where: {
-          status: 1,
           id: id_user,
         },
       })
@@ -1333,7 +1033,6 @@ export class UsersService {
       address,
       country,
       city,
-      identityNumber,
       dateBirth,
     } = registerDto;
 
@@ -1348,27 +1047,21 @@ export class UsersService {
     }
 
     const otp = this.allService.randomLongNumber({ length: 6 });
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     try {
       const user = await this.userModel.create({
         email,
-        fs_name: firstName || '',
-        ls_name: lastName || '',
+        firstName: firstName || '',
+        lastName: lastName || '',
         avatar,
         address,
         country,
         city,
-        identityNumber,
-        dateBirth,
+        dateBirth: dateBirth ?? '',
         role: UserRole.STUDENT,
         otp,
-        otpExpires,
-        status: 1,
-        is_verified: 0,
-        uuid: this.allService.generateUuid(),
-        num_record: this.allService.randomLongNumber({ length: 8 }),
-      });
+        is_verified: false,
+      } as any);
 
       // Send OTP email
       this.mailService.sendMail({
@@ -1424,16 +1117,15 @@ export class UsersService {
     }
 
     const otp = this.allService.randomLongNumber({ length: 6 });
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    await user.update({ otp, otpExpires });
+    await user.update({ otp });
 
     // Send OTP email
     this.mailService.sendMail({
       content: this.mailService.templates({
         as: 'otp',
-        firstName: user.fs_name || '',
-        lastName: user.ls_name || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
         code: otp,
       }),
       to: email,
@@ -1457,26 +1149,23 @@ export class UsersService {
       });
     }
 
-    if (
-      !user.otp ||
-      !user.otpExpires ||
-      user.otp !== otp ||
-      user.otpExpires < new Date()
-    ) {
+    if (!user.otp || user.otp !== otp) {
       return Responder({
         status: HttpStatusCode.BadRequest,
-        data: 'OTP invalide ou expiré',
+        data: 'OTP invalide',
       });
     }
 
     // Clear OTP
-    await user.update({ otp: undefined, otpExpires: undefined });
+    await user.update({ otp: undefined });
+
+    console.log('User logged in:', user.toJSON());
 
     // Generate JWT
     return this.jwtService
       .signinPayloadAndEncrypt({
         id_user: user.id,
-        uuid_user: user.uuid,
+        uuid_user: user.id,
         level_indicator: 90,
       })
       .then(({ code, data, message }) => {
@@ -1489,11 +1178,11 @@ export class UsersService {
             user: {
               id: user.id,
               email: user.email,
-              firstName: user.firstName || user.fs_name,
-              lastName: user.lastName || user.ls_name,
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
               avatar: user.avatar,
               role: user.role,
-            },
+            } as any,
           },
         });
       })
@@ -1519,7 +1208,7 @@ export class UsersService {
     }
 
     const user = await this.userModel.findOne({
-      where: { email, status: 1 },
+      where: { email },
     });
 
     if (!user) {
@@ -1541,7 +1230,7 @@ export class UsersService {
   }
   async getUserRoleByEmail(email: string): Promise<ResponseServer> {
     const user = await this.userModel.findOne({
-      where: { email, status: 1 },
+      where: { email },
     });
 
     if (!user) {
@@ -1567,12 +1256,6 @@ export class UsersService {
     const { email, firstName, lastName, picture, accessToken } = user;
 
     const verif_code = this.allService.randomLongNumber({ length: 6 });
-    const num_record = this.allService.randomLongNumber({ length: 8 });
-    const hashed_password = await this.cryptoService.hashPassword(
-      (this.configService.get<string>('DEFAULTUSERPASSWORD') || '').concat(
-        num_record,
-      ),
-    );
     const uuid_user = this.allService.generateUuid();
     const base =
       (process.env.BASECLIENTURL as string) || 'http://localhost:3000';
@@ -1582,33 +1265,28 @@ export class UsersService {
           where: { email },
           defaults: {
             email,
-            ls_name: lastName,
-            fs_name: firstName,
-            is_verified: 0,
-            password: hashed_password,
+            lastName: lastName,
+            firstName: firstName,
+            is_verified: false,
             avatar: picture,
-            nick_name: firstName,
-            num_record,
             phone: email,
-            uuid: uuid_user,
             verification_code: verif_code,
             role: UserRole.STUDENT,
-          },
+          } as any,
         })
         .then(async ([student, isNewStudent]) => {
           const {
             id: as_id_user,
             email,
-            fs_name,
-            ls_name,
-            uuid,
+            firstName,
+            lastName,
             is_verified,
           } = student?.toJSON();
-          if (!isNewStudent) {
+          if (!isNewStudent && as_id_user) {
             return this.jwtService
               .signinPayloadAndEncrypt({
-                id_user: as_id_user as number,
-                uuid_user: uuid as string,
+                id_user: as_id_user,
+                uuid_user: uuid_user,
                 level_indicator: 90,
               })
               .then(async ({ code, data, message }) => {
@@ -1620,15 +1298,13 @@ export class UsersService {
                   .then((_) => {
                     const newInstance = student.toJSON();
 
-                    delete (newInstance as any).password;
                     delete (newInstance as any).verification_code;
                     delete (newInstance as any).last_login;
-                    delete (newInstance as any).status;
                     delete (newInstance as any).is_verified;
                     delete (newInstance as any).createdAt;
                     delete (newInstance as any).updatedAt;
                     const { hashed, refresh, cleared } = data;
-                    // if (is_verified) this.onWelcomeNewStudent({ to: email, nom: fs_name, postnom: ls_name, otp: verif_code, all: false })
+                    // if (is_verified) this.onWelcomeNewStudent({ to: email, nom: firstName, postnom: lastName, otp: verif_code, all: false })
                     return res.redirect(
                       `${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: student, auth_token: hashed, refresh_token: refresh }))}`,
                     );
@@ -1646,40 +1322,40 @@ export class UsersService {
               });
           }
           // New student path: create token and welcome
-          return this.jwtService
-            .signinPayloadAndEncrypt({
-              id_user: as_id_user as number,
-              uuid_user: uuid as string,
-              level_indicator: 90,
-            })
-            .then(async ({ code, data, message }) => {
-              this.onWelcomeNewStudent({
-                to: email,
-                otp: verif_code,
-                firstName: fs_name || 'User',
-                lastName: ls_name || '',
-                all: true,
-              });
-              const { hashed, cleared, refresh } = data;
-              const newInstance = student.toJSON();
+          if (as_id_user) {
+            return this.jwtService
+              .signinPayloadAndEncrypt({
+                id_user: as_id_user,
+                uuid_user: uuid_user,
+                level_indicator: 90,
+              })
+              .then(async ({ code, data, message }) => {
+                this.onWelcomeNewStudent({
+                  to: email,
+                  otp: verif_code,
+                  firstName: firstName || 'User',
+                  lastName: lastName || '',
+                  all: true,
+                });
+                const { hashed, cleared, refresh } = data;
+                const newInstance = student.toJSON();
 
-              delete (newInstance as any).password;
-              delete (newInstance as any).verification_code;
-              delete (newInstance as any).last_login;
-              delete (newInstance as any).status;
-              delete (newInstance as any).is_verified;
-              delete (newInstance as any).createdAt;
-              delete (newInstance as any).updatedAt;
-              const record = this.allService.filterUserFields(newInstance);
-              return res.redirect(
-                `${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: record, auth_token: hashed, refresh_token: refresh }))}`,
-              );
-            })
-            .catch((err) => {
-              return res.redirect(
-                `${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: 'Impossible to initialize roles', data: err?.toString() }))}`,
-              );
-            });
+                delete (newInstance as any).verification_code;
+                delete (newInstance as any).last_login;
+                delete (newInstance as any).is_verified;
+                delete (newInstance as any).createdAt;
+                delete (newInstance as any).updatedAt;
+                const record = this.allService.filterUserFields(newInstance);
+                return res.redirect(
+                  `${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: record as any, auth_token: hashed, refresh_token: refresh }))}`,
+                );
+              })
+              .catch((err) => {
+                return res.redirect(
+                  `${base}/signin?error=${base64encode(JSON.stringify({ code: 500, message: 'Impossible to initialize roles', data: err?.toString() }))}`,
+                );
+              });
+          }
         })
         .catch((err) => {
           return res.redirect(

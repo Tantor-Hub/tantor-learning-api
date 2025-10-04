@@ -29,4 +29,5 @@ export enum tables {
   surveyquestions = `${table_prefix}surveyquestions`,
   events = `${table_prefix}events`,
   chats = `${table_prefix}chats`,
+  replieschats = `${table_prefix}replieschats`,
 }

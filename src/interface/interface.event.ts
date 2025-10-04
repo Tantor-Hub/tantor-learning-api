@@ -5,12 +5,14 @@ export interface IEvent extends IGlobale {
   title: string;
   description?: string;
   id_cible_training?: string[];
-  id_cible_session?: string[];
-  id_cible_cours?: string[];
-  id_cible_lesson?: string[];
+  id_cible_session?: string;
+  id_cible_cours?: string;
+  id_cible_lesson?: string;
   id_cible_user?: string[];
+  createdBy?: string;
   begining_date: Date;
-  ending_date?: Date;
+  beginning_hour: string;
+  ending_hour: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

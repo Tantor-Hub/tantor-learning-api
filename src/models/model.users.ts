@@ -7,40 +7,22 @@ import {
   HasMany,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
-import { IUsers } from 'src/interface/interface.users';
+import { IUsers, UserRole } from 'src/interface/interface.users';
+import { Lesson } from './model.lesson';
 
 @Table({ tableName: tables['users'], timestamps: true })
 export class Users extends Model<IUsers> {
   @Column({
-    type: DataType.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    unique: true,
-  })
-  id: number;
-
-  @Column({
     type: DataType.UUID,
     allowNull: false,
     unique: true,
+    primaryKey: true,
     defaultValue: DataType.UUIDV4,
   })
-  uuid: string;
-
-  @Column({ type: DataType.STRING, allowNull: true, unique: true })
-  num_record: string;
+  id: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   avatar?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  fs_name?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  ls_name?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  nick_name?: string;
 
   @Column({ type: DataType.STRING, allowNull: false, unique: true })
   email: string;
@@ -49,37 +31,20 @@ export class Users extends Model<IUsers> {
   phone?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
-  password?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
   verification_code?: string;
 
   @Column({ type: DataType.DATE, allowNull: true })
   last_login?: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 0 })
-  is_verified?: number;
-
-  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: 1 })
-  status?: number;
-
-  @Column({ type: DataType.INTEGER, defaultValue: 0 })
-  can_update_password?: number;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  adresse_physique?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  pays_residance?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  ville_residance?: string;
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  })
+  is_verified?: boolean;
 
   @Column({ type: DataType.STRING, allowNull: true, unique: true })
   num_piece_identite?: string;
-
-  @Column({ type: DataType.STRING, allowNull: true })
-  date_of_birth?: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
   firstName?: string;
@@ -96,24 +61,28 @@ export class Users extends Model<IUsers> {
   @Column({ type: DataType.STRING, allowNull: true })
   city?: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  identityNumber?: number;
-
   @Column({ type: DataType.STRING, allowNull: true })
   dateBirth?: string;
 
   @Column({
-    type: DataType.ENUM('instructor', 'student', 'admin', 'secretary'),
+    type: DataType.ENUM(
+      'instructor',
+      'student',
+      'admin',
+      'secretary',
+      'expulled',
+    ),
     allowNull: false,
     defaultValue: 'student',
   })
-  role: 'instructor' | 'student' | 'admin' | 'secretary';
+  role: UserRole;
 
   @Column({ type: DataType.STRING, allowNull: true })
   otp?: string;
 
-  @Column({ type: DataType.DATE, allowNull: true })
-  otpExpires?: Date;
-
   // roles table removed; rely on single user.role
+
+  // Relationships
+  @HasMany(() => Lesson, 'createdBy')
+  lessons?: Lesson[];
 }

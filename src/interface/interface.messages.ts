@@ -1,8 +1,8 @@
 import { IGlobale } from './interface.globale';
 
 export interface IMessages extends IGlobale {
-  id_user_sender: number;
-  id_user_receiver: number;
+  id_user_sender: string;
+  id_user_receiver: string;
   is_replied_to?: number | null;
   subject?: string;
   content: string;
@@ -11,6 +11,6 @@ export interface IMessages extends IGlobale {
   piece_jointe?: string | null;
   is_readed: number;
   thread?: string;
-  is_deletedto?: number[];
-  is_archievedto?: number[];
+  is_deletedto?: string[];
+  is_archievedto?: string[];
 }

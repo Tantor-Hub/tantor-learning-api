@@ -27,56 +27,108 @@ export class JwtAuthGuardAsManagerSystem implements CanActivate {
     private configService: ConfigService,
     private readonly allSercices: AllSercices,
   ) {
-    this.keyname = this.configService.get<string>('APPKEYAPINAME') as string;
+    this.keyname = this.configService.get<string>(
+      'APPKEYAPINAME',
+      'authorization',
+    ) as string;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers[this.keyname] as string;
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log(
+        '❌ JwtAuthGuardAsManagerSystem: No valid auth header for',
+        request.url,
+      );
       throw new CustomUnauthorizedException(
         "Aucune clé d'authentification n'a éte fournie",
       );
     }
+
     const [_, token] = authHeader.split(' ');
-    const decoded = await this.jwtService.verifyTokenWithRound(token);
-    if (!decoded)
+
+    try {
+      const decoded = await this.jwtService.verifyTokenWithRound(token);
+
+      if (!decoded) {
+        console.log(
+          '❌ JwtAuthGuardAsManagerSystem: Token verification failed for',
+          request.url,
+        );
+        throw new CustomUnauthorizedException(
+          "La clé d'authentification fournie a déjà expiré",
+        );
+      }
+
+      // Check for user ID in token (id_user is the primary field, uuid_user is for backward compatibility)
+      const userId = decoded.id_user;
+
+      if (!userId) {
+        console.log(
+          '❌ JwtAuthGuardAsManagerSystem: No user ID in token for',
+          request.url,
+        );
+        throw new CustomUnauthorizedException(
+          "La clé d'authentification ne contient pas d'identifiant utilisateur",
+        );
+      }
+
+      // Fetch user by id
+      const user = await this.usersModel.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        console.log(
+          '❌ JwtAuthGuardAsManagerSystem: User not found in database for ID:',
+          userId,
+        );
+        throw new CustomUnauthorizedException('Utilisateur non trouvé');
+      }
+
+      // Check if user has admin role
+      if (user.role !== 'admin') {
+        console.log(
+          '❌ JwtAuthGuardAsManagerSystem: Access denied for',
+          user.email,
+          '- Role:',
+          user.role,
+          '(Required: admin)',
+        );
+        throw new CustomUnauthorizedException(
+          "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+        );
+      }
+
+      // Attach user info to request for downstream handlers
+      request.user = {
+        ...decoded,
+        roles_user: [user.role],
+      };
+
+      console.log(
+        '✅ JwtAuthGuardAsManagerSystem: User authenticated:',
+        user.email,
+        'for',
+        request.url,
+      );
+
+      return true;
+    } catch (error) {
+      if (error instanceof CustomUnauthorizedException) {
+        throw error;
+      }
+      console.log(
+        '❌ JwtAuthGuardAsManagerSystem: Unexpected error for',
+        request.url,
+        ':',
+        error.message,
+      );
       throw new CustomUnauthorizedException(
         "La clé d'authentification fournie a déjà expiré",
       );
-
-    // Debug log decoded token
-    console.log('Decoded token:', decoded);
-
-    // Get uuid from decoded token and fetch user with roles
-    if (!decoded.uuid_user) {
-      throw new CustomUnauthorizedException(
-        "La clé d'authentification ne contient pas d'identifiant utilisateur",
-      );
     }
-
-    // Fetch user by uuid
-    const user = await this.usersModel.findOne({
-      where: { uuid: decoded.uuid_user },
-    });
-
-    if (!user) {
-      throw new CustomUnauthorizedException('Utilisateur non trouvé');
-    }
-
-    // Check if user has admin role
-    if (user.role !== 'admin') {
-      throw new CustomUnauthorizedException(
-        "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
-      );
-    }
-
-    // Attach user info to request for downstream handlers
-    request.user = {
-      ...decoded,
-      roles_user: [user.role],
-    };
-
-    return true;
   }
 }

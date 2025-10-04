@@ -1,18 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsArray, IsOptional, IsUUID, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsOptional,
+  IsUUID,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateChatDto {
   @ApiProperty({
-    description: 'UUID of the sender',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  id_user_sender: string;
-
-  @ApiProperty({
     description: 'Array of receiver UUIDs',
-    example: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'],
+    example: [
+      '550e8400-e29b-41d4-a716-446655440001',
+      '550e8400-e29b-41d4-a716-446655440002',
+    ],
     type: [String],
   })
   @IsArray()
@@ -31,7 +32,7 @@ export class CreateChatDto {
 
   @ApiProperty({
     description: 'Content of the chat message',
-    example: 'Hello everyone, let\'s discuss the project updates.',
+    example: "Hello everyone, let's discuss the project updates.",
     required: false,
   })
   @IsOptional()
@@ -39,8 +40,12 @@ export class CreateChatDto {
   content?: string;
 
   @ApiProperty({
-    description: 'Array of attachment file paths',
-    example: ['/uploads/file1.pdf', '/uploads/image1.jpg'],
+    description:
+      'Array of Cloudinary URLs for file attachments (automatically populated when files are uploaded)',
+    example: [
+      'https://res.cloudinary.com/your-cloud/raw/upload/v1234567890/__tantorLearning/documents/document.pdf',
+      'https://res.cloudinary.com/your-cloud/image/upload/v1234567890/__tantorLearning/images/image.jpg',
+    ],
     type: [String],
     required: false,
   })

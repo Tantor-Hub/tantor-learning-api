@@ -21,14 +21,18 @@ export class ChatService {
     private readonly usersModel: typeof Users,
   ) {}
 
-  async create(createChatDto: CreateChatDto): Promise<ResponseServer> {
+  async create(
+    createChatDto: CreateChatDto,
+    userId: string,
+  ): Promise<ResponseServer> {
     try {
       console.log('=== Chat create: Starting ===');
       console.log('Create data:', createChatDto);
+      console.log('User ID from token:', userId);
 
       // Verify sender exists
       const sender = await this.usersModel.findOne({
-        where: { uuid: createChatDto.id_user_sender },
+        where: { id: userId },
       });
 
       if (!sender) {
@@ -41,7 +45,7 @@ export class ChatService {
 
       // Verify all receivers exist
       const receivers = await this.usersModel.findAll({
-        where: { uuid: createChatDto.id_user_receiver },
+        where: { id: createChatDto.id_user_receiver },
       });
 
       if (receivers.length !== createChatDto.id_user_receiver.length) {
@@ -54,6 +58,7 @@ export class ChatService {
 
       const chat = await this.chatModel.create({
         ...createChatDto,
+        id_user_sender: userId, // Set sender ID from JWT token
         status: ChatStatus.ALIVE,
         reader: [],
         dontshowme: [],
@@ -92,7 +97,7 @@ export class ChatService {
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'fs_name', 'ls_name', 'email', 'uuid'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -135,7 +140,7 @@ export class ChatService {
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'fs_name', 'ls_name', 'email', 'uuid'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
       });
@@ -183,12 +188,12 @@ export class ChatService {
             { id_user_receiver: { [Op.contains]: [userId] } },
           ],
           status: ChatStatus.ALIVE,
-        },
+        } as any,
         include: [
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'fs_name', 'ls_name', 'email', 'uuid'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -221,6 +226,180 @@ export class ChatService {
     }
   }
 
+  async findDeletedByUser(userId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== Chat findDeletedByUser: Starting ===');
+      console.log('User ID:', userId);
+
+      // First, get all deleted chats sent by the user
+      const allDeletedChats = await this.chatModel.findAll({
+        where: {
+          status: ChatStatus.DELETED,
+          id_user_sender: userId,
+        },
+        include: [
+          {
+            model: this.usersModel,
+            as: 'sender',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Filter out chats where user is in dontshowme array
+      const filteredChats = allDeletedChats.filter((chat) => {
+        const dontshowme = chat.dontshowme || [];
+        return !dontshowme.includes(userId);
+      });
+
+      console.log('=== Chat findDeletedByUser: Success ===');
+      console.log('Found deleted chats sent by user:', filteredChats.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: filteredChats.length,
+          rows: filteredChats,
+        },
+        customMessage: 'Deleted messages sent by user retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Chat findDeletedByUser: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message:
+            'Internal server error while retrieving deleted messages sent by user',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findSentByUser(userId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== Chat findSentByUser: Starting ===');
+      console.log('User ID:', userId);
+
+      // First, get all non-deleted chats sent by the user
+      const allSentChats = await this.chatModel.findAll({
+        where: {
+          id_user_sender: userId,
+          status: { [Op.ne]: ChatStatus.DELETED },
+        },
+        include: [
+          {
+            model: this.usersModel,
+            as: 'sender',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Filter out chats where user is in dontshowme array
+      const filteredChats = allSentChats.filter((chat) => {
+        const dontshowme = chat.dontshowme || [];
+        return !dontshowme.includes(userId);
+      });
+
+      console.log('=== Chat findSentByUser: Success ===');
+      console.log('Found sent chats for user:', filteredChats.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: filteredChats.length,
+          rows: filteredChats,
+        },
+        customMessage: 'Sent messages retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Chat findSentByUser: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving sent messages',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findReceivedByUser(userId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== Chat findReceivedByUser: Starting ===');
+      console.log('User ID:', userId);
+
+      // First, get all non-deleted chats where user is a receiver
+      const allReceivedChats = await this.chatModel.findAll({
+        where: {
+          id_user_receiver: { [Op.contains]: [userId] },
+          status: { [Op.ne]: ChatStatus.DELETED },
+        },
+        include: [
+          {
+            model: this.usersModel,
+            as: 'sender',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Filter out chats where user is in dontshowme array and add read status
+      const filteredChats = allReceivedChats
+        .filter((chat) => {
+          const dontshowme = chat.dontshowme || [];
+          return !dontshowme.includes(userId);
+        })
+        .map((chat) => {
+          const readerArray = chat.reader || [];
+          const isRead = readerArray.includes(userId);
+
+          return {
+            ...chat.toJSON(),
+            isRead,
+            readerCount: readerArray.length,
+          };
+        });
+
+      console.log('=== Chat findReceivedByUser: Success ===');
+      console.log('Found received chats for user:', filteredChats.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: filteredChats.length,
+          rows: filteredChats,
+        },
+        customMessage: 'Received messages retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Chat findReceivedByUser: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving received messages',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
   async update(updateChatDto: UpdateChatDto): Promise<ResponseServer> {
     try {
       console.log('=== Chat update: Starting ===');
@@ -233,6 +412,16 @@ export class ChatService {
         return Responder({
           status: HttpStatusCode.NotFound,
           customMessage: 'Chat message not found',
+        });
+      }
+
+      // Check if chat is deleted
+      if (chat.status === ChatStatus.DELETED) {
+        console.log('=== Chat update: Cannot modify deleted chat ===');
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage:
+            'Cannot modify deleted chat messages. Please restore the chat first.',
         });
       }
 
@@ -383,6 +572,130 @@ export class ChatService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while deleting chat message',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async restore(chatId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== Chat restore: Starting ===');
+      console.log('Chat ID:', chatId);
+
+      const chat = await this.chatModel.findByPk(chatId);
+
+      if (!chat) {
+        console.log('=== Chat restore: Not found ===');
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Chat message not found',
+        });
+      }
+
+      // Check if chat is actually deleted
+      if (chat.status !== ChatStatus.DELETED) {
+        console.log('=== Chat restore: Chat is not deleted ===');
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'Chat message is not deleted and cannot be restored',
+        });
+      }
+
+      // Restore by changing status back to ALIVE
+      await chat.update({ status: ChatStatus.ALIVE });
+
+      console.log('=== Chat restore: Success ===');
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: { id: chat.id },
+        customMessage: 'Chat message restored successfully',
+      });
+    } catch (error) {
+      console.error('=== Chat restore: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while restoring chat message',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async cleanupDeletedChats(): Promise<ResponseServer> {
+    try {
+      console.log('=== Chat cleanupDeletedChats: Starting ===');
+
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      console.log(
+        'Cleaning up chats deleted before:',
+        thirtyDaysAgo.toISOString(),
+      );
+
+      // Find all chats with DELETED status that were updated more than 30 days ago
+      const deletedChats = await this.chatModel.findAll({
+        where: {
+          status: ChatStatus.DELETED,
+          updatedAt: {
+            [Op.lt]: thirtyDaysAgo,
+          },
+        },
+      });
+
+      console.log('Found deleted chats to cleanup:', deletedChats.length);
+
+      if (deletedChats.length === 0) {
+        console.log('=== Chat cleanupDeletedChats: No chats to cleanup ===');
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: { cleanedCount: 0 },
+          customMessage: 'No deleted chats found for cleanup',
+        });
+      }
+
+      // Get IDs for logging
+      const chatIds = deletedChats.map((chat) => chat.id);
+
+      // Permanently delete the chats
+      await this.chatModel.destroy({
+        where: {
+          id: {
+            [Op.in]: chatIds,
+          },
+        },
+      });
+
+      console.log('=== Chat cleanupDeletedChats: Success ===');
+      console.log('Permanently deleted chats:', chatIds);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          cleanedCount: deletedChats.length,
+          deletedChatIds: chatIds,
+        },
+        customMessage: `Successfully cleaned up ${deletedChats.length} deleted chat messages`,
+      });
+    } catch (error) {
+      console.error('=== Chat cleanupDeletedChats: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message:
+            'Internal server error while cleaning up deleted chat messages',
           errorType: error.name,
           errorMessage: error.message,
           timestamp: new Date().toISOString(),

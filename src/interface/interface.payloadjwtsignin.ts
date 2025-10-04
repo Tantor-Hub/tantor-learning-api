@@ -1,5 +1,5 @@
 export interface IJwtSignin {
-  uuid_user: string;
-  id_user: number;
+  id_user: string;
+  uuid_user?: string;
   level_indicator: number;
 }

@@ -9,26 +9,114 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { ResponseServer } from 'src/interface/interface.response';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Injectable()
 export class LessondocumentService {
   constructor(
     @InjectModel(Lessondocument)
-    private lessondocumentModel: typeof Lessondocument,
+    public lessondocumentModel: typeof Lessondocument,
     @InjectModel(Users)
     private userModel: typeof Users,
     @InjectModel(Lesson)
     private lessonModel: typeof Lesson,
+    private readonly googleDriveService: GoogleDriveService,
   ) {}
+
+  // Helper method to generate download URL for a document
+  private generateDocumentDownloadUrl(doc: any): string | any {
+    let downloadUrl = doc.piece_jointe;
+    try {
+      // Extract public ID from Cloudinary URL
+      const urlParts = doc.piece_jointe.split('/');
+      const publicIdWithExtension = urlParts[urlParts.length - 1];
+      const publicId = publicIdWithExtension.split('.')[0];
+
+      // Get file extension from filename, document type, or URL
+      let fileExtension = 'pdf'; // default
+      if (doc.file_name && doc.file_name.includes('.')) {
+        fileExtension = doc.file_name.split('.').pop()?.toLowerCase() || 'pdf';
+      } else if (doc.type) {
+        fileExtension = doc.type.toLowerCase();
+      } else if (publicIdWithExtension.includes('.')) {
+        fileExtension =
+          publicIdWithExtension.split('.').pop()?.toLowerCase() || 'pdf';
+      }
+
+      // Check if it's a video file
+      const videoExtensions = [
+        'mp4',
+        'avi',
+        'mov',
+        'wmv',
+        'flv',
+        'webm',
+        'mkv',
+        '3gp',
+        'm4v',
+        'mpg',
+        'mpeg',
+        'm2v',
+        'm4p',
+        'm4b',
+        'mxf',
+        'ogv',
+        'qt',
+        'rm',
+        'rmvb',
+        'svi',
+        'vob',
+        'asf',
+        'amv',
+        'drc',
+        'gifv',
+        'm2ts',
+        'mts',
+        'ts',
+        'm2p',
+        'ps',
+        'yuv',
+      ];
+
+      if (videoExtensions.includes(fileExtension)) {
+        // For videos, return multiple format URLs
+        const videoUrls = this.googleDriveService.generateVideoUrls(
+          publicId,
+          doc.file_name,
+        );
+        return {
+          download_url: videoUrls.auto, // Default download URL
+          video_urls: videoUrls, // All format options
+          primary_format: 'auto',
+        };
+      } else {
+        // For other files, generate standard download URL
+        downloadUrl = this.googleDriveService.generateDownloadUrl(
+          publicId,
+          fileExtension,
+          doc.file_name,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        `Could not generate download URL for document ${doc.id}:`,
+        error.message,
+      );
+    }
+    return downloadUrl;
+  }
 
   async findAll(): Promise<ResponseServer> {
     try {
+      console.log('Fetching all lesson documents');
       const lessondocuments = await this.lessondocumentModel.findAll({
         attributes: [
           'id',
           'file_name',
-          'url',
+          'piece_jointe',
           'type',
+          'title',
+          'description',
           'id_lesson',
           'createdBy',
           'createdAt',
@@ -38,8 +126,8 @@ export class LessondocumentService {
           {
             model: Users,
             required: false,
-            as: 'CreatedBy',
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: Lesson,
@@ -51,16 +139,96 @@ export class LessondocumentService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Generate download URLs for all documents
+      const documentsWithDownloadUrls = lessondocuments.map((doc) => {
+        const downloadUrl = this.generateDocumentDownloadUrl(doc);
+        return {
+          ...doc.toJSON(),
+          download_url: downloadUrl,
+        };
+      });
+
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          lessondocuments: lessondocuments,
-          total: lessondocuments.length,
+          lessondocuments: documentsWithDownloadUrls,
+          total: documentsWithDownloadUrls.length,
         },
         customMessage: 'Lesson documents retrieved successfully',
       });
     } catch (error) {
       console.error('Error fetching lesson documents:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while fetching lesson documents',
+          error: error.message,
+        },
+      });
+    }
+  }
+
+  async findByLessonId(lessonId: string): Promise<ResponseServer> {
+    try {
+      // First verify that the lesson exists
+      const lesson = await this.lessonModel.findByPk(lessonId);
+      if (!lesson) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Lesson not found',
+        });
+      }
+
+      const lessondocuments = await this.lessondocumentModel.findAll({
+        where: { id_lesson: lessonId },
+        attributes: [
+          'id',
+          'file_name',
+          'piece_jointe',
+          'type',
+          'title',
+          'description',
+          'id_lesson',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Lesson,
+            required: false,
+            as: 'lesson',
+            attributes: ['id', 'title', 'description'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Generate download URLs for all documents
+      const documentsWithDownloadUrls = lessondocuments.map((doc) => {
+        const downloadUrl = this.generateDocumentDownloadUrl(doc);
+        return {
+          ...doc.toJSON(),
+          download_url: downloadUrl,
+        };
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          lessondocuments: documentsWithDownloadUrls,
+          total: documentsWithDownloadUrls.length,
+        },
+        customMessage: 'Lesson documents retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error fetching lesson documents by lesson ID:', error);
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: {
@@ -77,8 +245,10 @@ export class LessondocumentService {
         attributes: [
           'id',
           'file_name',
-          'url',
+          'piece_jointe',
           'type',
+          'title',
+          'description',
           'id_lesson',
           'createdBy',
           'createdAt',
@@ -88,8 +258,8 @@ export class LessondocumentService {
           {
             model: Users,
             required: false,
-            as: 'CreatedBy',
-            attributes: ['id', 'fs_name', 'ls_name', 'email'],
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
           {
             model: Lesson,
@@ -107,9 +277,15 @@ export class LessondocumentService {
         });
       }
 
+      // Generate proper download URL for the document
+      const downloadUrl = this.generateDocumentDownloadUrl(lessondocument);
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: lessondocument,
+        data: {
+          ...lessondocument.toJSON(),
+          download_url: downloadUrl,
+        },
         customMessage: 'Lesson document retrieved successfully',
       });
     } catch (error) {
@@ -126,21 +302,26 @@ export class LessondocumentService {
 
   async create(
     user: IJwtSignin,
-    createLessondocumentDto: CreateLessondocumentDto,
+    documentData: {
+      file_name: string;
+      piece_jointe: string;
+      type: string;
+      id_lesson: string;
+      title?: string;
+      description?: string;
+    },
   ): Promise<ResponseServer> {
     try {
       // Validate input parameters
-      if (!createLessondocumentDto.file_name || !createLessondocumentDto.url) {
+      if (!documentData.file_name || !documentData.piece_jointe) {
         return Responder({
           status: HttpStatusCode.BadRequest,
-          data: 'File name and URL are required',
+          data: 'File name and piece_jointe are required',
         });
       }
 
       // Verify that the lesson exists
-      const lesson = await this.lessonModel.findByPk(
-        createLessondocumentDto.id_lesson,
-      );
+      const lesson = await this.lessonModel.findByPk(documentData.id_lesson);
       if (!lesson) {
         return Responder({
           status: HttpStatusCode.NotFound,
@@ -150,10 +331,12 @@ export class LessondocumentService {
 
       // Create the lesson document
       const lessondocument = await this.lessondocumentModel.create({
-        file_name: createLessondocumentDto.file_name,
-        url: createLessondocumentDto.url,
-        type: createLessondocumentDto.type,
-        id_lesson: createLessondocumentDto.id_lesson,
+        file_name: documentData.file_name,
+        piece_jointe: documentData.piece_jointe,
+        type: documentData.type,
+        title: documentData.title,
+        description: documentData.description,
+        id_lesson: documentData.id_lesson,
         createdBy: user.id_user,
       });
 
@@ -165,8 +348,8 @@ export class LessondocumentService {
             {
               model: Users,
               required: false,
-              as: 'CreatedBy',
-              attributes: ['id', 'fs_name', 'ls_name', 'email'],
+              as: 'creator',
+              attributes: ['id', 'firstName', 'lastName', 'email'],
             },
             {
               model: Lesson,
@@ -177,6 +360,24 @@ export class LessondocumentService {
           ],
         },
       );
+
+      // Log the newly created lesson document
+      if (createdLessondocument) {
+        console.log('New lesson document created:', {
+          id: createdLessondocument.id,
+          file_name: createdLessondocument.file_name,
+          piece_jointe: createdLessondocument.piece_jointe,
+          type: createdLessondocument.type,
+          title: createdLessondocument.title,
+          description: createdLessondocument.description,
+          id_lesson: createdLessondocument.id_lesson,
+          createdBy: createdLessondocument.createdBy,
+          createdAt: createdLessondocument.createdAt,
+          lesson_title: createdLessondocument.lesson?.title,
+          creator_name:
+            `${createdLessondocument.creator?.firstName || ''} ${createdLessondocument.creator?.lastName || ''}`.trim(),
+        });
+      }
 
       return Responder({
         status: HttpStatusCode.Created,
@@ -209,6 +410,17 @@ export class LessondocumentService {
         });
       }
 
+      // Check ownership - only the creator can update the document
+      if (lessondocument.createdBy !== user.id_user) {
+        console.log(
+          `Access denied: User ${user.id_user} attempted to update lesson document ${id} created by ${lessondocument.createdBy}`,
+        );
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          data: 'You can only modify lesson documents that you created',
+        });
+      }
+
       // If updating lesson reference, verify it exists
       if (updateLessondocumentDto.id_lesson) {
         const lesson = await this.lessonModel.findByPk(
@@ -232,8 +444,8 @@ export class LessondocumentService {
             {
               model: Users,
               required: false,
-              as: 'CreatedBy',
-              attributes: ['id', 'fs_name', 'ls_name', 'email'],
+              as: 'creator',
+              attributes: ['id', 'firstName', 'lastName', 'email'],
             },
             {
               model: Lesson,
@@ -243,6 +455,10 @@ export class LessondocumentService {
             },
           ],
         },
+      );
+
+      console.log(
+        `Lesson document ${id} updated successfully by user ${user.id_user}`,
       );
 
       return Responder({
@@ -262,7 +478,7 @@ export class LessondocumentService {
     }
   }
 
-  async remove(id: string): Promise<ResponseServer> {
+  async remove(user: IJwtSignin, id: string): Promise<ResponseServer> {
     try {
       const lessondocument = await this.lessondocumentModel.findByPk(id);
       if (!lessondocument) {
@@ -272,7 +488,22 @@ export class LessondocumentService {
         });
       }
 
+      // Check ownership - only the creator can delete the document
+      if (lessondocument.createdBy !== user.id_user) {
+        console.log(
+          `Access denied: User ${user.id_user} attempted to delete lesson document ${id} created by ${lessondocument.createdBy}`,
+        );
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          data: 'You can only delete lesson documents that you created',
+        });
+      }
+
       await lessondocument.destroy();
+
+      console.log(
+        `Lesson document ${id} deleted successfully by user ${user.id_user}`,
+      );
 
       return Responder({
         status: HttpStatusCode.Ok,

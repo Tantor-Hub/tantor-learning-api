@@ -8,6 +8,9 @@ const databaseConfig = {
   username: process.env.APP_BD_USERNAME || 'postgres',
   password: process.env.APP_BD_PASSWORD || 'admin',
   database: process.env.APP_BD_NAME || 'default_database',
+  dialectOptions: {
+    ssl: false, // Force SSL to false for local development
+  },
 };
 
 module.exports = {

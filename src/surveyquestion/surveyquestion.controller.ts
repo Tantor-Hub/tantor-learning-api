@@ -27,7 +27,7 @@ import {
   SurveyQuestionApiOperations,
   SurveyQuestionApiResponses,
 } from 'src/swagger/swagger.surveyquestion';
-import { JwtAuthGuard } from 'src/guard/guard.jwt';
+import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';

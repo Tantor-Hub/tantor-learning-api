@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // You can add additional validation here if needed
     return {
       id_user: payload.id_user,
-      uuid_user: payload.uuid_user,
+      uuid_user: payload.id_user, // Map id_user to uuid_user for backward compatibility
       level_indicator: payload.level_indicator,
     };
   }

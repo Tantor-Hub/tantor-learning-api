@@ -24,10 +24,9 @@ export class EventService {
       const event = await this.eventModel.create({
         ...createEventDto,
         begining_date: new Date(createEventDto.begining_date),
-        ending_date: createEventDto.ending_date
-          ? new Date(createEventDto.ending_date)
-          : undefined,
-      });
+        beginning_hour: createEventDto.beginning_hour,
+        ending_hour: createEventDto.ending_hour,
+      } as any);
 
       return Responder({
         status: HttpStatusCode.Created,
@@ -54,7 +53,7 @@ export class EventService {
           },
           {
             model: TrainingSession,
-            as: 'trainingSessions',
+            as: 'trainingSession',
             attributes: ['id', 'title'],
           },
           {
@@ -64,13 +63,18 @@ export class EventService {
           },
           {
             model: Lesson,
-            as: 'lessons',
+            as: 'lesson',
             attributes: ['id', 'title'],
           },
           {
             model: Users,
             as: 'users',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['begining_date', 'ASC']],
@@ -101,7 +105,7 @@ export class EventService {
           },
           {
             model: TrainingSession,
-            as: 'trainingSessions',
+            as: 'trainingSession',
             attributes: ['id', 'title'],
           },
           {
@@ -111,13 +115,18 @@ export class EventService {
           },
           {
             model: Lesson,
-            as: 'lessons',
+            as: 'lesson',
             attributes: ['id', 'title'],
           },
           {
             model: Users,
             as: 'users',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
       });
@@ -159,13 +168,14 @@ export class EventService {
 
       const updateData: any = { ...updateEventDto };
 
+      // Convert date string to Date object if provided
       if (updateEventDto.begining_date) {
         updateData.begining_date = new Date(updateEventDto.begining_date);
       }
 
-      if (updateEventDto.ending_date) {
-        updateData.ending_date = new Date(updateEventDto.ending_date);
-      }
+      // All other fields (title, description, beginning_hour, ending_hour,
+      // id_cible_training, id_cible_session, id_cible_cours, id_cible_lesson, id_cible_user)
+      // are already handled by the spread operator above
 
       await event.update(updateData);
 
@@ -225,7 +235,7 @@ export class EventService {
           },
           {
             model: TrainingSession,
-            as: 'trainingSessions',
+            as: 'trainingSession',
             attributes: ['id', 'title'],
           },
           {
@@ -235,13 +245,18 @@ export class EventService {
           },
           {
             model: Lesson,
-            as: 'lessons',
+            as: 'lesson',
             attributes: ['id', 'title'],
           },
           {
             model: Users,
             as: 'users',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['begining_date', 'ASC']],
@@ -265,9 +280,14 @@ export class EventService {
     try {
       const events = await this.eventModel.findAll({
         where: {
-          id_cible_session: {
-            [require('sequelize').Op.contains]: [sessionId],
-          },
+          [require('sequelize').Op.or]: [
+            // Direct session match
+            { id_cible_session: sessionId },
+            // Session match through sessionCours
+            {
+              '$sessionCours.id_session$': sessionId,
+            },
+          ],
         },
         include: [
           {
@@ -277,23 +297,29 @@ export class EventService {
           },
           {
             model: TrainingSession,
-            as: 'trainingSessions',
+            as: 'trainingSession',
             attributes: ['id', 'title'],
           },
           {
             model: SessionCours,
             as: 'sessionCours',
-            attributes: ['id', 'title'],
+            attributes: ['id', 'title', 'id_session'],
+            required: false, // LEFT JOIN to include events without sessionCours
           },
           {
             model: Lesson,
-            as: 'lessons',
+            as: 'lesson',
             attributes: ['id', 'title'],
           },
           {
             model: Users,
             as: 'users',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['begining_date', 'ASC']],
@@ -317,9 +343,7 @@ export class EventService {
     try {
       const events = await this.eventModel.findAll({
         where: {
-          id_cible_user: {
-            [require('sequelize').Op.contains]: [userId],
-          },
+          createdBy: userId,
         },
         include: [
           {
@@ -329,7 +353,7 @@ export class EventService {
           },
           {
             model: TrainingSession,
-            as: 'trainingSessions',
+            as: 'trainingSession',
             attributes: ['id', 'title'],
           },
           {
@@ -339,13 +363,18 @@ export class EventService {
           },
           {
             model: Lesson,
-            as: 'lessons',
+            as: 'lesson',
             attributes: ['id', 'title'],
           },
           {
             model: Users,
             as: 'users',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['begining_date', 'ASC']],
@@ -387,7 +416,7 @@ export class EventService {
           },
           {
             model: TrainingSession,
-            as: 'trainingSessions',
+            as: 'trainingSession',
             attributes: ['id', 'title'],
           },
           {
@@ -397,13 +426,18 @@ export class EventService {
           },
           {
             model: Lesson,
-            as: 'lessons',
+            as: 'lesson',
             attributes: ['id', 'title'],
           },
           {
             model: Users,
             as: 'users',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['begining_date', 'ASC']],

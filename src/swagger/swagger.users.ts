@@ -79,46 +79,6 @@ export class FindByEmailDto {
   email: string;
 }
 
-export class ResetPasswordDto {
-  @ApiProperty({
-    example: 'john.doe@example.com',
-    description: 'User email address',
-  })
-  email: string;
-
-  @ApiProperty({
-    example: '123456',
-    description: 'OTP code',
-  })
-  otp: string;
-
-  @ApiProperty({
-    example: 'NewStrongPass123!',
-    description: 'New password',
-  })
-  newPassword: string;
-
-  @ApiProperty({
-    example: 'NewStrongPass123!',
-    description: 'Confirm new password',
-  })
-  confirmPassword: string;
-}
-
-export class SignInStudentDto {
-  @ApiProperty({
-    example: 'john.doe@example.com',
-    description: 'Student email address',
-  })
-  email: string;
-
-  @ApiProperty({
-    example: '123456',
-    description: 'OTP code',
-  })
-  otp: string;
-}
-
 export class VerifyOtpDto {
   @ApiProperty({
     example: 'john.doe@example.com',
@@ -176,32 +136,6 @@ export const UsersSwagger = {
       responses: {
         200: {
           description: 'User found successfully',
-        },
-      },
-    },
-
-    resetPassword: {
-      operation: {
-        summary: 'Reset user password',
-        description: 'Reset password using OTP verification',
-      },
-      body: { type: ResetPasswordDto },
-      responses: {
-        200: {
-          description: 'Password reset successfully',
-        },
-      },
-    },
-
-    signInStudent: {
-      operation: {
-        summary: 'Student sign in with OTP',
-        description: 'Authenticate student using email and OTP',
-      },
-      body: { type: SignInStudentDto },
-      responses: {
-        200: {
-          description: 'Student signed in successfully',
         },
       },
     },

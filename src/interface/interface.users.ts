@@ -3,37 +3,24 @@ export enum UserRole {
   STUDENT = 'student',
   ADMIN = 'admin',
   SECRETARY = 'secretary',
+  EXPULLED = 'expulled',
 }
 
 export interface IUsers {
-  id?: number;
-  uuid?: string;
-  num_record?: string;
+  id?: string;
   avatar?: string;
-  fs_name?: string;
-  ls_name?: string;
-  nick_name?: string;
   email: string;
   phone?: string;
-  password?: string;
   verification_code?: string;
-  is_verified?: number;
-  status?: number;
-  can_update_password?: number;
-  adresse_physique?: string;
-  pays_residance?: string;
-  ville_residance?: string;
+  last_login?: string;
+  is_verified?: boolean;
   num_piece_identite?: string;
-  date_of_birth?: string;
   firstName?: string;
   lastName?: string;
   address?: string;
   country?: string;
   city?: string;
-  identityNumber?: number;
   dateBirth?: string;
   role: UserRole;
-  roles?: number[];
   otp?: string;
-  otpExpires?: Date;
 }

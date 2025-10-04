@@ -3,18 +3,18 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class PayementOpcoDto {
   @ApiProperty({
-    example: 1,
-    description: 'Training ID',
+    example: 'uuid-string-here',
+    description: 'Training Session ID',
   })
-  @IsNumber()
-  session_id: number;
+  @IsString()
+  session_id: string;
 
   @ApiProperty({
     example: 1,
     description: 'User ID',
   })
-  @IsNumber()
-  user_id: number;
+  @IsString()
+  user_id: string;
 
   @ApiProperty({
     example: 'OPCO001',

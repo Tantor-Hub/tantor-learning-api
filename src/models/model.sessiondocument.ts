@@ -49,7 +49,7 @@ export class SessionDocument extends Model<ISessionDocument> {
   @Column(DataType.ENUM('pending', 'rejected', 'validated'))
   status: 'pending' | 'rejected' | 'validated';
 
-  @BelongsTo(() => Users, { foreignKey: 'id_student', targetKey: 'uuid' })
+  @BelongsTo(() => Users, { foreignKey: 'id_student', targetKey: 'id' })
   student: Users;
 
   @BelongsTo(() => TrainingSession, 'id_session')

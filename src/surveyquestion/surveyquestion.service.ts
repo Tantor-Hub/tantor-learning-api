@@ -39,7 +39,7 @@ export class SurveyQuestionService {
 
       // Validate that the user exists
       const creator = await this.userModel.findOne({
-        where: { uuid: user.uuid_user },
+        where: { id: user.id_user },
       });
       if (!creator) {
         return Responder({
@@ -50,7 +50,7 @@ export class SurveyQuestionService {
 
       const surveyQuestion = await this.surveyQuestionModel.create({
         ...createSurveyQuestionDto,
-        createdBy: user.uuid_user,
+        createdBy: user.id_user,
       });
 
       return Responder({
@@ -79,7 +79,7 @@ export class SurveyQuestionService {
           {
             model: Users,
             as: 'creator',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -111,7 +111,7 @@ export class SurveyQuestionService {
           {
             model: Users,
             as: 'creator',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
       });
@@ -152,7 +152,7 @@ export class SurveyQuestionService {
       }
 
       // Check if user is the creator or has admin privileges
-      if (surveyQuestion.createdBy !== user.uuid_user) {
+      if (surveyQuestion.createdBy !== user.id_user) {
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage: 'You can only update surveys you created',
@@ -199,7 +199,7 @@ export class SurveyQuestionService {
       }
 
       // Check if user is the creator or has admin privileges
-      if (surveyQuestion.createdBy !== user.uuid_user) {
+      if (surveyQuestion.createdBy !== user.id_user) {
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage: 'You can only delete surveys you created',
@@ -229,7 +229,7 @@ export class SurveyQuestionService {
           {
             model: Users,
             as: 'creator',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -292,7 +292,7 @@ export class SurveyQuestionService {
           {
             model: Users,
             as: 'creator',
-            attributes: ['uuid', 'fs_name', 'ls_name', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
         order: [['createdAt', 'DESC']],

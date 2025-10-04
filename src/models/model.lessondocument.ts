@@ -27,21 +27,32 @@ export class Lessondocument extends Model {
   file_name: string;
 
   @AllowNull(false)
-  @Column(DataType.STRING)
-  url: string;
+  @Column({ type: DataType.STRING, field: 'url' })
+  piece_jointe: string;
 
   @AllowNull(true)
   @Column(DataType.STRING)
   type: string; // PDF, vidéo, Word...
 
+  @AllowNull(true)
+  @Column({ type: DataType.STRING, defaultValue: 'Untitled Document' })
+  title: string;
+
+  @AllowNull(true)
+  @Column({ type: DataType.TEXT, defaultValue: 'No description provided' })
+  description: string;
+
   @ForeignKey(() => Lesson)
-  @Column(DataType.STRING)
+  @Column(DataType.UUID)
   id_lesson: string;
 
   @ForeignKey(() => Users)
-  @Column(DataType.INTEGER)
-  createdBy: number;
+  @Column(DataType.UUID)
+  createdBy: string;
 
-  @BelongsTo(() => Lesson)
+  @BelongsTo(() => Lesson, { foreignKey: 'id_lesson', targetKey: 'id' })
   lesson: Lesson;
+
+  @BelongsTo(() => Users, { foreignKey: 'createdBy', targetKey: 'id' })
+  creator: Users;
 }

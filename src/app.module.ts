@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
-import databaseConfig from './config/config.database';
+import databaseConfig, { cloudinaryConfig } from './config/database.config';
 import { Users } from './models/model.users';
 
 import { Sequelize } from 'sequelize-typescript';
@@ -46,13 +46,19 @@ import { SessionDocumentModule } from './sessiondocument/sessiondocument.module'
 import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
 import { EventModule } from './event/event.module';
 import { ChatModule } from './chat/chat.module';
+import { RepliesChatModule } from './replieschat/replieschat.module';
+import { StudentevaluationModule } from './studentevaluation/studentevaluation.module';
+import { EvaluationQuestionModule } from './evaluationquestion/evaluationquestion.module';
+import { EvaluationQuestionOptionModule } from './evaluationquestionoption/evaluationquestionoption.module';
+import { StudentAnswerModule } from './studentanswer/studentanswer.module';
+import { StudentAnswerOptionModule } from './studentansweroption/studentansweroption.module';
 import { JwtStrategy } from './strategy/strategy.jwt';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig],
+      load: [databaseConfig, cloudinaryConfig],
     }),
     SequelizeModule.forRootAsync({
       imports: [ConfigModule],
@@ -66,6 +72,12 @@ import { JwtStrategy } from './strategy/strategy.jwt';
         database: configService.get<string>('database.database'),
         autoLoadModels: true,
         synchronize: false,
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false, // ⚠️ utile si le certificat n'est pas signé
+          },
+        },
         logging: false,
         // logging: console.log,
       }),
@@ -79,6 +91,13 @@ import { JwtStrategy } from './strategy/strategy.jwt';
       Messages,
       Newsletter,
       Payementopco,
+      // Student Evaluation Models
+      require('./models/model.studentevaluation').Studentevaluation,
+      require('./models/model.evaluationquestion').EvaluationQuestion,
+      require('./models/model.evaluationquestionoption')
+        .EvaluationQuestionOption,
+      require('./models/model.studentanswer').StudentAnswer,
+      require('./models/model.studentansweroption').StudentAnswerOption,
     ]),
     // Removed RolesModule as roles module is deleted
     // RolesModule,
@@ -97,6 +116,13 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     SurveyQuestionModule,
     EventModule,
     ChatModule,
+    RepliesChatModule,
+    // Student Evaluation Modules
+    StudentevaluationModule,
+    EvaluationQuestionModule,
+    EvaluationQuestionOptionModule,
+    StudentAnswerModule,
+    StudentAnswerOptionModule,
   ],
   providers: [
     AppService,

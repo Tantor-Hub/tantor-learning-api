@@ -10,6 +10,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @Module({
   imports: [
@@ -27,7 +28,12 @@ import { JwtService } from 'src/services/service.jwt';
     }),
   ],
   controllers: [SessionCoursController],
-  providers: [SessionCoursService, AllSercices, JwtService],
+  providers: [
+    SessionCoursService,
+    AllSercices,
+    JwtService,
+    JwtAuthGuardAsSuperviseur,
+  ],
   exports: [SessionCoursService],
 })
 export class SessionCoursModule {}

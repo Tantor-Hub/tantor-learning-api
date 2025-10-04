@@ -12,15 +12,15 @@ export class CreateMessageDto {
   @IsOptional()
   thread?: string;
 
-  @IsNumberString()
+  @IsString()
   @IsNotEmpty()
   @IsOptional()
-  id_user_sender: number;
+  id_user_sender: string;
 
-  @IsNumberString()
+  @IsString()
   @IsNotEmpty()
   @IsOptional()
-  id_user_receiver?: number;
+  id_user_receiver?: string;
 
   @IsOptional()
   @IsString()

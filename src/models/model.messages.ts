@@ -19,22 +19,22 @@ import { IMessages } from 'src/interface/interface.messages';
 export class Messages extends Model<IMessages> {
   @ForeignKey(() => Users)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
   })
-  id_user_sender: number;
+  id_user_sender: string;
 
   @ForeignKey(() => Users)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
   })
-  id_user_receiver: number;
+  id_user_receiver: string;
 
-  @BelongsTo(() => Users, 'id_user_receiver')
+  @BelongsTo(() => Users, { foreignKey: 'id_user_receiver', targetKey: 'id' })
   Receiver: Users;
 
-  @BelongsTo(() => Users, 'id_user_sender')
+  @BelongsTo(() => Users, { foreignKey: 'id_user_sender', targetKey: 'id' })
   Sender: Users;
 
   @Column({
@@ -95,16 +95,16 @@ export class Messages extends Model<IMessages> {
   status?: number; // 1: alive 2: archived 3: deleted
 
   @Column({
-    type: DataType.ARRAY(DataType.INTEGER),
+    type: DataType.ARRAY(DataType.UUID),
     allowNull: true,
     defaultValue: [],
   })
-  is_deletedto?: any;
+  is_deletedto?: string[];
 
   @Column({
-    type: DataType.ARRAY(DataType.INTEGER),
+    type: DataType.ARRAY(DataType.UUID),
     allowNull: true,
     defaultValue: [],
   })
-  is_archievedto?: any;
+  is_archievedto?: string[];
 }

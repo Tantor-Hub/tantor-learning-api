@@ -13,61 +13,22 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateUserDto {
   @ApiProperty({
     required: false,
-    example: 1,
-    description: 'User ID',
-    default: 1,
-  })
-  @IsOptional()
-  id?: number;
-
-  @ApiProperty({
-    required: false,
     example: 'uuid-string',
-    description: 'User UUID',
+    description: 'User ID (UUID)',
     default: 'uuid-string',
   })
   @IsOptional()
-  uuid?: string;
+  id?: string;
 
   @ApiProperty({ example: 'John', description: 'First name', default: 'John' })
   @IsNotEmpty()
   @IsString()
-  fs_name: string;
-
-  @ApiProperty({
-    required: false,
-    example: 1,
-    description: 'Role ID',
-    default: 1,
-  })
-  @IsOptional()
-  @IsNumber()
-  id_role?: number;
+  firstName: string;
 
   @ApiProperty({ example: 'Doe', description: 'Last name', default: 'Doe' })
   @IsNotEmpty()
   @IsString()
-  ls_name: string;
-
-  @ApiProperty({
-    example: 'StrongPass123!',
-    description: 'User password',
-    default: 'StrongPass123!',
-  })
-  @IsNotEmpty()
-  @IsStrongPassword()
-  @MinLength(6)
-  password: string;
-
-  @ApiProperty({
-    required: false,
-    example: 'Johnny',
-    description: 'Nickname',
-    default: 'Johnny',
-  })
-  @IsOptional()
-  @IsString()
-  nick_name?: string;
+  lastName: string;
 
   @ApiProperty({
     example: 'john.doe@example.com',
@@ -106,7 +67,7 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString()
-  adresse_physique?: string;
+  address?: string;
 
   @ApiProperty({
     required: false,
@@ -116,7 +77,7 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString()
-  pays_residance?: string;
+  country?: string;
 
   @ApiProperty({
     required: false,
@@ -126,7 +87,7 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString()
-  ville_residance?: string;
+  city?: string;
 
   @ApiProperty({
     required: false,
@@ -146,5 +107,35 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString()
-  date_of_birth: string;
+  dateBirth?: string;
+
+  @ApiProperty({
+    required: false,
+    example: 'student',
+    description: 'User role',
+    default: 'student',
+  })
+  @IsOptional()
+  @IsString()
+  role?: string;
+
+  @ApiProperty({
+    required: false,
+    example: 'uuid-string',
+    description: 'UUID',
+    default: 'uuid-string',
+  })
+  @IsOptional()
+  @IsString()
+  uuid?: string;
+
+  @ApiProperty({
+    required: false,
+    example: 4,
+    description: 'Role ID',
+    default: 4,
+  })
+  @IsOptional()
+  @IsNumber()
+  id_role?: number;
 }

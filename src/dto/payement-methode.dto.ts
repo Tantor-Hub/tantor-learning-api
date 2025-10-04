@@ -16,9 +16,9 @@ export class CreatePaymentSessionDto {
   @IsNotEmpty()
   currency: string;
 
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  session_id: number;
+  session_id: string;
 
   @IsNumber()
   @IsOptional()

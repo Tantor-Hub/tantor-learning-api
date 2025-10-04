@@ -238,14 +238,15 @@ export class SessionCoursController {
     return this.sessionCoursService.findBySessionId(sessionId);
   }
 
-  @Get('formateur/:formateurId')
+  @Get('instructor/mycourses')
   @UseGuards(JwtAuthGuardAsSuperviseur)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get session courses by formateur ID' })
-  @ApiParam({ name: 'formateurId', description: 'Formateur ID', type: String })
+  @ApiOperation({
+    summary: 'Get session courses for the authenticated formateur',
+  })
   @SessionCoursFindByFormateurIdApiResponse()
-  async findByFormateurId(@Param('formateurId') formateurId: string) {
-    return this.sessionCoursService.findByFormateurId(formateurId);
+  async findByFormateurId(@User() user: IJwtSignin) {
+    return this.sessionCoursService.findByFormateurId(user);
   }
 
   @Get(':id/lessons')

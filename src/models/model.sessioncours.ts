@@ -16,7 +16,7 @@ import { Users } from './model.users';
 import { Lesson } from './model.lesson';
 import { TrainingSession } from './model.trainingssession';
 
-@Table({ tableName: tables['cours'], timestamps: true })
+@Table({ tableName: tables['sessioncours'], timestamps: true })
 export class SessionCours extends Model<ISessionCours> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -47,7 +47,7 @@ export class SessionCours extends Model<ISessionCours> {
   @ForeignKey(() => Users)
   createdBy?: string;
 
-  @BelongsTo(() => Users, { foreignKey: 'createdBy', targetKey: 'uuid' })
+  @BelongsTo(() => Users, { foreignKey: 'createdBy', targetKey: 'id' })
   CreatedBy?: Users;
 
   @AllowNull(true)

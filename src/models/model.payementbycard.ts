@@ -4,7 +4,6 @@ import {
   Model,
   DataType,
   PrimaryKey,
-  AutoIncrement,
   ForeignKey,
   BelongsTo,
 } from 'sequelize-typescript';
@@ -25,9 +24,12 @@ import { Users } from './model.users';
 })
 export class Payement extends Model<IPayemenMethode> {
   @PrimaryKey
-  @AutoIncrement
-  @Column(DataType.INTEGER)
-  id: number;
+  @Column({
+    type: DataType.UUID,
+    allowNull: false,
+    defaultValue: DataType.UUIDV4,
+  })
+  id: string;
 
   @Column({
     type: DataType.STRING,
@@ -37,22 +39,22 @@ export class Payement extends Model<IPayemenMethode> {
 
   @ForeignKey(() => Users)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
   })
-  id_user: number;
+  id_user: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
   })
-  id_session: number;
+  id_session: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.UUID,
     allowNull: false,
   })
-  id_session_student: number;
+  id_session_student: string;
 
   @Column({
     type: DataType.STRING,
@@ -97,6 +99,6 @@ export class Payement extends Model<IPayemenMethode> {
   })
   status: number;
 
-  @BelongsTo(() => Users)
+  @BelongsTo(() => Users, { foreignKey: 'id_user', targetKey: 'id' })
   Stagiaire: Users;
 }

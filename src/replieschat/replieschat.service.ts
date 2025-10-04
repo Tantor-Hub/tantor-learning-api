@@ -28,7 +28,7 @@ export class RepliesChatService {
   ) {}
 
   async create(
-    createRepliesChatDto: CreateRepliesChatDto,
+    createRepliesChatDto: CreateRepliesChatDto & { id_sender: string },
   ): Promise<ResponseServer> {
     try {
       console.log('=== RepliesChat create: Starting ===');

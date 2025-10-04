@@ -48,6 +48,6 @@ export class SurveyQuestion extends Model<ISurveyQuestion> {
   @BelongsTo(() => TrainingSession, 'id_session')
   trainingSession: TrainingSession;
 
-  @BelongsTo(() => Users, { foreignKey: 'createdBy', targetKey: 'uuid' })
+  @BelongsTo(() => Users, { foreignKey: 'createdBy', targetKey: 'id' })
   creator: Users;
 }

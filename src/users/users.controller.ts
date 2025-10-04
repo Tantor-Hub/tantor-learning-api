@@ -16,7 +16,6 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-student.dto';
-import { SignInStudentDto } from './dto/signin-student.dto';
 import { VerifyAsStudentDto } from './dto/verify-student.dto';
 import { ResentCodeDto } from './dto/resent-code.dto';
 import { FindByEmailDto } from './dto/find-by-email.dto';
@@ -29,7 +28,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
@@ -147,10 +145,6 @@ export class UsersController {
       verify,
     );
   }
-  @Post('user/signin')
-  async signinAsStudent(@Body() signInStudentDto: SignInStudentDto) {
-    return this.userService.signInAsStudent(signInStudentDto);
-  }
   @Put('user/verify')
   async verifyAsStudent(@Body() verifyAsStudentDto: VerifyAsStudentDto) {
     return this.userService.verifyAsStudent(verifyAsStudentDto);
@@ -172,10 +166,6 @@ export class UsersController {
   @Put('user/forgotenpassword')
   async askForResetPassword(@Body() resentCodeDto: ResentCodeDto) {
     return this.userService.resentVerificationCode(resentCodeDto);
-  }
-  @Put('user/resetpassword')
-  async setNewPassword(@Body() resentCodeDto: ResetPasswordDto) {
-    return this.userService.setNewPassword(resentCodeDto);
   }
   @Get('user/profile')
   @UseGuards(JwtAuthGuard)
@@ -384,7 +374,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getCurrentUserRole(@User() user: IJwtSignin) {
     // Fetch user roles from database using uuid
-    const dbUser = await this.userService.getUserWithRoles(user.uuid_user);
+    const dbUser = await this.userService.getUserWithRoles(user.id_user);
     const userRoles = dbUser?.roles || [];
 
     return Responder({
@@ -392,7 +382,6 @@ export class UsersController {
       data: {
         roles: userRoles,
         userId: user.id_user,
-        uuid: user.uuid_user,
       },
     });
   }
