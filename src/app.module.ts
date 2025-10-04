@@ -63,24 +63,48 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     SequelizeModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        dialect: 'postgres' as Dialect,
-        host: configService.get<string>('database.host'),
-        port: configService.get<number>('database.port'),
-        username: configService.get<string>('database.username'),
-        password: configService.get<string>('database.password'),
-        database: configService.get<string>('database.database'),
-        autoLoadModels: true,
-        synchronize: false,
-        dialectOptions: {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false, // ⚠️ utile si le certificat n'est pas signé
+      useFactory: (configService: ConfigService) => {
+        const host = configService.get<string>('database.host');
+        const port = configService.get<number>('database.port');
+        const username = configService.get<string>('database.username');
+        const password = configService.get<string>('database.password');
+        const database = configService.get<string>('database.database');
+
+        // Log des informations de connexion (sans le mot de passe)
+        console.log('🔗 Database Connection Config:');
+        console.log(`   Host: ${host}`);
+        console.log(`   Port: ${port}`);
+        console.log(`   Username: ${username}`);
+        console.log(`   Database: ${database}`);
+        console.log(`   Password: ${password ? '***SET***' : '❌ NOT SET'}`);
+
+        if (!host || !username || !password || !database) {
+          console.error('❌ Missing required database environment variables!');
+          console.error('Required: APP_BD_HOST, APP_BD_USERNAME, APP_BD_PASSWORD, APP_BD_NAME');
+        }
+
+        return {
+          dialect: 'postgres' as Dialect,
+          host,
+          port: port || 5432,
+          username,
+          password,
+          database,
+          autoLoadModels: true,
+          synchronize: false,
+          dialectOptions: {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false,
+            },
           },
-        },
-        logging: false,
-        // logging: console.log,
-      }),
+          logging: false,
+          retry: {
+            max: 5,
+            timeout: 60000,
+          },
+        };
+      },
     }),
     SequelizeModule.forFeature([
       Users,
