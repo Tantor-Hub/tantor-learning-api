@@ -23,6 +23,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @ApiTags('Events')
@@ -776,6 +777,111 @@ export class EventController {
     return this.eventService.update(id, updateEventDto);
   }
 
+  @Get('session/:sessionId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get events for a specific session course',
+    description:
+      'Retrieve all events associated with a specific session course (SessionCours). This includes events directly linked to the session and events linked through the session course.',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: 'UUID of the session course (SessionCours)',
+    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Events retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 3 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+                  },
+                  title: { type: 'string', example: 'Course Introduction' },
+                  description: {
+                    type: 'string',
+                    example: 'Introduction to the course content',
+                  },
+                  begining_date: { type: 'string', example: '2025-02-10' },
+                  beginning_hour: { type: 'string', example: '09:00' },
+                  ending_hour: { type: 'string', example: '12:00' },
+                  id_cible_session: {
+                    type: 'string',
+                    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+                  },
+                  id_cible_cours: {
+                    type: 'string',
+                    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+                  },
+                  id_cible_lesson: {
+                    type: 'string',
+                    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+                  },
+                  createdBy: {
+                    type: 'string',
+                    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+                  },
+                  sessionCours: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      title: { type: 'string' },
+                      description: { type: 'string' },
+                    },
+                  },
+                  lesson: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      title: { type: 'string' },
+                      content: { type: 'string' },
+                    },
+                  },
+                  creator: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      firstName: { type: 'string' },
+                      lastName: { type: 'string' },
+                      email: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        customMessage: {
+          type: 'string',
+          example: 'Events retrieved successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session not found or no events found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  getEventsBySession(@Param('sessionId') sessionId: string) {
+    return this.eventService.findBySession(sessionId);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiOperation({ summary: 'Delete event by ID' })
@@ -798,5 +904,175 @@ export class EventController {
   @ApiResponse({ status: 404, description: 'Event not found' })
   remove(@Param('id') id: string) {
     return this.eventService.remove(id);
+  }
+
+  @Get('instructor/mycourses')
+  @UseGuards(JwtAuthGuardAsSuperviseur)
+  @ApiOperation({
+    summary: 'Get events for instructor courses',
+    description:
+      'Retrieve all events associated with sessioncours where the authenticated instructor is assigned as formateur. This includes events directly linked to the sessioncours and events linked to the sessions containing these sessioncours.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Events for instructor courses retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 5 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
+                  title: { type: 'string', example: 'React Workshop' },
+                  description: {
+                    type: 'string',
+                    example: 'Advanced React concepts',
+                  },
+                  begining_date: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-02-01T09:00:00.000Z',
+                  },
+                  beginning_hour: { type: 'string', example: '09:00' },
+                  ending_hour: { type: 'string', example: '17:00' },
+                  id_cible_cours: {
+                    type: 'string',
+                    example: '550e8400-e29b-41d4-a716-446655440002',
+                  },
+                  id_cible_session: {
+                    type: 'string',
+                    example: '550e8400-e29b-41d4-a716-446655440003',
+                  },
+                  createdBy: {
+                    type: 'string',
+                    example: '550e8400-e29b-41d4-a716-446655440004',
+                  },
+                  createdAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-25T10:00:00.000Z',
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-25T10:00:00.000Z',
+                  },
+                  sessionCours: {
+                    type: 'object',
+                    properties: {
+                      id: {
+                        type: 'string',
+                        example: '550e8400-e29b-41d4-a716-446655440002',
+                      },
+                      title: {
+                        type: 'string',
+                        example: 'Advanced React Development',
+                      },
+                      id_session: {
+                        type: 'string',
+                        example: '550e8400-e29b-41d4-a716-446655440003',
+                      },
+                      id_formateur: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        example: ['1', '2'],
+                      },
+                    },
+                  },
+                  trainingSession: {
+                    type: 'object',
+                    properties: {
+                      id: {
+                        type: 'string',
+                        example: '550e8400-e29b-41d4-a716-446655440003',
+                      },
+                      title: {
+                        type: 'string',
+                        example: 'React Training Session',
+                      },
+                    },
+                  },
+                  creator: {
+                    type: 'object',
+                    properties: {
+                      id: {
+                        type: 'string',
+                        example: '550e8400-e29b-41d4-a716-446655440004',
+                      },
+                      firstName: { type: 'string', example: 'John' },
+                      lastName: { type: 'string', example: 'Doe' },
+                      email: {
+                        type: 'string',
+                        example: 'john.doe@example.com',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        message: {
+          type: 'string',
+          example: 'Events for instructor courses retrieved successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'No session courses found for this instructor',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 0 },
+            rows: { type: 'array', items: {}, example: [] },
+          },
+        },
+        message: {
+          type: 'string',
+          example: 'No session courses found for this instructor',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor access required',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 500 },
+        message: {
+          type: 'string',
+          example: 'Error retrieving events for instructor courses',
+        },
+      },
+    },
+  })
+  async getEventsForInstructorCourses(@User() user: IJwtSignin) {
+    return this.eventService.findByInstructorCourses(user);
   }
 }

@@ -3,7 +3,7 @@ import { registerAs } from '@nestjs/config';
 export default registerAs('database', () => {
   // Support for DATABASE_URL (common on deployment platforms)
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   if (databaseUrl) {
     console.log('🔗 Using DATABASE_URL for connection');
     const url = new URL(databaseUrl);
@@ -14,6 +14,12 @@ export default registerAs('database', () => {
       username: url.username,
       password: url.password,
       database: url.pathname.slice(1), // Remove leading slash
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      },
     };
   }
 
@@ -26,6 +32,15 @@ export default registerAs('database', () => {
     username: process.env.APP_BD_USERNAME,
     password: process.env.APP_BD_PASSWORD,
     database: process.env.APP_BD_NAME,
+    dialectOptions: {
+      ssl:
+        process.env.NODE_ENV === 'production'
+          ? {
+              require: true,
+              rejectUnauthorized: false,
+            }
+          : false,
+    },
   };
 });
 

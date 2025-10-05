@@ -11,6 +11,7 @@ import { TrainingSession } from 'src/models/model.trainingssession';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { Users } from 'src/models/model.users';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
 export class EventService {
@@ -453,6 +454,121 @@ export class EventService {
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error retrieving events',
+      });
+    }
+  }
+
+  async findByInstructorCourses(user: IJwtSignin): Promise<ResponseServer> {
+    try {
+      console.log('=== Event findByInstructorCourses: Starting ===');
+      console.log('User:', user);
+      console.log('Instructor ID from token:', user.id_user);
+
+      // First, get all sessioncours where the instructor is assigned
+      const sessionCours = await SessionCours.findAll({
+        where: {
+          id_formateur: {
+            [require('sequelize').Op.contains]: [user.id_user],
+          },
+        },
+        attributes: ['id', 'title', 'id_session'],
+      });
+
+      console.log('SessionCours found for instructor:', sessionCours.length);
+
+      if (sessionCours.length === 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            length: 0,
+            rows: [],
+          },
+          customMessage: 'No session courses found for this instructor',
+        });
+      }
+
+      // Extract sessioncours IDs and session IDs
+      const sessionCoursIds = sessionCours.map((sc) => sc.id);
+      const sessionIds = sessionCours
+        .map((sc) => sc.id_session)
+        .filter(Boolean);
+
+      console.log('SessionCours IDs:', sessionCoursIds);
+      console.log('Session IDs:', sessionIds);
+
+      // Find events that are either:
+      // 1. Directly linked to sessioncours (id_cible_cours)
+      // 2. Linked to sessions that contain these sessioncours (id_cible_session)
+      const events = await this.eventModel.findAll({
+        where: {
+          [require('sequelize').Op.or]: [
+            // Events directly linked to sessioncours
+            {
+              id_cible_cours: {
+                [require('sequelize').Op.in]: sessionCoursIds,
+              },
+            },
+            // Events linked to sessions that contain these sessioncours
+            {
+              id_cible_session: {
+                [require('sequelize').Op.in]: sessionIds,
+              },
+            },
+          ],
+        },
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            attributes: ['id', 'title'],
+          },
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            attributes: ['id', 'title'],
+          },
+          {
+            model: SessionCours,
+            as: 'sessionCours',
+            attributes: ['id', 'title', 'id_session', 'id_formateur'],
+            required: false,
+          },
+          {
+            model: Lesson,
+            as: 'lesson',
+            attributes: ['id', 'title'],
+          },
+          {
+            model: Users,
+            as: 'users',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+        order: [['begining_date', 'ASC']],
+      });
+
+      console.log('=== Event findByInstructorCourses: Success ===');
+      console.log('Events found:', events.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: events.length,
+          rows: events,
+        },
+        customMessage: 'Events for instructor courses retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Event findByInstructorCourses: ERROR ===');
+      console.error('Error retrieving events for instructor courses:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving events for instructor courses',
       });
     }
   }

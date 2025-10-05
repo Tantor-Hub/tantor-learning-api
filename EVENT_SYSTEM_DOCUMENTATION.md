@@ -94,7 +94,16 @@ GET /user/{userId}
 **Authentication:** JWT required
 **Description:** Returns all events targeting a specific user
 
-### 6. Get Events by Date Range
+### 6. Get Events for Instructor Courses
+
+```
+GET /instructor/mycourses
+```
+
+**Authentication:** JWT + Instructor role required
+**Description:** Returns all events associated with sessioncours where the authenticated instructor is assigned as formateur. This includes events directly linked to the sessioncours and events linked to the sessions containing these sessioncours.
+
+### 7. Get Events by Date Range
 
 ```
 GET /date-range?startDate=2025-02-01T00:00:00.000Z&endDate=2025-02-28T23:59:59.999Z
@@ -103,7 +112,7 @@ GET /date-range?startDate=2025-02-01T00:00:00.000Z&endDate=2025-02-28T23:59:59.9
 **Authentication:** JWT required
 **Description:** Returns events within the specified date range
 
-### 7. Get Event by ID
+### 8. Get Event by ID
 
 ```
 GET /{id}
@@ -112,7 +121,7 @@ GET /{id}
 **Authentication:** JWT required
 **Description:** Returns a specific event with all related entities
 
-### 8. Update Event
+### 9. Update Event
 
 ```
 PATCH /update/{id}
@@ -121,7 +130,7 @@ PATCH /update/{id}
 **Authentication:** JWT + Secretary/Admin role required
 **Request Body:** Partial update (all fields optional)
 
-### 9. Delete Event
+### 10. Delete Event
 
 ```
 DELETE /{id}
