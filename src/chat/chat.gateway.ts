@@ -32,7 +32,7 @@ interface AuthenticatedSocket extends Socket {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
-    credentials: true,
+    credentials: false, // Set to false when using wildcard origin
   },
   namespace: '/chat',
 })

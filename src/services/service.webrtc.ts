@@ -11,7 +11,12 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { MediasoupService } from './service.mediasoup';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({ 
+  cors: {
+    origin: '*',
+    credentials: false
+  }
+})
 export class WebrtcGatewayService
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {

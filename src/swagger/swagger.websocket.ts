@@ -544,7 +544,7 @@ export const WebSocketSwagger = {
     cors: {
       origin: '*',
       methods: ['GET', 'POST'],
-      credentials: true,
+      credentials: false, // Set to false when using wildcard origin
     },
   },
 

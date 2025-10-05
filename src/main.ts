@@ -20,11 +20,11 @@ async function tantorAPP() {
   const port = configService.get<number>('TANTORPORT', 3000);
 
   app.enableCors({
-    origin: true, // Allow all origins
+    origin: '*', // Allow all origins explicitly
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: '*', // Allow all headers
     exposedHeaders: '*', // Expose all headers
-    credentials: true,
+    credentials: false, // Set to false when using wildcard origin
     preflightContinue: false,
     optionsSuccessStatus: 204,
     maxAge: 86400, // Cache preflight for 24 hours
@@ -38,7 +38,7 @@ async function tantorAPP() {
       'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     );
     res.header('Access-Control-Allow-Headers', '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Credentials', 'false'); // Consistent with main CORS config
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
     } else {
