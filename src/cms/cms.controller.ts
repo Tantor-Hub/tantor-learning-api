@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   UploadedFile,
@@ -165,7 +166,7 @@ export class CmsController {
   ) {
     return this.cmsService.getMessageByThread(user, thread);
   }
-  @Put('messages/message/archive/:idmessage')
+  @Patch('messages/message/archive/:idmessage')
   @UseGuards(JwtAuthGuard)
   async onArchiveMessage(
     @User() user,

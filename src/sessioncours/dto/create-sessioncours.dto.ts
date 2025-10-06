@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsBoolean,
   IsArray,
+  IsInt,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -50,4 +51,13 @@ export class CreateSessionCoursDto {
   @IsArray()
   @IsString({ each: true })
   id_formateur?: string[];
+
+  @ApiProperty({
+    description: 'Ponderation value for the session course',
+    example: 2,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  ponderation?: number;
 }

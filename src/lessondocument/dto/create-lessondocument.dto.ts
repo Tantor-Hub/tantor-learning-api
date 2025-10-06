@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLessondocumentDto {
@@ -38,4 +38,13 @@ export class CreateLessondocumentDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'Whether the lesson document is published and visible to students',
+    required: true,
+  })
+  @IsBoolean()
+  ispublish: boolean;
 }

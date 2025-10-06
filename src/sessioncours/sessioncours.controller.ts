@@ -53,6 +53,7 @@ export class SessionCoursController {
           id_session: '550e8400-e29b-41d4-a716-446655440000',
           is_published: false,
           id_formateur: ['1', '2'],
+          ponderation: 2,
         },
       },
       example2: {
@@ -63,6 +64,7 @@ export class SessionCoursController {
           id_session: '550e8400-e29b-41d4-a716-446655440001',
           is_published: true,
           id_formateur: ['3'],
+          ponderation: 1,
         },
       },
     },
@@ -79,8 +81,20 @@ export class SessionCoursController {
           title: 'Advanced React Development',
           description: 'Learn advanced React concepts and best practices',
           is_published: false,
-          id_formateur: ['1', '2'],
+          formateurs: [
+            {
+              id: '1',
+              firstName: 'John',
+              lastName: 'Doe',
+            },
+            {
+              id: '2',
+              firstName: 'Jane',
+              lastName: 'Smith',
+            },
+          ],
           id_session: '550e8400-e29b-41d4-a716-446655440000',
+          ponderation: 2,
           createdBy: '550e8400-e29b-41d4-a716-446655440009',
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T10:00:00.000Z',
@@ -128,8 +142,20 @@ export class SessionCoursController {
               title: 'Advanced React Development',
               description: 'Learn advanced React concepts and best practices',
               is_published: false,
-              id_formateur: ['1', '2'],
+              formateurs: [
+                {
+                  id: '1',
+                  firstName: 'John',
+                  lastName: 'Doe',
+                },
+                {
+                  id: '2',
+                  firstName: 'Jane',
+                  lastName: 'Smith',
+                },
+              ],
               id_session: '550e8400-e29b-41d4-a716-446655440000',
+              ponderation: 2,
               createdBy: '550e8400-e29b-41d4-a716-446655440009',
               createdAt: '2025-01-25T10:00:00.000Z',
               updatedAt: '2025-01-25T10:00:00.000Z',
@@ -137,7 +163,6 @@ export class SessionCoursController {
                 id: 1,
                 fs_name: 'John',
                 ls_name: 'Doe',
-                email: 'john.doe@example.com',
               },
               trainingSession: {
                 id: '550e8400-e29b-41d4-a716-446655440000',
@@ -190,7 +215,19 @@ export class SessionCoursController {
               title: 'Advanced React Development',
               description: 'Learn advanced React concepts and best practices',
               is_published: false,
-              id_formateur: ['1', '2'],
+              formateurs: [
+                {
+                  id: '1',
+                  firstName: 'John',
+                  lastName: 'Doe',
+                },
+                {
+                  id: '2',
+                  firstName: 'Jane',
+                  lastName: 'Smith',
+                },
+              ],
+              ponderation: 2,
               createdAt: '2025-01-25T10:00:00.000Z',
               updatedAt: '2025-01-25T10:00:00.000Z',
             },
@@ -199,7 +236,14 @@ export class SessionCoursController {
               title: 'Introduction to JavaScript',
               description: 'Basic JavaScript concepts and fundamentals',
               is_published: true,
-              id_formateur: ['3'],
+              formateurs: [
+                {
+                  id: '3',
+                  firstName: 'Bob',
+                  lastName: 'Johnson',
+                },
+              ],
+              ponderation: 1,
               createdAt: '2025-01-25T10:00:00.000Z',
               updatedAt: '2025-01-25T10:00:00.000Z',
             },
@@ -337,8 +381,20 @@ export class SessionCoursController {
           title: 'Advanced React Development',
           description: 'Learn advanced React concepts and best practices',
           is_published: false,
-          id_formateur: ['1', '2'],
+          formateurs: [
+            {
+              id: '1',
+              firstName: 'John',
+              lastName: 'Doe',
+            },
+            {
+              id: '2',
+              firstName: 'Jane',
+              lastName: 'Smith',
+            },
+          ],
           id_session: '550e8400-e29b-41d4-a716-446655440000',
+          ponderation: 2,
           createdBy: '550e8400-e29b-41d4-a716-446655440009',
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T10:00:00.000Z',
@@ -346,7 +402,6 @@ export class SessionCoursController {
             id: 1,
             fs_name: 'John',
             ls_name: 'Doe',
-            email: 'john.doe@example.com',
           },
           trainingSession: {
             id: '550e8400-e29b-41d4-a716-446655440000',
@@ -403,6 +458,7 @@ export class SessionCoursController {
           description: 'Updated description with new content',
           is_published: true,
           id_formateur: ['1', '3'],
+          ponderation: 3,
         },
       },
       example2: {
@@ -410,6 +466,7 @@ export class SessionCoursController {
         value: {
           id: '550e8400-e29b-41d4-a716-446655440001',
           is_published: true,
+          ponderation: 2,
         },
       },
       example3: {
@@ -417,6 +474,7 @@ export class SessionCoursController {
         value: {
           id: '550e8400-e29b-41d4-a716-446655440001',
           id_formateur: ['2', '4'],
+          ponderation: 1,
         },
       },
     },
@@ -433,8 +491,20 @@ export class SessionCoursController {
           title: 'Updated Advanced React Development',
           description: 'Updated description with new content',
           is_published: true,
-          id_formateur: ['1', '3'],
+          formateurs: [
+            {
+              id: '1',
+              firstName: 'John',
+              lastName: 'Doe',
+            },
+            {
+              id: '3',
+              firstName: 'Bob',
+              lastName: 'Johnson',
+            },
+          ],
           id_session: '550e8400-e29b-41d4-a716-446655440000',
+          ponderation: 3,
           createdBy: '550e8400-e29b-41d4-a716-446655440009',
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T11:00:00.000Z',
@@ -442,7 +512,6 @@ export class SessionCoursController {
             id: 1,
             fs_name: 'John',
             ls_name: 'Doe',
-            email: 'john.doe@example.com',
           },
           trainingSession: {
             id: '550e8400-e29b-41d4-a716-446655440000',

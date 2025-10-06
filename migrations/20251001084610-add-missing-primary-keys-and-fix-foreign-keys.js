@@ -35,34 +35,40 @@ module.exports = {
     }
 
     // Add primary key to reclamations_sanctions table
-    const reclamationsTableExists = await queryInterface.describeTable(
-      '___tbl_tantor_reclamations_sanctions',
-    );
-    if (reclamationsTableExists && !reclamationsTableExists.id) {
-      await queryInterface.addColumn(
-        '___tbl_tantor_reclamations_sanctions',
-        'id',
-        {
-          type: Sequelize.UUID,
-          allowNull: false,
-          defaultValue: Sequelize.UUIDV4,
-          primaryKey: true,
-        },
+    try {
+      const reclamationsTableExists = await queryInterface.describeTable(
+        '___tbl_tantor_docsreclamationformations',
       );
-    }
-
-    // Convert suivi_id from INTEGER to UUID in reclamations_sanctions
-    if (reclamationsTableExists && reclamationsTableExists.suivi_id) {
-      if (reclamationsTableExists.suivi_id.type === 'integer') {
-        await queryInterface.changeColumn(
-          '___tbl_tantor_reclamations_sanctions',
-          'suivi_id',
+      if (reclamationsTableExists && !reclamationsTableExists.id) {
+        await queryInterface.addColumn(
+          '___tbl_tantor_docsreclamationformations',
+          'id',
           {
             type: Sequelize.UUID,
             allowNull: false,
+            defaultValue: Sequelize.UUIDV4,
+            primaryKey: true,
           },
         );
       }
+
+      // Convert suivi_id from INTEGER to UUID in docsreclamationformations
+      if (reclamationsTableExists && reclamationsTableExists.suivi_id) {
+        if (reclamationsTableExists.suivi_id.type === 'integer') {
+          await queryInterface.changeColumn(
+            '___tbl_tantor_docsreclamationformations',
+            'suivi_id',
+            {
+              type: Sequelize.UUID,
+              allowNull: false,
+            },
+          );
+        }
+      }
+    } catch (error) {
+      console.log(
+        'Table ___tbl_tantor_docsreclamationformations does not exist, skipping...',
+      );
     }
 
     // Add primary key to newsletter table
@@ -93,10 +99,10 @@ module.exports = {
 
     // Add primary key to appinfos table
     const appinfosTableExists = await queryInterface.describeTable(
-      '___tbl_tantor_appinfos',
+      '___tbl_tantor_infos',
     );
     if (appinfosTableExists && !appinfosTableExists.id) {
-      await queryInterface.addColumn('___tbl_tantor_appinfos', 'id', {
+      await queryInterface.addColumn('___tbl_tantor_infos', 'id', {
         type: Sequelize.UUID,
         allowNull: false,
         defaultValue: Sequelize.UUIDV4,
@@ -130,27 +136,33 @@ module.exports = {
       }
     }
 
-    const reclamationsTableExists = await queryInterface.describeTable(
-      '___tbl_tantor_reclamations_sanctions',
-    );
-    if (reclamationsTableExists && reclamationsTableExists.id) {
-      await queryInterface.removeColumn(
-        '___tbl_tantor_reclamations_sanctions',
-        'id',
+    try {
+      const reclamationsTableExists = await queryInterface.describeTable(
+        '___tbl_tantor_docsreclamationformations',
       );
-    }
-
-    if (reclamationsTableExists && reclamationsTableExists.suivi_id) {
-      if (reclamationsTableExists.suivi_id.type === 'uuid') {
-        await queryInterface.changeColumn(
-          '___tbl_tantor_reclamations_sanctions',
-          'suivi_id',
-          {
-            type: Sequelize.INTEGER,
-            allowNull: false,
-          },
+      if (reclamationsTableExists && reclamationsTableExists.id) {
+        await queryInterface.removeColumn(
+          '___tbl_tantor_docsreclamationformations',
+          'id',
         );
       }
+
+      if (reclamationsTableExists && reclamationsTableExists.suivi_id) {
+        if (reclamationsTableExists.suivi_id.type === 'uuid') {
+          await queryInterface.changeColumn(
+            '___tbl_tantor_docsreclamationformations',
+            'suivi_id',
+            {
+              type: Sequelize.INTEGER,
+              allowNull: false,
+            },
+          );
+        }
+      }
+    } catch (error) {
+      console.log(
+        'Table ___tbl_tantor_docsreclamationformations does not exist, skipping rollback...',
+      );
     }
 
     const newsletterTableExists = await queryInterface.describeTable(
@@ -168,10 +180,10 @@ module.exports = {
     }
 
     const appinfosTableExists = await queryInterface.describeTable(
-      '___tbl_tantor_appinfos',
+      '___tbl_tantor_infos',
     );
     if (appinfosTableExists && appinfosTableExists.id) {
-      await queryInterface.removeColumn('___tbl_tantor_appinfos', 'id');
+      await queryInterface.removeColumn('___tbl_tantor_infos', 'id');
     }
   },
 };

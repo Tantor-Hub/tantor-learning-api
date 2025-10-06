@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -172,7 +173,7 @@ export class UsersController {
   async profileAsStudent(@User() user) {
     return this.userService.profileAsStudent(user);
   }
-  @Put('user/update')
+  @Patch('user/update')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('avatar', { limits: { fileSize: 10_000_000 } }),
@@ -360,12 +361,12 @@ export class UsersController {
     }
   }
 
-  @Put('change-role')
+  @Patch('change-role')
   async changeUserRole(@Body() changeRoleDto: ChangeRoleDto) {
     return this.userService.changeRole(changeRoleDto);
   }
 
-  @Put('public/change-role')
+  @Patch('public/change-role')
   async publicChangeUserRole(@Body() changeRoleDto: ChangeRoleDto) {
     return this.userService.changeRole(changeRoleDto);
   }

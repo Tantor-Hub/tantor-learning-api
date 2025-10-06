@@ -83,6 +83,7 @@ export class SessionCoursService {
           'is_published',
           'id_session',
           'id_formateur',
+          'ponderation',
           'createdBy',
           'createdAt',
           'updatedAt',
@@ -92,7 +93,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName'],
           },
           {
             model: TrainingSession,
@@ -111,14 +112,43 @@ export class SessionCoursService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Transform id_formateur array to include instructor details
+      const sessionCoursWithFormateurs = await Promise.all(
+        sessionCours.map(async (cours) => {
+          const coursData = cours.toJSON() as any;
+
+          if (coursData.id_formateur && coursData.id_formateur.length > 0) {
+            // Fetch instructor details for each formateur ID
+            const formateurs = await this.usersModel.findAll({
+              where: {
+                id: coursData.id_formateur,
+                role: 'instructor',
+              },
+              attributes: ['id', 'firstName', 'lastName'],
+            });
+
+            coursData.formateurs = formateurs.map((formateur) =>
+              formateur.toJSON(),
+            );
+          } else {
+            coursData.formateurs = [];
+          }
+
+          // Remove the raw id_formateur array since we now have formateurs objects
+          delete coursData.id_formateur;
+
+          return coursData;
+        }),
+      );
+
       console.log('=== SessionCours findAll: Success ===');
-      console.log('Session cours found:', sessionCours.length);
+      console.log('Session cours found:', sessionCoursWithFormateurs.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: sessionCours.length,
-          rows: sessionCours,
+          length: sessionCoursWithFormateurs.length,
+          rows: sessionCoursWithFormateurs,
         },
         customMessage: 'Session courses retrieved successfully',
       });
@@ -165,20 +195,50 @@ export class SessionCoursService {
           'description',
           'is_published',
           'id_formateur',
+          'ponderation',
           'createdAt',
           'updatedAt',
         ],
         order: [['createdAt', 'DESC']],
       });
 
+      // Transform id_formateur array to include instructor details
+      const sessionCoursWithFormateurs = await Promise.all(
+        sessionCours.map(async (cours) => {
+          const coursData = cours.toJSON() as any;
+
+          if (coursData.id_formateur && coursData.id_formateur.length > 0) {
+            // Fetch instructor details for each formateur ID
+            const formateurs = await this.usersModel.findAll({
+              where: {
+                id: coursData.id_formateur,
+                role: 'instructor',
+              },
+              attributes: ['id', 'firstName', 'lastName'],
+            });
+
+            coursData.formateurs = formateurs.map((formateur) =>
+              formateur.toJSON(),
+            );
+          } else {
+            coursData.formateurs = [];
+          }
+
+          // Remove the raw id_formateur array since we now have formateurs objects
+          delete coursData.id_formateur;
+
+          return coursData;
+        }),
+      );
+
       console.log('=== SessionCours findBySessionId: Success ===');
-      console.log('Session cours found:', sessionCours.length);
+      console.log('Session cours found:', sessionCoursWithFormateurs.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: sessionCours.length,
-          rows: sessionCours,
+          length: sessionCoursWithFormateurs.length,
+          rows: sessionCoursWithFormateurs,
         },
       });
     } catch (error) {
@@ -221,6 +281,7 @@ export class SessionCoursService {
           'is_published',
           'id_session',
           'id_formateur',
+          'ponderation',
           'createdBy',
           'createdAt',
           'updatedAt',
@@ -230,7 +291,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName'],
           },
           {
             model: TrainingSession,
@@ -242,15 +303,44 @@ export class SessionCoursService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Transform id_formateur array to include instructor details
+      const sessionCoursWithFormateurs = await Promise.all(
+        sessionCours.map(async (cours) => {
+          const coursData = cours.toJSON() as any;
+
+          if (coursData.id_formateur && coursData.id_formateur.length > 0) {
+            // Fetch instructor details for each formateur ID
+            const formateurs = await this.usersModel.findAll({
+              where: {
+                id: coursData.id_formateur,
+                role: 'instructor',
+              },
+              attributes: ['id', 'firstName', 'lastName'],
+            });
+
+            coursData.formateurs = formateurs.map((formateur) =>
+              formateur.toJSON(),
+            );
+          } else {
+            coursData.formateurs = [];
+          }
+
+          // Remove the raw id_formateur array since we now have formateurs objects
+          delete coursData.id_formateur;
+
+          return coursData;
+        }),
+      );
+
       console.log('=== SessionCours findByFormateurId: Success ===');
-      console.log('Session cours found:', sessionCours);
-      console.log('Session cours found:', sessionCours.length);
+      console.log('Session cours found:', sessionCoursWithFormateurs);
+      console.log('Session cours found:', sessionCoursWithFormateurs.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: sessionCours.length,
-          rows: sessionCours,
+          length: sessionCoursWithFormateurs.length,
+          rows: sessionCoursWithFormateurs,
         },
         customMessage: 'Session courses retrieved successfully',
       });
@@ -288,6 +378,7 @@ export class SessionCoursService {
           'is_published',
           'id_session',
           'id_formateur',
+          'ponderation',
           'createdBy',
           'createdAt',
           'updatedAt',
@@ -297,7 +388,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName'],
           },
           {
             model: TrainingSession,
@@ -322,12 +413,35 @@ export class SessionCoursService {
         });
       }
 
+      // Transform id_formateur array to include instructor details
+      const coursData = sessionCours.toJSON() as any;
+
+      if (coursData.id_formateur && coursData.id_formateur.length > 0) {
+        // Fetch instructor details for each formateur ID
+        const formateurs = await this.usersModel.findAll({
+          where: {
+            id: coursData.id_formateur,
+            role: 'instructor',
+          },
+          attributes: ['id', 'firstName', 'lastName'],
+        });
+
+        coursData.formateurs = formateurs.map((formateur) =>
+          formateur.toJSON(),
+        );
+      } else {
+        coursData.formateurs = [];
+      }
+
+      // Remove the raw id_formateur array since we now have formateurs objects
+      delete coursData.id_formateur;
+
       console.log('=== SessionCours findOne: Success ===');
-      console.log('Session cours found:', sessionCours.toJSON());
+      console.log('Session cours found:', coursData);
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: sessionCours,
+        data: coursData,
         customMessage: 'Session course retrieved successfully',
       });
     } catch (error) {
@@ -394,6 +508,7 @@ export class SessionCoursService {
           'is_published',
           'id_session',
           'id_formateur',
+          'ponderation',
           'createdBy',
           'createdAt',
           'updatedAt',
@@ -403,7 +518,7 @@ export class SessionCoursService {
             model: Users,
             required: false,
             as: 'CreatedBy',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName'],
           },
           {
             model: TrainingSession,
@@ -421,12 +536,41 @@ export class SessionCoursService {
         ],
       });
 
+      // Transform id_formateur array to include instructor details
+      const coursData = updatedSessionCours?.toJSON() as any;
+
+      if (
+        coursData &&
+        coursData.id_formateur &&
+        coursData.id_formateur.length > 0
+      ) {
+        // Fetch instructor details for each formateur ID
+        const formateurs = await this.usersModel.findAll({
+          where: {
+            id: coursData.id_formateur,
+            role: 'instructor',
+          },
+          attributes: ['id', 'firstName', 'lastName'],
+        });
+
+        coursData.formateurs = formateurs.map((formateur) =>
+          formateur.toJSON(),
+        );
+      } else if (coursData) {
+        coursData.formateurs = [];
+      }
+
+      // Remove the raw id_formateur array since we now have formateurs objects
+      if (coursData) {
+        delete coursData.id_formateur;
+      }
+
       console.log('=== SessionCours update: Success ===');
-      console.log('Updated session cours:', updatedSessionCours?.toJSON());
+      console.log('Updated session cours:', coursData);
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: updatedSessionCours,
+        data: coursData,
         customMessage: 'Session course updated successfully',
       });
     } catch (error) {

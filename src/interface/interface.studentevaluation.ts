@@ -4,6 +4,7 @@ export enum StudentevaluationType {
   EXERCISE = 'exercise',
   HOMEWORK = 'homework',
   TEST = 'test',
+  QUIZ = 'quiz',
   EXAMEN = 'examen',
 }
 
@@ -13,12 +14,15 @@ export interface IStudentevaluation extends IGlobale {
   description?: string;
   type: StudentevaluationType;
   points: number;
-  lecturerId: string;
+  createdBy: string;
+  studentId?: string[];
   submittiondate: Date;
+  beginningTime?: string;
+  endingTime?: string;
   ispublish: boolean;
   isImmediateResult?: boolean;
   sessionCoursId?: string;
-  lessonId?: string;
+  lessonId?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -65,6 +65,10 @@ export class SessionCours extends Model<ISessionCours> {
   @Column(DataType.ARRAY(DataType.STRING))
   id_formateur?: string[];
 
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  ponderation?: number;
+
   @HasMany(() => Lesson, {
     foreignKey: 'id_cours',
     sourceKey: 'id',

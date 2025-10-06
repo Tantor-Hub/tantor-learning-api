@@ -9,14 +9,18 @@ const databaseConfig = {
   password: process.env.APP_BD_PASSWORD || 'admin',
   database: process.env.APP_BD_NAME || 'default_database',
   dialectOptions: {
-    ssl: false, // Force SSL to false for local development
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
   },
+  logging: false,
 };
 
 module.exports = {
   development: {
     ...databaseConfig,
-    logging: console.log,
+    logging: false,
   },
   test: {
     ...databaseConfig,

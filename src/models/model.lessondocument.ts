@@ -42,6 +42,10 @@ export class Lessondocument extends Model {
   @Column({ type: DataType.TEXT, defaultValue: 'No description provided' })
   description: string;
 
+  @AllowNull(false)
+  @Column(DataType.BOOLEAN)
+  ispublish: boolean;
+
   @ForeignKey(() => Lesson)
   @Column(DataType.UUID)
   id_lesson: string;

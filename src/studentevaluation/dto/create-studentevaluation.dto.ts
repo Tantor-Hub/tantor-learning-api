@@ -8,7 +8,11 @@ import {
   IsInt,
   IsDateString,
   Min,
+  IsArray,
+  ArrayMinSize,
+  Matches,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { StudentevaluationType } from 'src/interface/interface.studentevaluation';
 
 export class CreateStudentevaluationDto {
@@ -42,21 +46,26 @@ export class CreateStudentevaluationDto {
   @ApiProperty({
     description: 'Total points for this evaluation',
     example: 100,
-    required: false,
-    default: 1,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  points?: number;
-
-  @ApiProperty({
-    description: 'ID of the lecturer who created this evaluation',
-    example: '550e8400-e29b-41d4-a716-446655440000',
     required: true,
   })
-  @IsUUID('4')
-  lecturerId: string;
+  @IsInt()
+  @Min(1)
+  points: number;
+
+  @ApiProperty({
+    description: 'Array of student IDs who participated in this evaluation',
+    example: [
+      '550e8400-e29b-41d4-a716-446655440002',
+      '550e8400-e29b-41d4-a716-446655440003',
+    ],
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value.map(String) : value))
+  @IsArray()
+  @IsString({ each: true })
+  studentId?: string[];
 
   @ApiProperty({
     description: 'Submission deadline for this evaluation',
@@ -67,14 +76,35 @@ export class CreateStudentevaluationDto {
   submittiondate: string;
 
   @ApiProperty({
-    description: 'Whether this evaluation is published and visible to students',
-    example: false,
+    description:
+      'Beginning time for this evaluation in HH:MM format (optional)',
+    example: '09:00',
     required: false,
-    default: false,
   })
   @IsOptional()
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'beginningTime must be in HH:MM format (e.g., 09:00, 14:30)',
+  })
+  beginningTime?: string;
+
+  @ApiProperty({
+    description: 'Ending time for this evaluation in HH:MM format (optional)',
+    example: '11:00',
+    required: false,
+  })
+  @IsOptional()
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'endingTime must be in HH:MM format (e.g., 09:00, 14:30)',
+  })
+  endingTime?: string;
+
+  @ApiProperty({
+    description: 'Whether this evaluation is published and visible to students',
+    example: false,
+    required: true,
+  })
   @IsBoolean()
-  ispublish?: boolean;
+  ispublish: boolean;
 
   @ApiProperty({
     description: 'Whether results should be shown immediately after submission',
@@ -87,21 +117,25 @@ export class CreateStudentevaluationDto {
   isImmediateResult?: boolean;
 
   @ApiProperty({
-    description:
-      'ID of the session course this evaluation is linked to (optional)',
+    description: 'ID of the session course this evaluation is linked to',
     example: '550e8400-e29b-41d4-a716-446655440000',
-    required: false,
+    required: true,
   })
-  @IsOptional()
-  @IsUUID('4')
-  sessionCoursId?: string;
+  @IsString()
+  sessionCoursId: string;
 
   @ApiProperty({
-    description: 'ID of the lesson this evaluation is linked to (optional)',
-    example: '550e8400-e29b-41d4-a716-446655440001',
+    description: 'Array of lesson IDs this evaluation is linked to (optional)',
+    example: [
+      '550e8400-e29b-41d4-a716-446655440001',
+      '550e8400-e29b-41d4-a716-446655440002',
+    ],
     required: false,
+    type: [String],
   })
   @IsOptional()
-  @IsUUID('4')
-  lessonId?: string;
+  @Transform(({ value }) => (Array.isArray(value) ? value.map(String) : value))
+  @IsArray()
+  @IsString({ each: true })
+  lessonId?: string[];
 }

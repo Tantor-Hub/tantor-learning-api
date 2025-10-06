@@ -18,4 +18,5 @@ export * from './swagger.sessiondocument';
 export * from './swagger.lessondocument';
 export * from './swagger.trainingcategory';
 export * from './swagger.trainings';
+export * from './swagger.studentevaluation';
 export * from './swagger.responses';

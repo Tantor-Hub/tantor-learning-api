@@ -7,6 +7,7 @@ import { StudentevaluationController } from './studentevaluation.controller';
 import { Studentevaluation } from 'src/models/model.studentevaluation';
 import { Users } from 'src/models/model.users';
 import { EvaluationQuestion } from 'src/models/model.evaluationquestion';
+import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { AllSercices } from 'src/services/serices.all';
@@ -18,6 +19,7 @@ import { JwtService } from 'src/services/service.jwt';
       Studentevaluation,
       Users,
       EvaluationQuestion,
+      EvaluationQuestionOption,
       SessionCours,
       Lesson,
     ]),

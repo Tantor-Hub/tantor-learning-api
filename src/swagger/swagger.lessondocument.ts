@@ -208,6 +208,153 @@ export const LessonDocumentSwagger = {
       },
     },
 
+    findByCreator: {
+      operation: {
+        summary: 'Get lesson documents created by current instructor',
+        description:
+          'Retrieve all lesson documents created by the currently authenticated instructor',
+      },
+      responses: {
+        200: {
+          description:
+            'Lesson documents created by instructor retrieved successfully',
+          schema: {
+            type: 'object',
+            properties: {
+              status: { type: 'number', example: 200 },
+              message: {
+                type: 'string',
+                example:
+                  'Lesson documents created by instructor retrieved successfully',
+              },
+              data: {
+                type: 'object',
+                properties: {
+                  lessondocuments: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440001',
+                        },
+                        file_name: {
+                          type: 'string',
+                          example: 'lesson-notes.pdf',
+                        },
+                        piece_jointe: {
+                          type: 'string',
+                          example:
+                            'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+                        },
+                        type: { type: 'string', example: 'PDF' },
+                        title: {
+                          type: 'string',
+                          example: 'Introduction to Programming Concepts',
+                        },
+                        description: {
+                          type: 'string',
+                          example:
+                            'This document covers the fundamental concepts of programming including variables, loops, and functions.',
+                        },
+                        id_lesson: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440000',
+                        },
+                        createdBy: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440002',
+                        },
+                        createdAt: {
+                          type: 'string',
+                          format: 'date-time',
+                          example: '2025-01-25T10:00:00.000Z',
+                        },
+                        updatedAt: {
+                          type: 'string',
+                          format: 'date-time',
+                          example: '2025-01-25T10:00:00.000Z',
+                        },
+                        download_url: {
+                          type: 'string',
+                          example:
+                            'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+                        },
+                        creator: {
+                          type: 'object',
+                          properties: {
+                            id: {
+                              type: 'string',
+                              format: 'uuid',
+                              example: '550e8400-e29b-41d4-a716-446655440002',
+                            },
+                            firstName: { type: 'string', example: 'John' },
+                            lastName: { type: 'string', example: 'Doe' },
+                            email: {
+                              type: 'string',
+                              example: 'john.doe@example.com',
+                            },
+                          },
+                        },
+                        lesson: {
+                          type: 'object',
+                          properties: {
+                            id: {
+                              type: 'string',
+                              format: 'uuid',
+                              example: '550e8400-e29b-41d4-a716-446655440000',
+                            },
+                            title: {
+                              type: 'string',
+                              example: 'Introduction to Programming',
+                            },
+                            description: {
+                              type: 'string',
+                              example: 'Basic programming concepts',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  total: { type: 'number', example: 2 },
+                  creator: {
+                    type: 'object',
+                    properties: {
+                      id: {
+                        type: 'string',
+                        format: 'uuid',
+                        example: '550e8400-e29b-41d4-a716-446655440002',
+                      },
+                      firstName: { type: 'string', example: 'John' },
+                      lastName: { type: 'string', example: 'Doe' },
+                      email: {
+                        type: 'string',
+                        example: 'john.doe@example.com',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        401: {
+          description: 'Unauthorized - Instructor access required',
+        },
+        404: {
+          description: 'Creator not found',
+        },
+        500: {
+          description: 'Internal server error',
+        },
+      },
+    },
+
     download: {
       operation: {
         summary: 'Download lesson document',

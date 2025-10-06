@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Body,
+  Patch,
   Put,
   Param,
   Req,
@@ -84,7 +85,7 @@ export class StripeController {
     return this.stripeService.payementByOpco(user, payementOpcoDto);
   }
 
-  @Put('payment/validate/:idpayment')
+  @Patch('payment/validate/:idpayment')
   @ApiResponse({
     status: 200,
     description: 'Payment validated successfully',

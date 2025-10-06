@@ -17,6 +17,7 @@ export enum StudentevaluationType {
   EXERCISE = 'exercise',
   HOMEWORK = 'homework',
   TEST = 'test',
+  QUIZ = 'quiz',
   EXAMEN = 'examen',
 }
 
@@ -54,13 +55,25 @@ export class Studentevaluation extends Model<Studentevaluation> {
 
   @AllowNull(false)
   @Column(DataType.UUID)
-  lecturerId: string;
+  createdBy: string;
+
+  @AllowNull(true)
+  @Column(DataType.JSON)
+  studentId?: string[];
 
   @AllowNull(false)
   @Column(DataType.DATE)
   submittiondate: Date;
 
-  @Default(false)
+  @AllowNull(true)
+  @Column(DataType.TIME)
+  beginningTime?: string;
+
+  @AllowNull(true)
+  @Column(DataType.TIME)
+  endingTime?: string;
+
+  @AllowNull(false)
   @Column(DataType.BOOLEAN)
   ispublish: boolean;
 
@@ -68,13 +81,13 @@ export class Studentevaluation extends Model<Studentevaluation> {
   @Column(DataType.BOOLEAN)
   isImmediateResult: boolean;
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column(DataType.UUID)
-  sessionCoursId?: string;
+  sessionCoursId: string;
 
   @AllowNull(true)
-  @Column(DataType.UUID)
-  lessonId?: string;
+  @Column(DataType.JSON)
+  lessonId?: string[];
 
   @Column(DataType.DATE)
   createdAt: Date;
@@ -84,10 +97,10 @@ export class Studentevaluation extends Model<Studentevaluation> {
 
   // Relationships
   @BelongsTo(() => Users, {
-    foreignKey: 'lecturerId',
+    foreignKey: 'createdBy',
     targetKey: 'id',
   })
-  lecturer?: Users;
+  creator?: Users;
 
   @BelongsTo(() => require('./model.sessioncours').SessionCours, {
     foreignKey: 'sessionCoursId',
@@ -95,11 +108,8 @@ export class Studentevaluation extends Model<Studentevaluation> {
   })
   sessionCours?: any;
 
-  @BelongsTo(() => require('./model.lesson').Lesson, {
-    foreignKey: 'lessonId',
-    targetKey: 'id',
-  })
-  lesson?: any;
+  // Note: lessonId is now an array, so direct BelongsTo relationship is not possible
+  // Use a custom method to fetch lessons if needed
 
   @HasMany(() => require('./model.evaluationquestion').EvaluationQuestion, {
     foreignKey: 'evaluationId',

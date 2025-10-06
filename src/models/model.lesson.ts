@@ -32,6 +32,13 @@ export class Lesson extends Model<IListlesson> {
   @Column(DataType.TEXT)
   description?: string;
 
+  @AllowNull(true)
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  ispublish?: boolean;
+
   @ForeignKey(() => SessionCours)
   @Column(DataType.UUID)
   id_cours: string;

@@ -25,8 +25,28 @@ export class LessondocumentService {
 
   // Helper method to generate download URL for a document
   private generateDocumentDownloadUrl(doc: any): string | any {
+    // If piece_jointe is already a valid Cloudinary URL, return it as is
+    if (doc.piece_jointe && typeof doc.piece_jointe === 'string') {
+      // Check if it's already a valid Cloudinary URL
+      if (doc.piece_jointe.includes('res.cloudinary.com')) {
+        return doc.piece_jointe;
+      }
+    }
+
     let downloadUrl = doc.piece_jointe;
     try {
+      // Only try to generate a new URL if piece_jointe is not a valid Cloudinary URL
+      if (
+        !doc.piece_jointe ||
+        !doc.piece_jointe.includes('res.cloudinary.com')
+      ) {
+        console.warn(
+          `Invalid or missing piece_jointe URL for document ${doc.id}:`,
+          doc.piece_jointe,
+        );
+        return doc.piece_jointe || null;
+      }
+
       // Extract public ID from Cloudinary URL
       const urlParts = doc.piece_jointe.split('/');
       const publicIdWithExtension = urlParts[urlParts.length - 1];
@@ -102,6 +122,8 @@ export class LessondocumentService {
         `Could not generate download URL for document ${doc.id}:`,
         error.message,
       );
+      // Return the original piece_jointe if generation fails
+      return doc.piece_jointe;
     }
     return downloadUrl;
   }
@@ -233,6 +255,85 @@ export class LessondocumentService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while fetching lesson documents',
+          error: error.message,
+        },
+      });
+    }
+  }
+
+  async findByCreator(creatorId: string): Promise<ResponseServer> {
+    try {
+      // First verify that the creator exists
+      const creator = await this.userModel.findByPk(creatorId);
+      if (!creator) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Creator not found',
+        });
+      }
+
+      const lessondocuments = await this.lessondocumentModel.findAll({
+        where: { createdBy: creatorId },
+        attributes: [
+          'id',
+          'file_name',
+          'piece_jointe',
+          'type',
+          'title',
+          'description',
+          'id_lesson',
+          'createdBy',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Lesson,
+            required: false,
+            as: 'lesson',
+            attributes: ['id', 'title', 'description'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Generate download URLs for all documents
+      const documentsWithDownloadUrls = lessondocuments.map((doc) => {
+        const downloadUrl = this.generateDocumentDownloadUrl(doc);
+        return {
+          ...doc.toJSON(),
+          download_url: downloadUrl,
+        };
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          lessondocuments: documentsWithDownloadUrls,
+          total: documentsWithDownloadUrls.length,
+          creator: {
+            id: creator.id,
+            firstName: creator.firstName,
+            lastName: creator.lastName,
+            email: creator.email,
+          },
+        },
+        customMessage:
+          'Lesson documents created by instructor retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error fetching lesson documents by creator:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message:
+            'Internal server error while fetching lesson documents by creator',
           error: error.message,
         },
       });
@@ -516,6 +617,58 @@ export class LessondocumentService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while deleting lesson document',
+          error: error.message,
+        },
+      });
+    }
+  }
+
+  async debugUrls(): Promise<ResponseServer> {
+    try {
+      const lessondocuments = await this.lessondocumentModel.findAll({
+        attributes: [
+          'id',
+          'file_name',
+          'piece_jointe',
+          'type',
+          'title',
+          'description',
+        ],
+        limit: 5, // Only get first 5 for debugging
+      });
+
+      const debugData = lessondocuments.map((doc) => {
+        const downloadUrl = this.generateDocumentDownloadUrl(doc);
+        return {
+          id: doc.id,
+          file_name: doc.file_name,
+          piece_jointe: doc.piece_jointe,
+          type: doc.type,
+          title: doc.title,
+          generated_download_url: downloadUrl,
+          url_analysis: {
+            is_cloudinary_url:
+              doc.piece_jointe?.includes('res.cloudinary.com') || false,
+            url_parts: doc.piece_jointe?.split('/') || [],
+            last_part: doc.piece_jointe?.split('/').pop() || null,
+          },
+        };
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          debug_info: debugData,
+          total_documents: debugData.length,
+        },
+        customMessage: 'Debug information retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error in debugUrls:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while debugging URLs',
           error: error.message,
         },
       });

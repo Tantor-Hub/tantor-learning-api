@@ -672,6 +672,146 @@ export class LessondocumentController {
     return this.lessondocumentService.findByLessonId(lessonId);
   }
 
+  @Get('instructor/my-documents')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiOperation({
+    summary: 'Get lesson documents created by current instructor',
+    description:
+      'Retrieve all lesson documents created by the currently authenticated instructor',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Lesson documents created by instructor retrieved successfully',
+    schema: {
+      example: {
+        status: 200,
+        message:
+          'Lesson documents created by instructor retrieved successfully',
+        data: {
+          lessondocuments: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              file_name: 'lesson-notes.pdf',
+              piece_jointe:
+                'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+              type: 'PDF',
+              title: 'Introduction to Programming Concepts',
+              description:
+                'This document covers the fundamental concepts of programming including variables, loops, and functions.',
+              id_lesson: '550e8400-e29b-41d4-a716-446655440000',
+              createdBy: '550e8400-e29b-41d4-a716-446655440002',
+              createdAt: '2025-01-25T10:00:00.000Z',
+              updatedAt: '2025-01-25T10:00:00.000Z',
+              download_url:
+                'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+              creator: {
+                id: '550e8400-e29b-41d4-a716-446655440002',
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@example.com',
+              },
+              lesson: {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                title: 'Introduction to Programming',
+                description: 'Basic programming concepts',
+              },
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440003',
+              file_name: 'lesson-slides.pptx',
+              piece_jointe:
+                'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/def456ghi789',
+              type: 'PPT',
+              title: 'Programming Presentation Slides',
+              description:
+                'PowerPoint presentation covering programming fundamentals and examples.',
+              id_lesson: '550e8400-e29b-41d4-a716-446655440000',
+              createdBy: '550e8400-e29b-41d4-a716-446655440002',
+              createdAt: '2025-01-25T11:00:00.000Z',
+              updatedAt: '2025-01-25T11:00:00.000Z',
+              download_url:
+                'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/def456ghi789',
+              creator: {
+                id: '550e8400-e29b-41d4-a716-446655440002',
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@example.com',
+              },
+              lesson: {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                title: 'Introduction to Programming',
+                description: 'Basic programming concepts',
+              },
+            },
+          ],
+          total: 2,
+          creator: {
+            id: '550e8400-e29b-41d4-a716-446655440002',
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@example.com',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Instructor access required',
+    schema: {
+      example: {
+        status: 401,
+        data: 'Seuls les instructeurs peuvent accéder à cette ressource',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Creator not found',
+    schema: {
+      example: {
+        status: 404,
+        data: 'Creator not found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        data: {
+          message:
+            'Internal server error while fetching lesson documents by creator',
+          error: 'Error message',
+        },
+      },
+    },
+  })
+  findByCreator(@User() user: IJwtSignin) {
+    console.log(
+      'Fetching lesson documents created by instructor:',
+      user.id_user,
+    );
+    return this.lessondocumentService.findByCreator(user.id_user);
+  }
+
+  @Get('debug/urls')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Debug lesson document URLs',
+    description: 'Get raw lesson document data to debug URL issues',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Raw lesson document data retrieved successfully',
+  })
+  async debugUrls() {
+    return this.lessondocumentService.debugUrls();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get lesson document by ID' })
   @ApiResponse({

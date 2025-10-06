@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateLessonDto {
@@ -26,4 +32,12 @@ export class CreateLessonDto {
   @IsNotEmpty()
   @IsUUID()
   id_cours: string;
+
+  @ApiProperty({
+    example: false,
+    description: 'Whether the lesson is published and visible to students',
+    required: true,
+  })
+  @IsBoolean()
+  ispublish: boolean;
 }

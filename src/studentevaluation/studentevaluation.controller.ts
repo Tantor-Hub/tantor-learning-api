@@ -19,7 +19,7 @@ import { StudentevaluationService } from './studentevaluation.service';
 import { CreateStudentevaluationDto } from './dto/create-studentevaluation.dto';
 import { UpdateStudentevaluationDto } from './dto/update-studentevaluation.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
@@ -31,23 +31,74 @@ export class StudentevaluationController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsInstructor)
   @ApiOperation({
     summary: 'Create a new student evaluation',
     description:
-      'Create a new student evaluation. The lecturerId is automatically set to the authenticated user.',
+      'Create a new student evaluation. Only instructors can create evaluations. The createdBy field is automatically set from the JWT token.',
   })
   @ApiBody({
     type: CreateStudentevaluationDto,
     description: 'Student evaluation data',
     examples: {
       basic: {
-        summary: 'Basic Student Evaluation',
-        description: 'Create a basic student evaluation',
+        summary: 'Basic Student Evaluation with Session Course',
+        description:
+          'Create a basic student evaluation linked to a session course',
         value: {
           title: 'React Fundamentals Assessment',
           description:
             'This evaluation tests students on React fundamentals including components, state, and props.',
+          type: 'quiz',
+          points: 100,
+          sessionCoursId: '550e8400-e29b-41d4-a716-446655440000',
+          lessonId: [
+            '550e8400-e29b-41d4-a716-446655440001',
+            '550e8400-e29b-41d4-a716-446655440002',
+          ],
+          submittiondate: '2025-12-31T23:59:59.000Z',
+          beginningTime: '09:00',
+          endingTime: '11:00',
+          ispublish: false,
+          isImmediateResult: false,
+        },
+      },
+      sessionCourse: {
+        summary: 'Student Evaluation with Session Course',
+        description: 'Create a student evaluation linked to a session course',
+        value: {
+          title: 'JavaScript Fundamentals Quiz',
+          description:
+            'A comprehensive quiz covering JavaScript basics and advanced concepts.',
+          type: 'quiz',
+          points: 50,
+          sessionCoursId: '550e8400-e29b-41d4-a716-446655440000',
+          lessonId: [
+            '550e8400-e29b-41d4-a716-446655440003',
+            '550e8400-e29b-41d4-a716-446655440004',
+          ],
+          submittiondate: '2025-12-31T23:59:59.000Z',
+          beginningTime: '14:00',
+          endingTime: '15:00',
+          ispublish: true,
+          isImmediateResult: true,
+        },
+      },
+      sessionCourseOnly: {
+        summary: 'Student Evaluation with Session Course Only (No Lessons)',
+        description:
+          'Create a student evaluation linked only to a session course without specific lessons',
+        value: {
+          title: 'General Programming Assessment',
+          description:
+            'A general assessment covering programming fundamentals.',
+          type: 'test',
+          points: 75,
+          sessionCoursId: '550e8400-e29b-41d4-a716-446655440000',
+          submittiondate: '2025-12-31T23:59:59.000Z',
+          beginningTime: '10:00',
+          endingTime: '12:00',
+          ispublish: false,
           isImmediateResult: false,
         },
       },
@@ -64,7 +115,7 @@ export class StudentevaluationController {
         title: 'React Fundamentals Assessment',
         description:
           'This evaluation tests students on React fundamentals including components, state, and props.',
-        lecturerId: 'lecturer-uuid-1',
+        createdBy: ['lecturer-uuid-1'],
         isImmediateResult: false,
         createdAt: '2025-01-15T10:30:00.000Z',
         updatedAt: '2025-01-15T10:30:00.000Z',
@@ -76,12 +127,12 @@ export class StudentevaluationController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   create(
     @Body()
-    createStudentevaluationDto: Omit<CreateStudentevaluationDto, 'lecturerId'>,
+    createStudentevaluationDto: CreateStudentevaluationDto,
     @User() user: IJwtSignin,
   ) {
     const evaluationData = {
       ...createStudentevaluationDto,
-      lecturerId: user.id_user,
+      createdBy: user.id_user,
     };
     return this.studentevaluationService.create(evaluationData);
   }
@@ -101,7 +152,7 @@ export class StudentevaluationController {
           title: 'React Fundamentals Assessment',
           description:
             'This evaluation tests students on React fundamentals including components, state, and props.',
-          lecturerId: 'lecturer-uuid-1',
+          createdBy: ['lecturer-uuid-1'],
           isImmediateResult: false,
           lecturer: {
             id: 'lecturer-uuid-1',
@@ -144,12 +195,392 @@ export class StudentevaluationController {
     return this.studentevaluationService.findByLecturer(user.id_user);
   }
 
-  @Get(':id')
+  @Get(':evaluationId/creator')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get creator for a specific evaluation',
+    description: 'Retrieve the user who created a specific student evaluation',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lecturers retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Lecturers retrieved successfully',
+      data: [
+        {
+          id: 'lecturer-uuid-1',
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john.doe@example.com',
+        },
+        {
+          id: 'lecturer-uuid-2',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          email: 'jane.smith@example.com',
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Student evaluation not found' })
+  getCreatorForEvaluation(@Param('evaluationId') evaluationId: string) {
+    return this.studentevaluationService.getCreatorForEvaluation(evaluationId);
+  }
+
+  @Get('lesson/:lessonId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get student evaluations by lesson ID',
+    description:
+      'Retrieve all student evaluations associated with a specific lesson',
+  })
+  @ApiParam({
+    name: 'lessonId',
+    description: 'Lesson UUID - The unique identifier of the lesson',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student evaluations for lesson retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Student evaluations for lesson retrieved successfully',
+      data: {
+        evaluations: [
+          {
+            id: 'eval-uuid-1',
+            title: 'React Fundamentals Assessment',
+            description:
+              'This evaluation tests students on React fundamentals including components, state, and props.',
+            type: 'quiz',
+            points: 100,
+            createdBy: ['lecturer-uuid-1'],
+            submittiondate: '2025-12-31T23:59:59.000Z',
+            ispublish: false,
+            isImmediateResult: false,
+            lessonId: '550e8400-e29b-41d4-a716-446655440000',
+            createdAt: '2025-01-15T10:30:00.000Z',
+            updatedAt: '2025-01-15T10:30:00.000Z',
+            sessionCours: null,
+            lesson: {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              title: 'Introduction to Programming',
+              description: 'Basic programming concepts',
+            },
+            questions: [
+              {
+                id: 'question-uuid-1',
+                type: 'multiple_choice',
+                text: 'What is the correct way to create a React component?',
+                points: 1,
+              },
+            ],
+          },
+        ],
+        total: 1,
+        lesson: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          title: 'Introduction to Programming',
+          description: 'Basic programming concepts',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Lesson not found',
+    example: {
+      status: 404,
+      message: 'Lesson not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error retrieving student evaluations for lesson',
+    },
+  })
+  findByLessonId(@Param('lessonId') lessonId: string) {
+    return this.studentevaluationService.findByLessonId(lessonId);
+  }
+
+  @Get('sessioncours/:sessionCoursId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get student evaluations by session course ID',
+    description:
+      'Retrieve all student evaluations associated with a specific session course',
+  })
+  @ApiParam({
+    name: 'sessionCoursId',
+    description:
+      'Session Course UUID - The unique identifier of the session course',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Student evaluations for session course retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Student evaluations for session course retrieved successfully',
+      data: {
+        evaluations: [
+          {
+            id: 'eval-uuid-1',
+            title: 'React Fundamentals Assessment',
+            description:
+              'This evaluation tests students on React fundamentals including components, state, and props.',
+            type: 'quiz',
+            points: 100,
+            createdBy: 'user-uuid-1',
+            submittiondate: '2025-12-31T23:59:59.000Z',
+            ispublish: false,
+            isImmediateResult: false,
+            sessionCoursId: '550e8400-e29b-41d4-a716-446655440000',
+            lessonId: [
+              '550e8400-e29b-41d4-a716-446655440001',
+              '550e8400-e29b-41d4-a716-446655440002',
+            ],
+            createdAt: '2025-01-15T10:30:00.000Z',
+            updatedAt: '2025-01-15T10:30:00.000Z',
+            sessionCours: {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              title: 'Introduction to Programming',
+              description: 'Basic programming concepts',
+            },
+            lessons: [
+              {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                title: 'Variables and Data Types',
+                description: 'Understanding basic data types',
+              },
+              {
+                id: '550e8400-e29b-41d4-a716-446655440002',
+                title: 'Control Structures',
+                description: 'If statements and loops',
+              },
+            ],
+            questions: [
+              {
+                id: 'question-uuid-1',
+                type: 'multiple_choice',
+                text: 'What is the correct way to create a React component?',
+                points: 1,
+              },
+            ],
+          },
+        ],
+        total: 1,
+        sessionCours: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          title: 'Introduction to Programming',
+          description: 'Basic programming concepts',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session course not found',
+    example: {
+      status: 404,
+      message: 'Session course not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error retrieving student evaluations for session course',
+    },
+  })
+  findBySessionCoursId(@Param('sessionCoursId') sessionCoursId: string) {
+    return this.studentevaluationService.findBySessionCoursId(sessionCoursId);
+  }
+
+  @Get(':evaluationId/students')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get students who participated in an evaluation',
+    description:
+      'Retrieve all students who have participated in a specific student evaluation',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Students who participated in evaluation retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Students who participated in evaluation retrieved successfully',
+      data: [
+        {
+          id: 'student-uuid-1',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          email: 'jane.smith@example.com',
+        },
+        {
+          id: 'student-uuid-2',
+          firstName: 'Bob',
+          lastName: 'Johnson',
+          email: 'bob.johnson@example.com',
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student evaluation not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getStudentsForEvaluation(@Param('evaluationId') evaluationId: string) {
+    return this.studentevaluationService.getStudentsForEvaluation(evaluationId);
+  }
+
+  @Post(':evaluationId/students')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Join evaluation as student',
+    description:
+      'Add the authenticated student to the list of participants for a specific evaluation',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student joined evaluation successfully',
+    example: {
+      status: 200,
+      message: 'Student joined evaluation successfully',
+      data: {
+        evaluationId: 'eval-uuid-1',
+        studentId: 'student-uuid-1',
+        totalStudents: 3,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Student is already participating in this evaluation',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student evaluation not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  joinEvaluation(
+    @Param('evaluationId') evaluationId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.addStudentToEvaluation(
+      evaluationId,
+      user.id_user,
+    );
+  }
+
+  @Delete(':evaluationId/students')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Leave evaluation as student',
+    description:
+      'Remove the authenticated student from the list of participants for a specific evaluation',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student left evaluation successfully',
+    example: {
+      status: 200,
+      message: 'Student left evaluation successfully',
+      data: {
+        evaluationId: 'eval-uuid-1',
+        studentId: 'student-uuid-1',
+        totalStudents: 2,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Student is not participating in this evaluation',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student evaluation not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  leaveEvaluation(
+    @Param('evaluationId') evaluationId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.removeStudentFromEvaluation(
+      evaluationId,
+      user.id_user,
+    );
+  }
+
+  @Get(':evaluationId')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get student evaluation by ID' })
   @ApiParam({
-    name: 'id',
-    description: 'Student evaluation UUID',
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
     example: 'eval-uuid-1',
   })
   @ApiResponse({
@@ -163,7 +594,7 @@ export class StudentevaluationController {
         title: 'React Fundamentals Assessment',
         description:
           'This evaluation tests students on React fundamentals including components, state, and props.',
-        lecturerId: 'lecturer-uuid-1',
+        createdBy: ['lecturer-uuid-1'],
         isImmediateResult: false,
         lecturer: {
           id: 'lecturer-uuid-1',
@@ -199,29 +630,64 @@ export class StudentevaluationController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Student evaluation not found' })
-  findOne(@Param('id') id: string) {
-    return this.studentevaluationService.findOne(id);
+  findOne(@Param('evaluationId') evaluationId: string) {
+    return this.studentevaluationService.findOne(evaluationId);
   }
 
-  @Patch(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Update student evaluation by ID' })
+  @Patch(':evaluationId')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiOperation({
+    summary: 'Update student evaluation by ID',
+    description:
+      'Update an existing student evaluation. Only instructors can update evaluations.',
+  })
   @ApiParam({
-    name: 'id',
-    description: 'Student evaluation UUID',
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
     example: 'eval-uuid-1',
   })
   @ApiBody({
     type: UpdateStudentevaluationDto,
     description: 'Student evaluation update data',
     examples: {
-      basic: {
-        summary: 'Basic Update',
-        description: 'Update basic evaluation information',
+      complete: {
+        summary: 'Complete Update',
+        description: 'Update all evaluation fields',
+        value: {
+          title: 'React Fundamentals Assessment',
+          description:
+            'This evaluation tests students on React fundamentals including components, state, and props.',
+          type: 'quiz',
+          points: 100,
+          sessionCoursId: '550e8400-e29b-41d4-a716-446655440000',
+          lessonId: [
+            '550e8400-e29b-41d4-a716-446655440001',
+            '550e8400-e29b-41d4-a716-446655440002',
+          ],
+          submittiondate: '2025-12-31T23:59:59.000Z',
+          beginningTime: '09:00',
+          endingTime: '11:00',
+          ispublish: false,
+          isImmediateResult: false,
+        },
+      },
+      partial: {
+        summary: 'Partial Update',
+        description: 'Update only specific fields',
         value: {
           title: 'Updated React Fundamentals Assessment',
           description: 'Updated description for the React assessment.',
+          points: 150,
+          ispublish: true,
           isImmediateResult: true,
+        },
+      },
+      minimal: {
+        summary: 'Minimal Update',
+        description: 'Update only the points for an evaluation',
+        value: {
+          points: 200,
         },
       },
     },
@@ -235,18 +701,26 @@ export class StudentevaluationController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Student evaluation not found' })
   update(
-    @Param('id') id: string,
+    @Param('evaluationId') evaluationId: string,
     @Body() updateStudentevaluationDto: UpdateStudentevaluationDto,
   ) {
-    return this.studentevaluationService.update(id, updateStudentevaluationDto);
+    return this.studentevaluationService.update(
+      evaluationId,
+      updateStudentevaluationDto,
+    );
   }
 
-  @Delete(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Delete student evaluation by ID' })
+  @Delete(':evaluationId')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiOperation({
+    summary: 'Delete student evaluation by ID',
+    description:
+      'Delete a specific student evaluation. Only instructors can delete evaluations.',
+  })
   @ApiParam({
-    name: 'id',
-    description: 'Student evaluation UUID',
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
     example: 'eval-uuid-1',
   })
   @ApiResponse({
@@ -256,7 +730,7 @@ export class StudentevaluationController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Student evaluation not found' })
-  remove(@Param('id') id: string) {
-    return this.studentevaluationService.remove(id);
+  remove(@Param('evaluationId') evaluationId: string) {
+    return this.studentevaluationService.remove(evaluationId);
   }
 }

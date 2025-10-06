@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   UploadedFile,
@@ -204,7 +205,7 @@ export class LessonController {
   //   return this.lessonService.createLesson(createLessonDto, user);
   // }
 
-  @Put('/update')
+  @Patch('/update')
   @UseGuards(JwtAuthGuardAsFormateur)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update lesson by ID' })
@@ -230,7 +231,7 @@ export class LessonController {
     return this.lessonService.updateLesson(updateLessonDto);
   }
 
-  // @Put(':id_lesson/update')
+  // @Patch(':id_lesson/update')
   // @UseGuards(JwtAuthGuardAsFormateur)
   // @ApiBearerAuth()
   // @ApiOperation({ summary: 'Update lesson by ID (root route)' })
