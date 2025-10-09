@@ -861,7 +861,20 @@ export class StudentevaluationService {
 
   async remove(id: string): Promise<ResponseServer> {
     try {
-      const evaluation = await this.studentevaluationModel.findByPk(id);
+      const evaluation = await this.studentevaluationModel.findByPk(id, {
+        include: [
+          {
+            model: EvaluationQuestion,
+            as: 'questions',
+            include: [
+              {
+                model: EvaluationQuestionOption,
+                as: 'options',
+              },
+            ],
+          },
+        ],
+      });
 
       if (!evaluation) {
         return Responder({
@@ -870,17 +883,108 @@ export class StudentevaluationService {
         });
       }
 
-      await evaluation.destroy();
+      console.log(
+        '🗑️ Starting cascade deletion for evaluation:',
+        evaluation.id,
+      );
+      console.log(
+        '📊 Found questions to delete:',
+        evaluation.questions?.length || 0,
+      );
+
+      // Count total options to be deleted
+      let totalOptionsToDelete = 0;
+      if (evaluation.questions) {
+        for (const question of evaluation.questions) {
+          totalOptionsToDelete += question.options?.length || 0;
+        }
+      }
+      console.log('📝 Found options to delete:', totalOptionsToDelete);
+
+      // Start transaction for cascade deletion
+      const transaction =
+        await this.studentevaluationModel.sequelize!.transaction();
+
+      try {
+        // Delete all evaluation question options first
+        if (evaluation.questions) {
+          for (const question of evaluation.questions) {
+            if (question.options && question.options.length > 0) {
+              await EvaluationQuestionOption.destroy({
+                where: { questionId: question.id },
+                transaction,
+              });
+              console.log(
+                `✅ Deleted ${question.options.length} options for question ${question.id}`,
+              );
+            }
+          }
+        }
+
+        // Delete all evaluation questions
+        if (evaluation.questions && evaluation.questions.length > 0) {
+          await EvaluationQuestion.destroy({
+            where: { evaluationId: id },
+            transaction,
+          });
+          console.log(
+            `✅ Deleted ${evaluation.questions.length} questions for evaluation ${id}`,
+          );
+        }
+
+        // Finally delete the student evaluation
+        await evaluation.destroy({ transaction });
+
+        // Commit the transaction
+        await transaction.commit();
+
+        console.log(
+          '✅ Cascade deletion completed successfully for evaluation:',
+          id,
+        );
+
+        return Responder({
+          status: HttpStatusCode.Ok,
+          customMessage: `Student evaluation and all associated data deleted successfully. Deleted ${evaluation.questions?.length || 0} questions and ${totalOptionsToDelete} options.`,
+          data: {
+            deletedEvaluation: {
+              id: evaluation.id,
+              title: evaluation.title,
+            },
+            deletedQuestions: evaluation.questions?.length || 0,
+            deletedOptions: totalOptionsToDelete,
+          },
+        });
+      } catch (transactionError) {
+        // Rollback the transaction if any error occurs
+        await transaction.rollback();
+        console.error(
+          '❌ Transaction rolled back due to error:',
+          transactionError,
+        );
+        throw transactionError;
+      }
+    } catch (error) {
+      console.error(
+        '❌ Error during cascade deletion of student evaluation:',
+        error,
+      );
+
+      let errorMessage = 'Error deleting student evaluation';
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        errorMessage =
+          'Cannot delete evaluation due to existing references. Please remove all related data first.';
+      } else if (error.name === 'SequelizeDatabaseError') {
+        errorMessage = 'Database error occurred during deletion.';
+      }
 
       return Responder({
-        status: HttpStatusCode.Ok,
-        customMessage: 'Student evaluation deleted successfully',
-      });
-    } catch (error) {
-      console.error('Error deleting student evaluation:', error);
-      return Responder({
         status: HttpStatusCode.InternalServerError,
-        customMessage: 'Error deleting student evaluation',
+        customMessage: errorMessage,
+        data: {
+          error: error.message,
+          errorType: error.name,
+        },
       });
     }
   }

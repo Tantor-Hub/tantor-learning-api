@@ -49,8 +49,15 @@ export class JwtAuthGuardAsStudent implements CanActivate {
 
     const [_, token] = authHeader.split(' ');
 
+    // console.log('🔑 [JWT GUARD STUDENT] Token received:', token);
+
     try {
       const decoded = await this.jwtService.verifyTokenWithRound(token);
+
+      console.log(
+        '🔍 [JWT GUARD STUDENT] Token decoded:',
+        JSON.stringify(decoded, null, 2),
+      );
 
       if (!decoded) {
         console.log(

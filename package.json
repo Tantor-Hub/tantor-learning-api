@@ -82,7 +82,7 @@
     "sequelize-typescript": "^2.1.6",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "stripe": "^18.3.0",
+    "stripe": "^18.5.0",
     "typeorm": "^0.3.21"
   },
   "devDependencies": {

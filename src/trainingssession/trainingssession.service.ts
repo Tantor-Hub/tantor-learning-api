@@ -31,16 +31,8 @@ export class TrainingSessionService {
         });
       }
 
-      // Validate that available_places doesn't exceed nb_places
-      if (
-        createTrainingSessionDto.available_places >
-        createTrainingSessionDto.nb_places
-      ) {
-        return Responder({
-          status: HttpStatusCode.BadRequest,
-          data: 'Available places cannot exceed total places',
-        });
-      }
+      // Set available_places equal to nb_places initially
+      const availablePlaces = createTrainingSessionDto.nb_places;
 
       // Validate that beginning date is before ending date
       const beginningDate = new Date(createTrainingSessionDto.begining_date);
@@ -56,7 +48,7 @@ export class TrainingSessionService {
         id_trainings: createTrainingSessionDto.id_trainings,
         title: createTrainingSessionDto.title,
         nb_places: createTrainingSessionDto.nb_places,
-        available_places: createTrainingSessionDto.available_places,
+        available_places: availablePlaces,
         required_document_before:
           createTrainingSessionDto.required_document_before,
         required_document_during:
@@ -179,6 +171,53 @@ export class TrainingSessionService {
     }
   }
 
+  async findOneForStudent(id: string) {
+    try {
+      const trainingSession = await this.trainingSessionModel.findByPk(id, {
+        attributes: [
+          'id',
+          'title',
+          'payment_method',
+          'cpf_link',
+          'survey',
+          'regulation_text',
+        ],
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            attributes: [
+              'title',
+              'subtitle',
+              'description',
+              'trainingtype',
+              'prix',
+            ],
+          },
+        ],
+      });
+
+      if (!trainingSession) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Training session not found',
+        });
+      }
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: trainingSession,
+        customMessage: 'Opération réussie.',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error fetching training session',
+      });
+    }
+  }
+
   async update(id: string, updateTrainingSessionDto: UpdateTrainingSessionDto) {
     try {
       const trainingSession = await this.trainingSessionModel.findByPk(id);
@@ -202,20 +241,10 @@ export class TrainingSessionService {
         }
       }
 
-      // Validate available_places vs nb_places if both are being updated
-      if (
-        updateTrainingSessionDto.available_places !== undefined &&
-        updateTrainingSessionDto.nb_places !== undefined
-      ) {
-        if (
-          updateTrainingSessionDto.available_places >
-          updateTrainingSessionDto.nb_places
-        ) {
-          return Responder({
-            status: HttpStatusCode.BadRequest,
-            data: 'Available places cannot exceed total places',
-          });
-        }
+      // If nb_places is being updated, also update available_places to match
+      if (updateTrainingSessionDto.nb_places !== undefined) {
+        (updateTrainingSessionDto as any).available_places =
+          updateTrainingSessionDto.nb_places;
       }
 
       // Validate dates if both are being updated
@@ -363,6 +392,61 @@ export class TrainingSessionService {
       return Responder({
         status: HttpStatusCode.Ok,
         data: trainingSessions,
+        customMessage: 'Training sessions retrieved successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error fetching training sessions by training ID',
+      });
+    }
+  }
+
+  async findByTrainingIdForStudent(trainingId: string) {
+    try {
+      const trainingSessions = await this.trainingSessionModel.findAll({
+        where: {
+          id_trainings: trainingId,
+        },
+        attributes: [
+          'id',
+          'title',
+          'nb_places',
+          'available_places',
+          'begining_date',
+          'ending_date',
+          'createdAt',
+          'updatedAt',
+          'payment_method',
+        ],
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            attributes: ['title', 'subtitle', 'description', 'prix'],
+          },
+        ],
+        order: [['begining_date', 'ASC']],
+      });
+
+      // Filter out training sessions with empty payment_method when training prix > 0
+      const filteredSessions = trainingSessions.filter((session) => {
+        const training = session.trainings as any;
+        const prix = parseFloat(training?.prix || '0');
+
+        // If training has a price > 0, ensure payment_method is not empty
+        if (prix > 0) {
+          return session.payment_method && session.payment_method.length > 0;
+        }
+
+        // If training is free (prix = 0), include the session regardless of payment_method
+        return true;
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: filteredSessions,
         customMessage: 'Training sessions retrieved successfully',
       });
     } catch (error) {

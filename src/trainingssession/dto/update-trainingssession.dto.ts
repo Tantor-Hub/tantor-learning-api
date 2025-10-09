@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateTrainingSessionDto } from './create-trainingssession.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { IsUUID, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateTrainingSessionDto extends PartialType(
   CreateTrainingSessionDto,
@@ -12,4 +12,16 @@ export class UpdateTrainingSessionDto extends PartialType(
   })
   @IsUUID()
   id: string;
+
+  @ApiProperty({
+    example: 25,
+    description:
+      'Number of available places (automatically set to nb_places when nb_places is updated)',
+    minimum: 0,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  available_places?: number;
 }

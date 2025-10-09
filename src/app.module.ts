@@ -30,7 +30,7 @@ import { Messages } from './models/model.messages';
 import { Newsletter } from './models/model.newsletter';
 import { UsersService } from './users/users.service';
 
-import { Payementopco } from './models/model.payementbyopco';
+import { PaymentMethodOpco } from './models/model.paymentmethodopco';
 import { ModuleDeFormation } from './models/model.moduledeformation';
 import { ModuleDeFormationModule } from './moduledeformation/moduledeformation.module';
 import { TrainingCategoryModule } from './trainingcategory/trainingcategory.module';
@@ -39,7 +39,6 @@ import { TrainingSessionModule } from './trainingssession/trainingssession.modul
 import { StudentSessionModule } from './studentsession/studentsession.module';
 import { SessionCoursModule } from './sessioncours/sessioncours.module';
 import { Training as TrainingModel } from './models/model.trainings';
-import { StripeModule } from './stripe/stripe.module';
 import { LessonModule } from './lesson/lesson.module';
 import { LessondocumentModule } from './lessondocument/lessondocument.module';
 import { SessionDocumentModule } from './sessiondocument/sessiondocument.module';
@@ -47,6 +46,10 @@ import { SurveyQuestionModule } from './surveyquestion/surveyquestion.module';
 import { EventModule } from './event/event.module';
 import { ChatModule } from './chat/chat.module';
 import { RepliesChatModule } from './replieschat/replieschat.module';
+import { PaymentMethodCpfModule } from './paymentmethodcpf/paymentmethodcpf.module';
+import { UserInSessionModule } from './userinsession/userinsession.module';
+import { PaymentMethodCardModule } from './paymentmethodcard/paymentmethodcard.module';
+import { PaymentMethodOpcoModule } from './paymentmethodopco/paymentmethodopco.module';
 import { StudentevaluationModule } from './studentevaluation/studentevaluation.module';
 import { EvaluationQuestionModule } from './evaluationquestion/evaluationquestion.module';
 import { EvaluationQuestionOptionModule } from './evaluationquestionoption/evaluationquestionoption.module';
@@ -80,7 +83,9 @@ import { JwtStrategy } from './strategy/strategy.jwt';
 
         if (!host || !username || !password || !database) {
           console.error('❌ Missing required database environment variables!');
-          console.error('Required: APP_BD_HOST, APP_BD_USERNAME, APP_BD_PASSWORD, APP_BD_NAME');
+          console.error(
+            'Required: APP_BD_HOST, APP_BD_USERNAME, APP_BD_PASSWORD, APP_BD_NAME',
+          );
         }
 
         return {
@@ -114,7 +119,7 @@ import { JwtStrategy } from './strategy/strategy.jwt';
       Contacts,
       Messages,
       Newsletter,
-      Payementopco,
+      PaymentMethodOpco,
       // Student Evaluation Models
       require('./models/model.studentevaluation').Studentevaluation,
       require('./models/model.evaluationquestion').EvaluationQuestion,
@@ -129,7 +134,6 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     CmsModule,
     LessonModule,
     LessondocumentModule,
-    StripeModule,
     ModuleDeFormationModule,
     TrainingCategoryModule,
     TrainingsModule,
@@ -141,6 +145,10 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     EventModule,
     ChatModule,
     RepliesChatModule,
+    PaymentMethodCpfModule,
+    UserInSessionModule,
+    PaymentMethodCardModule,
+    PaymentMethodOpcoModule,
     // Student Evaluation Modules
     StudentevaluationModule,
     EvaluationQuestionModule,

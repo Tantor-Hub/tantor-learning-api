@@ -34,12 +34,26 @@ export class ResponseInterceptor implements NestInterceptor {
             ...CustomerMessageServer,
           };
 
+          // Déterminer le message à utiliser
+          let message = data?.customMessage;
+
+          if (!message) {
+            // Si pas de customMessage, essayer d'utiliser les erreurs de validation
+            if (
+              data?.data?.validationErrors &&
+              Array.isArray(data.data.validationErrors)
+            ) {
+              message = data.data.validationErrors.join('. ');
+            } else if (data?.data?.message) {
+              message = data.data.message;
+            } else {
+              message = HttpStatusMessages[status] ?? 'Unknown Error';
+            }
+          }
+
           const response = {
             status,
-            message:
-              data?.customMessage ??
-              HttpStatusMessages[status] ??
-              'Unknown Error',
+            message,
             data: data?.data ?? null,
           };
 

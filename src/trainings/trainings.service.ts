@@ -7,9 +7,11 @@ import { DeleteTrainingsDto } from './dto/delete-trainings.dto';
 import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
 import { TrainingCategory } from '../models/model.trainingcategory';
+import { TrainingSession } from '../models/model.trainingssession';
 import { DataType } from 'sequelize-typescript';
 import { QueryInterface } from 'sequelize';
 import { tables } from '../config/config.tablesname';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class TrainingsService {
@@ -99,6 +101,81 @@ export class TrainingsService {
         status: HttpStatusCode.InternalServerError,
         data: { message: error.message },
         customMessage: 'Failed to retrieve trainings',
+      });
+    }
+  }
+
+  async findAllWithSessions() {
+    try {
+      console.log(
+        '🎓 [STUDENT TRAININGS] Fetching trainings with at least one session...',
+      );
+
+      const trainings = await this.trainingModel.findAll({
+        attributes: [
+          'id',
+          'title',
+          'subtitle',
+          'trainingtype',
+          'prix',
+          'description',
+        ],
+        include: [
+          {
+            model: TrainingCategory,
+            as: 'trainingCategory',
+            required: false,
+            attributes: ['title'],
+          },
+          {
+            model: TrainingSession,
+            as: 'trainingSessions',
+            required: true, // This ensures only trainings with at least one session are returned
+            attributes: [
+              'id',
+              'title',
+              'nb_places',
+              'available_places',
+              'begining_date',
+              'ending_date',
+            ],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      console.log(
+        `🎓 [STUDENT TRAININGS] Found ${trainings.length} trainings with sessions`,
+      );
+
+      // Transform the response to remove 'train' prefix from field names
+      const transformedTrainings = trainings.map((training) => {
+        const trainingData = training.toJSON() as any;
+        return {
+          id: trainingData.id,
+          title: trainingData.title,
+          subtitle: trainingData.subtitle,
+          type: trainingData.trainingtype,
+          description: trainingData.description,
+          prix: trainingData.prix,
+          category: trainingData.trainingCategory,
+        };
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: transformedTrainings,
+        customMessage: `Found ${trainings.length} trainings with available sessions`,
+      });
+    } catch (error) {
+      console.error(
+        '🎓 [STUDENT TRAININGS] Error fetching trainings with sessions:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Failed to retrieve trainings with sessions',
       });
     }
   }

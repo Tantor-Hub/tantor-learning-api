@@ -10,6 +10,7 @@ import {
 import { HttpStatusCode } from './config/config.statuscodes';
 import { Responder } from './strategy/strategy.responder';
 import { ResponseInterceptor } from './strategy/strategy.responseinterceptor';
+import { AuthErrorInterceptor } from './auth-error.interceptor';
 import { MediasoupService } from './services/service.mediasoup';
 import * as bodyParser from 'body-parser';
 import { SwaggerConfig } from './swagger';
@@ -66,6 +67,9 @@ async function tantorAPP() {
         target: false,
         value: false,
       },
+      skipMissingProperties: false,
+      skipNullProperties: false,
+      skipUndefinedProperties: false,
       exceptionFactory: (errors) => {
         const formatErrors = (errs: any[], parentPath = '') => {
           return errs.flatMap((err) => {
@@ -108,7 +112,10 @@ async function tantorAPP() {
 
   const mediasoupService = app.get(MediasoupService);
   await mediasoupService.init();
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalInterceptors(
+    new AuthErrorInterceptor(),
+    new ResponseInterceptor(),
+  );
   app.enableShutdownHooks();
 
   // Swagger setup

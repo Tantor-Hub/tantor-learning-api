@@ -20,6 +20,7 @@ import { CreateTrainingsDto } from './dto/create-trainings.dto';
 import { UpdateTrainingsDto } from './dto/update-trainings.dto';
 import { DeleteTrainingsDto } from './dto/delete-trainings.dto';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
+import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
 
 @ApiTags('Trainings')
 @Controller('trainings')
@@ -252,6 +253,82 @@ export class TrainingsController {
   })
   findAll() {
     return this.trainingsService.findAll();
+  }
+
+  @Get('student/with-sessions')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all trainings with available sessions (Student access)',
+    description:
+      'Retrieve all trainings that have at least one training session available. This endpoint is specifically designed for students to browse available training opportunities.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trainings with sessions retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Found 5 trainings with available sessions',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: '123e4567-e89b-12d3-a456-426614174000',
+              },
+              title: { type: 'string', example: 'Advanced React Development' },
+              subtitle: {
+                type: 'string',
+                example: 'Master React hooks and advanced patterns',
+              },
+              type: {
+                type: 'string',
+                enum: [
+                  'En ligne',
+                  'Vision Conférence',
+                  'En présentiel',
+                  'Hybride',
+                ],
+                example: 'En ligne',
+              },
+              description: {
+                type: 'string',
+                example: 'Comprehensive training on React development',
+              },
+              prix: { type: 'number', example: 299.99 },
+              category: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string', example: 'Web Development' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  findAllWithSessions() {
+    console.log(
+      '🎓 [STUDENT TRAININGS] Student requesting trainings with sessions',
+    );
+    return this.trainingsService.findAllWithSessions();
   }
 
   @Get(':id')

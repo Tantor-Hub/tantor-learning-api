@@ -37,15 +37,6 @@ export class CreateTrainingSessionDto {
   nb_places: number;
 
   @ApiProperty({
-    example: 25,
-    description: 'Number of available places',
-    minimum: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  available_places: number;
-
-  @ApiProperty({
     example: ['CV', 'Diploma', 'ID Card'],
     description: 'List of required documents before training',
     required: false,

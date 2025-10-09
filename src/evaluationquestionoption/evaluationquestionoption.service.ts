@@ -161,7 +161,14 @@ export class EvaluationQuestionOptionService {
 
   async remove(id: string): Promise<ResponseServer> {
     try {
-      const option = await this.evaluationQuestionOptionModel.findByPk(id);
+      const option = await this.evaluationQuestionOptionModel.findByPk(id, {
+        include: [
+          {
+            model: StudentAnswerOption,
+            as: 'studentAnswerOptions',
+          },
+        ],
+      });
 
       if (!option) {
         return Responder({
@@ -170,17 +177,91 @@ export class EvaluationQuestionOptionService {
         });
       }
 
-      await option.destroy();
+      console.log('🗑️ Checking if option can be deleted:', option.id);
+      console.log(
+        '📝 Found student answer options:',
+        option.studentAnswerOptions?.length || 0,
+      );
+
+      // Check if there are any student answer options
+      if (
+        option.studentAnswerOptions &&
+        option.studentAnswerOptions.length > 0
+      ) {
+        console.log(
+          '❌ Cannot delete option - has student answer options:',
+          option.studentAnswerOptions.length,
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: `Cannot delete evaluation question option. This option has been used by ${option.studentAnswerOptions.length} student answer(s). To maintain data integrity, options with student answers cannot be deleted.`,
+          data: {
+            optionId: option.id,
+            optionText: option.text,
+            studentAnswerCount: option.studentAnswerOptions.length,
+            reason: 'Option has associated student answers',
+          },
+        });
+      }
+
+      console.log(
+        '✅ No student answer options found - proceeding with deletion',
+      );
+
+      // Start transaction for deletion
+      const transaction =
+        await this.evaluationQuestionOptionModel.sequelize!.transaction();
+
+      try {
+        // Delete the evaluation question option
+        await option.destroy({ transaction });
+
+        // Commit the transaction
+        await transaction.commit();
+
+        console.log('✅ Option deletion completed successfully:', id);
+
+        return Responder({
+          status: HttpStatusCode.Ok,
+          customMessage: 'Evaluation question option deleted successfully.',
+          data: {
+            deletedOption: {
+              id: option.id,
+              text: option.text,
+              isCorrect: option.isCorrect,
+            },
+          },
+        });
+      } catch (transactionError) {
+        // Rollback the transaction if any error occurs
+        await transaction.rollback();
+        console.error(
+          '❌ Transaction rolled back due to error:',
+          transactionError,
+        );
+        throw transactionError;
+      }
+    } catch (error) {
+      console.error(
+        '❌ Error during cascade deletion of evaluation question option:',
+        error,
+      );
+
+      let errorMessage = 'Error deleting evaluation question option';
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        errorMessage =
+          'Cannot delete option due to existing references. Please remove all related data first.';
+      } else if (error.name === 'SequelizeDatabaseError') {
+        errorMessage = 'Database error occurred during deletion.';
+      }
 
       return Responder({
-        status: HttpStatusCode.Ok,
-        customMessage: 'Evaluation question option deleted successfully',
-      });
-    } catch (error) {
-      console.error('Error deleting evaluation question option:', error);
-      return Responder({
         status: HttpStatusCode.InternalServerError,
-        customMessage: 'Error deleting evaluation question option',
+        customMessage: errorMessage,
+        data: {
+          error: error.message,
+          errorType: error.name,
+        },
       });
     }
   }

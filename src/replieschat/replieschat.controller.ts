@@ -35,7 +35,7 @@ export class RepliesChatController {
   constructor(private readonly repliesChatService: RepliesChatService) {}
 
   @Post('create')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Create a new reply to a chat message',
     description:
@@ -98,7 +98,7 @@ export class RepliesChatController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuardAsSuperviseur)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all replies' })
   @ApiResponse({
     status: 200,
@@ -158,7 +158,7 @@ export class RepliesChatController {
   }
 
   @Get('chat/:chatId')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all replies for a specific chat message' })
   @ApiParam({ name: 'chatId', description: 'Chat message UUID', type: String })
   @ApiResponse({
@@ -223,7 +223,7 @@ export class RepliesChatController {
   }
 
   @Get('sender/:senderId')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all replies from a specific sender' })
   @ApiParam({ name: 'senderId', description: 'Sender user UUID', type: String })
   @ApiResponse({
@@ -289,7 +289,7 @@ export class RepliesChatController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get a reply by ID' })
   @ApiParam({ name: 'id', description: 'Reply UUID', type: String })
   @ApiResponse({
@@ -356,7 +356,7 @@ export class RepliesChatController {
   }
 
   @Patch()
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update a reply' })
   @ApiResponse({
     status: 200,
@@ -408,7 +408,7 @@ export class RepliesChatController {
   }
 
   @Delete()
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete a reply (soft delete)' })
   @ApiResponse({
     status: 200,

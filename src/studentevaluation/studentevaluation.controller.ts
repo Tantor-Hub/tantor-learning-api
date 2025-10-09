@@ -715,7 +715,7 @@ export class StudentevaluationController {
   @ApiOperation({
     summary: 'Delete student evaluation by ID',
     description:
-      'Delete a specific student evaluation. Only instructors can delete evaluations.',
+      'Delete a specific student evaluation and all associated questions and options (cascade deletion). Only instructors can delete evaluations.',
   })
   @ApiParam({
     name: 'evaluationId',
@@ -725,7 +725,21 @@ export class StudentevaluationController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Student evaluation deleted successfully',
+    description:
+      'Student evaluation and all associated data deleted successfully',
+    example: {
+      status: 200,
+      message:
+        'Student evaluation and all associated data deleted successfully. Deleted 3 questions and 12 options.',
+      data: {
+        deletedEvaluation: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+        },
+        deletedQuestions: 3,
+        deletedOptions: 12,
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })

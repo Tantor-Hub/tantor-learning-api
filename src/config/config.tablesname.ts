@@ -30,4 +30,8 @@ export enum tables {
   events = `${table_prefix}events`,
   chats = `${table_prefix}chats`,
   replieschats = `${table_prefix}replieschats`,
+  paymentmethodcpf = `${table_prefix}paymentmethodcpf`,
+  userinsession = `${table_prefix}userinsession`,
+  paymentmethodcard = `${table_prefix}paymentmethodcard`,
+  paymentmethodopco = `${table_prefix}paymentmethodopco`,
 }

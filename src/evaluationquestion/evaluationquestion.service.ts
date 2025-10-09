@@ -177,7 +177,14 @@ export class EvaluationQuestionService {
 
   async remove(id: string): Promise<ResponseServer> {
     try {
-      const question = await this.evaluationQuestionModel.findByPk(id);
+      const question = await this.evaluationQuestionModel.findByPk(id, {
+        include: [
+          {
+            model: EvaluationQuestionOption,
+            as: 'options',
+          },
+        ],
+      });
 
       if (!question) {
         return Responder({
@@ -186,17 +193,78 @@ export class EvaluationQuestionService {
         });
       }
 
-      await question.destroy();
+      console.log('🗑️ Starting cascade deletion for question:', question.id);
+      console.log('📝 Found options to delete:', question.options?.length || 0);
+
+      // Start transaction for cascade deletion
+      const transaction =
+        await this.evaluationQuestionModel.sequelize!.transaction();
+
+      try {
+        // Delete all evaluation question options first
+        if (question.options && question.options.length > 0) {
+          await EvaluationQuestionOption.destroy({
+            where: { questionId: id },
+            transaction,
+          });
+          console.log(
+            `✅ Deleted ${question.options.length} options for question ${id}`,
+          );
+        }
+
+        // Finally delete the evaluation question
+        await question.destroy({ transaction });
+
+        // Commit the transaction
+        await transaction.commit();
+
+        console.log(
+          '✅ Cascade deletion completed successfully for question:',
+          id,
+        );
+
+        return Responder({
+          status: HttpStatusCode.Ok,
+          customMessage: `Evaluation question and all associated options deleted successfully. Deleted ${question.options?.length || 0} options.`,
+          data: {
+            deletedQuestion: {
+              id: question.id,
+              text: question.text,
+              type: question.type,
+            },
+            deletedOptions: question.options?.length || 0,
+          },
+        });
+      } catch (transactionError) {
+        // Rollback the transaction if any error occurs
+        await transaction.rollback();
+        console.error(
+          '❌ Transaction rolled back due to error:',
+          transactionError,
+        );
+        throw transactionError;
+      }
+    } catch (error) {
+      console.error(
+        '❌ Error during cascade deletion of evaluation question:',
+        error,
+      );
+
+      let errorMessage = 'Error deleting evaluation question';
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        errorMessage =
+          'Cannot delete question due to existing references. Please remove all related data first.';
+      } else if (error.name === 'SequelizeDatabaseError') {
+        errorMessage = 'Database error occurred during deletion.';
+      }
 
       return Responder({
-        status: HttpStatusCode.Ok,
-        customMessage: 'Evaluation question deleted successfully',
-      });
-    } catch (error) {
-      console.error('Error deleting evaluation question:', error);
-      return Responder({
         status: HttpStatusCode.InternalServerError,
-        customMessage: 'Error deleting evaluation question',
+        customMessage: errorMessage,
+        data: {
+          error: error.message,
+          errorType: error.name,
+        },
       });
     }
   }

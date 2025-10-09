@@ -20,6 +20,8 @@ import { CreateEvaluationQuestionDto } from './dto/create-evaluationquestion.dto
 import { UpdateEvaluationQuestionDto } from './dto/update-evaluationquestion.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
+import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @ApiTags('Evaluation Questions')
 @Controller('evaluationquestion')
@@ -29,10 +31,11 @@ export class EvaluationQuestionController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsSuperviseur)
   @ApiOperation({
     summary: 'Create a new evaluation question',
-    description: 'Create a new question for an evaluation',
+    description:
+      'Create a new question for an evaluation (Supervisor access required)',
   })
   @ApiBody({
     type: CreateEvaluationQuestionDto,
@@ -81,8 +84,15 @@ export class EvaluationQuestionController {
     },
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Supervisor access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - Only supervisors (admin, secretary, instructor) can create evaluation questions',
+  })
   create(@Body() createEvaluationQuestionDto: CreateEvaluationQuestionDto) {
     return this.evaluationQuestionService.create(createEvaluationQuestionDto);
   }
@@ -197,8 +207,10 @@ export class EvaluationQuestionController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Update evaluation question by ID' })
+  @UseGuards(JwtAuthGuardAsSuperviseur)
+  @ApiOperation({
+    summary: 'Update evaluation question by ID (Supervisor access required)',
+  })
   @ApiParam({
     name: 'id',
     description: 'Evaluation question UUID',
@@ -224,8 +236,15 @@ export class EvaluationQuestionController {
     description: 'Evaluation question updated successfully',
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Supervisor access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - Only supervisors (admin, secretary, instructor) can update evaluation questions',
+  })
   @ApiResponse({ status: 404, description: 'Evaluation question not found' })
   update(
     @Param('id') id: string,
@@ -238,8 +257,12 @@ export class EvaluationQuestionController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Delete evaluation question by ID' })
+  @UseGuards(JwtAuthGuardAsSuperviseur)
+  @ApiOperation({
+    summary: 'Delete evaluation question by ID (Supervisor access required)',
+    description:
+      'Delete a specific evaluation question and all associated options (cascade deletion). Only supervisors can delete questions.',
+  })
   @ApiParam({
     name: 'id',
     description: 'Evaluation question UUID',
@@ -247,10 +270,31 @@ export class EvaluationQuestionController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Evaluation question deleted successfully',
+    description:
+      'Evaluation question and all associated options deleted successfully',
+    example: {
+      status: 200,
+      message:
+        'Evaluation question and all associated options deleted successfully. Deleted 4 options.',
+      data: {
+        deletedQuestion: {
+          id: 'question-uuid-1',
+          text: 'What is the correct way to create a React component?',
+          type: 'multiple_choice',
+        },
+        deletedOptions: 4,
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Supervisor access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - Only supervisors (admin, secretary, instructor) can delete evaluation questions',
+  })
   @ApiResponse({ status: 404, description: 'Evaluation question not found' })
   remove(@Param('id') id: string) {
     return this.evaluationQuestionService.remove(id);
