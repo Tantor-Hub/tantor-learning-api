@@ -1,8 +1,10 @@
-# Fix Foreign Key Constraint Error in Lesson Creation
+# TODO: Integrate Payment Method Card Creation After Stripe Payment Intent
 
-## Tasks
+## Steps to Complete
 
-- [x] Modify `createLesson` method in `src/lesson/lesson.service.ts` to validate `id_cours` exists in `SessionCours` table before creating the lesson.
-- [x] Add import for `BadRequestException` from `@nestjs/common`.
-- [x] In `createLesson`, query `SessionCours` with `findByPk(id_cours)` and throw `BadRequestException` if not found.
-- [x] Test the fix with valid and invalid `id_cours`.
+- [ ] Modify the `create` method in `PaymentMethodCardService` to accept an optional `stripePaymentId` parameter for setting `id_stripe_payment` during initial creation.
+- [ ] Update `createStripePaymentIntent` method to call `this.create` after successful Stripe Payment Intent creation, passing the PI ID.
+- [ ] Adjust the response of `createStripePaymentIntent` to include the created PaymentMethodCard details alongside `clientSecret`.
+- [ ] Test the integration: Run server, call `/paymentmethodcard/payment-intent`, verify DB record creation with PI ID and PENDING status.
+- [ ] Verify no duplicates and proper error handling.
+- [ ] Confirm payment success flow updates status to VALIDATED.

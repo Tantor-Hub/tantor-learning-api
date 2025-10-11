@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseUUIDPipe,
   Request,
+  Response,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -33,38 +34,6 @@ import { PaymentMethodCardStatus } from '../enums/payment-method-card-status.enu
 
 @ApiTags('Payment Method Card - Stripe Integration')
 @Controller('paymentmethodcard')
-@ApiOperation({
-  summary: 'Payment Method Card Management with Stripe Integration',
-  description: `
-**Complete Payment Method Card Management with Stripe Payment Processing**
-
-This controller provides comprehensive functionality for managing card payment methods and processing payments through Stripe.
-
-**Key Features:**
-- Create, read, update, and delete payment method cards
-- Stripe Payment Intent integration for secure payment processing
-- Automatic user ID extraction from JWT tokens
-- Comprehensive duplicate payment prevention
-- Training price integration
-- French error messages for better user experience
-
-**Authentication:**
-- Create operations: Student role required
-- Read/Update/Delete operations: Secretary role required
-- All endpoints require valid JWT token
-
-**Stripe Integration:**
-- Uses Stripe Payment Intents for secure payment processing
-- Returns client secrets for frontend payment confirmation
-- Supports real-time payment status checking
-- Handles all Stripe error scenarios gracefully
-
-**Data Validation:**
-- Comprehensive input validation with class-validator
-- Database-level unique constraints to prevent duplicates
-- Automatic training price fetching from session data
-  `,
-})
 export class PaymentMethodCardController {
   constructor(
     private readonly paymentMethodCardService: PaymentMethodCardService,
@@ -580,54 +549,86 @@ export class PaymentMethodCardController {
   @ApiOperation({
     summary: 'Create Stripe Payment Intent',
     description: `
-**Create a Stripe Payment Intent for card payments**
+# 💳 Create Stripe Payment Intent
 
-This endpoint creates a Stripe Payment Intent and returns the client secret. The frontend uses this to process payments directly with Stripe.js.
+**Frontend Integration Guide for Card Payments**
 
-**How it works:**
-1. Frontend calls this endpoint with the amount to pay
-2. Backend creates a Stripe Payment Intent
-3. Backend returns the client secret
-4. Frontend uses Stripe.js to confirm the payment with the client secret
-5. Payment is processed securely through Stripe
+## 🚀 Quick Start
+This endpoint creates a Stripe Payment Intent for secure card payments. Perfect for training session payments.
 
-**Amount Format:**
-- Amount must be specified in cents (smallest currency unit)
-- Example: 15000 = 150.00 EUR, 2500 = 25.00 EUR
+## 📋 Frontend Workflow
+\`\`\`javascript
+// 1. Call this endpoint with training session ID
+const response = await fetch('/api/paymentmethodcard/payment-intent', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id_session: '550e8400-e29b-41d4-a716-446655440000' // Training session ID
+  })
+});
 
-**Authentication:**
-- Requires valid JWT token with student role
-- User ID is automatically extracted from the token
+const { clientSecret } = await response.json();
 
-**Error Handling:**
-- 400: Invalid amount or request data
-- 401: Unauthorized (invalid or missing JWT token)
-- 500: Stripe configuration error or internal server error
+// 2. Use Stripe.js to confirm payment
+const { error } = await stripe.confirmCardPayment(clientSecret, {
+  payment_method: {
+    card: cardElement,
+    billing_details: { name: 'Customer Name' }
+  }
+});
+
+if (error) {
+  console.error('Payment failed:', error);
+} else {
+  console.log('Payment succeeded!');
+}
+\`\`\`
+
+## 💰 Automatic Price Fetching
+- **Source**: Training session's training.prix field
+- **Currency**: EUR (Euro)
+- **Conversion**: Automatically converted to cents for Stripe
+- **Validation**: Ensures training session and price exist
+
+## 🔐 Authentication
+- **Required**: Valid JWT token with student role
+- **Header**: \`Authorization: Bearer YOUR_JWT_TOKEN\`
+- **Auto-extracted**: User ID from token
+
+## ✅ Success Response
+\`\`\`json
+{
+  "clientSecret": "pi_1234567890abcdef_secret_xyz1234567890"
+}
+\`\`\`
+
+## ❌ Error Responses
+- **400**: Training price not found for this session
+- **404**: Training session not found
+- **401**: Unauthorized (invalid/missing JWT)
+- **500**: Stripe configuration error
     `,
   })
   @ApiBody({
     type: StripePaymentIntentDto,
-    description: 'Payment intent creation data',
+    description: 'Training session ID to get the training price from',
     examples: {
       trainingSession: {
-        summary: 'Training session payment (150.00 EUR)',
-        description: 'Example for a training session costing 150.00 EUR',
+        summary: 'Training session payment',
+        description:
+          'Example for a training session - amount will be fetched from training.prix',
         value: {
-          amount: 15000,
+          id_session: '550e8400-e29b-41d4-a716-446655440000',
         },
       },
-      smallAmount: {
-        summary: 'Small amount payment (25.00 EUR)',
-        description: 'Example for a smaller payment of 25.00 EUR',
+      anotherSession: {
+        summary: 'Another training session',
+        description: 'Example for another training session',
         value: {
-          amount: 2500,
-        },
-      },
-      largeAmount: {
-        summary: 'Large amount payment (500.00 EUR)',
-        description: 'Example for a larger payment of 500.00 EUR',
-        value: {
-          amount: 50000,
+          id_session: '550e8400-e29b-41d4-a716-446655440001',
         },
       },
     },
@@ -645,13 +646,23 @@ This endpoint creates a Stripe Payment Intent and returns the client secret. The
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Bad Request - Invalid amount or request data. Amount must be a positive number in cents.',
+    description: 'Bad Request - Training price not found for this session.',
     schema: {
       example: {
         statusCode: 400,
-        message: 'Amount must be a positive number',
+        message: 'Training price not found for this session',
         error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Training session not found.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Training session not found',
+        error: 'Not Found',
       },
     },
   })
@@ -682,12 +693,15 @@ This endpoint creates a Stripe Payment Intent and returns the client secret. The
   })
   async createStripePaymentIntent(
     @Body() stripePaymentIntentDto: StripePaymentIntentDto,
+    @Request() req,
   ) {
     console.log(
       '💳 [STRIPE PAYMENT INTENT CONTROLLER] Creating payment intent',
     );
+    const userId = req.user.id_user;
     return this.paymentMethodCardService.createStripePaymentIntent(
       stripePaymentIntentDto,
+      userId,
     );
   }
 
@@ -697,32 +711,73 @@ This endpoint creates a Stripe Payment Intent and returns the client secret. The
   @ApiOperation({
     summary: 'Get Stripe Payment Intent Status',
     description: `
-**Retrieve the payment status of a Stripe Payment Intent**
+# 🔍 Check Payment Status
 
-This endpoint checks the current status of a Stripe Payment Intent to determine if the payment was successful or if additional action is required.
+**Verify if your Stripe payment was successful**
 
-**How it works:**
-1. Frontend provides the Payment Intent ID (from the client secret)
-2. Backend queries Stripe for the current status
-3. Backend returns the payment status
+## 🚀 Quick Start
+Use this endpoint to check the current status of a payment after the frontend has processed it.
 
-**Payment Status Values:**
-- \`requires_payment_method\`: Payment method is required
-- \`requires_confirmation\`: Payment requires confirmation
-- \`requires_action\`: Additional authentication required (3D Secure)
-- \`processing\`: Payment is being processed
-- \`requires_capture\`: Payment authorized, capture required
-- \`canceled\`: Payment was canceled
-- \`succeeded\`: Payment completed successfully ✅
+## 📋 Frontend Workflow
+\`\`\`javascript
+// After payment processing, check the status
+const paymentIntentId = 'pi_1234567890abcdef'; // Extract from client secret
 
-**Authentication:**
-- Requires valid JWT token with student role
-- User ID is automatically extracted from the token
+const response = await fetch(\`/api/paymentmethodcard/payment-intent/\${paymentIntentId}\`, {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN'
+  }
+});
 
-**Error Handling:**
-- 400: Invalid Payment Intent ID
-- 401: Unauthorized (invalid or missing JWT token)
-- 500: Stripe API error or internal server error
+const { status } = await response.json();
+
+// Handle different statuses
+switch (status) {
+  case 'succeeded':
+    console.log('✅ Payment successful!');
+    // Redirect to success page
+    break;
+  case 'requires_action':
+    console.log('⚠️ Additional authentication required');
+    // Handle 3D Secure
+    break;
+  case 'canceled':
+    console.log('❌ Payment was canceled');
+    // Show error message
+    break;
+  default:
+    console.log('⏳ Payment still processing...');
+}
+\`\`\`
+
+## 📊 Payment Status Values
+
+| Status | Description | Action Required |
+|--------|-------------|-----------------|
+| \`succeeded\` | ✅ Payment completed successfully | None - redirect to success |
+| \`requires_payment_method\` | Payment method required | Retry with new card |
+| \`requires_confirmation\` | Payment needs confirmation | Confirm payment |
+| \`requires_action\` | 3D Secure authentication needed | Complete authentication |
+| \`processing\` | Payment being processed | Wait and check again |
+| \`requires_capture\` | Payment authorized, capture needed | Capture payment |
+| \`canceled\` | ❌ Payment was canceled | Show error, allow retry |
+
+## 🔐 Authentication
+- **Required**: Valid JWT token with student role
+- **Header**: \`Authorization: Bearer YOUR_JWT_TOKEN\`
+
+## ✅ Success Response
+\`\`\`json
+{
+  "status": "succeeded"
+}
+\`\`\`
+
+## ❌ Error Responses
+- **400**: Invalid Payment Intent ID format
+- **401**: Unauthorized (invalid/missing JWT)
+- **500**: Stripe API error or server issue
     `,
   })
   @ApiParam({
@@ -778,13 +833,404 @@ This endpoint checks the current status of a Stripe Payment Intent to determine 
       },
     },
   })
-  async getStripePaymentIntentStatus(@Param('id') paymentIntentId: string) {
+  async getStripePaymentIntentStatus(
+    @Param('id') paymentIntentId: string,
+    @Request() req,
+  ) {
     console.log(
       '🔍 [STRIPE PAYMENT INTENT CONTROLLER] Getting payment intent status for:',
       paymentIntentId,
     );
+    const userId = req.user.id_user;
     return this.paymentMethodCardService.getStripePaymentIntentStatus(
       paymentIntentId,
+      userId,
     );
+  }
+
+  @Post('payment-success')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Create Payment Method Card After Successful Payment',
+    description: `
+# ✅ Payment Success Handler
+
+**Create payment method card and user session after successful Stripe payment**
+
+This endpoint should be called by the frontend after confirming that a Stripe payment was successful.
+
+## 📋 Frontend Workflow
+\`\`\`javascript
+// After successful Stripe payment confirmation
+const { paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+  payment_method: {
+    card: cardElement,
+    billing_details: { name: 'Customer Name' }
+  }
+});
+
+if (paymentIntent.status === 'succeeded') {
+  // Call this endpoint to create the payment method card
+  const response = await fetch('/api/paymentmethodcard/payment-success', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_JWT_TOKEN',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      sessionId: '550e8400-e29b-41d4-a716-446655440000',
+      stripePaymentIntentId: paymentIntent.id
+    })
+  });
+  
+  const result = await response.json();
+  console.log('Payment method card created:', result);
+}
+\`\`\`
+
+## 🔐 Authentication
+- **Required**: Valid JWT token with student role
+- **Header**: \`Authorization: Bearer YOUR_JWT_TOKEN\`
+
+## ✅ Success Response
+\`\`\`json
+{
+  "status": 201,
+  "message": "Payment method card and user session created successfully",
+  "data": {
+    "id": "payment-method-card-id",
+    "id_session": "session-id",
+    "id_user": "user-id",
+    "id_stripe_payment": "pi_1234567890abcdef",
+    "status": "PAID"
+  }
+}
+\`\`\`
+    `,
+  })
+  @ApiBody({
+    description: 'Payment success data',
+    schema: {
+      type: 'object',
+      required: ['sessionId', 'stripePaymentIntentId'],
+      properties: {
+        sessionId: {
+          type: 'string',
+          format: 'uuid',
+          example: '550e8400-e29b-41d4-a716-446655440000',
+          description: 'Training session ID',
+        },
+        stripePaymentIntentId: {
+          type: 'string',
+          example: 'pi_1234567890abcdef',
+          description: 'Stripe Payment Intent ID from successful payment',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Payment method card and user session created successfully',
+    schema: {
+      example: {
+        status: 201,
+        message: 'Payment method card and user session created successfully',
+        data: {
+          id: 'payment-method-card-id',
+          id_session: '550e8400-e29b-41d4-a716-446655440000',
+          id_user: 'user-id',
+          id_stripe_payment: 'pi_1234567890abcdef',
+          status: 'VALIDATED',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Duplicate payment method or invalid data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async createPaymentMethodCardAfterPayment(
+    @Body() body: { sessionId: string; stripePaymentIntentId: string },
+    @Request() req,
+  ) {
+    console.log(
+      '✅ [PAYMENT SUCCESS CONTROLLER] Creating payment method card after successful payment',
+    );
+    const userId = req.user.id_user;
+    return this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
+      body.sessionId,
+      userId,
+      body.stripePaymentIntentId,
+    );
+  }
+
+  @Post('test-create')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Test Payment Method Card Creation',
+    description: `
+# 🧪 Test Payment Method Card Creation
+
+**Manual endpoint for testing automatic creation**
+
+This endpoint allows you to manually test the payment method card creation process.
+
+## 📋 Usage
+\`\`\`javascript
+const response = await fetch('/api/paymentmethodcard/test-create', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    sessionId: 'session-id',
+    stripePaymentIntentId: 'pi_test_1234567890abcdef'
+  })
+});
+\`\`\`
+    `,
+  })
+  @ApiBody({
+    description: 'Test data for payment method card creation',
+    schema: {
+      type: 'object',
+      required: ['sessionId', 'stripePaymentIntentId'],
+      properties: {
+        sessionId: {
+          type: 'string',
+          format: 'uuid',
+          example: '550e8400-e29b-41d4-a716-446655440000',
+          description: 'Training session ID',
+        },
+        stripePaymentIntentId: {
+          type: 'string',
+          example: 'pi_test_1234567890abcdef',
+          description: 'Stripe Payment Intent ID',
+        },
+      },
+    },
+  })
+  async testCreatePaymentMethodCard(
+    @Body() body: { sessionId: string; stripePaymentIntentId: string },
+    @Request() req,
+  ) {
+    console.log('🧪 [TEST CREATE] Manual test of payment method card creation');
+    const userId = req.user.id_user;
+    console.log('🧪 [TEST CREATE] User ID:', userId);
+    console.log('🧪 [TEST CREATE] Session ID:', body.sessionId);
+    console.log(
+      '🧪 [TEST CREATE] Stripe Payment Intent ID:',
+      body.stripePaymentIntentId,
+    );
+
+    return this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
+      body.sessionId,
+      userId,
+      body.stripePaymentIntentId,
+    );
+  }
+
+  @Post('webhook')
+  @ApiOperation({
+    summary: 'Stripe Webhook Handler',
+    description: `
+# 🔔 Stripe Webhook Handler
+
+**Automatically handles Stripe payment events**
+
+This endpoint receives webhooks from Stripe when payment events occur. It automatically creates payment method cards and user sessions when payments succeed.
+
+## 🔧 Setup Required
+1. Configure webhook endpoint in Stripe Dashboard: \`https://your-domain.com/api/paymentmethodcard/webhook\`
+2. Select events: \`payment_intent.succeeded\` and \`checkout.session.completed\`
+3. Add webhook secret to environment variables: \`STRIPE_WEBHOOK_SECRET\`
+
+## 📋 Automatic Actions
+- **payment_intent.succeeded**: Creates payment method card and user session (for Payment Intents)
+- **checkout.session.completed**: Creates payment method card and user session (for Checkout)
+- **payment_intent.payment_failed**: Logs failure (no action needed)
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook processed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid webhook signature or data',
+  })
+  async handleStripeWebhook(@Request() req, @Response() res) {
+    console.log('🔔 [STRIPE WEBHOOK] ===== WEBHOOK RECEIVED =====');
+    console.log('🔔 [STRIPE WEBHOOK] Timestamp:', new Date().toISOString());
+    console.log(
+      '🔔 [STRIPE WEBHOOK] Headers:',
+      JSON.stringify(req.headers, null, 2),
+    );
+    console.log('🔔 [STRIPE WEBHOOK] Body keys:', Object.keys(req.body || {}));
+
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    console.log(
+      '🔔 [STRIPE WEBHOOK] Webhook secret configured:',
+      !!webhookSecret,
+    );
+
+    if (!webhookSecret) {
+      console.log(
+        '❌ [STRIPE WEBHOOK] Webhook secret not configured - exiting',
+      );
+      return res.status(400).send('Webhook secret not configured');
+    }
+
+    console.log('🔔 [STRIPE WEBHOOK] Constructing event...');
+
+    try {
+      const event = this.paymentMethodCardService.constructWebhookEvent(
+        req.body,
+        sig,
+        webhookSecret,
+      );
+
+      console.log('✅ [STRIPE WEBHOOK] Event constructed successfully');
+      console.log('🔔 [STRIPE WEBHOOK] Event type:', event.type);
+      console.log('🔔 [STRIPE WEBHOOK] Event ID:', event.id);
+      console.log(
+        '🔔 [STRIPE WEBHOOK] Event data keys:',
+        Object.keys(event.data || {}),
+      );
+
+      if (event.type === 'payment_intent.succeeded') {
+        console.log(
+          '🔄 [STRIPE WEBHOOK] Processing payment_intent.succeeded event',
+        );
+        const paymentIntent = event.data.object;
+        console.log('✅ [STRIPE WEBHOOK] Payment succeeded:', paymentIntent.id);
+        console.log(
+          '✅ [STRIPE WEBHOOK] Payment intent metadata:',
+          JSON.stringify(paymentIntent.metadata, null, 2),
+        );
+
+        // Extract session ID from metadata
+        const sessionId = paymentIntent.metadata?.sessionId;
+        const userId = paymentIntent.metadata?.userId;
+
+        console.log(
+          '✅ [STRIPE WEBHOOK] Extracted sessionId:',
+          sessionId,
+          'userId:',
+          userId,
+        );
+
+        if (sessionId && userId) {
+          console.log(
+            '🔔 [STRIPE WEBHOOK] Metadata valid - creating payment method card automatically',
+          );
+          console.log(
+            '🔔 [STRIPE WEBHOOK] Calling createPaymentMethodCardAfterPayment...',
+          );
+          const result =
+            await this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
+              sessionId,
+              userId,
+              paymentIntent.id,
+            );
+          console.log(
+            '✅ [STRIPE WEBHOOK] Payment method card creation result:',
+            JSON.stringify(result, null, 2),
+          );
+          console.log(
+            '✅ [STRIPE WEBHOOK] payment_intent.succeeded processing completed',
+          );
+        } else {
+          console.log(
+            '⚠️ [STRIPE WEBHOOK] Missing sessionId or userId in metadata - skipping creation',
+          );
+        }
+      } else if (event.type === 'checkout.session.completed') {
+        console.log(
+          '🔄 [STRIPE WEBHOOK] Processing checkout.session.completed event',
+        );
+        const session = event.data.object;
+        console.log(
+          '✅ [STRIPE WEBHOOK] Checkout session completed:',
+          session.id,
+        );
+        console.log(
+          '✅ [STRIPE WEBHOOK] Checkout session metadata:',
+          JSON.stringify(session.metadata, null, 2),
+        );
+        console.log(
+          '✅ [STRIPE WEBHOOK] Checkout session payment_intent:',
+          session.payment_intent,
+        );
+
+        // Extract session ID and user ID from metadata
+        const sessionId = session.metadata?.sessionId;
+        const userId = session.metadata?.userId;
+
+        console.log(
+          '✅ [STRIPE WEBHOOK] Extracted sessionId:',
+          sessionId,
+          'userId:',
+          userId,
+        );
+
+        if (sessionId && userId && session.payment_intent) {
+          console.log(
+            '🔔 [STRIPE WEBHOOK] Metadata and payment_intent valid - creating payment method card automatically for checkout',
+          );
+          console.log(
+            '🔔 [STRIPE WEBHOOK] Calling createPaymentMethodCardAfterPayment for checkout...',
+          );
+          const result =
+            await this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
+              sessionId,
+              userId,
+              session.payment_intent as string,
+            );
+          console.log(
+            '✅ [STRIPE WEBHOOK] Payment method card creation result for checkout:',
+            JSON.stringify(result, null, 2),
+          );
+          console.log(
+            '✅ [STRIPE WEBHOOK] checkout.session.completed processing completed',
+          );
+        } else {
+          console.log(
+            '⚠️ [STRIPE WEBHOOK] Missing sessionId, userId, or payment_intent in checkout session - skipping creation',
+          );
+        }
+      } else {
+        console.log(
+          'ℹ️ [STRIPE WEBHOOK] Unhandled event type:',
+          event.type,
+          '- no action taken',
+        );
+      }
+
+      console.log(
+        '✅ [STRIPE WEBHOOK] ===== WEBHOOK PROCESSING COMPLETED =====',
+      );
+      res.status(200).send('Webhook processed');
+    } catch (error) {
+      console.error('❌ [STRIPE WEBHOOK] ===== WEBHOOK PROCESSING ERROR =====');
+      console.error('❌ [STRIPE WEBHOOK] Error processing webhook:', error);
+      console.error('❌ [STRIPE WEBHOOK] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        type: error.type,
+        code: error.code,
+      });
+      console.error('❌ [STRIPE WEBHOOK] ===== END ERROR =====');
+      res.status(400).send('Webhook processing failed');
+    }
   }
 }

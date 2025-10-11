@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -152,10 +153,14 @@ export class UserInSessionController {
     return this.userInSessionService.create(createUserInSessionDto);
   }
 
-  @Get('getall')
+  @Get()
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all users in sessions' })
+  @ApiOperation({
+    summary: 'Get all users in sessions (Root endpoint)',
+    description:
+      'Retrieve all user-session relationships. This is the main endpoint for getting all user sessions.',
+  })
   @ApiResponse({
     status: 200,
     description: 'Users in sessions retrieved successfully.',
@@ -217,27 +222,142 @@ export class UserInSessionController {
     description: 'Internal server error.',
   })
   findAll() {
+    console.log(
+      '[USER IN SESSION CONTROLLER] Root endpoint called - getting all user sessions',
+    );
     return this.userInSessionService.findAll();
   }
 
-  @Get('user/:userId')
+  @Get('getall')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all users in sessions (Legacy endpoint)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Users in sessions retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Users in sessions retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              id_session: { type: 'string', format: 'uuid' },
+              status: {
+                type: 'string',
+                enum: ['refusedpayment', 'notpaid', 'pending', 'in', 'out'],
+              },
+              id_user: { type: 'string', format: 'uuid' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+              trainingSession: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  title: { type: 'string' },
+                  nb_places: { type: 'number' },
+                  available_places: { type: 'number' },
+                  begining_date: { type: 'string', format: 'date-time' },
+                  ending_date: { type: 'string', format: 'date-time' },
+                },
+              },
+              user: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  firstname: { type: 'string' },
+                  lastname: { type: 'string' },
+                  email: { type: 'string' },
+                  phone: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary role required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  findAllLegacy() {
+    console.log('[USER IN SESSION CONTROLLER] Legacy getall endpoint called');
+    return this.userInSessionService.findAll();
+  }
+
+  @Get('user')
   @UseGuards(JwtAuthGuardAsStudent)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get user sessions by user ID (Student access)',
     description:
-      'Retrieve all sessions for a specific user. This endpoint is designed for students to view their sessions.',
-  })
-  @ApiParam({
-    name: 'userId',
-    description: 'UUID of the user',
-    type: 'string',
-    format: 'uuid',
-    example: '550e8400-e29b-41d4-a716-446655440001',
+      'Retrieve all sessions for the authenticated user. The user ID is automatically extracted from the JWT token.',
   })
   @ApiResponse({
     status: 200,
     description: 'User sessions retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Opération réussie.',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              status: {
+                type: 'string',
+                enum: ['refusedpayment', 'notpaid', 'pending', 'in', 'out'],
+                example: 'in',
+              },
+              trainingSession: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: 'd6ff1fd6-f795-47a3-9abd-24d911d06b22',
+                  },
+                  title: { type: 'string', example: 'hello javascript' },
+                  begining_date: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-10-09T22:00:00.000Z',
+                  },
+                  ending_date: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-10-30T22:00:00.000Z',
+                  },
+                },
+              },
+              training: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string', example: 'hello javascript' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -247,10 +367,25 @@ export class UserInSessionController {
     status: 500,
     description: 'Internal server error.',
   })
-  findByUserId(@Param('userId', ParseUUIDPipe) userId: string) {
+  findByUserId(@Request() req: any) {
+    // Extract user ID from JWT token
+    const userId = req.user?.id_user;
+
     console.log(
       `🎓 [STUDENT USER SESSIONS] Student requesting sessions for user: ${userId}`,
     );
+
+    if (!userId) {
+      console.log(
+        '❌ [STUDENT USER SESSIONS] ERROR: No user ID found in token!',
+      );
+      return {
+        status: 400,
+        message: 'User ID not found in authentication token',
+        data: null,
+      };
+    }
+
     return this.userInSessionService.findByUserId(userId);
   }
 

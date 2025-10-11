@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiConsumes,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LessondocumentService } from './lessondocument.service';
@@ -30,6 +31,7 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 
 @ApiTags('lessondocument')
 @ApiBearerAuth()
@@ -670,6 +672,150 @@ export class LessondocumentController {
   findByLessonId(@Param('lessonId', ParseUUIDPipe) lessonId: string) {
     console.log('Fetching lesson documents by lesson ID:', lessonId);
     return this.lessondocumentService.findByLessonId(lessonId);
+  }
+
+  @Get('student/lesson/:lessonId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get lesson documents by lesson ID (Student access)',
+    description:
+      'Retrieves all documents for a specific lesson. Students can access documents related to lessons they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'lessonId',
+    description: 'Lesson UUID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lesson documents retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Lesson documents retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            lessondocuments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
+                  file_name: {
+                    type: 'string',
+                    example: 'lesson-notes.pdf',
+                  },
+                  piece_jointe: {
+                    type: 'string',
+                    example:
+                      'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+                  },
+                  type: {
+                    type: 'string',
+                    example: 'PDF',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'Introduction to Programming Concepts',
+                  },
+                  description: {
+                    type: 'string',
+                    example:
+                      'This document covers the fundamental concepts of programming including variables, loops, and functions.',
+                  },
+                  ispublish: {
+                    type: 'boolean',
+                    example: false,
+                  },
+                  download_url: {
+                    type: 'string',
+                    example:
+                      'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+                  },
+                  creator: {
+                    type: 'object',
+                    properties: {
+                      id: {
+                        type: 'string',
+                        format: 'uuid',
+                        example: '550e8400-e29b-41d4-a716-446655440002',
+                      },
+                      firstName: {
+                        type: 'string',
+                        example: 'John',
+                      },
+                      lastName: {
+                        type: 'string',
+                        example: 'Doe',
+                      },
+                      email: {
+                        type: 'string',
+                        example: 'john.doe@example.com',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            total: { type: 'number', example: 2 },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Lesson not found',
+    schema: {
+      example: {
+        status: 404,
+        data: 'Lesson not found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+    schema: {
+      example: {
+        status: 401,
+        data: 'Seuls les étudiants peuvent accéder à cette ressource',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        data: {
+          message: 'Internal server error while fetching lesson documents',
+          error: 'Error message',
+        },
+      },
+    },
+  })
+  async findByLessonIdForStudent(
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+  ) {
+    console.log(
+      'Fetching lesson documents by lesson ID for student:',
+      lessonId,
+    );
+    return this.lessondocumentService.findByLessonIdForStudent(lessonId);
   }
 
   @Get('instructor/my-documents')

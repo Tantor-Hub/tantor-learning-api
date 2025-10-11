@@ -24,6 +24,7 @@ import {
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { LessonService } from './lesson.service';
@@ -145,6 +146,78 @@ export class LessonController {
   })
   async findLessonsByCoursId(@Param('id', ParseUUIDPipe) id: string) {
     return this.lessonService.findLessonsByCoursId(id);
+  }
+
+  @Get('student/cours/:id/lessons')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get lessons by sessioncours ID (Student access)',
+    description:
+      'Retrieves all lessons for a specific sessioncours. Students can access lessons related to courses they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'SessionCours UUID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lessons retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Lessons retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 2 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440000',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'Introduction to Programming',
+                  },
+                  description: {
+                    type: 'string',
+                    example: 'Basic concepts of programming',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'SessionCours not found or no lessons found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async findLessonsByCoursIdForStudent(@Param('id', ParseUUIDPipe) id: string) {
+    return this.lessonService.findLessonsByCoursIdForStudent(id);
   }
 
   @Post('/create')

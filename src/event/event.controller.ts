@@ -24,6 +24,7 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @ApiTags('Events')
@@ -516,6 +517,123 @@ export class EventController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   findBySession(@Param('sessionId') sessionId: string) {
     return this.eventService.findBySession(sessionId);
+  }
+
+  @Get('student/session/:sessionId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary: 'Get events by session ID (Student access)',
+    description:
+      'Retrieves events for a specific training session. Students can access events related to sessions they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: 'Training Session UUID',
+    example: '3f51f834-7a3f-41c7-83ad-2da85589f503',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Events retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Events retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: 'event-uuid-2',
+              },
+              title: {
+                type: 'string',
+                example: 'Training Session Kickoff',
+              },
+              description: {
+                type: 'string',
+                example: 'Introduction session for new training participants',
+              },
+              begining_date: {
+                type: 'string',
+                format: 'date-time',
+                example: '2025-02-15T00:00:00.000Z',
+              },
+              beginning_hour: {
+                type: 'string',
+                example: '10:00',
+              },
+              ending_hour: {
+                type: 'string',
+                example: '12:00',
+              },
+              createdBy: {
+                type: 'string',
+                format: 'uuid',
+                example: 'user-uuid-1',
+              },
+              sessionCours: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'React Fundamentals Course',
+                  },
+                },
+              },
+              creator: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: 'user-uuid-1',
+                  },
+                  firstName: {
+                    type: 'string',
+                    example: 'John',
+                  },
+                  lastName: {
+                    type: 'string',
+                    example: 'Doe',
+                  },
+                  email: {
+                    type: 'string',
+                    example: 'john.doe@example.com',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session not found or no events found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  findBySessionForStudent(@Param('sessionId') sessionId: string) {
+    return this.eventService.findBySessionForStudent(sessionId);
   }
 
   @Get('user')

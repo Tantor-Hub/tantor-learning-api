@@ -34,9 +34,13 @@ Créer une nouvelle inscription utilisateur-session
 }
 ```
 
+#### GET `/api/userinsession`
+
+Récupérer toutes les inscriptions utilisateur-session (endpoint racine)
+
 #### GET `/api/userinsession/getall`
 
-Récupérer toutes les inscriptions utilisateur-session
+Récupérer toutes les inscriptions utilisateur-session (endpoint legacy)
 
 #### GET `/api/userinsession/:id`
 
@@ -77,9 +81,9 @@ Supprimer toutes les inscriptions utilisateur-session
 
 ### Routes Étudiant (JwtAuthGuardAsStudent)
 
-#### GET `/api/userinsession/user/:userId`
+#### GET `/api/userinsession/user`
 
-Récupérer toutes les sessions d'un utilisateur
+Récupérer toutes les sessions de l'utilisateur authentifié (l'ID utilisateur est extrait automatiquement du token JWT)
 
 ## 🔧 Statuts disponibles
 

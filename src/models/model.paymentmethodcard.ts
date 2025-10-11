@@ -42,7 +42,7 @@ export class PaymentMethodCard extends Model<IPaymentMethodCard> {
   id_session: string;
 
   @Column({
-    type: DataType.UUID,
+    type: DataType.STRING,
     allowNull: true,
   })
   id_stripe_payment: string | null;
@@ -57,7 +57,7 @@ export class PaymentMethodCard extends Model<IPaymentMethodCard> {
   @Column({
     type: DataType.ENUM('pending', 'rejected', 'validated'),
     allowNull: false,
-    defaultValue: 'pending',
+    defaultValue: 'validated',
   })
   status: PaymentMethodCardStatus;
 

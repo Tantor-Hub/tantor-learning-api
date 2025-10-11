@@ -33,6 +33,7 @@ import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 
 @ApiTags('Session Courses')
 @Controller('sessioncours')
@@ -279,6 +280,114 @@ export class SessionCoursController {
     },
   })
   async findBySessionId(@Param('sessionId') sessionId: string) {
+    return this.sessionCoursService.findBySessionId(sessionId);
+  }
+
+  @Get('student/session/:sessionId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get courses by session ID (Student access)',
+    description:
+      'Retrieves all courses for a specific training session. Students can access courses related to sessions they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: 'Training Session UUID',
+    example: '3f51f834-7a3f-41c7-83ad-2da85589f503',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Courses retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Courses retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 2 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'Advanced React Development',
+                  },
+                  description: {
+                    type: 'string',
+                    example: 'Learn advanced React concepts and best practices',
+                  },
+                  is_published: {
+                    type: 'boolean',
+                    example: true,
+                  },
+                  ponderation: {
+                    type: 'number',
+                    example: 2,
+                  },
+                  formateurs: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'string',
+                          example: '1',
+                        },
+                        firstName: {
+                          type: 'string',
+                          example: 'John',
+                        },
+                        lastName: {
+                          type: 'string',
+                          example: 'Doe',
+                        },
+                      },
+                    },
+                  },
+                  createdAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-25T10:00:00.000Z',
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-25T10:00:00.000Z',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session not found or no courses found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async findBySessionIdForStudent(@Param('sessionId') sessionId: string) {
     return this.sessionCoursService.findBySessionId(sessionId);
   }
 

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Payment Flow</title>
+    <script src="https://js.stripe.com/v3/"></script>
+  </head>
+  <body>
+    <h1>🧪 Test Payment Flow</h1>
+
+    <div id="test-results"></div>
+
+    <button onclick="testPaymentIntentCreation()">
+      1. Test Payment Intent Creation
+    </button>
+    <button onclick="testPaymentSuccess()">
+      2. Test Payment Success (Manual)
+    </button>
+
+    <script>
+      const API_BASE_URL =
+        'https://staffing-alerts-sought-hayes.trycloudflare.com/api';
+      const JWT_TOKEN = 'YOUR_JWT_TOKEN_HERE'; // Replace with actual JWT token
+
+      function log(message) {
+        const results = document.getElementById('test-results');
+        results.innerHTML +=
+          '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        console.log(message);
+      }
+
+      async function testPaymentIntentCreation() {
+        log('🚀 Testing Payment Intent Creation...');
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/paymentmethodcard/payment-intent`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${JWT_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id_session: '550e8400-e29b-41d4-a716-446655440000', // Replace with actual session ID
+              }),
+            },
+          );
+
+          log(`📊 Response Status: ${response.status}`);
+
+          const responseData = await response.json();
+          log('📋 Response Data: ' + JSON.stringify(responseData, null, 2));
+
+          if (
+            response.ok &&
+            responseData.data &&
+            responseData.data.clientSecret
+          ) {
+            log('✅ Payment Intent Created Successfully!');
+            log('🔑 Client Secret: ' + responseData.data.clientSecret);
+
+            // Store the client secret for testing
+            window.testClientSecret = responseData.data.clientSecret;
+          } else {
+            log('❌ Payment Intent Creation Failed!');
+          }
+        } catch (error) {
+          log('❌ Error: ' + error.message);
+        }
+      }
+
+      async function testPaymentSuccess() {
+        log('🚀 Testing Payment Success Endpoint...');
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/paymentmethodcard/payment-success`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${JWT_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                sessionId: '550e8400-e29b-41d4-a716-446655440000', // Replace with actual session ID
+                stripePaymentIntentId: 'pi_test_1234567890abcdef', // Replace with actual payment intent ID
+              }),
+            },
+          );
+
+          log(`📊 Response Status: ${response.status}`);
+
+          const responseData = await response.json();
+          log('📋 Response Data: ' + JSON.stringify(responseData, null, 2));
+
+          if (response.ok) {
+            log('✅ Payment Success Endpoint Test Passed!');
+            log(
+              '💳 Payment Method Card Created: ' +
+                (responseData.data ? 'Yes' : 'No'),
+            );
+          } else {
+            log('❌ Payment Success Endpoint Test Failed!');
+          }
+        } catch (error) {
+          log('❌ Error: ' + error.message);
+        }
+      }
+
+      // Auto-run payment intent creation test on page load
+      window.onload = function () {
+        log('🔧 Test Page Loaded. Click buttons to test the payment flow.');
+        log(
+          '⚠️ Make sure to replace JWT_TOKEN and session IDs with real values!',
+        );
+      };
+    </script>
+  </body>
+</html>

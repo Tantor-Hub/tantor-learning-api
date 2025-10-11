@@ -139,6 +139,7 @@ export class LessondocumentService {
           'type',
           'title',
           'description',
+          'ispublish',
           'id_lesson',
           'createdBy',
           'createdAt',
@@ -210,6 +211,7 @@ export class LessondocumentService {
           'type',
           'title',
           'description',
+          'ispublish',
           'id_lesson',
           'createdBy',
           'createdAt',
@@ -261,6 +263,83 @@ export class LessondocumentService {
     }
   }
 
+  async findByLessonIdForStudent(lessonId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== LessonDocument findByLessonIdForStudent: Starting ===');
+      console.log('Lesson ID:', lessonId);
+
+      // First verify that the lesson exists
+      const lesson = await this.lessonModel.findByPk(lessonId);
+      if (!lesson) {
+        console.log(
+          '=== LessonDocument findByLessonIdForStudent: Lesson not found ===',
+        );
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Lesson not found',
+        });
+      }
+
+      const lessondocuments = await this.lessondocumentModel.findAll({
+        where: { id_lesson: lessonId },
+        attributes: [
+          'id',
+          'file_name',
+          'piece_jointe',
+          'type',
+          'title',
+          'description',
+          'ispublish',
+          // Exclude sensitive fields for students
+          // 'id_lesson', 'createdBy', 'createdAt', 'updatedAt'
+        ],
+        include: [
+          {
+            model: Users,
+            required: false,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          // Removed lesson include for student response
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Generate download URLs for all documents
+      const documentsWithDownloadUrls = lessondocuments.map((doc) => {
+        const downloadUrl = this.generateDocumentDownloadUrl(doc);
+        return {
+          ...doc.toJSON(),
+          download_url: downloadUrl,
+        };
+      });
+
+      console.log('=== LessonDocument findByLessonIdForStudent: Success ===');
+      console.log('Documents found:', documentsWithDownloadUrls.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          lessondocuments: documentsWithDownloadUrls,
+          total: documentsWithDownloadUrls.length,
+        },
+        customMessage: 'Lesson documents retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        'Error fetching lesson documents by lesson ID for student:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while fetching lesson documents',
+          error: error.message,
+        },
+      });
+    }
+  }
+
   async findByCreator(creatorId: string): Promise<ResponseServer> {
     try {
       // First verify that the creator exists
@@ -281,6 +360,7 @@ export class LessondocumentService {
           'type',
           'title',
           'description',
+          'ispublish',
           'id_lesson',
           'createdBy',
           'createdAt',
@@ -350,6 +430,7 @@ export class LessondocumentService {
           'type',
           'title',
           'description',
+          'ispublish',
           'id_lesson',
           'createdBy',
           'createdAt',
@@ -439,6 +520,7 @@ export class LessondocumentService {
         description: documentData.description,
         id_lesson: documentData.id_lesson,
         createdBy: user.id_user,
+        ispublish: false, // Set to false by default when creating
       });
 
       // Fetch the created lesson document with its relationships
@@ -633,6 +715,7 @@ export class LessondocumentService {
           'type',
           'title',
           'description',
+          'ispublish',
         ],
         limit: 5, // Only get first 5 for debugging
       });

@@ -1,17 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsPositive, Min } from 'class-validator';
+import { IsUUID } from 'class-validator';
 
 export class StripePaymentIntentDto {
   @ApiProperty({
-    example: 15000,
-    description:
-      'Amount to pay in cents (smallest currency unit). Example: 15000 = 150.00 EUR, 2500 = 25.00 EUR',
-    minimum: 50,
-    maximum: 99999999,
-    type: 'number',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Training session ID to get the training price from',
+    type: 'string',
   })
-  @IsNumber()
-  @IsPositive()
-  @Min(50, { message: 'Amount must be at least 50 cents (0.50 EUR)' })
-  amount: number;
+  @IsUUID()
+  id_session: string;
 }

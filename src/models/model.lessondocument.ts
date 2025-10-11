@@ -27,7 +27,7 @@ export class Lessondocument extends Model {
   file_name: string;
 
   @AllowNull(false)
-  @Column({ type: DataType.STRING, field: 'url' })
+  @Column(DataType.STRING)
   piece_jointe: string;
 
   @AllowNull(true)

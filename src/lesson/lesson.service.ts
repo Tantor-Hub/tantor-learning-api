@@ -138,4 +138,46 @@ export class LessonService {
       });
     }
   }
+
+  async findLessonsByCoursIdForStudent(id: string) {
+    try {
+      console.log('=== Lesson findLessonsByCoursIdForStudent: Starting ===');
+      console.log('Cours ID:', id);
+
+      const lessons = await this.lessonModel.findAll({
+        where: { id_cours: id },
+        attributes: ['id', 'title', 'description'],
+        order: [['createdAt', 'ASC']],
+      });
+
+      console.log('=== Lesson findLessonsByCoursIdForStudent: Success ===');
+      console.log('Lessons found:', lessons.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: lessons.length,
+          rows: lessons,
+        },
+        customMessage: 'Lessons retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Lesson findLessonsByCoursIdForStudent: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving lessons by course',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
 }

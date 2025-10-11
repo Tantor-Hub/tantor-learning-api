@@ -572,4 +572,73 @@ export class EventService {
       });
     }
   }
+
+  async findBySessionForStudent(sessionId: string): Promise<ResponseServer> {
+    try {
+      const events = await this.eventModel.findAll({
+        where: {
+          [require('sequelize').Op.or]: [
+            // Direct session match
+            { id_cible_session: sessionId },
+            // Session match through sessionCours
+            {
+              '$sessionCours.id_session$': sessionId,
+            },
+          ],
+        },
+        include: [
+          {
+            model: SessionCours,
+            as: 'sessionCours',
+            attributes: ['id', 'title'],
+            required: false,
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+            required: false,
+          },
+        ],
+        order: [['begining_date', 'ASC']],
+      });
+
+      // Format the response according to the specified structure
+      const formattedData = events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        begining_date: event.begining_date.toISOString(),
+        beginning_hour: event.beginning_hour,
+        ending_hour: event.ending_hour,
+        createdBy: event.createdBy,
+        sessionCours: event.sessionCours
+          ? {
+              id: event.sessionCours.id,
+              title: event.sessionCours.title,
+            }
+          : undefined,
+        creator: event.creator
+          ? {
+              id: event.creator.id,
+              firstName: event.creator.firstName,
+              lastName: event.creator.lastName,
+              email: event.creator.email,
+            }
+          : undefined,
+      }));
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: formattedData,
+        customMessage: 'Events retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error retrieving events by session for student:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving events',
+      });
+    }
+  }
 }

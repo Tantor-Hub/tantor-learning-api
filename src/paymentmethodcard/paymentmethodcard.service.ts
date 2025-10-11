@@ -7,6 +7,8 @@ import { PaymentMethodOpco } from '../models/model.paymentmethodopco';
 import { TrainingSession } from '../models/model.trainingssession';
 import { Training } from '../models/model.trainings';
 import { Users } from '../models/model.users';
+import { UserInSession } from '../models/model.userinsession';
+import { UserInSessionStatus } from '../enums/user-in-session-status.enum';
 import { CreatePaymentMethodCardDto } from './dto/create-paymentmethodcard.dto';
 import { UpdatePaymentMethodCardDto } from './dto/update-paymentmethodcard.dto';
 import { DeletePaymentMethodCardDto } from './dto/delete-paymentmethodcard.dto';
@@ -45,16 +47,19 @@ export class PaymentMethodCardService {
   async create(
     createPaymentMethodCardDto: CreatePaymentMethodCardDto,
     userId: string,
+    stripePaymentId?: string,
   ) {
+    const sessionId = createPaymentMethodCardDto.id_session;
     try {
-      console.log(
-        '[PAYMENT METHOD CARD CREATE] Starting creation with data:',
-        createPaymentMethodCardDto,
-      );
+      console.log('[PAYMENT METHOD CARD CREATE] Starting creation with data:', {
+        userId,
+        sessionId,
+        stripePaymentId,
+      });
 
       // Verify that the training session exists and get training price
       const trainingSession = await this.trainingSessionModel.findByPk(
-        createPaymentMethodCardDto.id_session,
+        sessionId,
         {
           include: [
             {
@@ -89,19 +94,19 @@ export class PaymentMethodCardService {
         await Promise.all([
           this.paymentMethodOpcoModel.findOne({
             where: {
-              id_session: createPaymentMethodCardDto.id_session,
+              id_session: sessionId,
               id_user: userId,
             },
           }),
           this.paymentMethodCpfModel.findOne({
             where: {
-              id_session: createPaymentMethodCardDto.id_session,
+              id_session: sessionId,
               id_user: userId,
             },
           }),
           this.paymentMethodCardModel.findOne({
             where: {
-              id_session: createPaymentMethodCardDto.id_session,
+              id_session: sessionId,
               id_user: userId,
             },
           }),
@@ -136,7 +141,7 @@ export class PaymentMethodCardService {
               cpf: !!existingCpfPayment,
               card: !!existingCardPayment,
             },
-            sessionId: createPaymentMethodCardDto.id_session,
+            sessionId: sessionId,
             userId: userId,
             message: frenchMessage,
           },
@@ -147,9 +152,9 @@ export class PaymentMethodCardService {
       let paymentMethodCard;
       try {
         paymentMethodCard = await this.paymentMethodCardModel.create({
-          id_session: createPaymentMethodCardDto.id_session,
-          id_stripe_payment: undefined, // Will be set later when Stripe payment is processed
-          status: PaymentMethodCardStatus.PENDING,
+          id_session: sessionId,
+          id_stripe_payment: stripePaymentId || undefined, // Will be set later when Stripe payment is processed
+          status: PaymentMethodCardStatus.VALIDATED,
           id_user: userId,
         });
       } catch (error) {
@@ -168,7 +173,7 @@ export class PaymentMethodCardService {
                 cpf: false,
                 card: true,
               },
-              sessionId: createPaymentMethodCardDto.id_session,
+              sessionId: sessionId,
               userId: userId,
               message:
                 'Vous avez déjà une méthode de paiement par carte pour cette session de formation.',
@@ -248,10 +253,11 @@ export class PaymentMethodCardService {
       );
       console.error('[PAYMENT METHOD CARD CREATE] Error stack:', error.stack);
       console.error('[PAYMENT METHOD CARD CREATE] Full error object:', error);
-      console.error(
-        '[PAYMENT METHOD CARD CREATE] Request data:',
-        createPaymentMethodCardDto,
-      );
+      console.error('[PAYMENT METHOD CARD CREATE] Request data:', {
+        userId,
+        sessionId,
+        stripePaymentId,
+      });
 
       return Responder({
         status: HttpStatusCode.InternalServerError,
@@ -666,11 +672,16 @@ export class PaymentMethodCardService {
   // Stripe Integration Methods
   async createStripePaymentIntent(
     stripePaymentIntentDto: StripePaymentIntentDto,
-  ): Promise<StripePaymentIntentResponseDto> {
+    userId: string,
+  ) {
     try {
       console.log(
-        '💳 [STRIPE PAYMENT INTENT] Creating payment intent with amount:',
-        stripePaymentIntentDto.amount,
+        '💳 [STRIPE PAYMENT INTENT] Creating payment intent for session:',
+        stripePaymentIntentDto.id_session,
+      );
+      console.log(
+        '🔍 [STRIPE PAYMENT INTENT] Request data:',
+        JSON.stringify(stripePaymentIntentDto, null, 2),
       );
 
       // Validate environment variables
@@ -681,11 +692,163 @@ export class PaymentMethodCardService {
         );
       }
 
-      // Create Stripe Payment Intent
+      // Check for existing payment methods (Card, OPCO, CPF) for this user and session
+      console.log(
+        '🔍 [STRIPE PAYMENT INTENT] Checking for existing payment methods for user:',
+        userId,
+        'session:',
+        stripePaymentIntentDto.id_session,
+      );
+
+      const [existingCardPayment, existingOpcoPayment, existingCpfPayment] =
+        await Promise.all([
+          this.paymentMethodCardModel.findOne({
+            where: {
+              id_session: stripePaymentIntentDto.id_session,
+              id_user: userId,
+            },
+          }),
+          this.paymentMethodOpcoModel.findOne({
+            where: {
+              id_session: stripePaymentIntentDto.id_session,
+              id_user: userId,
+            },
+          }),
+          this.paymentMethodCpfModel.findOne({
+            where: {
+              id_session: stripePaymentIntentDto.id_session,
+              id_user: userId,
+            },
+          }),
+        ]);
+
+      if (existingCardPayment || existingOpcoPayment || existingCpfPayment) {
+        console.log(
+          '❌ [STRIPE PAYMENT INTENT] Duplicate payment method detected',
+        );
+
+        let existingPaymentType = 'Unknown';
+        let frenchMessage =
+          'Vous avez déjà une méthode de paiement pour cette session de formation.';
+
+        if (existingCardPayment) {
+          existingPaymentType = 'Carte';
+          frenchMessage =
+            'Vous avez déjà une méthode de paiement par carte pour cette session de formation.';
+        } else if (existingOpcoPayment) {
+          existingPaymentType = 'OPCO';
+          frenchMessage =
+            'Vous avez déjà une méthode de paiement OPCO pour cette session de formation.';
+        } else if (existingCpfPayment) {
+          existingPaymentType = 'CPF';
+          frenchMessage =
+            'Vous avez déjà une méthode de paiement CPF pour cette session de formation.';
+        }
+
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            errorType: 'DUPLICATE_PAYMENT_METHOD',
+            existingPaymentType: existingPaymentType,
+            existingPaymentTypes: {
+              opco: !!existingOpcoPayment,
+              cpf: !!existingCpfPayment,
+              card: !!existingCardPayment,
+            },
+            sessionId: stripePaymentIntentDto.id_session,
+            userId: userId,
+            message: frenchMessage,
+          },
+          customMessage: frenchMessage,
+        });
+      }
+
+      console.log(
+        '✅ [STRIPE PAYMENT INTENT] No existing payment methods found, proceeding with payment intent creation',
+      );
+
+      // Create the payment method card with PENDING status
+      const createPaymentMethodCardDto: CreatePaymentMethodCardDto = {
+        id_session: stripePaymentIntentDto.id_session,
+      };
+      try {
+        await this.create(createPaymentMethodCardDto, userId, undefined);
+        console.log(
+          '✅ [STRIPE PAYMENT INTENT] Payment method card created with VALIDATED status',
+        );
+      } catch (error) {
+        console.error(
+          '❌ [STRIPE PAYMENT INTENT] Error creating payment method card:',
+          error,
+        );
+        // Continue with payment intent creation even if card creation fails
+      }
+
+      // Fetch training session with training price
+      console.log(
+        '🔍 [STRIPE PAYMENT INTENT] Fetching training session with ID:',
+        stripePaymentIntentDto.id_session,
+      );
+
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        stripePaymentIntentDto.id_session,
+        {
+          include: [
+            {
+              model: this.trainingModel,
+              as: 'trainings',
+              attributes: ['prix'],
+            },
+          ],
+        },
+      );
+
+      console.log(
+        '🔍 [STRIPE PAYMENT INTENT] Training session found:',
+        trainingSession ? 'Yes' : 'No',
+      );
+
+      if (trainingSession) {
+        console.log(
+          '🔍 [STRIPE PAYMENT INTENT] Training data:',
+          JSON.stringify(trainingSession.trainings, null, 2),
+        );
+      }
+
+      if (!trainingSession) {
+        throw new HttpException(
+          'Training session not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      if (!trainingSession.trainings?.prix) {
+        throw new HttpException(
+          'Training price not found for this session',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Convert price to cents (assuming prix is in EUR)
+      const amountInCents = Math.round(trainingSession.trainings.prix * 100);
+
+      console.log(
+        '💰 [STRIPE PAYMENT INTENT] Training price:',
+        trainingSession.trainings.prix,
+        'EUR (',
+        amountInCents,
+        'cents)',
+      );
+
+      // Create Stripe Payment Intent with metadata for webhook processing
       const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: stripePaymentIntentDto.amount,
+        amount: amountInCents,
         currency: 'eur',
         automatic_payment_methods: { enabled: true },
+        metadata: {
+          sessionId: stripePaymentIntentDto.id_session,
+          userId: userId,
+        },
       });
 
       console.log(
@@ -693,9 +856,64 @@ export class PaymentMethodCardService {
         paymentIntent.id,
       );
 
-      return {
-        clientSecret: paymentIntent.client_secret,
-      };
+      // Update the payment method card with the Stripe payment intent ID
+      const paymentMethodCard = await this.paymentMethodCardModel.findOne({
+        where: {
+          id_session: stripePaymentIntentDto.id_session,
+          id_user: userId,
+        },
+      });
+
+      if (paymentMethodCard) {
+        await paymentMethodCard.update({
+          id_stripe_payment: paymentIntent.id,
+        });
+        console.log(
+          '✅ [STRIPE PAYMENT INTENT] Payment method card updated with Stripe ID:',
+          paymentIntent.id,
+        );
+      }
+
+      // Create UserInSession if not exists
+      console.log(
+        '📋 [STRIPE PAYMENT INTENT] Creating UserInSession if not exists...',
+      );
+      const existingUserInSession = await UserInSession.findOne({
+        where: {
+          id_user: userId,
+          id_session: stripePaymentIntentDto.id_session,
+        },
+      });
+
+      if (!existingUserInSession) {
+        console.log(
+          '✅ [USER IN SESSION] Creating new UserInSession with IN status',
+        );
+        await UserInSession.create({
+          id_user: userId,
+          id_session: stripePaymentIntentDto.id_session,
+          status: UserInSessionStatus.IN,
+        });
+      } else {
+        console.log(
+          'ℹ️ [USER IN SESSION] UserInSession already exists, skipping creation',
+        );
+      }
+
+      const response = Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          clientSecret: paymentIntent.client_secret || '',
+        },
+        customMessage: 'Stripe Payment Intent created successfully',
+      });
+
+      console.log(
+        '✅ [STRIPE PAYMENT INTENT] Response prepared:',
+        JSON.stringify(response, null, 2),
+      );
+
+      return response;
     } catch (error) {
       console.error(
         '❌ [STRIPE PAYMENT INTENT] Error creating payment intent:',
@@ -713,9 +931,7 @@ export class PaymentMethodCardService {
     }
   }
 
-  async getStripePaymentIntentStatus(
-    paymentIntentId: string,
-  ): Promise<StripePaymentIntentStatusDto> {
+  async getStripePaymentIntentStatus(paymentIntentId: string, userId?: string) {
     try {
       console.log(
         '🔍 [STRIPE PAYMENT INTENT] Retrieving payment intent status for:',
@@ -742,9 +958,60 @@ export class PaymentMethodCardService {
         },
       );
 
-      return {
-        status: paymentIntent.status,
-      };
+      // If payment succeeded and we have the necessary data, automatically create payment method card
+      if (
+        paymentIntent.status === 'succeeded' &&
+        userId &&
+        paymentIntent.metadata?.sessionId
+      ) {
+        console.log(
+          '🔄 [STRIPE PAYMENT INTENT] Payment succeeded, checking if payment method card exists...',
+        );
+
+        // Check if payment method card already exists
+        const existingPaymentMethod = await this.paymentMethodCardModel.findOne(
+          {
+            where: {
+              id_session: paymentIntent.metadata.sessionId,
+              id_user: userId,
+            },
+          },
+        );
+
+        if (!existingPaymentMethod) {
+          console.log(
+            '🔄 [STRIPE PAYMENT INTENT] Creating payment method card automatically...',
+          );
+          try {
+            await this.createPaymentMethodCardAfterPayment(
+              paymentIntent.metadata.sessionId,
+              userId,
+              paymentIntentId,
+            );
+            console.log(
+              '✅ [STRIPE PAYMENT INTENT] Payment method card created automatically',
+            );
+          } catch (error) {
+            console.error(
+              '❌ [STRIPE PAYMENT INTENT] Error creating payment method card automatically:',
+              error,
+            );
+            // Don't throw error, just log it and continue
+          }
+        } else {
+          console.log(
+            'ℹ️ [STRIPE PAYMENT INTENT] Payment method card already exists, skipping creation',
+          );
+        }
+      }
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          status: paymentIntent.status,
+        },
+        customMessage: 'Payment intent status retrieved successfully',
+      });
     } catch (error) {
       console.error(
         '❌ [STRIPE PAYMENT INTENT] Error retrieving payment intent:',
@@ -767,6 +1034,154 @@ export class PaymentMethodCardService {
         `Failed to retrieve payment intent status: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  // Create payment method card after successful Stripe payment
+  async createPaymentMethodCardAfterPayment(
+    sessionId: string,
+    userId: string,
+    stripePaymentIntentId: string,
+  ) {
+    try {
+      console.log(
+        '💳 [PAYMENT METHOD CARD] Creating payment method card after successful payment',
+      );
+      console.log('📋 [PAYMENT METHOD CARD] Parameters:');
+      console.log('  - Session ID:', sessionId);
+      console.log('  - User ID:', userId);
+      console.log('  - Stripe Payment Intent ID:', stripePaymentIntentId);
+      console.log('📋 [PAYMENT METHOD CARD] Starting database operations...');
+
+      // Check if payment method card already exists
+      const existingPaymentMethod = await this.paymentMethodCardModel.findOne({
+        where: {
+          id_session: sessionId,
+          id_user: userId,
+        },
+      });
+
+      if (existingPaymentMethod) {
+        console.log(
+          '⚠️ [PAYMENT METHOD CARD] Payment method card already exists, updating Stripe payment ID',
+        );
+
+        await existingPaymentMethod.update({
+          id_stripe_payment: stripePaymentIntentId,
+          status: PaymentMethodCardStatus.VALIDATED,
+        });
+
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: existingPaymentMethod,
+          customMessage: 'Payment method card updated successfully',
+        });
+      }
+
+      // Create new payment method card
+      const paymentMethodCard = await this.paymentMethodCardModel.create({
+        id_session: sessionId,
+        id_user: userId,
+        id_stripe_payment: stripePaymentIntentId,
+        status: PaymentMethodCardStatus.VALIDATED,
+      });
+
+      console.log(
+        '✅ [PAYMENT METHOD CARD] Payment method card created successfully:',
+        paymentMethodCard.id,
+      );
+
+      // Create or update UserInSession
+      console.log(
+        '📋 [PAYMENT METHOD CARD] Creating/updating UserInSession...',
+      );
+      const { UserInSession } = await import('../models/model.userinsession');
+      const { UserInSessionStatus } = await import(
+        '../enums/user-in-session-status.enum'
+      );
+      console.log(
+        '📋 [PAYMENT METHOD CARD] UserInSession models imported successfully',
+      );
+
+      const existingUserInSession = await UserInSession.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (existingUserInSession) {
+        console.log(
+          '⚠️ [USER IN SESSION] UserInSession already exists, updating status to IN',
+        );
+        await existingUserInSession.update({
+          status: UserInSessionStatus.IN,
+        });
+      } else {
+        console.log(
+          '✅ [USER IN SESSION] Creating new UserInSession with IN status',
+        );
+        await UserInSession.create({
+          id_user: userId,
+          id_session: sessionId,
+          status: UserInSessionStatus.IN,
+        });
+      }
+
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: paymentMethodCard,
+        customMessage:
+          'Payment method card and user session created successfully',
+      });
+    } catch (error) {
+      console.error(
+        '❌ [PAYMENT METHOD CARD] Error creating payment method card after payment:',
+        error,
+      );
+
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        console.log(
+          '❌ [PAYMENT METHOD CARD] Duplicate payment method detected via database constraint',
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            errorType: 'DUPLICATE_PAYMENT_METHOD',
+            existingPaymentType: 'Carte',
+            existingPaymentTypes: {
+              opco: false,
+              cpf: false,
+              card: true,
+            },
+            sessionId: sessionId,
+            userId: userId,
+            message:
+              'Vous avez déjà une méthode de paiement par carte pour cette session de formation.',
+          },
+          customMessage:
+            'Vous avez déjà une méthode de paiement par carte pour cette session de formation.',
+        });
+      }
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Failed to create payment method card after payment',
+      });
+    }
+  }
+
+  // Stripe Webhook Event Construction
+  constructWebhookEvent(body: any, signature: string, secret: string) {
+    try {
+      return this.stripe.webhooks.constructEvent(body, signature, secret);
+    } catch (error) {
+      console.error(
+        '❌ [STRIPE WEBHOOK] Error constructing webhook event:',
+        error,
+      );
+      throw error;
     }
   }
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserInSession } from '../models/model.userinsession';
 import { TrainingSession } from '../models/model.trainingssession';
+import { Training } from '../models/model.trainings';
 import { Users } from '../models/model.users';
 import { CreateUserInSessionDto } from './dto/create-userinsession.dto';
 import { UpdateUserInSessionDto } from './dto/update-userinsession.dto';
@@ -17,6 +18,8 @@ export class UserInSessionService {
     private userInSessionModel: typeof UserInSession,
     @InjectModel(TrainingSession)
     private trainingSessionModel: typeof TrainingSession,
+    @InjectModel(Training)
+    private trainingModel: typeof Training,
     @InjectModel(Users)
     private usersModel: typeof Users,
   ) {}
@@ -290,21 +293,43 @@ export class UserInSessionService {
               'begining_date',
               'ending_date',
             ],
+            include: [
+              {
+                model: Training,
+                as: 'trainings',
+                required: false,
+                attributes: ['title'],
+              },
+            ],
           },
           {
             model: Users,
             as: 'user',
             required: false,
-            attributes: ['id', 'firstname', 'lastname', 'email', 'phone'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
+      // Format the response according to the required structure
+      const formattedData = usersInSessions.map((userInSession) => ({
+        status: userInSession.status,
+        trainingSession: {
+          id: userInSession.trainingSession?.id,
+          title: userInSession.trainingSession?.title,
+          begining_date: userInSession.trainingSession?.begining_date,
+          ending_date: userInSession.trainingSession?.ending_date,
+        },
+        training: {
+          title: userInSession.trainingSession?.trainings?.title,
+        },
+      }));
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: usersInSessions,
-        customMessage: 'User sessions retrieved successfully',
+        data: formattedData,
+        customMessage: 'Opération réussie.',
       });
     } catch (error) {
       return Responder({
