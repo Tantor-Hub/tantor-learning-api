@@ -91,6 +91,13 @@ export class PaymentMethodOpco extends Model<IPaymentMethodOpco> {
   })
   id_user: string;
 
+  @ForeignKey(() => Users)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  updatedBy: string;
+
   @Column({
     type: DataType.DATE,
     allowNull: true,
@@ -115,4 +122,10 @@ export class PaymentMethodOpco extends Model<IPaymentMethodOpco> {
     targetKey: 'id',
   })
   user: Users;
+
+  @BelongsTo(() => Users, {
+    foreignKey: 'updatedBy',
+    targetKey: 'id',
+  })
+  updatedByUser: Users;
 }

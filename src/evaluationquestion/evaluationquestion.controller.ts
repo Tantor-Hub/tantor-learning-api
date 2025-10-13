@@ -22,6 +22,9 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { User } from 'src/strategy/strategy.globaluser';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @ApiTags('Evaluation Questions')
 @Controller('evaluationquestion')
@@ -156,6 +159,93 @@ export class EvaluationQuestionController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findByEvaluation(@Param('evaluationId') evaluationId: string) {
     return this.evaluationQuestionService.findByEvaluation(evaluationId);
+  }
+
+  @Get('student/evaluation/:evaluationId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary: 'Get evaluation questions by evaluation ID (Student access)',
+    description:
+      'Retrieves all questions and options for a specific evaluation directly from the EvaluationQuestion table. If the student is not enrolled in the evaluation, they will be automatically added to the studentId array.',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Evaluation questions retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Evaluation questions retrieved successfully',
+      data: [
+        {
+          id: 'question-uuid-1',
+          evaluationId: 'eval-uuid-1',
+          type: 'multiple_choice',
+          text: 'What is the correct way to create a React component?',
+          points: 1,
+          isImmediateResult: false,
+          createdAt: '2025-01-15T10:30:00.000Z',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+          options: [
+            {
+              id: 'option-uuid-1',
+              questionId: 'question-uuid-1',
+              text: 'Using function components with hooks',
+              createdAt: '2025-01-15T10:30:00.000Z',
+              updatedAt: '2025-01-15T10:30:00.000Z',
+            },
+            {
+              id: 'option-uuid-2',
+              questionId: 'question-uuid-1',
+              text: 'Using class components only',
+              createdAt: '2025-01-15T10:30:00.000Z',
+              updatedAt: '2025-01-15T10:30:00.000Z',
+            },
+          ],
+        },
+        {
+          id: 'question-uuid-2',
+          evaluationId: 'eval-uuid-1',
+          type: 'text',
+          text: 'Explain the concept of state in React.',
+          points: 5,
+          isImmediateResult: false,
+          createdAt: '2025-01-15T10:30:00.000Z',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+          options: [],
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student evaluation not found',
+    example: {
+      status: 404,
+      message: 'Student evaluation not found',
+      data: null,
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Evaluation not published or expired',
+  })
+  async getEvaluationQuestionsForStudent(
+    @Param('evaluationId') evaluationId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.evaluationQuestionService.findByEvaluationForStudent(
+      evaluationId,
+      user.id_user,
+    );
   }
 
   @Get(':id')

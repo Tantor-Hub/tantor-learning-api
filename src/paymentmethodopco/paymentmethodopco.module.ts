@@ -12,6 +12,8 @@ import { Users } from '../models/model.users';
 import { UserInSession } from '../models/model.userinsession';
 import { AllSercices } from '../services/serices.all';
 import { JwtService } from '../services/service.jwt';
+import { MailService } from '../services/service.mail';
+import { GoogleDriveService } from '../services/service.googledrive';
 
 @Module({
   imports: [
@@ -36,7 +38,13 @@ import { JwtService } from '../services/service.jwt';
     }),
   ],
   controllers: [PaymentMethodOpcoController],
-  providers: [PaymentMethodOpcoService, AllSercices, JwtService],
+  providers: [
+    PaymentMethodOpcoService,
+    AllSercices,
+    JwtService,
+    MailService,
+    GoogleDriveService,
+  ],
   exports: [PaymentMethodOpcoService],
 })
 export class PaymentMethodOpcoModule {}

@@ -55,6 +55,7 @@ import { EvaluationQuestionModule } from './evaluationquestion/evaluationquestio
 import { EvaluationQuestionOptionModule } from './evaluationquestionoption/evaluationquestionoption.module';
 import { StudentAnswerModule } from './studentanswer/studentanswer.module';
 import { StudentAnswerOptionModule } from './studentansweroption/studentansweroption.module';
+import { SecretaryModule } from './secretary/secretary.module';
 import { JwtStrategy } from './strategy/strategy.jwt';
 
 @Module({
@@ -155,6 +156,8 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     EvaluationQuestionOptionModule,
     StudentAnswerModule,
     StudentAnswerOptionModule,
+    // Secretary Module
+    SecretaryModule,
   ],
   providers: [
     AppService,

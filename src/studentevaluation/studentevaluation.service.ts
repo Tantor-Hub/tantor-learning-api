@@ -565,6 +565,90 @@ export class StudentevaluationService {
     }
   }
 
+  async findBySessionCoursIdForStudent(
+    sessionCoursId: string,
+    studentId: string,
+  ): Promise<ResponseServer> {
+    try {
+      // First verify that the session course exists
+      const sessionCours =
+        await this.sessionCoursModel.findByPk(sessionCoursId);
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session course not found',
+        });
+      }
+
+      const evaluations = await this.studentevaluationModel.findAll({
+        where: {
+          sessionCoursId: sessionCoursId,
+          studentId: {
+            [Op.contains]: [studentId],
+          },
+        },
+        include: [
+          {
+            model: SessionCours,
+            as: 'sessionCours',
+            attributes: ['id', 'title', 'description'],
+          },
+          {
+            model: EvaluationQuestion,
+            as: 'questions',
+            attributes: ['id', 'type', 'text', 'points'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Get all unique lesson IDs from evaluations and fetch lessons
+      const allLessonIds = evaluations.reduce((acc, evaluation) => {
+        if (evaluation.lessonId && Array.isArray(evaluation.lessonId)) {
+          acc.push(...evaluation.lessonId);
+        }
+        return acc;
+      }, [] as string[]);
+
+      const uniqueLessonIds = [...new Set(allLessonIds)];
+
+      const lessons = await this.lessonModel.findAll({
+        where: { id: { [Op.in]: uniqueLessonIds } },
+        attributes: ['id', 'title', 'description'],
+      });
+
+      // Add lessons to each evaluation
+      const evaluationsWithLessons = evaluations.map((evaluation) => {
+        const evaluationLessons = lessons.filter(
+          (lesson) =>
+            evaluation.lessonId && evaluation.lessonId.includes(lesson.id),
+        );
+        return {
+          ...evaluation.toJSON(),
+          lessons: evaluationLessons,
+        };
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          evaluations: evaluationsWithLessons,
+          total: evaluations.length,
+        },
+        customMessage: 'Student evaluations retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        'Error fetching student evaluations by session course ID for student:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving student evaluations',
+      });
+    }
+  }
+
   async getStudentsForEvaluation(
     evaluationId: string,
   ): Promise<ResponseServer> {
@@ -985,6 +1069,100 @@ export class StudentevaluationService {
           error: error.message,
           errorType: error.name,
         },
+      });
+    }
+  }
+
+  async getEvaluationQuestionsForStudent(
+    evaluationId: string,
+    studentId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log(
+        `[STUDENT EVALUATION SERVICE] Getting evaluation questions for student ${studentId} and evaluation ${evaluationId}`,
+      );
+
+      // First, get the evaluation with all its details
+      const evaluation = await this.studentevaluationModel.findByPk(
+        evaluationId,
+        {
+          include: [
+            {
+              model: EvaluationQuestion,
+              as: 'questions',
+              attributes: ['id', 'type', 'text', 'points', 'isImmediateResult'],
+              include: [
+                {
+                  model: EvaluationQuestionOption,
+                  as: 'options',
+                  attributes: ['id', 'text', 'isCorrect'],
+                },
+              ],
+            },
+          ],
+        },
+      );
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Student evaluation not found',
+        });
+      }
+
+      // Check if the evaluation is published
+      if (!evaluation.ispublish) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'This evaluation is not yet published',
+        });
+      }
+
+      // Check if the student is enrolled in this evaluation
+      if (
+        !evaluation.studentId ||
+        !Array.isArray(evaluation.studentId) ||
+        !evaluation.studentId.includes(studentId)
+      ) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'You are not enrolled in this evaluation',
+        });
+      }
+
+      // Check if the evaluation is still available (not past submission date)
+      const now = new Date();
+      const submissionDate = new Date(evaluation.submittiondate);
+
+      if (now > submissionDate) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'This evaluation has expired',
+        });
+      }
+
+      // Return evaluation data without sessionCours and lessons
+      const evaluationData = evaluation.toJSON();
+
+      console.log(
+        `[STUDENT EVALUATION SERVICE] ✅ Successfully retrieved evaluation questions for student ${studentId}`,
+      );
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: evaluationData,
+        customMessage: 'Evaluation questions retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        '[STUDENT EVALUATION SERVICE] Error getting evaluation questions for student:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: null,
+        customMessage:
+          "Erreur lors de la récupération des questions d'évaluation",
       });
     }
   }

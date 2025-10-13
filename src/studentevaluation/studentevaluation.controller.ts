@@ -20,6 +20,7 @@ import { CreateStudentevaluationDto } from './dto/create-studentevaluation.dto';
 import { UpdateStudentevaluationDto } from './dto/update-studentevaluation.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
+import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
@@ -416,6 +417,255 @@ export class StudentevaluationController {
   })
   findBySessionCoursId(@Param('sessionCoursId') sessionCoursId: string) {
     return this.studentevaluationService.findBySessionCoursId(sessionCoursId);
+  }
+
+  @Get('student/sessioncours/:sessionCoursId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary: 'Get student evaluations by session course ID (Student access)',
+    description:
+      'Retrieves all evaluations for a specific session course. Students can access evaluations related to courses they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'sessionCoursId',
+    description:
+      'Session Course UUID - The unique identifier of the session course',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student evaluations retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student evaluations retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            evaluations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: 'eval-uuid-1',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'React Fundamentals Assessment',
+                  },
+                  description: {
+                    type: 'string',
+                    example:
+                      'This evaluation tests students on React fundamentals including components, state, and props.',
+                  },
+                  type: {
+                    type: 'string',
+                    example: 'quiz',
+                  },
+                  points: {
+                    type: 'number',
+                    example: 100,
+                  },
+                  submittiondate: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-12-31T23:59:59.000Z',
+                  },
+                  beginningTime: {
+                    type: 'string',
+                    example: '09:00',
+                  },
+                  endingTime: {
+                    type: 'string',
+                    example: '11:00',
+                  },
+                  ispublish: {
+                    type: 'boolean',
+                    example: true,
+                  },
+                  isImmediateResult: {
+                    type: 'boolean',
+                    example: false,
+                  },
+                  lessons: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440001',
+                        },
+                        title: {
+                          type: 'string',
+                          example: 'Variables and Data Types',
+                        },
+                        description: {
+                          type: 'string',
+                          example: 'Understanding basic data types',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            total: { type: 'number', example: 2 },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session course not found',
+    schema: {
+      example: {
+        status: 404,
+        data: 'Session course not found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+    schema: {
+      example: {
+        status: 401,
+        data: 'Seuls les étudiants peuvent accéder à cette ressource',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        data: {
+          message: 'Internal server error while fetching student evaluations',
+          error: 'Error message',
+        },
+      },
+    },
+  })
+  async findBySessionCoursIdForStudent(
+    @Param('sessionCoursId') sessionCoursId: string,
+    @User() user: IJwtSignin,
+  ) {
+    console.log(
+      'Fetching student evaluations by session course ID for student:',
+      sessionCoursId,
+      'Student ID:',
+      user.id_user,
+    );
+    return this.studentevaluationService.findBySessionCoursIdForStudent(
+      sessionCoursId,
+      user.id_user,
+    );
+  }
+
+  @Get('student/:evaluationId/questions')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary:
+      'Get evaluation questions by student evaluation ID (Student access)',
+    description:
+      'Retrieves all questions and options for a specific student evaluation. Students can access questions for evaluations they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Evaluation questions retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Evaluation questions retrieved successfully',
+      data: {
+        id: 'eval-uuid-1',
+        title: 'React Fundamentals Assessment',
+        description: 'This evaluation tests students on React fundamentals',
+        type: 'quiz',
+        points: 100,
+        submittiondate: '2025-12-31T23:59:59.000Z',
+        beginningTime: '09:00',
+        endingTime: '11:00',
+        ispublish: true,
+        isImmediateResult: false,
+        questions: [
+          {
+            id: 'question-uuid-1',
+            type: 'multiple_choice',
+            text: 'What is the correct way to create a React component?',
+            points: 1,
+            isImmediateResult: false,
+            options: [
+              {
+                id: 'option-uuid-1',
+                text: 'Using function components with hooks',
+                isCorrect: true,
+              },
+              {
+                id: 'option-uuid-2',
+                text: 'Using class components only',
+                isCorrect: false,
+              },
+              {
+                id: 'option-uuid-3',
+                text: 'Using jQuery',
+                isCorrect: false,
+              },
+            ],
+          },
+          {
+            id: 'question-uuid-2',
+            type: 'text',
+            text: 'Explain the concept of state in React.',
+            points: 5,
+            isImmediateResult: false,
+            options: [],
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student evaluation not found',
+    example: {
+      status: 404,
+      message: 'Student evaluation not found',
+      data: null,
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student not enrolled in this evaluation',
+  })
+  async getEvaluationQuestionsForStudent(
+    @Param('evaluationId') evaluationId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.getEvaluationQuestionsForStudent(
+      evaluationId,
+      user.id_user,
+    );
   }
 
   @Get(':evaluationId/students')

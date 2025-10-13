@@ -5,6 +5,7 @@ export interface IPaymentMethodCpf {
   id_session: string;
   status: PaymentMethodCpfStatus;
   id_user: string;
+  updatedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

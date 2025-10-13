@@ -254,6 +254,16 @@ export class TrainingSessionController {
               type: 'string',
               example: 'hello world I am created',
             },
+            begining_date: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-10-01T22:00:00.000Z',
+            },
+            ending_date: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-10-31T22:00:00.000Z',
+            },
             trainings: {
               type: 'object',
               properties: {

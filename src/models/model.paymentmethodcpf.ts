@@ -56,6 +56,13 @@ export class PaymentMethodCpf extends Model<IPaymentMethodCpf> {
   })
   id_user: string;
 
+  @ForeignKey(() => Users)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  updatedBy: string;
+
   @Column({
     type: DataType.DATE,
     allowNull: true,
@@ -80,4 +87,10 @@ export class PaymentMethodCpf extends Model<IPaymentMethodCpf> {
     targetKey: 'id',
   })
   user: Users;
+
+  @BelongsTo(() => Users, {
+    foreignKey: 'updatedBy',
+    targetKey: 'id',
+  })
+  updatedByUser: Users;
 }

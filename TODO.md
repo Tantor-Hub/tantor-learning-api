@@ -1,10 +1,15 @@
-# TODO: Integrate Payment Method Card Creation After Stripe Payment Intent
+# TODO List for Adding begining_date and ending_date to /api/trainingssession/student/{id} Response
 
-## Steps to Complete
+## Task: Add begining_date and ending_date fields to the response of the student training session endpoint
 
-- [ ] Modify the `create` method in `PaymentMethodCardService` to accept an optional `stripePaymentId` parameter for setting `id_stripe_payment` during initial creation.
-- [ ] Update `createStripePaymentIntent` method to call `this.create` after successful Stripe Payment Intent creation, passing the PI ID.
-- [ ] Adjust the response of `createStripePaymentIntent` to include the created PaymentMethodCard details alongside `clientSecret`.
-- [ ] Test the integration: Run server, call `/paymentmethodcard/payment-intent`, verify DB record creation with PI ID and PENDING status.
-- [ ] Verify no duplicates and proper error handling.
-- [ ] Confirm payment success flow updates status to VALIDATED.
+### Steps:
+
+- [x] Step 1: Update the `findOneForStudent` method in `src/trainingssession/trainingssession.service.ts` to include 'begining_date' and 'ending_date' in the attributes array.
+- [x] Step 2: Update the Swagger @ApiResponse schema in `src/trainingssession/trainingssession.controller.ts` for the `findOneForStudent` endpoint to include the new date fields in the data properties.
+- [x] Step 3: Verify the changes by reviewing the updated files and ensuring no breaking changes.
+
+### Notes:
+
+- Ensure date fields are formatted as 'date-time' in Swagger.
+- No database migrations needed as fields already exist in the model.
+- Test the endpoint after changes to confirm the response includes the new fields.

@@ -13,6 +13,7 @@ import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
 import { PaymentMethodOpcoStatus } from '../enums/payment-method-opco-status.enum';
 import { UserInSessionStatus } from '../enums/user-in-session-status.enum';
+import { MailService } from '../services/service.mail';
 
 @Injectable()
 export class PaymentMethodOpcoService {
@@ -29,6 +30,7 @@ export class PaymentMethodOpcoService {
     private usersModel: typeof Users,
     @InjectModel(UserInSession)
     private userInSessionModel: typeof UserInSession,
+    private mailService: MailService,
   ) {}
 
   async create(
@@ -332,6 +334,37 @@ export class PaymentMethodOpcoService {
         '📋 [PAYMENT METHOD OPCO SERVICE] Final payment method data:',
         JSON.stringify(createdPaymentMethod.toJSON(), null, 2),
       );
+
+      // Send email notification to user
+      try {
+        const user = await this.usersModel.findByPk(userId);
+        const trainingSession = await this.trainingSessionModel.findByPk(
+          createPaymentMethodOpcoDto.id_session,
+        );
+
+        if (user && user.email) {
+          await this.mailService.sendMail({
+            to: user.email,
+            subject: 'Paiement OPCO enregistré',
+            content: this.mailService.templates({
+              as: 'payment-opco-pending',
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              cours: trainingSession?.title || 'Formation',
+            }),
+          });
+          console.log(
+            '[PAYMENT METHOD OPCO CREATE] ✅ Email notification sent to user:',
+            user.email,
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          '[PAYMENT METHOD OPCO CREATE] ⚠️ Failed to send email notification:',
+          emailError,
+        );
+        // Don't fail the entire operation if email fails
+      }
 
       return Responder({
         status: HttpStatusCode.Created,

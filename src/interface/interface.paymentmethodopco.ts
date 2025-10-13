@@ -11,6 +11,7 @@ export interface IPaymentMethodOpco {
   email_responsable: string;
   status: PaymentMethodOpcoStatus;
   id_user: string;
+  updatedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

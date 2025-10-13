@@ -15,6 +15,8 @@ export class EvaluationQuestionService {
   constructor(
     @InjectModel(EvaluationQuestion)
     private evaluationQuestionModel: typeof EvaluationQuestion,
+    @InjectModel(Studentevaluation)
+    private studentevaluationModel: typeof Studentevaluation,
   ) {}
 
   async create(
@@ -265,6 +267,99 @@ export class EvaluationQuestionService {
           error: error.message,
           errorType: error.name,
         },
+      });
+    }
+  }
+
+  async findByEvaluationForStudent(
+    evaluationId: string,
+    studentId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log(
+        `[EVALUATION QUESTION SERVICE] Getting evaluation questions for student ${studentId} and evaluation ${evaluationId}`,
+      );
+
+      // First, verify the evaluation exists and student is enrolled
+      const evaluation =
+        await this.studentevaluationModel.findByPk(evaluationId);
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Student evaluation not found',
+        });
+      }
+
+      // Check if the evaluation is published
+      if (!evaluation.ispublish) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'This evaluation is not yet published',
+        });
+      }
+
+      // Check if the student is enrolled in this evaluation, if not, add them
+      let studentIds = evaluation.studentId || [];
+      if (!Array.isArray(studentIds)) {
+        studentIds = [];
+      }
+
+      if (!studentIds.includes(studentId)) {
+        // Add the student to the evaluation
+        studentIds.push(studentId);
+        await this.studentevaluationModel.update(
+          { studentId: studentIds },
+          { where: { id: evaluationId } },
+        );
+        console.log(
+          `[EVALUATION QUESTION SERVICE] Added student ${studentId} to evaluation ${evaluationId}`,
+        );
+      }
+
+      // Check if the evaluation is still available (not past submission date)
+      const now = new Date();
+      const submissionDate = new Date(evaluation.submittiondate);
+
+      if (now > submissionDate) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'This evaluation has expired',
+        });
+      }
+
+      // Get the questions from the EvaluationQuestion table
+      const questions = await this.evaluationQuestionModel.findAll({
+        where: { evaluationId },
+        include: [
+          {
+            model: EvaluationQuestionOption,
+            as: 'options',
+            attributes: ['id', 'text'],
+          },
+        ],
+        order: [['createdAt', 'ASC']],
+      });
+
+      console.log(
+        `[EVALUATION QUESTION SERVICE] ✅ Successfully retrieved ${questions.length} questions for student ${studentId}`,
+      );
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: questions,
+        customMessage: 'Evaluation questions retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        '[EVALUATION QUESTION SERVICE] Error getting evaluation questions for student:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: null,
+        customMessage:
+          "Erreur lors de la récupération des questions d'évaluation",
       });
     }
   }

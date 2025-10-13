@@ -20,6 +20,7 @@ import {
 import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
 import { PaymentMethodCardStatus } from '../enums/payment-method-card-status.enum';
+import { MailService } from '../services/service.mail';
 
 @Injectable()
 export class PaymentMethodCardService {
@@ -38,6 +39,7 @@ export class PaymentMethodCardService {
     private trainingModel: typeof Training,
     @InjectModel(Users)
     private usersModel: typeof Users,
+    private mailService: MailService,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
       apiVersion: '2025-08-27.basil',
@@ -237,6 +239,33 @@ export class PaymentMethodCardService {
         trainingPrice: trainingPrice,
         amountToPay: trainingPrice,
       };
+
+      // Send email notification to user
+      try {
+        const user = await this.usersModel.findByPk(userId);
+        if (user && user.email) {
+          await this.mailService.sendMail({
+            to: user.email,
+            subject: 'Paiement par carte confirmé',
+            content: this.mailService.templates({
+              as: 'payment-card-success',
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              cours: trainingSession.trainings?.title || 'Formation',
+            }),
+          });
+          console.log(
+            '[PAYMENT METHOD CARD CREATE] ✅ Email notification sent to user:',
+            user.email,
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          '[PAYMENT METHOD CARD CREATE] ⚠️ Failed to send email notification:',
+          emailError,
+        );
+        // Don't fail the entire operation if email fails
+      }
 
       return Responder({
         status: HttpStatusCode.Created,

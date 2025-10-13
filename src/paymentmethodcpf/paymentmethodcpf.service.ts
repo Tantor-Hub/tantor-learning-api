@@ -13,6 +13,7 @@ import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
 import { PaymentMethodCpfStatus } from '../enums/payment-method-cpf-status.enum';
 import { UserInSessionStatus } from '../enums/user-in-session-status.enum';
+import { MailService } from '../services/service.mail';
 
 // Extended interface for service that includes id_user
 interface CreatePaymentMethodCpfServiceDto extends CreatePaymentMethodCpfDto {
@@ -34,6 +35,7 @@ export class PaymentMethodCpfService {
     private usersModel: typeof Users,
     @InjectModel(UserInSession)
     private userInSessionModel: typeof UserInSession,
+    private mailService: MailService,
   ) {}
 
   async create(createPaymentMethodCpfDto: CreatePaymentMethodCpfServiceDto) {
@@ -199,6 +201,39 @@ export class PaymentMethodCpfService {
           'Failed to create/update UserInSession:',
           userInSessionError,
         );
+      }
+
+      // Send email notification to user
+      try {
+        const user = await this.usersModel.findByPk(
+          createPaymentMethodCpfDto.id_user,
+        );
+        const trainingSession = await this.trainingSessionModel.findByPk(
+          createPaymentMethodCpfDto.id_session,
+        );
+
+        if (user && user.email) {
+          await this.mailService.sendMail({
+            to: user.email,
+            subject: 'Paiement CPF enregistré',
+            content: this.mailService.templates({
+              as: 'payment-cpf-pending',
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              cours: trainingSession?.title || 'Formation',
+            }),
+          });
+          console.log(
+            '[PAYMENT METHOD CPF CREATE] ✅ Email notification sent to user:',
+            user.email,
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          '[PAYMENT METHOD CPF CREATE] ⚠️ Failed to send email notification:',
+          emailError,
+        );
+        // Don't fail the entire operation if email fails
       }
 
       // Return success immediately without fetching relationships (faster response)

@@ -495,6 +495,755 @@ export class MailService {
 </html>
         `;
         break;
+      case 'payment-card-success':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement par carte confirmé - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>💳 Paiement Confirmé</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Nous vous confirmons que votre paiement par carte bancaire a été effectué avec succès pour la formation :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">✅ Paiement Validé</div>
+            <p>Vous pouvez maintenant accéder à votre session de formation. Un secrétaire validera votre paiement dans les plus brefs délais.</p>
+            <p>Si vous souhaitez effectuer un autre paiement, vous pouvez accéder à votre espace personnel.</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Accéder à ma formation</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'payment-cpf-pending':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #f59e0b;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement CPF en attente - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎓 Paiement CPF Enregistré</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Nous vous confirmons que votre demande de paiement par CPF a été enregistrée pour la formation :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">⏳ En Attente de Validation</div>
+            <p>Un secrétaire examinera votre demande et validera votre paiement dans les plus brefs délais.</p>
+            <p>Vous recevrez une notification par email dès que votre paiement sera validé.</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Suivre ma formation</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'payment-opco-pending':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #f59e0b;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement OPCO en attente - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🏢 Paiement OPCO Enregistré</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Nous vous confirmons que votre demande de paiement par OPCO a été enregistrée pour la formation :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">⏳ En Attente de Validation</div>
+            <p>Un secrétaire examinera votre demande et validera votre paiement dans les plus brefs délais.</p>
+            <p>Vous recevrez une notification par email dès que votre paiement sera validé.</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Suivre ma formation</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'payment-cpf-validated':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement CPF validé - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎓 Paiement CPF Validé</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Excellente nouvelle ! Votre paiement par CPF a été validé par notre équipe pour la formation :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">✅ Paiement Validé</div>
+            <p>Vous pouvez maintenant accéder à votre session de formation. Toutes les informations nécessaires vous ont été communiquées.</p>
+            <p>Nous vous souhaitons une excellente formation !</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Accéder à ma formation</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'payment-cpf-rejected':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #e53e3e;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement CPF rejeté - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎓 Paiement CPF Rejeté</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Nous vous informons que votre demande de paiement par CPF pour la formation suivante n'a pas pu être validée :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">❌ Paiement Rejeté</div>
+            <p>Veuillez nous contacter pour plus d'informations ou choisir une autre méthode de paiement.</p>
+            <p>Nous restons à votre disposition pour vous accompagner.</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Nous contacter</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'payment-opco-validated':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement OPCO validé - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🏢 Paiement OPCO Validé</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Excellente nouvelle ! Votre paiement par OPCO a été validé par notre équipe pour la formation :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">✅ Paiement Validé</div>
+            <p>Vous pouvez maintenant accéder à votre session de formation. Toutes les informations nécessaires vous ont été communiquées.</p>
+            <p>Nous vous souhaitons une excellente formation !</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Accéder à ma formation</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
+      case 'payment-opco-rejected':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${color};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${color};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #e53e3e;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+    </style>
+    <title>Paiement OPCO rejeté - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🏢 Paiement OPCO Rejeté</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            <p>Nous vous informons que votre demande de paiement par OPCO pour la formation suivante n'a pas pu être validée :</p>
+            <p class="highlight">${cours}</p>
+            <div class="status-badge">❌ Paiement Rejeté</div>
+            <p>Veuillez nous contacter pour plus d'informations ou choisir une autre méthode de paiement.</p>
+            <p>Nous restons à votre disposition pour vous accompagner.</p>
+            <div style="text-align: center;">
+                <a href="${url}" class="button">Nous contacter</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p><em>"Une plateforme d'apprentissage pour vous"</em></p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
       default:
         return this.configService.get<string>('APPSMTPUSER') || '';
         break;

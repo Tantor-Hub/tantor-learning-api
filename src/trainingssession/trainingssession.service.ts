@@ -181,6 +181,8 @@ export class TrainingSessionService {
           'cpf_link',
           'survey',
           'regulation_text',
+          'begining_date',
+          'ending_date',
         ],
         include: [
           {
