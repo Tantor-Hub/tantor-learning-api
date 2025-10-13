@@ -42,10 +42,6 @@ export class StudentAnswer extends Model<StudentAnswer> {
   @Column(DataType.TEXT)
   answerText?: string;
 
-  @Default(1)
-  @Column(DataType.INTEGER)
-  points: number;
-
   @AllowNull(true)
   @Column(DataType.BOOLEAN)
   isCorrect?: boolean;

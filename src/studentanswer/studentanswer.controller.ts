@@ -114,7 +114,6 @@ export class StudentAnswerController {
             id: 'question-uuid-1',
             text: 'Explain the concept of React hooks.',
             type: 'text',
-            points: 5,
           },
           student: {
             id: 'student-uuid-1',
@@ -197,7 +196,6 @@ export class StudentAnswerController {
           id: 'question-uuid-1',
           text: 'Explain the concept of React hooks.',
           type: 'text',
-          points: 5,
         },
         student: {
           id: 'student-uuid-1',
