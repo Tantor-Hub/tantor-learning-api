@@ -1258,7 +1258,7 @@ export class UsersService {
     const verif_code = this.allService.randomLongNumber({ length: 6 });
     const uuid_user = this.allService.generateUuid();
     const base =
-      (process.env.BASECLIENTURL as string) || 'http://localhost:3000';
+      (process.env.APPBASEURLFRONT as string) || 'http://localhost:3000';
     try {
       return this.userModel
         .findOrCreate({

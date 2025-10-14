@@ -8,7 +8,6 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +24,8 @@ import { DeleteUserInSessionDto } from './dto/delete-userinsession.dto';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
 import { UserInSessionStatus } from '../enums/user-in-session-status.enum';
+import { User } from '../strategy/strategy.globaluser';
+import { IJwtSignin } from '../interface/interface.payloadjwtsignin';
 
 @ApiTags('User In Session')
 @Controller('userinsession')
@@ -367,26 +368,12 @@ export class UserInSessionController {
     status: 500,
     description: 'Internal server error.',
   })
-  findByUserId(@Request() req: any) {
-    // Extract user ID from JWT token
-    const userId = req.user?.id_user;
-
+  findByUserId(@User() user: IJwtSignin) {
     console.log(
-      `🎓 [STUDENT USER SESSIONS] Student requesting sessions for user: ${userId}`,
+      `🎓 [STUDENT USER SESSIONS] Student requesting sessions for user: ${user.id_user}`,
     );
 
-    if (!userId) {
-      console.log(
-        '❌ [STUDENT USER SESSIONS] ERROR: No user ID found in token!',
-      );
-      return {
-        status: 400,
-        message: 'User ID not found in authentication token',
-        data: null,
-      };
-    }
-
-    return this.userInSessionService.findByUserId(userId);
+    return this.userInSessionService.findByUserId(user.id_user);
   }
 
   @Get('session/:sessionId')

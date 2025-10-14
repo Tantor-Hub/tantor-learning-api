@@ -8,10 +8,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(private readonly configService: ConfigService) {
     const { APPBASEURLBACK, GOOGLECLIENTID, GOOGLESECRET } = process.env;
     super({
-      clientID:
-        GOOGLECLIENTID ||
-        '206461527600-ujrn9lcik17mab9q8qn76qs8bvto4piv.apps.googleusercontent.com',
-      clientSecret: GOOGLESECRET || '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',
+      clientID: GOOGLECLIENTID || '',
+      clientSecret: GOOGLESECRET || '',
       callbackURL: String(APPBASEURLBACK).concat(
         '/api/users/auth/google/callback',
       ),
