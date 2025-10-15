@@ -20,31 +20,38 @@ async function tantorAPP() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('TANTORPORT', 3000);
 
-  app.enableCors({
-    origin: '*', // Allow all origins explicitly
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: '*', // Allow all headers
-    exposedHeaders: '*', // Expose all headers
-    credentials: false, // Set to false when using wildcard origin
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-    maxAge: 86400, // Cache preflight for 24 hours
-  });
+  // ✅ CORS setup
+  const allowedOrigins = [
+    'https://tantorlearning.com',
+    'http://localhost:3000',
+  ];
 
-  // Additional CORS middleware for edge cases
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header(
-      'Access-Control-Allow-Methods',
-      'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    );
-    res.header('Access-Control-Allow-Headers', '*');
-    res.header('Access-Control-Allow-Credentials', 'false'); // Consistent with main CORS config
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
-    }
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like curl/postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'X-Requested-With',
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'User-Agent',
+      'DNT',
+      'Cache-Control',
+      'X-Connexion-Tantor', // Your custom header
+    ],
+    exposedHeaders: ['Content-Disposition', 'Content-Length', 'X-Request-Id'],
+    credentials: true,
+    maxAge: 86400,
   });
 
   app.setGlobalPrefix('/api/');
@@ -54,58 +61,42 @@ async function tantorAPP() {
     '/webhook/stripe/onpayment',
     bodyParser.raw({ type: 'application/json' }),
   );
+
+  // Validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-      forbidUnknownValues: false,
-      validationError: {
-        target: false,
-        value: false,
-      },
-      skipMissingProperties: false,
-      skipNullProperties: false,
-      skipUndefinedProperties: false,
+      transformOptions: { enableImplicitConversion: true },
       exceptionFactory: (errors) => {
         const formatErrors = (errs: any[], parentPath = '') => {
           return errs.flatMap((err) => {
             const fieldPath = parentPath
               ? `${parentPath}.${err.property}`
               : err.property;
-
             const thisLevelErrors = err.constraints
               ? [{ field: fieldPath, errors: Object.values(err.constraints) }]
               : [];
-
             const childErrors = err.children?.length
               ? formatErrors(err.children, fieldPath)
               : [];
-
             return [...thisLevelErrors, ...childErrors];
           });
         };
 
         const formattedErrors = formatErrors(errors);
-
         if (formattedErrors.length === 0) {
-          return new NotFoundException({
-            ...Responder({
-              status: HttpStatusCode.NotFound,
-              data: {},
-            }),
-          });
+          return new NotFoundException(
+            Responder({ status: HttpStatusCode.NotFound, data: {} }),
+          );
         }
-
-        return new BadRequestException({
-          ...Responder({
+        return new BadRequestException(
+          Responder({
             status: HttpStatusCode.BadRequest,
             data: formattedErrors,
           }),
-        });
+        );
       },
     }),
   );
@@ -123,7 +114,7 @@ async function tantorAPP() {
 
   await app.listen(port, '0.0.0.0', () => {
     log('---------------------------------------');
-    log(`::: TANTOR APP [STATUS:RUNNING] ON PORT ::: ${port}`);
+    log(`::: TANTOR APP [STATUS: RUNNING] ON PORT ::: ${port}`);
     log('---------------------------------------');
   });
 }
