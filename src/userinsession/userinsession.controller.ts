@@ -376,6 +376,95 @@ export class UserInSessionController {
     return this.userInSessionService.findByUserId(user.id_user);
   }
 
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get user sessions by specific user ID (Student access)',
+    description:
+      'Retrieve all sessions for a specific user by providing the user ID in the request. This endpoint allows students to query sessions for any user.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'UUID of the user to get sessions for',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User sessions retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Opération réussie.',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              status: {
+                type: 'string',
+                enum: ['refusedpayment', 'notpaid', 'pending', 'in', 'out'],
+                example: 'in',
+              },
+              trainingSession: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: 'd6ff1fd6-f795-47a3-9abd-24d911d06b22',
+                  },
+                  title: { type: 'string', example: 'hello javascript' },
+                  begining_date: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-10-09T22:00:00.000Z',
+                  },
+                  ending_date: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-10-30T22:00:00.000Z',
+                  },
+                },
+              },
+              training: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string', example: 'hello javascript' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  findByUserIdParam(@Param('userId', ParseUUIDPipe) userId: string) {
+    console.log(
+      `🎓 [STUDENT USER SESSIONS BY ID] Student requesting sessions for user ID: ${userId}`,
+    );
+
+    return this.userInSessionService.findByUserId(userId);
+  }
+
   @Get('session/:sessionId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()

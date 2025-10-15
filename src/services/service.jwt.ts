@@ -82,12 +82,27 @@ export class JwtService {
 
   async verifyTokenWithRound(token: string): Promise<any> {
     try {
+      console.log('🔍 [JWT SERVICE] Starting token verification with round...');
+      console.log('  - Token length:', token.length);
+      console.log('  - Round value:', this.round);
+
       const cleared = await this.decryptWithRound(token);
+      console.log('  - Decrypted token length:', cleared.length);
+      console.log(
+        '  - Decrypted token preview:',
+        cleared.substring(0, 50) + '...',
+      );
+
       const decrypted = await this.jwtService.verifyAsync(cleared, {
         secret: this.configService.get<string>('APPJWTTOKEN'),
       });
+
+      console.log('✅ [JWT SERVICE] Token verification successful');
       return decrypted;
     } catch (error) {
+      console.log('❌ [JWT SERVICE] Token verification failed:', error.message);
+      console.log('  - Error type:', error.name);
+      console.log('  - Error stack:', error.stack);
       return null;
     }
   }

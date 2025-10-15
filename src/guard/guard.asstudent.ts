@@ -37,11 +37,19 @@ export class JwtAuthGuardAsStudent implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers[this.keyname] as string;
 
+    console.log('🔍 [JWT GUARD STUDENT] Debug Info:');
+    console.log('  - Request URL:', request.url);
+    console.log('  - Auth header key:', this.keyname);
+    console.log('  - Auth header value:', authHeader ? 'Present' : 'Missing');
+    console.log('  - All headers:', Object.keys(request.headers));
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log(
         '❌ JwtAuthGuardAsStudent: No valid auth header for',
         request.url,
       );
+      console.log('  - Expected format: "Bearer <token>"');
+      console.log('  - Received:', authHeader || 'undefined');
       throw new CustomUnauthorizedException(
         "Aucune clé d'authentification n'a éte fournie",
       );
@@ -49,9 +57,18 @@ export class JwtAuthGuardAsStudent implements CanActivate {
 
     const [_, token] = authHeader.split(' ');
 
-    // console.log('🔑 [JWT GUARD STUDENT] Token received:', token);
+    console.log(
+      '🔑 [JWT GUARD STUDENT] Token received:',
+      token ? 'Present' : 'Missing',
+    );
+    console.log('  - Token length:', token ? token.length : 0);
+    console.log(
+      '  - Token preview:',
+      token ? token.substring(0, 20) + '...' : 'N/A',
+    );
 
     try {
+      console.log('🔍 [JWT GUARD STUDENT] Starting token verification...');
       const decoded = await this.jwtService.verifyTokenWithRound(token);
 
       console.log(
@@ -64,6 +81,7 @@ export class JwtAuthGuardAsStudent implements CanActivate {
           '❌ JwtAuthGuardAsStudent: Token verification failed for',
           request.url,
         );
+        console.log('  - Token verification returned null/undefined');
         throw new CustomUnauthorizedException(
           "La clé d'authentification fournie a déjà expiré",
         );
