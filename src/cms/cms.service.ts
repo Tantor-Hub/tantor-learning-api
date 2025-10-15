@@ -440,26 +440,54 @@ export class CmsService {
   async onSubscribeToNewsLetter(
     createNewsLetter: CreateNewsLetterDto,
   ): Promise<ResponseServer> {
+    console.log('📧 [NEWSLETTER] ===== SUBSCRIPTION STARTED =====');
+    console.log(
+      '📧 [NEWSLETTER] Input data:',
+      JSON.stringify(createNewsLetter, null, 2),
+    );
+
     const { user_email } = createNewsLetter;
+    console.log('📧 [NEWSLETTER] Extracted email:', user_email);
+
     try {
+      console.log('📧 [NEWSLETTER] Checking for existing subscription...');
       // Check for any existing record with this email (regardless of status)
       const existing = await this.newsletterModel.findOne({
         where: { user_email },
       });
+      console.log(
+        '📧 [NEWSLETTER] Existing record found:',
+        existing ? 'YES' : 'NO',
+      );
+      if (existing) {
+        console.log(
+          '📧 [NEWSLETTER] Existing record details:',
+          JSON.stringify(existing.toJSON(), null, 2),
+        );
+      }
 
       if (existing) {
+        console.log('📧 [NEWSLETTER] Processing existing record...');
         if (existing.status === 1) {
+          console.log('📧 [NEWSLETTER] User already actively subscribed');
           // Already actively subscribed
           return Responder({
             status: HttpStatusCode.Conflict,
             data: 'Vous êtes déjà inscrit à la newsletter.',
           });
         } else {
+          console.log(
+            '📧 [NEWSLETTER] Reactivating previously unsubscribed user...',
+          );
           // Previously unsubscribed, reactivate subscription
           await existing.update({ status: 1 });
+          console.log('📧 [NEWSLETTER] Status updated to active (1)');
 
           // Send welcome email
           try {
+            console.log(
+              '📧 [NEWSLETTER] Sending reactivation welcome email...',
+            );
             await this.mailService.sendMail({
               to: user_email,
               subject: 'Bienvenue dans notre newsletter !',
@@ -467,14 +495,20 @@ export class CmsService {
                 as: 'newsletter-subscribe',
               }),
             });
+            console.log(
+              '📧 [NEWSLETTER] Reactivation welcome email sent successfully',
+            );
           } catch (emailError) {
             // Log email error but don't fail the subscription
             console.error(
-              'Failed to send newsletter subscription email:',
+              '❌ [NEWSLETTER] Failed to send newsletter subscription email:',
               emailError,
             );
           }
 
+          console.log(
+            '📧 [NEWSLETTER] Returning reactivation success response',
+          );
           return Responder({
             status: HttpStatusCode.Created,
             data: existing,
@@ -483,35 +517,56 @@ export class CmsService {
       }
 
       // Create new subscription
+      console.log('📧 [NEWSLETTER] Creating new subscription...');
       const infos = await this.newsletterModel.create({
         user_email,
       });
+      console.log(
+        '📧 [NEWSLETTER] New subscription created:',
+        JSON.stringify(infos.toJSON(), null, 2),
+      );
 
       // Send welcome email
       try {
+        console.log(
+          '📧 [NEWSLETTER] Sending welcome email to new subscriber...',
+        );
         await this.mailService.sendMail({
           to: user_email,
           subject: 'Bienvenue dans notre newsletter !',
           content: this.mailService.templates({ as: 'newsletter-subscribe' }),
         });
+        console.log('📧 [NEWSLETTER] Welcome email sent successfully');
       } catch (emailError) {
         // Log email error but don't fail the subscription
         console.error(
-          'Failed to send newsletter subscription email:',
+          '❌ [NEWSLETTER] Failed to send newsletter subscription email:',
           emailError,
         );
       }
 
+      console.log(
+        '📧 [NEWSLETTER] Returning success response for new subscription',
+      );
       return Responder({ status: HttpStatusCode.Created, data: infos });
     } catch (err) {
+      console.error('❌ [NEWSLETTER] Error in subscription process:', err);
+      console.error('❌ [NEWSLETTER] Error name:', err.name);
+      console.error('❌ [NEWSLETTER] Error message:', err.message);
+      console.error('❌ [NEWSLETTER] Error stack:', err.stack);
+
       // Handle Sequelize unique constraint error
       if (err.name === 'SequelizeUniqueConstraintError') {
+        console.log(
+          '📧 [NEWSLETTER] Unique constraint error - user already exists',
+        );
         return Responder({
           status: HttpStatusCode.Conflict,
           data: 'Vous êtes déjà inscrit à la newsletter.',
         });
       }
 
+      console.error('❌ [NEWSLETTER] Returning internal server error');
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: err,
@@ -521,15 +576,32 @@ export class CmsService {
   async unsubscribeFromNewsLetter(
     createNewsLetter: CreateNewsLetterDto,
   ): Promise<ResponseServer> {
+    console.log('📧 [NEWSLETTER] ===== UNSUBSCRIPTION STARTED =====');
+    console.log(
+      '📧 [NEWSLETTER] Input data:',
+      JSON.stringify(createNewsLetter, null, 2),
+    );
+
     const { user_email } = createNewsLetter;
+    console.log('📧 [NEWSLETTER] Extracted email:', user_email);
+
     try {
+      console.log(
+        '📧 [NEWSLETTER] Updating subscription status to inactive...',
+      );
       const result = await this.newsletterModel.update(
         { status: 0 },
         { where: { user_email } },
       );
+      console.log('📧 [NEWSLETTER] Update result:', result);
+
       if (result[0] > 0) {
+        console.log('📧 [NEWSLETTER] Successfully unsubscribed user');
         // Send unsubscription confirmation email
         try {
+          console.log(
+            '📧 [NEWSLETTER] Sending unsubscribe confirmation email...',
+          );
           await this.mailService.sendMail({
             to: user_email,
             subject: 'Confirmation de désinscription',
@@ -537,25 +609,35 @@ export class CmsService {
               as: 'newsletter-unsubscribe',
             }),
           });
+          console.log(
+            '📧 [NEWSLETTER] Unsubscribe confirmation email sent successfully',
+          );
         } catch (emailError) {
           // Log email error but don't fail the unsubscription
           console.error(
-            'Failed to send newsletter unsubscription email:',
+            '❌ [NEWSLETTER] Failed to send newsletter unsubscription email:',
             emailError,
           );
         }
 
+        console.log('📧 [NEWSLETTER] Returning unsubscribe success response');
         return Responder({
           status: HttpStatusCode.Ok,
           data: 'Vous avez été désinscrit de la newsletter.',
         });
       } else {
+        console.log('📧 [NEWSLETTER] No records updated - email not found');
         return Responder({
           status: HttpStatusCode.NotFound,
           data: 'Email non trouvé dans la newsletter.',
         });
       }
     } catch (err) {
+      console.error('❌ [NEWSLETTER] Error in unsubscription process:', err);
+      console.error('❌ [NEWSLETTER] Error name:', err.name);
+      console.error('❌ [NEWSLETTER] Error message:', err.message);
+      console.error('❌ [NEWSLETTER] Error stack:', err.stack);
+
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: err,

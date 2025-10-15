@@ -53,7 +53,26 @@ export class CmsController {
   @ApiResponse({ status: 201, description: 'Subscription successful' })
   @ApiResponse({ status: 409, description: 'Already subscribed' })
   async subscribeToNewsLetter(@Body() form: CreateNewsLetterDto) {
-    return this.cmsService.onSubscribeToNewsLetter(form);
+    console.log(
+      '📧 [NEWSLETTER CONTROLLER] ===== SUBSCRIPTION REQUEST RECEIVED =====',
+    );
+    console.log(
+      '📧 [NEWSLETTER CONTROLLER] Request body:',
+      JSON.stringify(form, null, 2),
+    );
+    console.log('📧 [NEWSLETTER CONTROLLER] Calling service method...');
+
+    try {
+      const result = await this.cmsService.onSubscribeToNewsLetter(form);
+      console.log(
+        '📧 [NEWSLETTER CONTROLLER] Service response:',
+        JSON.stringify(result, null, 2),
+      );
+      return result;
+    } catch (error) {
+      console.error('❌ [NEWSLETTER CONTROLLER] Error in controller:', error);
+      throw error;
+    }
   }
   @Post('newsletter/unsubscribe')
   @ApiOperation({ summary: 'Unsubscribe from the newsletter' })
@@ -61,7 +80,26 @@ export class CmsController {
   @ApiResponse({ status: 200, description: 'Unsubscription successful' })
   @ApiResponse({ status: 404, description: 'Email not found' })
   async unsubscribeFromNewsLetter(@Body() form: CreateNewsLetterDto) {
-    return this.cmsService.unsubscribeFromNewsLetter(form);
+    console.log(
+      '📧 [NEWSLETTER CONTROLLER] ===== UNSUBSCRIPTION REQUEST RECEIVED =====',
+    );
+    console.log(
+      '📧 [NEWSLETTER CONTROLLER] Request body:',
+      JSON.stringify(form, null, 2),
+    );
+    console.log('📧 [NEWSLETTER CONTROLLER] Calling service method...');
+
+    try {
+      const result = await this.cmsService.unsubscribeFromNewsLetter(form);
+      console.log(
+        '📧 [NEWSLETTER CONTROLLER] Service response:',
+        JSON.stringify(result, null, 2),
+      );
+      return result;
+    } catch (error) {
+      console.error('❌ [NEWSLETTER CONTROLLER] Error in controller:', error);
+      throw error;
+    }
   }
   @Get('newsletter/subscribers')
   @ApiOperation({ summary: 'Get list of active newsletter subscribers' })
