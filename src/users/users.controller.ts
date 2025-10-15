@@ -223,7 +223,7 @@ export class UsersController {
     return this.userService.getAllUsersAsSimplifiedList();
   }
   @Get('byrole')
-  @UseGuards(JwtAuthGuardAsSuperviseur)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get all users by specific role',
     description:
