@@ -119,7 +119,7 @@ export class UserInSessionController {
               type: 'object',
               properties: {
                 id: { type: 'string', format: 'uuid' },
-                firstname: { type: 'string' },
+                firstName: { type: 'string' },
                 lastname: { type: 'string' },
                 email: { type: 'string' },
                 phone: { type: 'string' },
@@ -202,7 +202,7 @@ export class UserInSessionController {
                 type: 'object',
                 properties: {
                   id: { type: 'string', format: 'uuid' },
-                  firstname: { type: 'string' },
+                  firstName: { type: 'string' },
                   lastname: { type: 'string' },
                   email: { type: 'string' },
                   phone: { type: 'string' },
@@ -273,7 +273,7 @@ export class UserInSessionController {
                 type: 'object',
                 properties: {
                   id: { type: 'string', format: 'uuid' },
-                  firstname: { type: 'string' },
+                  firstName: { type: 'string' },
                   lastname: { type: 'string' },
                   email: { type: 'string' },
                   phone: { type: 'string' },

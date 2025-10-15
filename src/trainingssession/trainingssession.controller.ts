@@ -320,7 +320,7 @@ export class TrainingSessionController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  // @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
   @TrainingSessionFindOneApiOperation()
   @TrainingSessionFindOneApiParam()

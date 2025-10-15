@@ -98,12 +98,7 @@ import { JwtStrategy } from './strategy/strategy.jwt';
           database,
           autoLoadModels: true,
           synchronize: false,
-          dialectOptions: {
-            ssl: {
-              require: true,
-              rejectUnauthorized: false,
-            },
-          },
+          dialectOptions: configService.get('database.dialectOptions'),
           logging: false,
           retry: {
             max: 5,
