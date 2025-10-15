@@ -20,7 +20,7 @@ async function tantorAPP() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('TANTORPORT', 3000);
 
-  // ✅ CORS setup
+  // ✅ CORS setup for credentials & custom headers
   const allowedOrigins = [
     'https://tantorlearning.com',
     'http://localhost:3000',
@@ -28,9 +28,7 @@ async function tantorAPP() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like curl/postman)
-      if (!origin) return callback(null, true);
-
+      if (!origin) return callback(null, true); // allow server-to-server requests
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -47,11 +45,35 @@ async function tantorAPP() {
       'User-Agent',
       'DNT',
       'Cache-Control',
-      'X-Connexion-Tantor', // Your custom header
+      'X-Connexion-Tantor', // your custom header
     ],
     exposedHeaders: ['Content-Disposition', 'Content-Length', 'X-Request-Id'],
-    credentials: true,
+    credentials: true, // needed for cookies/auth
     maxAge: 86400,
+  });
+
+  // Middleware to handle preflight requests properly
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      res.header(
+        'Access-Control-Allow-Origin',
+        allowedOrigins.includes(req.headers.origin as string)
+          ? req.headers.origin
+          : '',
+      );
+      res.header(
+        'Access-Control-Allow-Methods',
+        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      );
+      res.header(
+        'Access-Control-Allow-Headers',
+        'X-Requested-With,Content-Type,Authorization,Accept,Origin,User-Agent,DNT,Cache-Control,X-Connexion-Tantor',
+      );
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.sendStatus(204);
+    } else {
+      next();
+    }
   });
 
   app.setGlobalPrefix('/api/');
@@ -62,7 +84,6 @@ async function tantorAPP() {
     bodyParser.raw({ type: 'application/json' }),
   );
 
-  // Validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -84,7 +105,6 @@ async function tantorAPP() {
             return [...thisLevelErrors, ...childErrors];
           });
         };
-
         const formattedErrors = formatErrors(errors);
         if (formattedErrors.length === 0) {
           return new NotFoundException(
