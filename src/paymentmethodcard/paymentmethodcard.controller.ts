@@ -1068,6 +1068,14 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
   })
   async handleStripeWebhook(@Request() req, @Response() res) {
     console.log('🔔 [STRIPE WEBHOOK] ===== WEBHOOK RECEIVED =====');
+    console.log(
+      '🔔 [STRIPE WEBHOOK] Request body length:',
+      req.body?.length || 'undefined',
+    );
+    console.log(
+      '🔔 [STRIPE WEBHOOK] Request headers:',
+      JSON.stringify(req.headers, null, 2),
+    );
     console.log('🔔 [STRIPE WEBHOOK] Timestamp:', new Date().toISOString());
     console.log(
       '🔔 [STRIPE WEBHOOK] Headers:',
@@ -1102,6 +1110,10 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
       console.log('✅ [STRIPE WEBHOOK] Event constructed successfully');
       console.log('🔔 [STRIPE WEBHOOK] Event type:', event.type);
       console.log('🔔 [STRIPE WEBHOOK] Event ID:', event.id);
+      console.log(
+        '🔔 [STRIPE WEBHOOK] Event data:',
+        JSON.stringify(event.data, null, 2),
+      );
       console.log(
         '🔔 [STRIPE WEBHOOK] Event data keys:',
         Object.keys(event.data || {}),

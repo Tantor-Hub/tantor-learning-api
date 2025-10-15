@@ -8,15 +8,12 @@ const databaseConfig = {
   username: process.env.APP_BD_USERNAME || 'postgres',
   password: process.env.APP_BD_PASSWORD || 'admin',
   database: process.env.APP_BD_NAME || 'default_database',
-  dialectOptions:
-    process.env.NODE_ENV === 'production'
-      ? {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false,
-          },
-        }
-      : false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
   logging: false,
 };
 

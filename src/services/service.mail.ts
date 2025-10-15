@@ -79,6 +79,9 @@ export class MailService {
     dateOn,
     prixCours,
     code,
+    basePrice,
+    stripeFee,
+    totalAmount,
   }: {
     as: string;
     firstName?: string;
@@ -87,6 +90,9 @@ export class MailService {
     dateOn?: string;
     prixCours?: string;
     code?: string;
+    basePrice?: number;
+    stripeFee?: number;
+    totalAmount?: number;
   }): string {
     const color = '#0077b6'; // Utilisation de votre couleur primaire
     const ringColor = '#0096c7'; // Utilisation de votre couleur ring
@@ -586,6 +592,25 @@ export class MailService {
             <p>Nous vous confirmons que votre paiement par carte bancaire a été effectué avec succès pour la formation :</p>
             <p class="highlight">${cours}</p>
             <div class="status-badge">✅ Paiement Validé</div>
+            ${
+              basePrice !== undefined &&
+              stripeFee !== undefined &&
+              totalAmount !== undefined
+                ? `
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid ${color};">
+                <h3 style="margin: 0 0 10px 0; color: ${color};">Détail du paiement</h3>
+                <p style="margin: 5px 0;"><strong>Prix de la formation :</strong> ${basePrice.toFixed(2)} €</p>
+                <p style="margin: 5px 0;"><strong>Frais de traitement Stripe :</strong> ${stripeFee.toFixed(2)} €</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 10px 0;">
+                <p style="margin: 5px 0; font-size: 18px; font-weight: bold; color: ${color};"><strong>Total payé :</strong> ${totalAmount.toFixed(2)} €</p>
+            </div>
+            `
+                : `
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                <p style="margin: 5px 0; color: #856404;"><strong>Debug Info:</strong> basePrice=${basePrice}, stripeFee=${stripeFee}, totalAmount=${totalAmount}</p>
+            </div>
+            `
+            }
             <p>Vous pouvez maintenant accéder à votre session de formation. Un secrétaire validera votre paiement dans les plus brefs délais.</p>
             <p>Si vous souhaitez effectuer un autre paiement, vous pouvez accéder à votre espace personnel.</p>
             <div style="text-align: center;">

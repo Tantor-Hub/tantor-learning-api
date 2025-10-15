@@ -238,6 +238,8 @@ export class PaymentMethodCardService {
         ...createdPaymentMethod.toJSON(),
         trainingPrice: trainingPrice,
         amountToPay: trainingPrice,
+        stripeFee: 0, // No fees for manual creation
+        totalAmount: trainingPrice,
       };
 
       // Send email notification to user
@@ -252,6 +254,9 @@ export class PaymentMethodCardService {
               firstName: user.firstName || '',
               lastName: user.lastName || '',
               cours: trainingSession.trainings?.title || 'Formation',
+              basePrice: trainingPrice,
+              stripeFee: 0, // No fees for manual creation
+              totalAmount: trainingPrice,
             }),
           });
           console.log(
@@ -858,12 +863,36 @@ export class PaymentMethodCardService {
         );
       }
 
-      // Convert price to cents (assuming prix is in EUR)
-      const amountInCents = Math.round(trainingSession.trainings.prix * 100);
+      // Calculate Stripe fees (1.4% + €0.25 per transaction for European cards)
+      const basePrice = Number(trainingSession.trainings.prix);
+
+      if (isNaN(basePrice) || basePrice <= 0) {
+        throw new HttpException(
+          'Invalid training price value',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const stripeFeePercentage = 0.014; // 1.4%
+      const stripeFixedFee = 0.25; // €0.25
+      const stripeFee = Number(
+        (basePrice * stripeFeePercentage + stripeFixedFee).toFixed(2),
+      );
+      const totalAmount = Number((basePrice + stripeFee).toFixed(2));
+
+      // Convert total amount to cents for Stripe
+      const amountInCents = Math.round(totalAmount * 100);
 
       console.log(
-        '💰 [STRIPE PAYMENT INTENT] Training price:',
-        trainingSession.trainings.prix,
+        '💰 [STRIPE PAYMENT INTENT] Price breakdown:',
+        'Base price:',
+        basePrice,
+        'EUR',
+        'Stripe fee:',
+        stripeFee.toFixed(2),
+        'EUR',
+        'Total amount:',
+        totalAmount.toFixed(2),
         'EUR (',
         amountInCents,
         'cents)',
@@ -903,6 +932,13 @@ export class PaymentMethodCardService {
         );
       }
 
+      // Send email notification immediately after payment intent creation
+      console.log('📧 [STRIPE PAYMENT INTENT] Sending email notification...');
+      await this.sendPaymentConfirmationEmail(
+        stripePaymentIntentDto.id_session,
+        userId,
+      );
+
       // Create UserInSession if not exists
       console.log(
         '📋 [STRIPE PAYMENT INTENT] Creating UserInSession if not exists...',
@@ -933,6 +969,10 @@ export class PaymentMethodCardService {
         status: HttpStatusCode.Ok,
         data: {
           clientSecret: paymentIntent.client_secret || '',
+          basePrice: basePrice,
+          stripeFee: stripeFee,
+          totalAmount: totalAmount,
+          amountInCents: amountInCents,
         },
         customMessage: 'Stripe Payment Intent created successfully',
       });
@@ -1100,6 +1140,18 @@ export class PaymentMethodCardService {
           status: PaymentMethodCardStatus.VALIDATED,
         });
 
+        // Send email notification for existing payment method update
+        console.log(
+          '📧 [PAYMENT METHOD CARD] About to send email for existing payment method...',
+        );
+        await this.sendPaymentConfirmationEmail(sessionId, userId);
+        console.log(
+          '📧 [PAYMENT METHOD CARD] Email sending completed for existing payment method',
+        );
+
+        // Reduce available places for the training session
+        await this.reduceAvailablePlaces(sessionId);
+
         return Responder({
           status: HttpStatusCode.Ok,
           data: existingPaymentMethod,
@@ -1119,6 +1171,18 @@ export class PaymentMethodCardService {
         '✅ [PAYMENT METHOD CARD] Payment method card created successfully:',
         paymentMethodCard.id,
       );
+
+      // Send email notification for new payment method
+      console.log(
+        '📧 [PAYMENT METHOD CARD] About to send email for new payment method...',
+      );
+      await this.sendPaymentConfirmationEmail(sessionId, userId);
+      console.log(
+        '📧 [PAYMENT METHOD CARD] Email sending completed for new payment method',
+      );
+
+      // Reduce available places for the training session
+      await this.reduceAvailablePlaces(sessionId);
 
       // Create or update UserInSession
       console.log(
@@ -1211,6 +1275,190 @@ export class PaymentMethodCardService {
         error,
       );
       throw error;
+    }
+  }
+
+  // Send payment confirmation email with fee breakdown
+  private async sendPaymentConfirmationEmail(
+    sessionId: string,
+    userId: string,
+  ) {
+    try {
+      console.log('📧 [EMAIL] Starting payment confirmation email process...');
+      console.log(
+        '📧 [EMAIL] Parameters - sessionId:',
+        sessionId,
+        'userId:',
+        userId,
+      );
+
+      // Get training session information for email
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        sessionId,
+        {
+          include: [
+            {
+              model: this.trainingModel,
+              as: 'trainings',
+              required: false,
+              attributes: ['id', 'title', 'prix'],
+            },
+          ],
+        },
+      );
+
+      if (!trainingSession || !trainingSession.trainings) {
+        console.error('❌ [EMAIL] Training session or training not found');
+        return;
+      }
+
+      // Calculate Stripe fees (1.4% + €0.25 per transaction for European cards)
+      const basePrice = Number(trainingSession.trainings.prix);
+
+      if (isNaN(basePrice) || basePrice <= 0) {
+        console.error(
+          '❌ [EMAIL] Invalid training price value:',
+          trainingSession.trainings.prix,
+        );
+        return; // Skip email if price is invalid
+      }
+
+      const stripeFeePercentage = 0.014; // 1.4%
+      const stripeFixedFee = 0.25; // €0.25
+      const stripeFee = Number(
+        (basePrice * stripeFeePercentage + stripeFixedFee).toFixed(2),
+      );
+      const totalAmount = Number((basePrice + stripeFee).toFixed(2));
+
+      // Send email notification to user
+      const user = await this.usersModel.findByPk(userId);
+      if (!user || !user.email) {
+        console.error('❌ [EMAIL] User not found or no email address');
+        return;
+      }
+
+      console.log(
+        '📧 [EMAIL] Sending payment confirmation email with amounts:',
+      );
+      console.log('  - basePrice:', basePrice);
+      console.log('  - stripeFee:', stripeFee);
+      console.log('  - totalAmount:', totalAmount);
+      console.log('📧 [EMAIL] MailService available:', !!this.mailService);
+
+      const emailContent = this.mailService.templates({
+        as: 'payment-card-success',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        cours: trainingSession.trainings?.title || 'Formation',
+        basePrice: basePrice,
+        stripeFee: stripeFee,
+        totalAmount: totalAmount,
+      });
+
+      console.log(
+        '📧 [EMAIL] Email content generated, length:',
+        emailContent.length,
+      );
+
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: 'Paiement par carte confirmé',
+        content: emailContent,
+      });
+
+      console.log(
+        '✅ [EMAIL] Payment confirmation email sent successfully to:',
+        user.email,
+        'with amount breakdown:',
+        'Base:',
+        basePrice,
+        'EUR,',
+        'Fees:',
+        stripeFee.toFixed(2),
+        'EUR,',
+        'Total:',
+        totalAmount.toFixed(2),
+        'EUR',
+      );
+    } catch (emailError) {
+      console.error(
+        '❌ [EMAIL] Failed to send payment confirmation email:',
+        emailError,
+      );
+      // Don't fail the entire operation if email fails
+    }
+  }
+
+  // Reduce available places for training session when payment is successful
+  private async reduceAvailablePlaces(sessionId: string) {
+    if (!this.trainingSessionModel.sequelize) {
+      console.error('❌ [AVAILABLE PLACES] Sequelize instance not available');
+      return;
+    }
+
+    const transaction = await this.trainingSessionModel.sequelize.transaction();
+
+    try {
+      console.log(
+        '📊 [AVAILABLE PLACES] Reducing available places for session:',
+        sessionId,
+      );
+
+      // Lock the training session row to prevent race conditions
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        sessionId,
+        {
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        },
+      );
+
+      if (!trainingSession) {
+        console.error(
+          '❌ [AVAILABLE PLACES] Training session not found:',
+          sessionId,
+        );
+        await transaction.rollback();
+        return;
+      }
+
+      const currentAvailablePlaces = trainingSession.available_places;
+
+      if (currentAvailablePlaces <= 0) {
+        console.warn(
+          '⚠️ [AVAILABLE PLACES] No available places left for session:',
+          sessionId,
+        );
+        await transaction.rollback();
+        return;
+      }
+
+      const newAvailablePlaces = currentAvailablePlaces - 1;
+
+      await trainingSession.update(
+        {
+          available_places: newAvailablePlaces,
+        },
+        { transaction },
+      );
+
+      await transaction.commit();
+
+      console.log(
+        '✅ [AVAILABLE PLACES] Successfully reduced available places:',
+        `${currentAvailablePlaces} → ${newAvailablePlaces}`,
+        'for session:',
+        sessionId,
+      );
+    } catch (error) {
+      await transaction.rollback();
+      console.error(
+        '❌ [AVAILABLE PLACES] Failed to reduce available places for session:',
+        sessionId,
+        'Error:',
+        error,
+      );
+      // Don't fail the entire operation if available places update fails
     }
   }
 }

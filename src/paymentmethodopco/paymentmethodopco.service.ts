@@ -705,6 +705,11 @@ export class PaymentMethodOpcoService {
 
       await paymentMethod.update(updateData);
 
+      // Check if status is being changed to validated and reduce available places
+      if (updateData.status === PaymentMethodOpcoStatus.VALIDATED) {
+        await this.reduceAvailablePlaces(paymentMethod.id_session);
+      }
+
       // Fetch the updated payment method with relationships
       const updatedPaymentMethod = await this.paymentMethodOpcoModel.findByPk(
         id,
@@ -794,6 +799,79 @@ export class PaymentMethodOpcoService {
         data: { message: error.message },
         customMessage: 'Failed to delete all payment methods OPCO',
       });
+    }
+  }
+
+  // Reduce available places for training session when payment is validated
+  private async reduceAvailablePlaces(sessionId: string) {
+    if (!this.trainingSessionModel.sequelize) {
+      console.error('❌ [AVAILABLE PLACES] Sequelize instance not available');
+      return;
+    }
+
+    const transaction = await this.trainingSessionModel.sequelize.transaction();
+
+    try {
+      console.log(
+        '📊 [AVAILABLE PLACES] Reducing available places for session:',
+        sessionId,
+      );
+
+      // Lock the training session row to prevent race conditions
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        sessionId,
+        {
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        },
+      );
+
+      if (!trainingSession) {
+        console.error(
+          '❌ [AVAILABLE PLACES] Training session not found:',
+          sessionId,
+        );
+        await transaction.rollback();
+        return;
+      }
+
+      const currentAvailablePlaces = trainingSession.available_places;
+
+      if (currentAvailablePlaces <= 0) {
+        console.warn(
+          '⚠️ [AVAILABLE PLACES] No available places left for session:',
+          sessionId,
+        );
+        await transaction.rollback();
+        return;
+      }
+
+      const newAvailablePlaces = currentAvailablePlaces - 1;
+
+      await trainingSession.update(
+        {
+          available_places: newAvailablePlaces,
+        },
+        { transaction },
+      );
+
+      await transaction.commit();
+
+      console.log(
+        '✅ [AVAILABLE PLACES] Successfully reduced available places:',
+        `${currentAvailablePlaces} → ${newAvailablePlaces}`,
+        'for session:',
+        sessionId,
+      );
+    } catch (error) {
+      await transaction.rollback();
+      console.error(
+        '❌ [AVAILABLE PLACES] Failed to reduce available places for session:',
+        sessionId,
+        'Error:',
+        error,
+      );
+      // Don't fail the entire operation if available places update fails
     }
   }
 }
