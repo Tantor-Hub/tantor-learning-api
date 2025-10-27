@@ -150,7 +150,7 @@ export class StudentAnswerService {
           {
             model: StudentAnswerOption,
             as: 'selectedOptions',
-            attributes: ['id', 'optionId'],
+            attributes: ['id', 'optionId', 'questionId'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -192,7 +192,7 @@ export class StudentAnswerService {
           {
             model: StudentAnswerOption,
             as: 'selectedOptions',
-            attributes: ['id', 'optionId'],
+            attributes: ['id', 'optionId', 'questionId'],
           },
         ],
       });
@@ -241,7 +241,7 @@ export class StudentAnswerService {
           {
             model: StudentAnswerOption,
             as: 'selectedOptions',
-            attributes: ['id', 'optionId'],
+            attributes: ['id', 'optionId', 'questionId'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -284,7 +284,7 @@ export class StudentAnswerService {
           {
             model: StudentAnswerOption,
             as: 'selectedOptions',
-            attributes: ['id', 'optionId'],
+            attributes: ['id', 'optionId', 'questionId'],
           },
         ],
         order: [['createdAt', 'DESC']],

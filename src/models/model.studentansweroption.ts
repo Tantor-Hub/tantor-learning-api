@@ -9,8 +9,8 @@ import {
   ForeignKey,
   Default,
 } from 'sequelize-typescript';
-import { StudentAnswer } from './model.studentanswer';
 import { EvaluationQuestionOption } from './model.evaluationquestionoption';
+import { EvaluationQuestion } from './model.evaluationquestion';
 
 @Table({
   tableName: '___tbl_tantor_student_answer_options',
@@ -20,16 +20,17 @@ import { EvaluationQuestionOption } from './model.evaluationquestionoption';
 })
 export class StudentAnswerOption extends Model<StudentAnswerOption> {
   @PrimaryKey
+  @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
   id: string;
 
   @AllowNull(false)
   @Column(DataType.UUID)
-  studentAnswerId: string;
+  optionId: string;
 
   @AllowNull(false)
   @Column(DataType.UUID)
-  optionId: string;
+  questionId: string;
 
   @Default(false)
   @Column(DataType.BOOLEAN)
@@ -46,15 +47,15 @@ export class StudentAnswerOption extends Model<StudentAnswerOption> {
   updatedAt: Date;
 
   // Relationships
-  @BelongsTo(() => StudentAnswer, {
-    foreignKey: 'studentAnswerId',
-    targetKey: 'id',
-  })
-  studentAnswer?: StudentAnswer;
-
   @BelongsTo(() => EvaluationQuestionOption, {
     foreignKey: 'optionId',
     targetKey: 'id',
   })
   option?: EvaluationQuestionOption;
+
+  @BelongsTo(() => EvaluationQuestion, {
+    foreignKey: 'questionId',
+    targetKey: 'id',
+  })
+  question?: EvaluationQuestion;
 }

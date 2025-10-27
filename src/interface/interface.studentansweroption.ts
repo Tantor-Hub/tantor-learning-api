@@ -2,7 +2,7 @@ import { IGlobale } from './interface.globale';
 
 export interface IStudentAnswerOption extends IGlobale {
   id?: string;
-  studentAnswerId: string;
+  questionId: string;
   optionId: string;
   isCorrect: boolean;
   points: number;

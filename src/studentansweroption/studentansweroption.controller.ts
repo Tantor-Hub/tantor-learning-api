@@ -20,6 +20,8 @@ import { CreateStudentAnswerOptionDto } from './dto/create-studentansweroption.d
 import { UpdateStudentAnswerOptionDto } from './dto/update-studentansweroption.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { User } from 'src/strategy/strategy.globaluser';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @ApiTags('Student Answer Options')
 @Controller('studentansweroption')
@@ -28,23 +30,34 @@ export class StudentAnswerOptionController {
     private readonly studentAnswerOptionService: StudentAnswerOptionService,
   ) {}
 
-  @Post()
+  @Post('')
   @UseGuards(JwtAuthGuardAsStudent)
   @ApiOperation({
     summary: 'Select an option for a student answer',
     description:
-      'Select a specific option for a multiple choice question answer',
+      'Select a specific option for a multiple choice question answer. The isCorrect and points fields are automatically set based on the evaluation question option. Points are set to the full question points if correct, 0 if incorrect. Both questionId and optionId must be provided in the request body.',
   })
   @ApiBody({
     type: CreateStudentAnswerOptionDto,
     description: 'Student answer option data',
     examples: {
       selectOption: {
-        summary: 'Select Option',
-        description: 'Select an option for a multiple choice answer',
+        summary: 'Select Option (Auto-scoring)',
+        description:
+          'Select an option for a multiple choice answer. isCorrect and points are automatically set based on the evaluation question option.',
         value: {
-          studentAnswerId: 'answer-uuid-1',
+          questionId: 'question-uuid-1',
           optionId: 'option-uuid-1',
+        },
+      },
+      selectOptionWithCustomPoints: {
+        summary: 'Select Option with Custom Points',
+        description:
+          'Select an option with custom points (must not exceed question maximum points)',
+        value: {
+          questionId: 'question-uuid-1',
+          optionId: 'option-uuid-1',
+          points: 3,
         },
       },
     },
@@ -54,11 +67,13 @@ export class StudentAnswerOptionController {
     description: 'Student answer option created successfully',
     example: {
       status: 201,
-      message: 'Student answer option created successfully',
+      message: 'Option de réponse étudiante créée avec succès',
       data: {
         id: 'answer-option-uuid-1',
-        studentAnswerId: 'answer-uuid-1',
+        questionId: 'question-uuid-1',
         optionId: 'option-uuid-1',
+        isCorrect: true,
+        points: 5,
         createdAt: '2025-01-15T10:30:00.000Z',
         updatedAt: '2025-01-15T10:30:00.000Z',
       },
@@ -67,8 +82,14 @@ export class StudentAnswerOptionController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  create(@Body() createStudentAnswerOptionDto: CreateStudentAnswerOptionDto) {
-    return this.studentAnswerOptionService.create(createStudentAnswerOptionDto);
+  create(
+    @Body() createStudentAnswerOptionDto: CreateStudentAnswerOptionDto,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentAnswerOptionService.create(
+      createStudentAnswerOptionDto,
+      user.id_user,
+    );
   }
 
   @Get()
@@ -83,13 +104,10 @@ export class StudentAnswerOptionController {
       data: [
         {
           id: 'answer-option-uuid-1',
-          studentAnswerId: 'answer-uuid-1',
+          questionId: 'question-uuid-1',
           optionId: 'option-uuid-1',
-          studentAnswer: {
-            id: 'answer-uuid-1',
-            answerText: null,
-            isCorrect: true,
-          },
+          isCorrect: true,
+          points: 5,
           option: {
             id: 'option-uuid-1',
             text: 'Using function components with hooks',
@@ -106,21 +124,146 @@ export class StudentAnswerOptionController {
     return this.studentAnswerOptionService.findAll();
   }
 
-  @Get('student-answer/:studentAnswerId')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get options by student answer ID' })
+  @Get('option/:optionId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary: 'Get student answer options by evaluation question option ID',
+    description:
+      'Retrieve all student answer options for a specific evaluation question option. Students can access options for questions they are enrolled in.',
+  })
   @ApiParam({
-    name: 'studentAnswerId',
-    description: 'Student answer UUID',
-    example: 'answer-uuid-1',
+    name: 'optionId',
+    description: 'Evaluation Question Option UUID',
+    example: 'option-uuid-1',
   })
   @ApiResponse({
     status: 200,
     description: 'Student answer options retrieved successfully',
+    examples: {
+      withOptions: {
+        summary: 'When options exist for the question option',
+        value: {
+          status: 200,
+          message: 'Options de réponse étudiante récupérées avec succès',
+          data: {
+            answerOptions: [
+              {
+                id: 'answer-option-uuid-1',
+                questionId: 'question-uuid-1',
+                optionId: 'option-uuid-1',
+                isCorrect: true,
+                points: 5,
+                option: {
+                  id: 'option-uuid-1',
+                  text: 'A JavaScript library for building user interfaces',
+                  isCorrect: true,
+                },
+                createdAt: '2025-01-15T10:30:00.000Z',
+                updatedAt: '2025-01-15T10:30:00.000Z',
+              },
+            ],
+            total: 1,
+            questionId: 'question-uuid-1',
+            optionId: 'option-uuid-1',
+          },
+        },
+      },
+      noOptions: {
+        summary: 'When no options exist for the question option',
+        value: {
+          status: 200,
+          message: 'Options de réponse étudiante récupérées avec succès',
+          data: {
+            answerOptions: [],
+            total: 0,
+            questionId: 'question-uuid-1',
+            optionId: 'option-uuid-1',
+          },
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findByStudentAnswer(@Param('studentAnswerId') studentAnswerId: string) {
-    return this.studentAnswerOptionService.findByStudentAnswer(studentAnswerId);
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student access required',
+  })
+  @ApiResponse({ status: 404, description: 'Question option not found' })
+  findByOptionId(@Param('optionId') optionId: string) {
+    return this.studentAnswerOptionService.findByOptionId(optionId);
+  }
+
+  @Get('question/:questionId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary: 'Get student answer options by evaluation question ID',
+    description:
+      'Retrieve all student answer options for a specific evaluation question. Students can access options for questions they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'questionId',
+    description: 'Evaluation Question UUID',
+    example: 'question-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student answer options retrieved successfully',
+    examples: {
+      withOptions: {
+        summary: 'When options exist for the question',
+        value: {
+          status: 200,
+          message: 'Options de réponse étudiante récupérées avec succès',
+          data: {
+            answerOptions: [
+              {
+                id: 'answer-option-uuid-1',
+                questionId: 'question-uuid-1',
+                optionId: 'option-uuid-1',
+                isCorrect: true,
+                points: 5,
+                option: {
+                  id: 'option-uuid-1',
+                  text: 'A JavaScript library for building user interfaces',
+                  isCorrect: true,
+                },
+                createdAt: '2025-01-15T10:30:00.000Z',
+                updatedAt: '2025-01-15T10:30:00.000Z',
+              },
+            ],
+            total: 1,
+            questionId: 'question-uuid-1',
+          },
+        },
+      },
+      noOptions: {
+        summary: 'When no options exist for the question',
+        value: {
+          status: 200,
+          message: 'Options de réponse étudiante récupérées avec succès',
+          data: {
+            answerOptions: [],
+            total: 0,
+            questionId: 'question-uuid-1',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student access required',
+  })
+  @ApiResponse({ status: 404, description: 'Question not found' })
+  findByQuestionId(@Param('questionId') questionId: string) {
+    return this.studentAnswerOptionService.findByQuestionId(questionId);
   }
 
   @Get(':id')
@@ -139,13 +282,10 @@ export class StudentAnswerOptionController {
       message: 'Student answer option retrieved successfully',
       data: {
         id: 'answer-option-uuid-1',
-        studentAnswerId: 'answer-uuid-1',
+        questionId: 'question-uuid-1',
         optionId: 'option-uuid-1',
-        studentAnswer: {
-          id: 'answer-uuid-1',
-          answerText: null,
-          isCorrect: true,
-        },
+        isCorrect: true,
+        points: 5,
         option: {
           id: 'option-uuid-1',
           text: 'Using function components with hooks',

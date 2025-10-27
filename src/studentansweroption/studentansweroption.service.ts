@@ -23,6 +23,7 @@ export class StudentAnswerOptionService {
 
   async create(
     createStudentAnswerOptionDto: CreateStudentAnswerOptionDto,
+    studentId: string,
   ): Promise<ResponseServer> {
     try {
       console.log('=== StudentAnswerOption create: Starting ===');
@@ -31,7 +32,7 @@ export class StudentAnswerOptionService {
         createStudentAnswerOptionDto,
       );
 
-      // Get the evaluation question option to check if it's correct
+      // Validate that the questionId matches the option's questionId
       const questionOption = await this.evaluationQuestionOptionModel.findByPk(
         createStudentAnswerOptionDto.optionId,
       );
@@ -46,19 +47,38 @@ export class StudentAnswerOptionService {
         });
       }
 
+      // Validate that the provided questionId matches the option's questionId
+      if (
+        questionOption.questionId !== createStudentAnswerOptionDto.questionId
+      ) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage:
+            "L'ID de question fourni ne correspond pas à l'option sélectionnée",
+        });
+      }
+
       // Check if the selected option is correct
       const isCorrect = questionOption.isCorrect || false;
 
-      // Validate points if provided
+      // Get the question to get its points and validate if needed
+      const question = await this.evaluationQuestionModel.findByPk(
+        createStudentAnswerOptionDto.questionId,
+      );
+
+      if (!question) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Question non trouvée',
+        });
+      }
+
+      // Validate points if provided by user
       if (
         createStudentAnswerOptionDto.points !== undefined &&
         createStudentAnswerOptionDto.points !== null
       ) {
-        // Get the question to validate points
-        const question = await this.evaluationQuestionModel.findByPk(
-          questionOption.questionId,
-        );
-        if (question && createStudentAnswerOptionDto.points > question.points) {
+        if (createStudentAnswerOptionDto.points > question.points) {
           return Responder({
             status: HttpStatusCode.BadRequest,
             customMessage: `Les points attribués (${createStudentAnswerOptionDto.points}) ne peuvent pas dépasser le maximum de points de la question (${question.points})`,
@@ -66,16 +86,31 @@ export class StudentAnswerOptionService {
         }
       }
 
+      // Automatically set points based on isCorrect and question points
+      let points: number;
+      if (
+        createStudentAnswerOptionDto.points !== undefined &&
+        createStudentAnswerOptionDto.points !== null
+      ) {
+        // Use user-provided points if within limits
+        points = createStudentAnswerOptionDto.points;
+      } else {
+        // Auto-assign points: full question points if correct, 0 if incorrect
+        points = isCorrect ? question.points : 0;
+      }
+
       console.log('=== StudentAnswerOption create: Answer validation ===');
       console.log('Selected option ID:', createStudentAnswerOptionDto.optionId);
       console.log('Option is correct:', isCorrect);
+      console.log('Question points:', question.points);
+      console.log('Assigned points:', points);
 
       // Create the student answer option with the isCorrect field set
       const answerOption = await this.studentAnswerOptionModel.create({
-        studentAnswerId: createStudentAnswerOptionDto.studentAnswerId,
         optionId: createStudentAnswerOptionDto.optionId,
+        questionId: createStudentAnswerOptionDto.questionId,
         isCorrect: isCorrect,
-        points: createStudentAnswerOptionDto.points || (isCorrect ? 1 : 0),
+        points: points,
       } as any);
 
       console.log('=== StudentAnswerOption create: Success ===');
@@ -178,38 +213,77 @@ export class StudentAnswerOptionService {
     }
   }
 
-  async findByStudentAnswer(studentAnswerId: string): Promise<ResponseServer> {
+  async findByOptionId(optionId: string): Promise<ResponseServer> {
     try {
       const answerOptions = await this.studentAnswerOptionModel.findAll({
-        where: { studentAnswerId },
+        where: { optionId },
         include: [
           {
-            model: StudentAnswer,
-            as: 'studentAnswer',
-            attributes: ['id', 'answerText', 'isCorrect'],
-          },
-          {
-            model: EvaluationQuestionOption,
+            model:
+              this.studentAnswerOptionModel.sequelize!.models
+                .EvaluationQuestionOption,
             as: 'option',
-            attributes: ['id', 'text', 'isCorrect'],
           },
         ],
-        order: [['createdAt', 'ASC']],
+        order: [['createdAt', 'DESC']],
       });
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: answerOptions,
-        customMessage: 'Student answer options retrieved successfully',
+        data: {
+          answerOptions,
+          total: answerOptions.length,
+          optionId,
+        },
+        customMessage: 'Options de réponse étudiante récupérées avec succès',
       });
     } catch (error) {
       console.error(
-        'Error retrieving student answer options by student answer:',
+        'Error retrieving student answer options by option ID:',
         error,
       );
       return Responder({
         status: HttpStatusCode.InternalServerError,
-        customMessage: 'Error retrieving student answer options',
+        customMessage:
+          'Erreur lors de la récupération des options de réponse étudiante',
+      });
+    }
+  }
+
+  async findByQuestionId(questionId: string): Promise<ResponseServer> {
+    try {
+      // Get all student answer options for this question directly
+      const answerOptions = await this.studentAnswerOptionModel.findAll({
+        where: { questionId },
+        include: [
+          {
+            model:
+              this.studentAnswerOptionModel.sequelize!.models
+                .EvaluationQuestionOption,
+            as: 'option',
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          answerOptions,
+          total: answerOptions.length,
+          questionId,
+        },
+        customMessage: 'Options de réponse étudiante récupérées avec succès',
+      });
+    } catch (error) {
+      console.error(
+        'Error retrieving student answer options by question ID:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage:
+          'Erreur lors de la récupération des options de réponse étudiante',
       });
     }
   }
@@ -249,14 +323,25 @@ export class StudentAnswerOptionService {
         updateStudentAnswerOptionDto.points !== undefined &&
         updateStudentAnswerOptionDto.points !== null
       ) {
-        const studentAnswer = answerOption.studentAnswer as any;
-        const question = studentAnswer?.question as EvaluationQuestion;
+        // Get the question option to find the question
+        const questionOption =
+          await this.evaluationQuestionOptionModel.findByPk(
+            answerOption.optionId,
+          );
+        if (questionOption) {
+          const question = await this.evaluationQuestionModel.findByPk(
+            questionOption.questionId,
+          );
 
-        if (question && updateStudentAnswerOptionDto.points > question.points) {
-          return Responder({
-            status: HttpStatusCode.BadRequest,
-            customMessage: `Les points attribués (${updateStudentAnswerOptionDto.points}) ne peuvent pas dépasser le maximum de points de la question (${question.points})`,
-          });
+          if (
+            question &&
+            updateStudentAnswerOptionDto.points > question.points
+          ) {
+            return Responder({
+              status: HttpStatusCode.BadRequest,
+              customMessage: `Les points attribués (${updateStudentAnswerOptionDto.points}) ne peuvent pas dépasser le maximum de points de la question (${question.points})`,
+            });
+          }
         }
       }
 

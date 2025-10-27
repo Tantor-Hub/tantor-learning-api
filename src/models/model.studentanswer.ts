@@ -79,8 +79,8 @@ export class StudentAnswer extends Model<StudentAnswer> {
   evaluation?: Studentevaluation;
 
   @HasMany(() => StudentAnswerOption, {
-    foreignKey: 'studentAnswerId',
-    sourceKey: 'id',
+    foreignKey: 'questionId',
+    sourceKey: 'questionId',
   })
   selectedOptions?: StudentAnswerOption[];
 }
