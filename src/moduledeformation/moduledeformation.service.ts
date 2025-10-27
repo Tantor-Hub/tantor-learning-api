@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ModuleDeFormation } from 'src/models/model.moduledeformation';
 import { CreateModuleDeFormationDto } from './dto/create-moduledeformation.dto';
+import { UpdateModuleDeFormationDto } from './dto/update-moduledeformation.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { AllSercices } from 'src/services/serices.all';
@@ -19,13 +20,18 @@ export class ModuleDeFormationService {
     piece_jointe: string,
   ): Promise<any> {
     try {
-      const uuid = this.allServices.generateUuid();
       const module = await this.moduleDeFormationModel.create({
         ...createDto,
-        uuid,
         piece_jointe,
       });
-      return Responder({ status: HttpStatusCode.Created, data: module });
+
+      // Exclude id from the response
+      const { id, ...moduleWithoutId } = module.toJSON();
+
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: moduleWithoutId,
+      });
     } catch (error) {
       return Responder({
         status: HttpStatusCode.InternalServerError,
@@ -51,19 +57,55 @@ export class ModuleDeFormationService {
     }
   }
 
-  async findOne(id: string): Promise<any> {
+  async update(
+    id: string,
+    updateDto: UpdateModuleDeFormationDto,
+    piece_jointe?: string,
+  ): Promise<any> {
     try {
-      const module = await this.moduleDeFormationModel.findOne({
+      // Check if module exists
+      const existingModule = await this.moduleDeFormationModel.findOne({
         where: { id },
-        attributes: { exclude: ['createdAt', 'updatedAt'] },
       });
-      if (!module) {
+
+      if (!existingModule) {
         return Responder({
           status: HttpStatusCode.NotFound,
           data: 'ModuleDeFormation not found',
         });
       }
-      return Responder({ status: HttpStatusCode.Ok, data: module });
+
+      // Prepare update data
+      const updateData: any = { ...updateDto };
+      if (piece_jointe) {
+        updateData.piece_jointe = piece_jointe;
+      }
+
+      // Update the module
+      await this.moduleDeFormationModel.update(updateData, {
+        where: { id },
+      });
+
+      // Fetch the updated module
+      const updatedModule = await this.moduleDeFormationModel.findOne({
+        where: { id },
+        attributes: { exclude: ['createdAt', 'updatedAt'] },
+      });
+
+      if (!updatedModule) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'ModuleDeFormation not found after update',
+        });
+      }
+
+      // Exclude id from the response
+      const { id: moduleId, ...moduleWithoutId } = updatedModule.toJSON();
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: moduleWithoutId,
+      });
     } catch (error) {
       return Responder({
         status: HttpStatusCode.InternalServerError,

@@ -30,6 +30,13 @@ import { SessionCoursService } from './sessioncours.service';
 import { CreateSessionCoursDto } from './dto/create-sessioncours.dto';
 import { UpdateSessionCoursDto } from './dto/update-sessioncours.dto';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
+import { JwtAuthGuardUniversalFactory } from 'src/guard/guard.universal-factory';
+import {
+  RequireAnyRole,
+  RequireAllRoles,
+  RequireAnyRoleStrict,
+  UniversalRoles,
+} from 'src/guard/decorators/universal-roles.decorator';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
@@ -126,8 +133,13 @@ export class SessionCoursController {
   }
 
   @Get('getall')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Get all session courses' })
+  @UseGuards(JwtAuthGuardUniversalFactory)
+  @RequireAnyRole('admin', 'secretary')
+  @ApiOperation({
+    summary: 'Get all session courses (Admin OR Secretary)',
+    description:
+      'This endpoint can be accessed by users who have admin OR secretary role',
+  })
   @ApiResponse({
     status: 200,
     description: 'Session courses retrieved successfully',
@@ -176,6 +188,17 @@ export class SessionCoursController {
             },
           ],
         },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin OR Secretary role required',
+    schema: {
+      example: {
+        status: 401,
+        message:
+          "La clé d'authentification fournie n'a pas les droits requis pour accéder à ces ressources",
       },
     },
   })
@@ -476,8 +499,11 @@ export class SessionCoursController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Get a session course by ID' })
+  @UseGuards(JwtAuthGuardUniversalFactory)
+  @RequireAnyRole('secretary', 'instructor')
+  @ApiOperation({
+    summary: 'Get a session course by ID (Secretary OR Instructor)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Session course retrieved successfully',
@@ -736,5 +762,71 @@ export class SessionCoursController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.sessionCoursService.remove(user, id);
+  }
+
+  // Example endpoints demonstrating different role combinations
+
+  @Get('examples/any-three-roles')
+  @UseGuards(JwtAuthGuardUniversalFactory)
+  @RequireAnyRole('admin', 'secretary', 'instructor')
+  @ApiOperation({
+    summary: 'Example: Any of 3 roles (Admin OR Secretary OR Instructor)',
+    description:
+      'This endpoint can be accessed by users who have admin OR secretary OR instructor role',
+  })
+  async exampleAnyThreeRoles() {
+    return {
+      message: 'Access granted: You have admin, secretary, or instructor role',
+    };
+  }
+
+  @Get('examples/all-two-roles')
+  @UseGuards(JwtAuthGuardUniversalFactory)
+  @RequireAllRoles('admin', 'secretary')
+  @ApiOperation({
+    summary: 'Example: All of 2 roles (Admin AND Secretary)',
+    description:
+      'This endpoint can only be accessed by users who have BOTH admin AND secretary roles',
+  })
+  async exampleAllTwoRoles() {
+    return {
+      message: 'Access granted: You have both admin AND secretary roles',
+    };
+  }
+
+  @Get('examples/custom-config')
+  @UseGuards(JwtAuthGuardUniversalFactory)
+  @UniversalRoles({
+    requiredRoles: ['instructor', 'secretary'],
+    requireAll: false,
+    allowAdminOverride: false, // Even admin needs to meet the role requirements
+  })
+  @ApiOperation({
+    summary:
+      'Example: Custom configuration (Instructor OR Secretary, no admin override)',
+    description:
+      'This endpoint can be accessed by instructor OR secretary, but admin override is disabled',
+  })
+  async exampleCustomConfig() {
+    return {
+      message:
+        'Access granted: You have instructor or secretary role (admin override disabled)',
+    };
+  }
+
+  @Get('examples/strict-any')
+  @UseGuards(JwtAuthGuardUniversalFactory)
+  @RequireAnyRoleStrict('student', 'instructor')
+  @ApiOperation({
+    summary:
+      'Example: Strict any role (Student OR Instructor, no admin override)',
+    description:
+      'This endpoint can be accessed by student OR instructor, but admin cannot override',
+  })
+  async exampleStrictAny() {
+    return {
+      message:
+        'Access granted: You have student or instructor role (strict mode)',
+    };
   }
 }

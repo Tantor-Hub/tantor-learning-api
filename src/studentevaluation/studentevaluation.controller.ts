@@ -18,6 +18,7 @@ import {
 import { StudentevaluationService } from './studentevaluation.service';
 import { CreateStudentevaluationDto } from './dto/create-studentevaluation.dto';
 import { UpdateStudentevaluationDto } from './dto/update-studentevaluation.dto';
+import { UpdateEvaluationStatusDto } from './dto/update-evaluation-status.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
@@ -957,6 +958,198 @@ export class StudentevaluationController {
     return this.studentevaluationService.update(
       evaluationId,
       updateStudentevaluationDto,
+    );
+  }
+
+  @Patch(':evaluationId/marking-status')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiOperation({
+    summary: 'Update marking status for student evaluation',
+    description:
+      'Update the marking status of a student evaluation. Only instructors can update marking status. Status progression: pending -> in_progress -> completed -> published',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiBody({
+    description: 'Marking status update data',
+    schema: {
+      type: 'object',
+      properties: {
+        markingStatus: {
+          type: 'string',
+          enum: ['pending', 'in_progress', 'completed', 'published'],
+          description: 'New marking status for the evaluation',
+          example: 'completed',
+        },
+      },
+      required: ['markingStatus'],
+    },
+    examples: {
+      markInProgress: {
+        summary: 'Mark as In Progress',
+        description: 'Set evaluation marking status to in_progress',
+        value: {
+          markingStatus: 'in_progress',
+        },
+      },
+      markCompleted: {
+        summary: 'Mark as Completed',
+        description: 'Set evaluation marking status to completed',
+        value: {
+          markingStatus: 'completed',
+        },
+      },
+      publishResults: {
+        summary: 'Publish Results',
+        description: 'Set evaluation marking status to published',
+        value: {
+          markingStatus: 'published',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Marking status updated successfully',
+    example: {
+      status: 200,
+      message: 'Marking status updated successfully',
+      data: {
+        evaluation: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+          markingStatus: 'completed',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+        },
+        message: 'Marking status updated successfully',
+        details: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+          markingStatus: 'completed',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid marking status',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor access required',
+  })
+  @ApiResponse({ status: 404, description: 'Student evaluation not found' })
+  updateMarkingStatus(
+    @Param('evaluationId') evaluationId: string,
+    @Body() body: { markingStatus: string },
+  ) {
+    return this.studentevaluationService.updateMarkingStatus(
+      evaluationId,
+      body.markingStatus,
+    );
+  }
+
+  @Patch(':evaluationId/status')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiOperation({
+    summary: 'Update student evaluation status',
+    description:
+      'Update various status fields of a student evaluation. Only instructors can update evaluation status. Can update: ispublish, isImmediateResult, and markingStatus.',
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Student evaluation UUID - The unique identifier of the student evaluation',
+    example: 'eval-uuid-1',
+  })
+  @ApiBody({
+    type: UpdateEvaluationStatusDto,
+    description: 'Evaluation status update data',
+    examples: {
+      publishEvaluation: {
+        summary: 'Publish Evaluation',
+        description: 'Publish the evaluation to make it visible to students',
+        value: {
+          ispublish: true,
+        },
+      },
+      enableImmediateResults: {
+        summary: 'Enable Immediate Results',
+        description:
+          'Allow students to see results immediately after submission',
+        value: {
+          isImmediateResult: true,
+        },
+      },
+      completeMarking: {
+        summary: 'Complete Marking Process',
+        description:
+          'Mark the evaluation as completed and ready for publishing',
+        value: {
+          markingStatus: 'completed',
+        },
+      },
+      fullStatusUpdate: {
+        summary: 'Full Status Update',
+        description: 'Update multiple status fields at once',
+        value: {
+          ispublish: true,
+          isImmediateResult: false,
+          markingStatus: 'published',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Evaluation status updated successfully',
+    example: {
+      status: 200,
+      message: 'Evaluation status updated successfully',
+      data: {
+        evaluation: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+          ispublish: true,
+          isImmediateResult: false,
+          markingStatus: 'completed',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+        },
+        message: 'Evaluation status updated successfully',
+        details: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+          ispublish: true,
+          isImmediateResult: false,
+          markingStatus: 'completed',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - No status fields provided or invalid values',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor access required',
+  })
+  @ApiResponse({ status: 404, description: 'Student evaluation not found' })
+  updateEvaluationStatus(
+    @Param('evaluationId') evaluationId: string,
+    @Body() updateStatusDto: UpdateEvaluationStatusDto,
+  ) {
+    return this.studentevaluationService.updateEvaluationStatus(
+      evaluationId,
+      updateStatusDto,
     );
   }
 

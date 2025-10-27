@@ -65,13 +65,53 @@ export class LessonService {
     });
   }
 
-  async findLessonById(id: string): Promise<Lesson | null> {
-    return this.lessonModel.findByPk(id, {
-      include: [
-        { model: Users, as: 'creator' },
-        { model: SessionCours, as: 'sessionCours' },
-      ],
-    });
+  async findLessonById(id: string) {
+    try {
+      console.log('=== Lesson findLessonById: Starting ===');
+      console.log('Lesson ID:', id);
+
+      const lesson = await this.lessonModel.findByPk(id, {
+        include: [
+          { model: Users, as: 'creator' },
+          { model: SessionCours, as: 'sessionCours' },
+        ],
+      });
+
+      if (!lesson) {
+        console.log('=== Lesson findLessonById: Lesson not found ===');
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: null,
+          customMessage: 'Lesson not found',
+        });
+      }
+
+      console.log('=== Lesson findLessonById: Success ===');
+      console.log('Lesson found:', !!lesson);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: lesson,
+        customMessage: 'Lesson retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== Lesson findLessonById: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving lesson',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
   }
 
   async updateLesson(updateLessonDto: UpdateLessonDto): Promise<Lesson | null> {
@@ -101,6 +141,7 @@ export class LessonService {
           'id',
           'title',
           'description',
+          'ispublish',
           'id_cours',
           'createdAt',
           'updatedAt',
@@ -145,8 +186,11 @@ export class LessonService {
       console.log('Cours ID:', id);
 
       const lessons = await this.lessonModel.findAll({
-        where: { id_cours: id },
-        attributes: ['id', 'title', 'description'],
+        where: {
+          id_cours: id,
+          ispublish: true,
+        },
+        attributes: ['id', 'title', 'description', 'ispublish'],
         order: [['createdAt', 'ASC']],
       });
 

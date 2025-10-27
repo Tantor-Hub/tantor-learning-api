@@ -7,7 +7,7 @@ export interface IEvent extends IGlobale {
   id_cible_training?: string[];
   id_cible_session?: string;
   id_cible_cours?: string;
-  id_cible_lesson?: string;
+  id_cible_lesson?: string[];
   id_cible_user?: string[];
   createdBy?: string;
   begining_date: Date;

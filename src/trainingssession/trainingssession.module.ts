@@ -7,12 +7,18 @@ import { TrainingSessionController } from './trainingssession.controller';
 import { TrainingSession } from '../models/model.trainingssession';
 import { Training } from '../models/model.trainings';
 import { Users } from '../models/model.users';
+import { UserInSession } from '../models/model.userinsession';
 import { AllSercices } from '../services/serices.all';
 import { JwtService } from '../services/service.jwt';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([TrainingSession, Training, Users]),
+    SequelizeModule.forFeature([
+      TrainingSession,
+      Training,
+      Users,
+      UserInSession,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

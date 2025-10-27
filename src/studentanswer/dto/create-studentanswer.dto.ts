@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsBoolean,
   IsUUID,
+  IsNumber,
+  Min,
 } from 'class-validator';
 
 export class CreateStudentAnswerDto {
@@ -49,4 +51,16 @@ export class CreateStudentAnswerDto {
   @IsOptional()
   @IsBoolean()
   isCorrect?: boolean;
+
+  @ApiProperty({
+    description:
+      'Points awarded for this answer (can be null, updated by instructor)',
+    example: 5,
+    required: false,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Points must be a number' })
+  @Min(0, { message: 'Points must be greater than or equal to 0' })
+  points?: number;
 }

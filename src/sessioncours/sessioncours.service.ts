@@ -674,6 +674,7 @@ export class SessionCoursService {
           'id',
           'title',
           'description',
+          'ispublish',
           'id_cours',
           'createdAt',
           'updatedAt',

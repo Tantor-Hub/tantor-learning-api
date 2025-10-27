@@ -40,4 +40,13 @@ export class CreateLessonDto {
   })
   @IsBoolean()
   ispublish: boolean;
+
+  @ApiProperty({
+    description: 'The duration of the lesson',
+    example: '60h',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  duree?: string;
 }

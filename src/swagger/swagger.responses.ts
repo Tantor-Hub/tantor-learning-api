@@ -189,6 +189,13 @@ export class LessonResponse {
   id_cours: string;
 
   @ApiProperty({
+    example: '60h',
+    description: 'Duration of the lesson',
+    required: false,
+  })
+  duree?: string;
+
+  @ApiProperty({
     example: '2025-01-15T10:30:00.000Z',
     description: 'Creation timestamp',
   })

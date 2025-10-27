@@ -23,7 +23,10 @@ import { StudentAnswerOption } from './model.studentansweroption';
 })
 export class StudentAnswer extends Model<StudentAnswer> {
   @PrimaryKey
-  @Column(DataType.UUID)
+  @Column({
+    type: DataType.UUID,
+    defaultValue: DataType.UUIDV4,
+  })
   id: string;
 
   @AllowNull(false)
@@ -45,6 +48,10 @@ export class StudentAnswer extends Model<StudentAnswer> {
   @AllowNull(true)
   @Column(DataType.BOOLEAN)
   isCorrect?: boolean;
+
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  points?: number;
 
   @Column(DataType.DATE)
   createdAt: Date;

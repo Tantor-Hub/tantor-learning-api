@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Studentevaluation } from 'src/models/model.studentevaluation';
 import { CreateStudentevaluationDto } from './dto/create-studentevaluation.dto';
 import { UpdateStudentevaluationDto } from './dto/update-studentevaluation.dto';
+import { UpdateEvaluationStatusDto } from './dto/update-evaluation-status.dto';
 import { ResponseServer } from 'src/interface/interface.response';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
@@ -12,6 +13,7 @@ import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionopt
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { Op } from 'sequelize';
+import { MarkingStatus } from 'src/models/model.studentevaluation';
 
 @Injectable()
 export class StudentevaluationService {
@@ -211,7 +213,7 @@ export class StudentevaluationService {
 
       const lessons = await this.lessonModel.findAll({
         where: { id: { [Op.in]: uniqueLessonIds } },
-        attributes: ['id', 'title', 'description'],
+        attributes: ['id', 'title', 'description', 'ispublish'],
       });
 
       // Add lessons to each evaluation
@@ -280,7 +282,7 @@ export class StudentevaluationService {
       ) {
         lessons = await this.lessonModel.findAll({
           where: { id: { [Op.in]: evaluation.lessonId } },
-          attributes: ['id', 'title', 'description'],
+          attributes: ['id', 'title', 'description', 'ispublish'],
         });
       }
 
@@ -336,7 +338,7 @@ export class StudentevaluationService {
 
       const lessons = await this.lessonModel.findAll({
         where: { id: { [Op.in]: uniqueLessonIds } },
-        attributes: ['id', 'title', 'description'],
+        attributes: ['id', 'title', 'description', 'ispublish'],
       });
 
       // Add lessons to each evaluation
@@ -451,7 +453,7 @@ export class StudentevaluationService {
       // Fetch all lessons
       const lessons = await this.lessonModel.findAll({
         where: { id: { [Op.in]: uniqueLessonIds } },
-        attributes: ['id', 'title', 'description'],
+        attributes: ['id', 'title', 'description', 'ispublish'],
       });
 
       // Add lessons to each evaluation
@@ -527,7 +529,7 @@ export class StudentevaluationService {
 
       const lessons = await this.lessonModel.findAll({
         where: { id: { [Op.in]: uniqueLessonIds } },
-        attributes: ['id', 'title', 'description'],
+        attributes: ['id', 'title', 'description', 'ispublish'],
       });
 
       // Add lessons to each evaluation
@@ -586,6 +588,7 @@ export class StudentevaluationService {
           studentId: {
             [Op.contains]: [studentId],
           },
+          ispublish: true,
         },
         include: [
           {
@@ -613,8 +616,11 @@ export class StudentevaluationService {
       const uniqueLessonIds = [...new Set(allLessonIds)];
 
       const lessons = await this.lessonModel.findAll({
-        where: { id: { [Op.in]: uniqueLessonIds } },
-        attributes: ['id', 'title', 'description'],
+        where: {
+          id: { [Op.in]: uniqueLessonIds },
+          ispublish: true,
+        },
+        attributes: ['id', 'title', 'description', 'ispublish'],
       });
 
       // Add lessons to each evaluation
@@ -931,6 +937,151 @@ export class StudentevaluationService {
         errorDetails: error.details || null,
       });
 
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: error.name,
+          message: error.message,
+          details: error.details || null,
+        },
+        customMessage: errorMessage,
+      });
+    }
+  }
+
+  async updateMarkingStatus(
+    id: string,
+    markingStatus: string,
+  ): Promise<ResponseServer> {
+    try {
+      const evaluation = await this.studentevaluationModel.findByPk(id);
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Student evaluation not found',
+        });
+      }
+
+      // Validate marking status
+      const validStatuses = [
+        'pending',
+        'in_progress',
+        'completed',
+        'published',
+      ];
+      if (!validStatuses.includes(markingStatus)) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: `Invalid marking status. Must be one of: ${validStatuses.join(', ')}`,
+        });
+      }
+
+      // Update the marking status
+      await evaluation.update({
+        markingStatus: markingStatus as MarkingStatus,
+      });
+
+      console.log('✅ Marking status updated successfully:', {
+        id: evaluation.id,
+        title: evaluation.title,
+        markingStatus: markingStatus,
+        updatedAt: new Date(),
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          evaluation: evaluation,
+          message: 'Marking status updated successfully',
+          details: {
+            id: evaluation.id,
+            title: evaluation.title,
+            markingStatus: markingStatus,
+            updatedAt: evaluation.updatedAt,
+          },
+        },
+        customMessage: 'Marking status updated successfully',
+      });
+    } catch (error) {
+      console.error('❌ Error updating marking status:', error);
+      const errorMessage = 'Error updating marking status';
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: error.name,
+          message: error.message,
+          details: error.details || null,
+        },
+        customMessage: errorMessage,
+      });
+    }
+  }
+
+  async updateEvaluationStatus(
+    id: string,
+    updateStatusDto: UpdateEvaluationStatusDto,
+  ): Promise<ResponseServer> {
+    try {
+      const evaluation = await this.studentevaluationModel.findByPk(id);
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Student evaluation not found',
+        });
+      }
+
+      // Prepare update data
+      const updateData: any = {};
+
+      if (updateStatusDto.ispublish !== undefined) {
+        updateData.ispublish = updateStatusDto.ispublish;
+      }
+
+      if (updateStatusDto.isImmediateResult !== undefined) {
+        updateData.isImmediateResult = updateStatusDto.isImmediateResult;
+      }
+
+      if (updateStatusDto.markingStatus !== undefined) {
+        updateData.markingStatus = updateStatusDto.markingStatus;
+      }
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'No status fields provided for update',
+        });
+      }
+
+      // Update the evaluation status
+      await evaluation.update(updateData);
+
+      console.log('✅ Evaluation status updated successfully:', {
+        id: evaluation.id,
+        title: evaluation.title,
+        updatedFields: updateData,
+        updatedAt: new Date(),
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          evaluation: evaluation,
+          message: 'Evaluation status updated successfully',
+          details: {
+            id: evaluation.id,
+            title: evaluation.title,
+            ...updateData,
+            updatedAt: evaluation.updatedAt,
+          },
+        },
+        customMessage: 'Evaluation status updated successfully',
+      });
+    } catch (error) {
+      console.error('❌ Error updating evaluation status:', error);
+      const errorMessage = 'Error updating evaluation status';
       return Responder({
         status: HttpStatusCode.InternalServerError,
         data: {

@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -312,7 +314,11 @@ export class TrainingCategoryController {
   @Delete('delete')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a training category' })
+  @ApiOperation({
+    summary: 'Delete a training category',
+    description:
+      'Delete a training category by ID. Only admins can perform this action. Cannot delete if there are associated trainings. Returns 409 Conflict if trainings are associated.',
+  })
   @ApiBody({
     type: DeleteTrainingCategoryDto,
     description: 'Training category deletion data',
@@ -358,6 +364,27 @@ export class TrainingCategoryController {
     },
   })
   @ApiResponse({
+    status: 409,
+    description:
+      'Cannot delete training category because it has associated trainings.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 409 },
+        message: {
+          type: 'string',
+          example:
+            "Impossible de supprimer cette catégorie de formation car 3 formation(s) y sont associée(s): React Development, Node.js Basics, JavaScript Fundamentals. Veuillez d'abord supprimer ou réassigner les formations avant de supprimer la catégorie.",
+        },
+      },
+      example: {
+        status: 409,
+        message:
+          "Impossible de supprimer cette catégorie de formation car 3 formation(s) y sont associée(s): React Development, Node.js Basics, JavaScript Fundamentals. Veuillez d'abord supprimer ou réassigner les formations avant de supprimer la catégorie.",
+      },
+    },
+  })
+  @ApiResponse({
     status: 500,
     description: 'Internal server error.',
     schema: {
@@ -373,6 +400,15 @@ export class TrainingCategoryController {
     },
   })
   async remove(@Body() deleteTrainingCategoryDto: DeleteTrainingCategoryDto) {
-    return this.trainingCategoryService.remove(deleteTrainingCategoryDto);
+    const result = await this.trainingCategoryService.remove(
+      deleteTrainingCategoryDto,
+    );
+
+    console.log('[TRAININGCATEGORY CONTROLLER] 🚀 DELETE Response:', {
+      status: result.status,
+      message: result.message,
+    });
+
+    return result;
   }
 }

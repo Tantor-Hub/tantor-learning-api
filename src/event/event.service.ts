@@ -20,6 +20,21 @@ export class EventService {
     private readonly eventModel: typeof Event,
   ) {}
 
+  private async fetchLessonsForEvent(event: Event): Promise<Lesson[]> {
+    if (!event.id_cible_lesson || event.id_cible_lesson.length === 0) {
+      return [];
+    }
+
+    return await Lesson.findAll({
+      where: {
+        id: {
+          [require('sequelize').Op.in]: event.id_cible_lesson,
+        },
+      },
+      attributes: ['id', 'title'],
+    });
+  }
+
   async create(createEventDto: CreateEventDto): Promise<ResponseServer> {
     try {
       const event = await this.eventModel.create({
@@ -63,11 +78,6 @@ export class EventService {
             attributes: ['id', 'title'],
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -81,9 +91,20 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Manually fetch lessons for all events
+      const eventsWithLessons = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            ...event.toJSON(),
+            lessons: lessons,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: events,
+        data: eventsWithLessons,
         customMessage: 'Events retrieved successfully',
       });
     } catch (error) {
@@ -115,11 +136,6 @@ export class EventService {
             attributes: ['id', 'title'],
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -139,9 +155,18 @@ export class EventService {
         });
       }
 
+      // Manually fetch lessons based on id_cible_lesson array
+      const lessons = await this.fetchLessonsForEvent(event);
+
+      // Add lessons to the event data
+      const eventData = {
+        ...event.toJSON(),
+        lessons: lessons,
+      };
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: event,
+        data: eventData,
         customMessage: 'Event retrieved successfully',
       });
     } catch (error) {
@@ -158,6 +183,17 @@ export class EventService {
     updateEventDto: UpdateEventDto,
   ): Promise<ResponseServer> {
     try {
+      console.log('=== Event Update Debug ===');
+      console.log('Received id:', id, 'Type:', typeof id);
+      console.log('Update data:', updateEventDto);
+
+      if (!id || id === 'undefined' || id === 'null') {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'Invalid event ID provided',
+        });
+      }
+
       const event = await this.eventModel.findByPk(id);
 
       if (!event) {
@@ -245,11 +281,6 @@ export class EventService {
             attributes: ['id', 'title'],
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -263,9 +294,20 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Manually fetch lessons for all events
+      const eventsWithLessons = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            ...event.toJSON(),
+            lessons: lessons,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: events,
+        data: eventsWithLessons,
         customMessage: 'Events retrieved successfully',
       });
     } catch (error) {
@@ -308,11 +350,6 @@ export class EventService {
             required: false, // LEFT JOIN to include events without sessionCours
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -326,9 +363,20 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Manually fetch lessons for all events
+      const eventsWithLessons = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            ...event.toJSON(),
+            lessons: lessons,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: events,
+        data: eventsWithLessons,
         customMessage: 'Events retrieved successfully',
       });
     } catch (error) {
@@ -363,11 +411,6 @@ export class EventService {
             attributes: ['id', 'title'],
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -381,9 +424,20 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Manually fetch lessons for all events
+      const eventsWithLessons = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            ...event.toJSON(),
+            lessons: lessons,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: events,
+        data: eventsWithLessons,
         customMessage: 'Events retrieved successfully',
       });
     } catch (error) {
@@ -426,11 +480,6 @@ export class EventService {
             attributes: ['id', 'title'],
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -444,9 +493,20 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Manually fetch lessons for all events
+      const eventsWithLessons = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            ...event.toJSON(),
+            lessons: lessons,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: events,
+        data: eventsWithLessons,
         customMessage: 'Events retrieved successfully',
       });
     } catch (error) {
@@ -534,11 +594,6 @@ export class EventService {
             required: false,
           },
           {
-            model: Lesson,
-            as: 'lesson',
-            attributes: ['id', 'title'],
-          },
-          {
             model: Users,
             as: 'users',
             attributes: ['id', 'firstName', 'lastName', 'email'],
@@ -552,14 +607,25 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Manually fetch lessons for all events
+      const eventsWithLessons = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            ...event.toJSON(),
+            lessons: lessons,
+          };
+        }),
+      );
+
       console.log('=== Event findByInstructorCourses: Success ===');
-      console.log('Events found:', events.length);
+      console.log('Events found:', eventsWithLessons.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: events.length,
-          rows: events,
+          length: eventsWithLessons.length,
+          rows: eventsWithLessons,
         },
         customMessage: 'Events for instructor courses retrieved successfully',
       });
@@ -604,29 +670,35 @@ export class EventService {
       });
 
       // Format the response according to the specified structure
-      const formattedData = events.map((event) => ({
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        begining_date: event.begining_date.toISOString(),
-        beginning_hour: event.beginning_hour,
-        ending_hour: event.ending_hour,
-        createdBy: event.createdBy,
-        sessionCours: event.sessionCours
-          ? {
-              id: event.sessionCours.id,
-              title: event.sessionCours.title,
-            }
-          : undefined,
-        creator: event.creator
-          ? {
-              id: event.creator.id,
-              firstName: event.creator.firstName,
-              lastName: event.creator.lastName,
-              email: event.creator.email,
-            }
-          : undefined,
-      }));
+      const formattedData = await Promise.all(
+        events.map(async (event) => {
+          const lessons = await this.fetchLessonsForEvent(event);
+          return {
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            begining_date: event.begining_date.toISOString(),
+            beginning_hour: event.beginning_hour,
+            ending_hour: event.ending_hour,
+            createdBy: event.createdBy,
+            sessionCours: event.sessionCours
+              ? {
+                  id: event.sessionCours.id,
+                  title: event.sessionCours.title,
+                }
+              : undefined,
+            creator: event.creator
+              ? {
+                  id: event.creator.id,
+                  firstName: event.creator.firstName,
+                  lastName: event.creator.lastName,
+                  email: event.creator.email,
+                }
+              : undefined,
+            lessons: lessons,
+          };
+        }),
+      );
 
       return Responder({
         status: HttpStatusCode.Ok,

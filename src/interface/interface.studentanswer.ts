@@ -6,7 +6,7 @@ export interface IStudentAnswer extends IGlobale {
   studentId: string;
   evaluationId: string;
   answerText?: string;
-  points: number;
+  points?: number;
   isCorrect?: boolean;
   createdAt?: Date;
   updatedAt?: Date;

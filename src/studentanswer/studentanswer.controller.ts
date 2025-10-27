@@ -33,7 +33,7 @@ export class StudentAnswerController {
   @ApiOperation({
     summary: 'Submit a student answer',
     description:
-      'Submit an answer to an evaluation question. The studentId is automatically set to the authenticated user.',
+      'Submit an answer to an evaluation question. The studentId is automatically set to the authenticated user. Students can submit multiple answers for the same evaluation as long as they are for different questions.',
   })
   @ApiBody({
     type: CreateStudentAnswerDto,
@@ -78,7 +78,25 @@ export class StudentAnswerController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid data or validation error',
+    example: {
+      status: 400,
+      message:
+        'Les points attribués (5) ne peuvent pas dépasser le maximum de points de la question (3)',
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      'Conflict - Student has already submitted an answer for this specific question in this evaluation',
+    example: {
+      status: 409,
+      message:
+        'Vous avez déjà soumis une réponse pour cette question dans cette évaluation',
+    },
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   create(
@@ -168,6 +186,91 @@ export class StudentAnswerController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findByEvaluation(@Param('evaluationId') evaluationId: string) {
     return this.studentAnswerService.findByEvaluation(evaluationId);
+  }
+
+  @Get('question/:questionId')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiOperation({
+    summary: 'Get student answers by question ID',
+    description:
+      'Retrieve all student answers for a specific evaluation question. Students can access answers for questions they are enrolled in.',
+  })
+  @ApiParam({
+    name: 'questionId',
+    description: 'Evaluation Question UUID',
+    example: 'question-uuid-1',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student answers retrieved successfully',
+    examples: {
+      withAnswers: {
+        summary: 'When answers exist for the question',
+        value: {
+          status: 200,
+          message: "Réponses d'étudiants récupérées avec succès",
+          data: {
+            answers: [
+              {
+                id: 'answer-uuid-1',
+                questionId: 'question-uuid-1',
+                studentId: 'student-uuid-1',
+                evaluationId: 'eval-uuid-1',
+                answerText:
+                  'React hooks are functions that let you use state and other React features.',
+                isCorrect: true,
+                points: 5,
+                question: {
+                  id: 'question-uuid-1',
+                  text: 'Explain the concept of React hooks.',
+                  type: 'text',
+                  points: 5,
+                },
+                student: {
+                  id: 'student-uuid-1',
+                  firstName: 'Jane',
+                  lastName: 'Smith',
+                  email: 'jane.smith@example.com',
+                },
+                evaluation: {
+                  id: 'eval-uuid-1',
+                  title: 'React Fundamentals Assessment',
+                },
+                selectedOptions: [],
+                createdAt: '2025-01-15T10:30:00.000Z',
+                updatedAt: '2025-01-15T10:30:00.000Z',
+              },
+            ],
+            total: 1,
+            questionId: 'question-uuid-1',
+          },
+        },
+      },
+      noAnswers: {
+        summary: 'When no answers exist for the question',
+        value: {
+          status: 200,
+          message: "Réponses d'étudiants récupérées avec succès",
+          data: {
+            answers: [],
+            total: 0,
+            questionId: 'question-uuid-1',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Student access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student access required',
+  })
+  @ApiResponse({ status: 404, description: 'Question not found' })
+  findByQuestion(@Param('questionId') questionId: string) {
+    return this.studentAnswerService.findByQuestion(questionId);
   }
 
   @Get(':id')

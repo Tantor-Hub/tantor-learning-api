@@ -24,14 +24,27 @@ async function tantorAPP() {
   const allowedOrigins = [
     'https://tantorlearning.com',
     'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:4200',
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:4200',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:8080',
   ];
 
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // allow server-to-server requests
       if (allowedOrigins.includes(origin)) {
+        console.log(`[CORS] ✅ Allowed origin: ${origin}`);
         callback(null, true);
       } else {
+        console.log(`[CORS] ❌ Blocked origin: ${origin}`);
+        console.log(`[CORS] Allowed origins:`, allowedOrigins);
         callback(new Error('Not allowed by CORS'));
       }
     },

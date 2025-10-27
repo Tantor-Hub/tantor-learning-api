@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { TrainingSession } from '../models/model.trainingssession';
 import { Training } from '../models/model.trainings';
+import { UserInSession } from '../models/model.userinsession';
 import { CreateTrainingSessionDto } from './dto/create-trainingssession.dto';
 import { UpdateTrainingSessionDto } from './dto/update-trainingssession.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -16,6 +18,8 @@ export class TrainingSessionService {
     private readonly trainingSessionModel: typeof TrainingSession,
     @InjectModel(Training)
     private readonly trainingModel: typeof Training,
+    @InjectModel(UserInSession)
+    private readonly userInSessionModel: typeof UserInSession,
   ) {}
 
   async create(createTrainingSessionDto: CreateTrainingSessionDto) {
@@ -117,9 +121,28 @@ export class TrainingSessionService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Calculate available places for each session
+      const sessionsWithAvailablePlaces = await Promise.all(
+        trainingSessions.map(async (session) => {
+          const enrolledUsers = await this.userInSessionModel.count({
+            where: {
+              id_session: session.id,
+              status: {
+                [Op.notIn]: ['refusedpayment', 'notpaid', 'out'],
+              },
+            },
+          });
+          const availablePlaces = session.nb_places - enrolledUsers;
+          return {
+            ...session.toJSON(),
+            available_places: availablePlaces,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: trainingSessions,
+        data: sessionsWithAvailablePlaces,
         customMessage: 'Training sessions retrieved successfully',
       });
     } catch (error) {
@@ -157,9 +180,24 @@ export class TrainingSessionService {
         });
       }
 
+      // Calculate available places
+      const enrolledUsers = await this.userInSessionModel.count({
+        where: {
+          id_session: id,
+          status: {
+            [Op.notIn]: ['refusedpayment', 'notpaid', 'out'],
+          },
+        },
+      });
+      const availablePlaces = trainingSession.nb_places - enrolledUsers;
+      const sessionWithAvailablePlaces = {
+        ...trainingSession.toJSON(),
+        available_places: availablePlaces,
+      };
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: trainingSession,
+        data: sessionWithAvailablePlaces,
         customMessage: 'Training session retrieved successfully',
       });
     } catch (error) {
@@ -391,9 +429,28 @@ export class TrainingSessionService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Calculate available places for each session
+      const sessionsWithAvailablePlaces = await Promise.all(
+        trainingSessions.map(async (session) => {
+          const enrolledUsers = await this.userInSessionModel.count({
+            where: {
+              id_session: session.id,
+              status: {
+                [Op.notIn]: ['refusedpayment', 'notpaid', 'out'],
+              },
+            },
+          });
+          const availablePlaces = session.nb_places - enrolledUsers;
+          return {
+            ...session.toJSON(),
+            available_places: availablePlaces,
+          };
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: trainingSessions,
+        data: sessionsWithAvailablePlaces,
         customMessage: 'Training sessions retrieved successfully',
       });
     } catch (error) {
@@ -432,9 +489,28 @@ export class TrainingSessionService {
         order: [['begining_date', 'ASC']],
       });
 
+      // Calculate available places and filter sessions
+      const sessionsWithAvailablePlaces = await Promise.all(
+        trainingSessions.map(async (session) => {
+          const enrolledUsers = await this.userInSessionModel.count({
+            where: {
+              id_session: session.id,
+              status: {
+                [Op.notIn]: ['refusedpayment', 'notpaid', 'out'],
+              },
+            },
+          });
+          const availablePlaces = session.nb_places - enrolledUsers;
+          return {
+            ...session.toJSON(),
+            available_places: availablePlaces,
+          };
+        }),
+      );
+
       // Filter out training sessions with empty payment_method when training prix > 0
-      const filteredSessions = trainingSessions.filter((session) => {
-        const training = session.trainings as any;
+      const filteredSessions = sessionsWithAvailablePlaces.filter((session) => {
+        const training = (session as any).trainings;
         const prix = parseFloat(training?.prix || '0');
 
         // If training has a price > 0, ensure payment_method is not empty

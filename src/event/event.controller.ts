@@ -288,7 +288,7 @@ export class EventController {
   ) {
     const eventData = {
       ...createEventDto,
-      id_cible_lesson: lessonId,
+      id_cible_lesson: [lessonId],
     };
     return this.eventService.create(eventData);
   }
@@ -892,6 +892,9 @@ export class EventController {
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Event not found' })
   update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
+    console.log('=== Event Controller Update Debug ===');
+    console.log('Controller received id:', id, 'Type:', typeof id);
+    console.log('Controller received body:', updateEventDto);
     return this.eventService.update(id, updateEventDto);
   }
 

@@ -156,7 +156,7 @@ export class PaymentMethodCardService {
         paymentMethodCard = await this.paymentMethodCardModel.create({
           id_session: sessionId,
           id_stripe_payment: stripePaymentId || undefined, // Will be set later when Stripe payment is processed
-          status: PaymentMethodCardStatus.VALIDATED,
+          status: PaymentMethodCardStatus.PENDING, // Set to pending until payment is validated
           id_user: userId,
         });
       } catch (error) {
@@ -934,7 +934,7 @@ export class PaymentMethodCardService {
 
       // Send email notification immediately after payment intent creation
       console.log('📧 [STRIPE PAYMENT INTENT] Sending email notification...');
-      await this.sendPaymentConfirmationEmail(
+      await this.mailService.sendPaymentConfirmationEmail(
         stripePaymentIntentDto.id_session,
         userId,
       );
@@ -1106,6 +1106,185 @@ export class PaymentMethodCardService {
     }
   }
 
+  // Validate Stripe payment intent
+  private async validateStripePayment(
+    stripePaymentIntentId: string,
+    sessionId: string,
+    userId: string,
+  ): Promise<{ isValid: boolean; error?: string }> {
+    try {
+      console.log(
+        '🔍 [PAYMENT VALIDATION] Starting Stripe payment validation...',
+      );
+      console.log('  - Payment Intent ID:', stripePaymentIntentId);
+      console.log('  - Session ID:', sessionId);
+      console.log('  - User ID:', userId);
+
+      // Step 1: Retrieve payment intent from Stripe
+      console.log(
+        '🔍 [PAYMENT VALIDATION] Retrieving payment intent from Stripe...',
+      );
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(
+        stripePaymentIntentId,
+      );
+
+      console.log('🔍 [PAYMENT VALIDATION] Payment intent retrieved:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        metadata: paymentIntent.metadata,
+      });
+
+      // Step 2: Check payment intent status
+      if (paymentIntent.status !== 'succeeded') {
+        console.log(
+          '❌ [PAYMENT VALIDATION] Payment intent status is not succeeded:',
+          paymentIntent.status,
+        );
+        return {
+          isValid: false,
+          error:
+            "Le paiement n'a pas été validé avec succès. Statut: " +
+            paymentIntent.status,
+        };
+      }
+
+      // Step 3: Verify payment intent metadata matches our session and user
+      const metadataSessionId = paymentIntent.metadata?.sessionId;
+      const metadataUserId = paymentIntent.metadata?.userId;
+
+      if (metadataSessionId !== sessionId) {
+        console.log('❌ [PAYMENT VALIDATION] Session ID mismatch:', {
+          expected: sessionId,
+          actual: metadataSessionId,
+        });
+        return {
+          isValid: false,
+          error:
+            'Le paiement ne correspond pas à la session de formation sélectionnée.',
+        };
+      }
+
+      if (metadataUserId !== userId) {
+        console.log('❌ [PAYMENT VALIDATION] User ID mismatch:', {
+          expected: userId,
+          actual: metadataUserId,
+        });
+        return {
+          isValid: false,
+          error: "Le paiement ne correspond pas à l'utilisateur connecté.",
+        };
+      }
+
+      // Step 4: Get training session and verify price
+      console.log(
+        '🔍 [PAYMENT VALIDATION] Verifying training session and price...',
+      );
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        sessionId,
+        {
+          include: [
+            {
+              model: Training,
+              as: 'trainings',
+              required: false,
+              attributes: ['id', 'title', 'prix'],
+            },
+          ],
+        },
+      );
+
+      if (!trainingSession) {
+        console.log(
+          '❌ [PAYMENT VALIDATION] Training session not found:',
+          sessionId,
+        );
+        return {
+          isValid: false,
+          error: "La session de formation n'a pas été trouvée.",
+        };
+      }
+
+      const trainingPrice = trainingSession.trainings?.prix || 0;
+      console.log('🔍 [PAYMENT VALIDATION] Training price:', trainingPrice);
+
+      // Step 5: Calculate expected amount (including Stripe fees)
+      const basePrice = Number(trainingPrice);
+      if (isNaN(basePrice) || basePrice <= 0) {
+        console.log(
+          '❌ [PAYMENT VALIDATION] Invalid training price:',
+          trainingPrice,
+        );
+        return {
+          isValid: false,
+          error: "Le prix de la formation n'est pas valide.",
+        };
+      }
+
+      const stripeFeePercentage = 0.014; // 1.4%
+      const stripeFixedFee = 0.25; // €0.25
+      const stripeFee = Number(
+        (basePrice * stripeFeePercentage + stripeFixedFee).toFixed(2),
+      );
+      const expectedTotalAmount = Number((basePrice + stripeFee).toFixed(2));
+      const expectedAmountInCents = Math.round(expectedTotalAmount * 100);
+
+      console.log('🔍 [PAYMENT VALIDATION] Amount verification:', {
+        basePrice,
+        stripeFee,
+        expectedTotalAmount,
+        expectedAmountInCents,
+        actualAmount: paymentIntent.amount,
+      });
+
+      // Step 6: Verify payment amount matches expected amount
+      if (paymentIntent.amount !== expectedAmountInCents) {
+        console.log('❌ [PAYMENT VALIDATION] Amount mismatch:', {
+          expected: expectedAmountInCents,
+          actual: paymentIntent.amount,
+        });
+        return {
+          isValid: false,
+          error: `Le montant du paiement ne correspond pas au prix de la formation. Montant attendu: ${expectedTotalAmount}€, Montant payé: ${(paymentIntent.amount / 100).toFixed(2)}€`,
+        };
+      }
+
+      // Step 7: Verify currency
+      if (paymentIntent.currency !== 'eur') {
+        console.log(
+          '❌ [PAYMENT VALIDATION] Currency mismatch:',
+          paymentIntent.currency,
+        );
+        return {
+          isValid: false,
+          error: "La devise du paiement n'est pas valide. Devise attendue: EUR",
+        };
+      }
+
+      console.log(
+        '✅ [PAYMENT VALIDATION] All validations passed successfully',
+      );
+      return { isValid: true };
+    } catch (error) {
+      console.log('❌ [PAYMENT VALIDATION] Validation error:', error.message);
+      console.log('❌ [PAYMENT VALIDATION] Error stack:', error.stack);
+
+      if (error.type === 'StripeInvalidRequestError') {
+        return {
+          isValid: false,
+          error: "Le paiement Stripe n'est pas valide ou a expiré.",
+        };
+      }
+
+      return {
+        isValid: false,
+        error:
+          'Une erreur est survenue lors de la validation du paiement. Veuillez réessayer.',
+      };
+    }
+  }
+
   // Create payment method card after successful Stripe payment
   async createPaymentMethodCardAfterPayment(
     sessionId: string,
@@ -1120,7 +1299,68 @@ export class PaymentMethodCardService {
       console.log('  - Session ID:', sessionId);
       console.log('  - User ID:', userId);
       console.log('  - Stripe Payment Intent ID:', stripePaymentIntentId);
-      console.log('📋 [PAYMENT METHOD CARD] Starting database operations...');
+      console.log(
+        '📋 [PAYMENT METHOD CARD] Starting validation and database operations...',
+      );
+
+      // Step 1: Validate Stripe payment intent
+      console.log(
+        '🔍 [PAYMENT VALIDATION] Validating Stripe payment intent...',
+      );
+      const paymentValidation = await this.validateStripePayment(
+        stripePaymentIntentId,
+        sessionId,
+        userId,
+      );
+
+      if (!paymentValidation.isValid) {
+        console.log(
+          '❌ [PAYMENT VALIDATION] Payment validation failed:',
+          paymentValidation.error,
+        );
+        console.log(
+          '❌ [PAYMENT VALIDATION] No PaymentMethodCard or UserInSession records will be created',
+        );
+
+        // Send failure email to inform the user
+        console.log(
+          '📧 [PAYMENT VALIDATION] Sending payment failure email to user...',
+        );
+        try {
+          await this.mailService.sendPaymentFailureEmail(
+            sessionId,
+            userId,
+            paymentValidation.error ||
+              'Une erreur est survenue lors de la validation du paiement',
+          );
+          console.log(
+            '✅ [PAYMENT VALIDATION] Payment failure email sent successfully',
+          );
+        } catch (emailError) {
+          console.error(
+            '❌ [PAYMENT VALIDATION] Failed to send payment failure email:',
+            emailError,
+          );
+          // Continue with the error response even if email fails
+        }
+
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            error: paymentValidation.error,
+            paymentIntentId: stripePaymentIntentId,
+            recordsCreated: false,
+            message:
+              "Aucun enregistrement n'a été créé en raison de l'échec de la validation du paiement. Un email d'information a été envoyé.",
+          },
+          customMessage: paymentValidation.error,
+        });
+      }
+
+      console.log('✅ [PAYMENT VALIDATION] Payment validation successful');
+      console.log(
+        '📋 [PAYMENT METHOD CARD] Starting database operations - records will be created only after successful validation...',
+      );
 
       // Check if payment method card already exists
       const existingPaymentMethod = await this.paymentMethodCardModel.findOne({
@@ -1144,7 +1384,7 @@ export class PaymentMethodCardService {
         console.log(
           '📧 [PAYMENT METHOD CARD] About to send email for existing payment method...',
         );
-        await this.sendPaymentConfirmationEmail(sessionId, userId);
+        await this.mailService.sendPaymentConfirmationEmail(sessionId, userId);
         console.log(
           '📧 [PAYMENT METHOD CARD] Email sending completed for existing payment method',
         );
@@ -1159,12 +1399,12 @@ export class PaymentMethodCardService {
         });
       }
 
-      // Create new payment method card
+      // Create new payment method card with validated status (payment has been validated)
       const paymentMethodCard = await this.paymentMethodCardModel.create({
         id_session: sessionId,
         id_user: userId,
         id_stripe_payment: stripePaymentIntentId,
-        status: PaymentMethodCardStatus.VALIDATED,
+        status: PaymentMethodCardStatus.VALIDATED, // Only set to validated after successful payment validation
       });
 
       console.log(
@@ -1176,7 +1416,7 @@ export class PaymentMethodCardService {
       console.log(
         '📧 [PAYMENT METHOD CARD] About to send email for new payment method...',
       );
-      await this.sendPaymentConfirmationEmail(sessionId, userId);
+      await this.mailService.sendPaymentConfirmationEmail(sessionId, userId);
       console.log(
         '📧 [PAYMENT METHOD CARD] Email sending completed for new payment method',
       );
@@ -1275,117 +1515,6 @@ export class PaymentMethodCardService {
         error,
       );
       throw error;
-    }
-  }
-
-  // Send payment confirmation email with fee breakdown
-  private async sendPaymentConfirmationEmail(
-    sessionId: string,
-    userId: string,
-  ) {
-    try {
-      console.log('📧 [EMAIL] Starting payment confirmation email process...');
-      console.log(
-        '📧 [EMAIL] Parameters - sessionId:',
-        sessionId,
-        'userId:',
-        userId,
-      );
-
-      // Get training session information for email
-      const trainingSession = await this.trainingSessionModel.findByPk(
-        sessionId,
-        {
-          include: [
-            {
-              model: this.trainingModel,
-              as: 'trainings',
-              required: false,
-              attributes: ['id', 'title', 'prix'],
-            },
-          ],
-        },
-      );
-
-      if (!trainingSession || !trainingSession.trainings) {
-        console.error('❌ [EMAIL] Training session or training not found');
-        return;
-      }
-
-      // Calculate Stripe fees (1.4% + €0.25 per transaction for European cards)
-      const basePrice = Number(trainingSession.trainings.prix);
-
-      if (isNaN(basePrice) || basePrice <= 0) {
-        console.error(
-          '❌ [EMAIL] Invalid training price value:',
-          trainingSession.trainings.prix,
-        );
-        return; // Skip email if price is invalid
-      }
-
-      const stripeFeePercentage = 0.014; // 1.4%
-      const stripeFixedFee = 0.25; // €0.25
-      const stripeFee = Number(
-        (basePrice * stripeFeePercentage + stripeFixedFee).toFixed(2),
-      );
-      const totalAmount = Number((basePrice + stripeFee).toFixed(2));
-
-      // Send email notification to user
-      const user = await this.usersModel.findByPk(userId);
-      if (!user || !user.email) {
-        console.error('❌ [EMAIL] User not found or no email address');
-        return;
-      }
-
-      console.log(
-        '📧 [EMAIL] Sending payment confirmation email with amounts:',
-      );
-      console.log('  - basePrice:', basePrice);
-      console.log('  - stripeFee:', stripeFee);
-      console.log('  - totalAmount:', totalAmount);
-      console.log('📧 [EMAIL] MailService available:', !!this.mailService);
-
-      const emailContent = this.mailService.templates({
-        as: 'payment-card-success',
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        cours: trainingSession.trainings?.title || 'Formation',
-        basePrice: basePrice,
-        stripeFee: stripeFee,
-        totalAmount: totalAmount,
-      });
-
-      console.log(
-        '📧 [EMAIL] Email content generated, length:',
-        emailContent.length,
-      );
-
-      await this.mailService.sendMail({
-        to: user.email,
-        subject: 'Paiement par carte confirmé',
-        content: emailContent,
-      });
-
-      console.log(
-        '✅ [EMAIL] Payment confirmation email sent successfully to:',
-        user.email,
-        'with amount breakdown:',
-        'Base:',
-        basePrice,
-        'EUR,',
-        'Fees:',
-        stripeFee.toFixed(2),
-        'EUR,',
-        'Total:',
-        totalAmount.toFixed(2),
-        'EUR',
-      );
-    } catch (emailError) {
-      console.error(
-        '❌ [EMAIL] Failed to send payment confirmation email:',
-        emailError,
-      );
-      // Don't fail the entire operation if email fails
     }
   }
 

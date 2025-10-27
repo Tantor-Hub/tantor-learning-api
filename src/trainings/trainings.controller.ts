@@ -256,7 +256,6 @@ export class TrainingsController {
   }
 
   @Get('student/with-sessions')
-  @UseGuards(JwtAuthGuardAsStudent)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get all trainings with available sessions (Student access)',

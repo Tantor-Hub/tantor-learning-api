@@ -28,6 +28,13 @@ export class CreateLessonDto {
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   id_cours: string;
+
+  @ApiProperty({
+    description: 'The duration of the lesson',
+    example: '60h',
+    required: false,
+  })
+  duree?: string;
 }
 
 export class UpdateLessonDto {
@@ -57,6 +64,13 @@ export class UpdateLessonDto {
     required: false,
   })
   id_cours?: string;
+
+  @ApiProperty({
+    description: 'The duration of the lesson',
+    example: '60h',
+    required: false,
+  })
+  duree?: string;
 }
 
 export class DeleteLessonDto {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { EvaluationQuestion } from 'src/models/model.evaluationquestion';
 import { CreateEvaluationQuestionDto } from './dto/create-evaluationquestion.dto';
 import { UpdateEvaluationQuestionDto } from './dto/update-evaluationquestion.dto';
@@ -23,6 +24,46 @@ export class EvaluationQuestionService {
     createEvaluationQuestionDto: CreateEvaluationQuestionDto,
   ): Promise<ResponseServer> {
     try {
+      // First, get the student evaluation to check total points
+      const evaluation = await this.studentevaluationModel.findByPk(
+        createEvaluationQuestionDto.evaluationId,
+      );
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Évaluation étudiante non trouvée',
+        });
+      }
+
+      // Get all existing questions for this evaluation
+      const existingQuestions = await this.evaluationQuestionModel.findAll({
+        where: { evaluationId: createEvaluationQuestionDto.evaluationId },
+        attributes: ['points'],
+      });
+
+      // Calculate total points from existing questions
+      const existingPointsSum = existingQuestions.reduce(
+        (sum, question) => sum + (question.points || 0),
+        0,
+      );
+
+      // Add the new question's points
+      const newQuestionPoints = createEvaluationQuestionDto.points || 1;
+      const totalPointsAfterAddition = existingPointsSum + newQuestionPoints;
+
+      // Check if total points exceed the evaluation's points
+      // Allow first question to have more points than evaluation
+      if (
+        existingQuestions.length > 0 &&
+        totalPointsAfterAddition > evaluation.points
+      ) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: `Le total des points des questions (${totalPointsAfterAddition}) dépasse les points de l'évaluation (${evaluation.points}). Veuillez réduire les points de cette question.`,
+        });
+      }
+
       const question = await this.evaluationQuestionModel.create(
         createEvaluationQuestionDto as any,
       );
@@ -159,6 +200,52 @@ export class EvaluationQuestionService {
           status: HttpStatusCode.NotFound,
           customMessage: 'Evaluation question not found',
         });
+      }
+
+      // If points are being updated, check the total points constraint
+      if (updateEvaluationQuestionDto.points !== undefined) {
+        // Get the student evaluation to check total points
+        const evaluation = await this.studentevaluationModel.findByPk(
+          question.evaluationId,
+        );
+
+        if (!evaluation) {
+          return Responder({
+            status: HttpStatusCode.NotFound,
+            customMessage: 'Évaluation étudiante non trouvée',
+          });
+        }
+
+        // Get all existing questions for this evaluation except the current one
+        const existingQuestions = await this.evaluationQuestionModel.findAll({
+          where: {
+            evaluationId: question.evaluationId,
+            id: { [Op.ne]: id },
+          },
+          attributes: ['points'],
+        });
+
+        // Calculate total points from other questions
+        const otherQuestionsPointsSum = existingQuestions.reduce(
+          (sum, q) => sum + (q.points || 0),
+          0,
+        );
+
+        // Add the updated question's points
+        const updatedPoints = updateEvaluationQuestionDto.points;
+        const totalPointsAfterUpdate = otherQuestionsPointsSum + updatedPoints;
+
+        // Check if total points exceed the evaluation's points
+        // Allow first question to have more points than evaluation
+        if (
+          existingQuestions.length > 0 &&
+          totalPointsAfterUpdate > evaluation.points
+        ) {
+          return Responder({
+            status: HttpStatusCode.BadRequest,
+            customMessage: `Le total des points des questions (${totalPointsAfterUpdate}) dépasse les points de l'évaluation (${evaluation.points}). Veuillez réduire les points de cette question.`,
+          });
+        }
       }
 
       await question.update(updateEvaluationQuestionDto);

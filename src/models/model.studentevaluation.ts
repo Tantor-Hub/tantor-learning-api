@@ -21,6 +21,13 @@ export enum StudentevaluationType {
   EXAMEN = 'examen',
 }
 
+export enum MarkingStatus {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  PUBLISHED = 'published',
+}
+
 @Table({
   tableName: '___tbl_tantor_student_evaluations',
   timestamps: true,
@@ -80,6 +87,13 @@ export class Studentevaluation extends Model<Studentevaluation> {
   @Default(false)
   @Column(DataType.BOOLEAN)
   isImmediateResult: boolean;
+
+  @Default(MarkingStatus.PENDING)
+  @Column({
+    type: DataType.ENUM(...Object.values(MarkingStatus)),
+    allowNull: false,
+  })
+  markingStatus: MarkingStatus;
 
   @AllowNull(false)
   @Column(DataType.UUID)

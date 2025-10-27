@@ -7,9 +7,9 @@ export class ChangeRoleDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Le rôle est obligatoire.' })
-  @IsIn(['instructor', 'teacher', 'admin', 'student', 'secretary'], {
+  @IsIn(['instructor', 'admin', 'student', 'secretary', 'expulled'], {
     message:
-      "Le rôle doit être l'un des suivants: instructor, teacher, admin, student, secretary.",
+      "Le rôle doit être l'un des suivants: instructor, admin, student, secretary, expulled.",
   })
   role: string;
 }

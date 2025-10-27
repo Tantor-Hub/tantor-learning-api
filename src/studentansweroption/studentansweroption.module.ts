@@ -7,6 +7,7 @@ import { StudentAnswerOptionController } from './studentansweroption.controller'
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 import { StudentAnswer } from 'src/models/model.studentanswer';
 import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
+import { EvaluationQuestion } from 'src/models/model.evaluationquestion';
 import { Users } from 'src/models/model.users';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
@@ -17,6 +18,7 @@ import { JwtService } from 'src/services/service.jwt';
       StudentAnswerOption,
       StudentAnswer,
       EvaluationQuestionOption,
+      EvaluationQuestion,
       Users,
     ]),
     ConfigModule,

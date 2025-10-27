@@ -8,6 +8,13 @@ export enum StudentevaluationType {
   EXAMEN = 'examen',
 }
 
+export enum MarkingStatus {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  PUBLISHED = 'published',
+}
+
 export interface IStudentevaluation extends IGlobale {
   id?: string;
   title: string;
@@ -21,6 +28,7 @@ export interface IStudentevaluation extends IGlobale {
   endingTime?: string;
   ispublish: boolean;
   isImmediateResult?: boolean;
+  markingStatus?: MarkingStatus;
   sessionCoursId?: string;
   lessonId?: string[];
   createdAt?: Date;

@@ -103,7 +103,14 @@ export class JwtService {
       console.log('❌ [JWT SERVICE] Token verification failed:', error.message);
       console.log('  - Error type:', error.name);
       console.log('  - Error stack:', error.stack);
-      return null;
+
+      // Return error details for better handling in guards
+      return {
+        error: true,
+        type: error.name,
+        message: error.message,
+        expiredAt: error.expiredAt || null,
+      };
     }
   }
 
@@ -145,5 +152,39 @@ export class JwtService {
         .then((_) => resolve(_))
         .catch((_) => reject(_));
     });
+  }
+
+  /**
+   * Check if a token is expired without full verification
+   * Useful for providing better error messages
+   */
+  async isTokenExpired(
+    token: string,
+  ): Promise<{ expired: boolean; expiredAt?: Date; timeUntilExpiry?: number }> {
+    try {
+      const cleared = await this.decryptWithRound(token);
+      const decoded = await this.jwtService.decode(cleared);
+
+      if (!decoded || !decoded.exp) {
+        return { expired: true };
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const exp = decoded.exp;
+      const expired = now >= exp;
+      const timeUntilExpiry = expired ? 0 : (exp - now) * 1000; // in milliseconds
+
+      return {
+        expired,
+        expiredAt: expired ? new Date(exp * 1000) : undefined,
+        timeUntilExpiry: timeUntilExpiry > 0 ? timeUntilExpiry : 0,
+      };
+    } catch (error) {
+      console.log(
+        '❌ [JWT SERVICE] Error checking token expiration:',
+        error.message,
+      );
+      return { expired: true };
+    }
   }
 }

@@ -13,7 +13,10 @@ import {
   Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { StudentevaluationType } from 'src/interface/interface.studentevaluation';
+import {
+  StudentevaluationType,
+  MarkingStatus,
+} from 'src/interface/interface.studentevaluation';
 
 export class CreateStudentevaluationDto {
   @ApiProperty({
@@ -138,4 +141,15 @@ export class CreateStudentevaluationDto {
   @IsArray()
   @IsString({ each: true })
   lessonId?: string[];
+
+  @ApiProperty({
+    description: 'Status of the marking process',
+    enum: MarkingStatus,
+    example: MarkingStatus.PENDING,
+    required: false,
+    default: MarkingStatus.PENDING,
+  })
+  @IsOptional()
+  @IsEnum(MarkingStatus)
+  markingStatus?: MarkingStatus;
 }

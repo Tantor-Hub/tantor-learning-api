@@ -156,7 +156,7 @@ export class LessondocumentService {
             model: Lesson,
             required: false,
             as: 'lesson',
-            attributes: ['id', 'title', 'description'],
+            attributes: ['id', 'title', 'description', 'ispublish'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -228,7 +228,7 @@ export class LessondocumentService {
             model: Lesson,
             required: false,
             as: 'lesson',
-            attributes: ['id', 'title', 'description'],
+            attributes: ['id', 'title', 'description', 'ispublish'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -281,7 +281,10 @@ export class LessondocumentService {
       }
 
       const lessondocuments = await this.lessondocumentModel.findAll({
-        where: { id_lesson: lessonId },
+        where: {
+          id_lesson: lessonId,
+          ispublish: true,
+        },
         attributes: [
           'id',
           'file_name',
@@ -377,7 +380,7 @@ export class LessondocumentService {
             model: Lesson,
             required: false,
             as: 'lesson',
-            attributes: ['id', 'title', 'description'],
+            attributes: ['id', 'title', 'description', 'ispublish'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -447,7 +450,7 @@ export class LessondocumentService {
             model: Lesson,
             required: false,
             as: 'lesson',
-            attributes: ['id', 'title', 'description'],
+            attributes: ['id', 'title', 'description', 'ispublish'],
           },
         ],
       });
@@ -538,7 +541,7 @@ export class LessondocumentService {
               model: Lesson,
               required: false,
               as: 'lesson',
-              attributes: ['id', 'title', 'description'],
+              attributes: ['id', 'title', 'description', 'ispublish'],
             },
           ],
         },
@@ -634,7 +637,7 @@ export class LessondocumentService {
               model: Lesson,
               required: false,
               as: 'lesson',
-              attributes: ['id', 'title', 'description'],
+              attributes: ['id', 'title', 'description', 'ispublish'],
             },
           ],
         },

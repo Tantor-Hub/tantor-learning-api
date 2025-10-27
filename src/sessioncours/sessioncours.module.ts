@@ -4,6 +4,7 @@ import { SessionCoursService } from './sessioncours.service';
 import { SessionCoursController } from './sessioncours.controller';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Users } from 'src/models/model.users';
+import { UserRoles } from 'src/models/model.userroles';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { Lesson } from 'src/models/model.lesson';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -11,10 +12,18 @@ import { JwtModule } from '@nestjs/jwt';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardUniversalFactory } from 'src/guard/guard.universal-factory';
+import { JwtAuthGuardUniversalMultiRole } from 'src/guard/guard.universal-multi-role';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([SessionCours, Users, TrainingSession, Lesson]),
+    SequelizeModule.forFeature([
+      SessionCours,
+      Users,
+      UserRoles,
+      TrainingSession,
+      Lesson,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -33,6 +42,8 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
     AllSercices,
     JwtService,
     JwtAuthGuardAsSuperviseur,
+    JwtAuthGuardUniversalFactory,
+    JwtAuthGuardUniversalMultiRole,
   ],
   exports: [SessionCoursService],
 })

@@ -707,11 +707,12 @@ export class UsersService {
     const { user_email } = resentCodeDto;
     const verif_code = this.allService.randomLongNumber({ length: 6 });
 
+    console.log(
+      `[Resend OTP] Generating new OTP: ${verif_code} for email: ${user_email}`,
+    );
+
     return this.userModel
       .findOne({
-        attributes: {
-          exclude: ['verification_code', 'is_verified', 'last_login'],
-        },
         where: {
           [Op.or]: [{ email: user_email }],
         },
@@ -725,7 +726,13 @@ export class UsersService {
             is_verified,
             id,
             verification_code: as_code,
+            otp: current_otp,
           } = student?.toJSON();
+
+          console.log(`[Resend OTP] Found user: ${email}`);
+          console.log(`[Resend OTP] Current verification_code: ${as_code}`);
+          console.log(`[Resend OTP] Current otp: ${current_otp}`);
+
           this.onWelcomeNewStudent({
             to: email,
             firstName: firstName || 'User',
@@ -733,23 +740,33 @@ export class UsersService {
             all: false,
             otp: verif_code,
           });
+
+          // Update both fields to be safe
           await student.update({
             verification_code: verif_code,
+            otp: verif_code,
           });
+
+          console.log(
+            `[Resend OTP] ✅ Updated both verification_code and otp to: ${verif_code}`,
+          );
+
           return Responder({
             status: HttpStatusCode.Ok,
             data: { firstName, lastName, email },
           });
         } else {
+          console.log(`[Resend OTP] ❌ User not found: ${user_email}`);
           return Responder({
             status: HttpStatusCode.NotFound,
             data: `${user_email} n'est pas reconnu !`,
           });
         }
       })
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.NotFound, data: err }),
-      );
+      .catch((err) => {
+        console.log(`[Resend OTP] ❌ Error: ${err}`);
+        return Responder({ status: HttpStatusCode.NotFound, data: err });
+      });
   }
   async verifyBeforeResetPassword(
     verifyAsStudentDto: VerifyAsStudentDto,
@@ -1143,18 +1160,32 @@ export class UsersService {
 
     const user = await this.userModel.findOne({ where: { email } });
     if (!user) {
+      console.log(`[OTP Verification] User not found for email: ${email}`);
       return Responder({
         status: HttpStatusCode.NotFound,
         data: 'Utilisateur non trouvé',
       });
     }
 
+    console.log(
+      `[OTP Verification] Attempting verification for email: ${email}`,
+    );
+    console.log(`[OTP Verification] OTP from request body: ${otp}`);
+    console.log(`[OTP Verification] OTP stored in database: ${user.otp}`);
+
     if (!user.otp || user.otp !== otp) {
+      console.log(
+        `[OTP Verification] ❌ INVALID OTP - Email: ${email}, Requested OTP: ${otp}, Stored OTP: ${user.otp}`,
+      );
       return Responder({
         status: HttpStatusCode.BadRequest,
         data: 'OTP invalide',
       });
     }
+
+    console.log(
+      `[OTP Verification] ✅ SUCCESSFUL OTP verification for email: ${email}`,
+    );
 
     // Clear OTP
     await user.update({ otp: undefined });

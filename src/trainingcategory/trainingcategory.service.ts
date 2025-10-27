@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { ResponseServer } from 'src/interface/interface.response';
 import { TrainingCategory } from 'src/models/model.trainingcategory';
+import { Training } from 'src/models/model.trainings';
 import { Responder } from 'src/strategy/strategy.responder';
 import { CreateTrainingCategoryDto } from './dto/create-trainingcategory.dto';
 import { UpdateTrainingCategoryDto } from './dto/update-trainingcategory.dto';
@@ -13,6 +14,8 @@ export class TrainingCategoryService {
   constructor(
     @InjectModel(TrainingCategory)
     private readonly trainingCategoryModel: typeof TrainingCategory,
+    @InjectModel(Training)
+    private readonly trainingModel: typeof Training,
   ) {}
 
   async create(
@@ -178,8 +181,46 @@ export class TrainingCategoryService {
         });
       }
 
-      // Note: Relationship check removed since Formations model doesn't have id_trainingcategory field yet
-      // TODO: Add id_trainingcategory field to Formations model if relationship is needed
+      // Check if there are any trainings associated with this category
+      const associatedTrainings = await this.trainingModel.findAll({
+        where: { id_trainingcategory: id },
+        attributes: ['id', 'title'],
+      });
+
+      if (associatedTrainings.length > 0) {
+        const trainingTitles = associatedTrainings
+          .map((training) => training.title)
+          .join(', ');
+
+        const customMessage = `Impossible de supprimer cette catégorie de formation car ${associatedTrainings.length} formation(s) y sont associée(s): ${trainingTitles}. Veuillez d'abord supprimer ou réassigner les formations avant de supprimer la catégorie.`;
+
+        console.log(
+          '[TRAININGCATEGORY SERVICE] 📝 Custom Message:',
+          customMessage,
+        );
+
+        const response = Responder({
+          status: HttpStatusCode.Conflict,
+          customMessage: customMessage,
+        });
+
+        console.log(
+          '[TRAININGCATEGORY DELETE] ❌ Cannot delete - associated trainings found:',
+          {
+            categoryId: id,
+            categoryTitle: trainingCategory.title,
+            associatedTrainingsCount: associatedTrainings.length,
+            associatedTrainings: associatedTrainings.map((t) => ({
+              id: t.id,
+              title: t.title,
+            })),
+            responseStatus: response.status,
+            responseMessage: response.message,
+          },
+        );
+
+        return response;
+      }
 
       // Proceed with deletion
       const deletedCount = await this.trainingCategoryModel.destroy({

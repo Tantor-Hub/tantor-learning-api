@@ -3,6 +3,7 @@ export enum tables {
   documentsstudents = `${table_prefix}documentsstudents`,
   opcopayement = `${table_prefix}opcopayement`,
   documents = `${table_prefix}documents`,
+  documentfields = `${table_prefix}documentfields`,
   appinfos = `${table_prefix}infos`,
   newsletter = `${table_prefix}newsletter`,
   users = `${table_prefix}users`,

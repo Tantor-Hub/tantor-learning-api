@@ -20,11 +20,16 @@ export const Responder = ({
     ...StatusMesage,
   };
 
-  return {
+  const response: any = {
     status,
     message: customMessage ?? HttpStatusMessages[status] ?? 'Unknown Error',
-    data: data ?? null,
   };
+
+  if (data !== undefined) {
+    response.data = data;
+  }
+
+  return response;
 };
 
 export const PasswordlessLoginResponder = ({

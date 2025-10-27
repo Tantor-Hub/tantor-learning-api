@@ -4,6 +4,7 @@ import { UsersController } from './users.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { MailService } from 'src/services/service.mail';
 import { Users } from 'src/models/model.users';
+import { UserRoles } from 'src/models/model.userroles';
 import { AllSercices } from 'src/services/serices.all';
 import { CryptoService } from 'src/services/service.crypto';
 import { JwtService } from 'src/services/service.jwt';
@@ -13,10 +14,15 @@ import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { Messages } from 'src/models/model.messages';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { 
+  JwtAuthGuardAdminOrSecretary, 
+  JwtAuthGuardSecretaryAndInstructor, 
+  JwtAuthGuardAdminAndSecretary 
+} from 'src/guard/guard.multi-role';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Users, Messages]),
+    SequelizeModule.forFeature([Users, UserRoles, Messages]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -39,6 +45,9 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
     GoogleStrategy,
     GoogleDriveService,
     JwtAuthGuardAsSuperviseur,
+    JwtAuthGuardAdminOrSecretary,
+    JwtAuthGuardSecretaryAndInstructor,
+    JwtAuthGuardAdminAndSecretary,
   ],
   exports: [UsersService, SequelizeModule],
 })

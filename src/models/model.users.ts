@@ -5,10 +5,12 @@ import {
   DataType,
   BelongsToMany,
   HasMany,
+  HasOne,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { IUsers, UserRole } from 'src/interface/interface.users';
 import { Lesson } from './model.lesson';
+import { UserRoles } from './model.userroles';
 
 @Table({ tableName: tables['users'], timestamps: true })
 export class Users extends Model<IUsers> {
@@ -85,4 +87,7 @@ export class Users extends Model<IUsers> {
   // Relationships
   @HasMany(() => Lesson, 'createdBy')
   lessons?: Lesson[];
+
+  @HasMany(() => UserRoles, 'user_id')
+  userRoles?: UserRoles[];
 }

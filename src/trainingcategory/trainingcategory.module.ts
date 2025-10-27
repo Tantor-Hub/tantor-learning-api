@@ -5,13 +5,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { TrainingCategoryService } from './trainingcategory.service';
 import { TrainingCategoryController } from './trainingcategory.controller';
 import { TrainingCategory } from 'src/models/model.trainingcategory';
+import { Training } from 'src/models/model.trainings';
 import { Users } from 'src/models/model.users';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([TrainingCategory, Users]),
+    SequelizeModule.forFeature([TrainingCategory, Training, Users]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

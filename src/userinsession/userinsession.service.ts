@@ -212,9 +212,30 @@ export class UserInSessionService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Calculate available places for each session
+      const sessionsWithCalculatedPlaces = await Promise.all(
+        usersInSessions.map(async (userInSession) => {
+          if (userInSession.trainingSession) {
+            const enrolledUsers = await this.userInSessionModel.count({
+              where: { id_session: userInSession.trainingSession.id },
+            });
+            const availablePlaces =
+              userInSession.trainingSession.nb_places - enrolledUsers;
+            return {
+              ...userInSession.toJSON(),
+              trainingSession: {
+                ...userInSession.trainingSession.toJSON(),
+                available_places: availablePlaces,
+              },
+            };
+          }
+          return userInSession.toJSON();
+        }),
+      );
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: usersInSessions,
+        data: sessionsWithCalculatedPlaces,
         customMessage: 'Users in sessions retrieved successfully',
       });
     } catch (error) {

@@ -852,13 +852,19 @@ switch (status) {
   @UseGuards(JwtAuthGuardAsStudent)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Create Payment Method Card After Successful Payment',
+    summary:
+      'Create Payment Method Card After Successful Payment (with validation)',
     description: `
 # ✅ Payment Success Handler
 
-**Create payment method card and user session after successful Stripe payment**
+**Create payment method card and user session after successful Stripe payment - ONLY if payment is valid**
 
-This endpoint should be called by the frontend after confirming that a Stripe payment was successful.
+This endpoint should be called by the frontend after confirming that a Stripe payment was successful. The payment will be validated before creating any records.
+
+## ⚠️ Important:
+- **No records are created if payment validation fails**
+- **French error messages are returned for validation failures**
+- **Payment must be valid and user must have sufficient funds**
 
 ## 📋 Frontend Workflow
 \`\`\`javascript
@@ -948,7 +954,8 @@ if (paymentIntent.status === 'succeeded') {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Duplicate payment method or invalid data',
+    description:
+      'Bad Request - Payment validation failed, duplicate payment method, or invalid data. No records will be created if payment validation fails.',
   })
   @ApiResponse({
     status: 401,
@@ -1143,10 +1150,10 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
 
         if (sessionId && userId) {
           console.log(
-            '🔔 [STRIPE WEBHOOK] Metadata valid - creating payment method card automatically',
+            '🔔 [STRIPE WEBHOOK] Metadata valid - validating payment before creating records',
           );
           console.log(
-            '🔔 [STRIPE WEBHOOK] Calling createPaymentMethodCardAfterPayment...',
+            '🔔 [STRIPE WEBHOOK] Calling createPaymentMethodCardAfterPayment with validation...',
           );
           const result =
             await this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
@@ -1158,6 +1165,19 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
             '✅ [STRIPE WEBHOOK] Payment method card creation result:',
             JSON.stringify(result, null, 2),
           );
+
+          // Check if the result indicates a validation failure
+          if (result.status === 400) {
+            console.log(
+              '❌ [STRIPE WEBHOOK] Payment validation failed - no records created:',
+              result.message,
+            );
+          } else {
+            console.log(
+              '✅ [STRIPE WEBHOOK] Payment validation successful - records created',
+            );
+          }
+
           console.log(
             '✅ [STRIPE WEBHOOK] payment_intent.succeeded processing completed',
           );

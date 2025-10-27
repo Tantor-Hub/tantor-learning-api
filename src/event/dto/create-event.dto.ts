@@ -61,13 +61,18 @@ export class CreateEventDto {
   id_cible_cours?: string;
 
   @ApiProperty({
-    description: 'ID of the lesson that this event targets',
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    description: 'Array of lesson IDs that this event targets',
+    example: [
+      'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      'b2c3d4e5-f6g7-8901-bcde-f23456789012',
+    ],
     required: false,
+    type: [String],
   })
   @IsOptional()
-  @IsUUID('4')
-  id_cible_lesson?: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  id_cible_lesson?: string[];
 
   @ApiProperty({
     description: 'Array of user IDs that this event targets',

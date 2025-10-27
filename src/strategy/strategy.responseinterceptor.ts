@@ -35,10 +35,10 @@ export class ResponseInterceptor implements NestInterceptor {
           };
 
           // Déterminer le message à utiliser
-          let message = data?.customMessage;
+          let message = data?.message || data?.customMessage;
 
           if (!message) {
-            // Si pas de customMessage, essayer d'utiliser les erreurs de validation
+            // Si pas de message ou customMessage, essayer d'utiliser les erreurs de validation
             if (
               data?.data?.validationErrors &&
               Array.isArray(data.data.validationErrors)
@@ -51,11 +51,21 @@ export class ResponseInterceptor implements NestInterceptor {
             }
           }
 
-          const response = {
+          const response: any = {
             status,
             message,
-            data: data?.data ?? null,
           };
+
+          if (data?.data !== undefined) {
+            response.data = data.data;
+          }
+
+          console.log('[RESPONSE INTERCEPTOR] 🚀 Final Response:', {
+            status,
+            message,
+            hasData: data?.data !== undefined,
+            response,
+          });
 
           res.status(status);
           return response;

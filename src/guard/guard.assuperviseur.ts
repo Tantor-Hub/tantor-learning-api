@@ -52,14 +52,32 @@ export class JwtAuthGuardAsSuperviseur implements CanActivate {
     try {
       const decoded = await this.jwtService.verifyTokenWithRound(token);
 
-      if (!decoded) {
+      // Check if the response contains an error
+      if (!decoded || decoded.error) {
         console.log(
           '❌ JwtAuthGuardAsSuperviseur: Token verification failed for',
           request.url,
         );
-        throw new CustomUnauthorizedException(
-          "La clé d'authentification fournie a déjà expiré",
-        );
+
+        if (decoded && decoded.type === 'TokenExpiredError') {
+          console.log('  - Token has expired');
+          console.log('  - Expired at:', decoded.expiredAt);
+          throw new CustomUnauthorizedException(
+            'Votre session a expiré. Veuillez vous reconnecter.',
+          );
+        } else if (decoded && decoded.type === 'JsonWebTokenError') {
+          console.log('  - Invalid token format');
+          throw new CustomUnauthorizedException(
+            "Token d'authentification invalide",
+          );
+        } else {
+          console.log(
+            '  - Token verification returned null/undefined or unknown error',
+          );
+          throw new CustomUnauthorizedException(
+            "La clé d'authentification fournie a déjà expiré",
+          );
+        }
       }
 
       // Check for user ID in token (id_user is the primary field, uuid_user is for backward compatibility)

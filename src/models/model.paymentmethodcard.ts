@@ -57,7 +57,7 @@ export class PaymentMethodCard extends Model<IPaymentMethodCard> {
   @Column({
     type: DataType.ENUM('pending', 'rejected', 'validated'),
     allowNull: false,
-    defaultValue: 'validated',
+    defaultValue: 'pending',
   })
   status: PaymentMethodCardStatus;
 

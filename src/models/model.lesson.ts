@@ -39,6 +39,10 @@ export class Lesson extends Model<IListlesson> {
   })
   ispublish?: boolean;
 
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  duree?: string;
+
   @ForeignKey(() => SessionCours)
   @Column(DataType.UUID)
   id_cours: string;

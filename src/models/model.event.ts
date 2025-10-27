@@ -51,9 +51,8 @@ export class Event extends Model<IEvent> {
   id_cible_cours?: string;
 
   @AllowNull(true)
-  @Column(DataType.UUID)
-  @ForeignKey(() => Lesson)
-  id_cible_lesson?: string;
+  @Column(DataType.ARRAY(DataType.UUID))
+  id_cible_lesson?: string[];
 
   @AllowNull(true)
   @Column(DataType.ARRAY(DataType.UUID))
@@ -110,12 +109,8 @@ export class Event extends Model<IEvent> {
   })
   sessionCours?: SessionCours;
 
-  // Relationship - Belongs to Lesson
-  @BelongsTo(() => Lesson, {
-    foreignKey: 'id_cible_lesson',
-    targetKey: 'id',
-  })
-  lesson?: Lesson;
+  // Note: lessons relationship will be handled manually in service
+  // since we store lesson IDs in id_cible_lesson array field
 
   // Relationships - Many-to-Many with Users
   @BelongsToMany(() => Users, {

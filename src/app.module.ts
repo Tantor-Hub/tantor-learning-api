@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import databaseConfig, { cloudinaryConfig } from './config/database.config';
 import { Users } from './models/model.users';
+import { UserRoles } from './models/model.userroles';
 
 import { Sequelize } from 'sequelize-typescript';
 import { UsersModule } from './users/users.module';
@@ -57,6 +58,10 @@ import { StudentAnswerModule } from './studentanswer/studentanswer.module';
 import { StudentAnswerOptionModule } from './studentansweroption/studentansweroption.module';
 import { SecretaryModule } from './secretary/secretary.module';
 import { JwtStrategy } from './strategy/strategy.jwt';
+import { Document } from './models/model.document';
+import { DocumentField } from './models/model.documentfield';
+import { DocumentResponse } from './models/model.documentresponse';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -109,6 +114,7 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     }),
     SequelizeModule.forFeature([
       Users,
+      UserRoles,
       TrainingCategory,
       TrainingModel,
       AppInfos,
@@ -116,6 +122,9 @@ import { JwtStrategy } from './strategy/strategy.jwt';
       Messages,
       Newsletter,
       PaymentMethodOpco,
+      Document,
+      DocumentField,
+      DocumentResponse,
       // Student Evaluation Models
       require('./models/model.studentevaluation').Studentevaluation,
       require('./models/model.evaluationquestion').EvaluationQuestion,
@@ -153,6 +162,7 @@ import { JwtStrategy } from './strategy/strategy.jwt';
     StudentAnswerOptionModule,
     // Secretary Module
     SecretaryModule,
+    DocumentsModule,
   ],
   providers: [
     AppService,

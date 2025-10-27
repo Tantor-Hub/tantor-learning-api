@@ -33,9 +33,19 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
+import { AssignMultipleRolesDto } from './dto/assign-multiple-roles.dto';
+import { AddRoleDto } from './dto/add-role.dto';
+import { RemoveRoleDto } from './dto/remove-role.dto';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
+import {
+  JwtAuthGuardAdminOrSecretary,
+  JwtAuthGuardSecretaryAndInstructor,
+  JwtAuthGuardAdminAndSecretary,
+} from 'src/guard/guard.multi-role';
+import { MultiRole } from 'src/guard/decorators/multi-role.decorator';
 import { Response } from 'express';
 import { log } from 'console';
 import { Users } from 'src/models/model.users';
@@ -362,6 +372,77 @@ export class UsersController {
   }
 
   @Patch('change-role')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiOperation({
+    summary: 'Change user role (Admin only)',
+    description:
+      'Change the role of a user. Only admins can perform this action.',
+  })
+  @ApiBody({
+    type: ChangeRoleDto,
+    description: 'User email and new role',
+    examples: {
+      changeToAdmin: {
+        summary: 'Change user to admin',
+        value: {
+          email: 'user@example.com',
+          role: 'admin',
+        },
+      },
+      changeToInstructor: {
+        summary: 'Change user to instructor',
+        value: {
+          email: 'user@example.com',
+          role: 'instructor',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User role changed successfully',
+    schema: {
+      example: {
+        status: 200,
+        message:
+          "Rôle de l'utilisateur user@example.com changé avec succès à admin",
+        data: "Rôle de l'utilisateur user@example.com changé avec succès à admin",
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role or email',
+    schema: {
+      example: {
+        status: 400,
+        message: 'Rôle invalide: invalid_role',
+        data: 'Rôle invalide: invalid_role',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      example: {
+        status: 404,
+        message: "Utilisateur avec l'email user@example.com non trouvé",
+        data: "Utilisateur avec l'email user@example.com non trouvé",
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin access required',
+    schema: {
+      example: {
+        status: 401,
+        message:
+          "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+      },
+    },
+  })
   async changeUserRole(@Body() changeRoleDto: ChangeRoleDto) {
     return this.userService.changeRole(changeRoleDto);
   }
@@ -391,5 +472,85 @@ export class UsersController {
   @UseGuards(JwtAuthGuardAsFormateur)
   async getUserRoleByEmail(@Param('email') email: string) {
     return this.userService.getUserRoleByEmail(email);
+  }
+
+  // Example endpoints demonstrating multi-role guards
+
+  @Get('admin-or-secretary-only')
+  @UseGuards(JwtAuthGuardAdminOrSecretary)
+  @ApiOperation({
+    summary: 'Admin or Secretary only endpoint',
+    description:
+      'This endpoint can be accessed by users who have either admin OR secretary role',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Access granted - user has admin or secretary role',
+  })
+  async adminOrSecretaryOnly() {
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: 'Access granted: You have admin or secretary role',
+    });
+  }
+
+  @Get('secretary-and-instructor-only')
+  @UseGuards(JwtAuthGuardSecretaryAndInstructor)
+  @ApiOperation({
+    summary: 'Secretary AND Instructor only endpoint',
+    description:
+      'This endpoint can only be accessed by users who have BOTH secretary AND instructor roles',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Access granted - user has both secretary and instructor roles',
+  })
+  async secretaryAndInstructorOnly() {
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: 'Access granted: You have both secretary and instructor roles',
+    });
+  }
+
+  @Get('admin-and-secretary-only')
+  @UseGuards(JwtAuthGuardAdminAndSecretary)
+  @ApiOperation({
+    summary: 'Admin AND Secretary only endpoint',
+    description:
+      'This endpoint can only be accessed by users who have BOTH admin AND secretary roles',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Access granted - user has both admin and secretary roles',
+  })
+  async adminAndSecretaryOnly() {
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: 'Access granted: You have both admin and secretary roles',
+    });
+  }
+
+  @Get('custom-multi-role')
+  @UseGuards(JwtAuthGuardAdminOrSecretary) // Using decorator approach
+  @MultiRole({
+    requiredRoles: ['instructor', 'secretary'],
+    requireAll: false, // User needs instructor OR secretary
+    allowAdminOverride: true, // Admin can always access
+  })
+  @ApiOperation({
+    summary: 'Custom multi-role endpoint',
+    description:
+      'This endpoint demonstrates custom multi-role configuration using decorator',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Access granted based on custom role requirements',
+  })
+  async customMultiRole() {
+    return Responder({
+      status: HttpStatusCode.Ok,
+      data: 'Access granted: You meet the custom role requirements',
+    });
   }
 }

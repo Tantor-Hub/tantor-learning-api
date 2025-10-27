@@ -22,13 +22,37 @@ export class MailService {
     private readonly allSercices: AllSercices,
     private readonly googleDriveService: GoogleDriveService,
   ) {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: this.configService.get<string>('APPSMTPUSER'),
-        pass: this.configService.get<string>('APPSMTPPASS'),
-      },
-    });
+    const host = this.configService.get<string>('APPSMTP_HOST');
+    const port = this.configService.get<number>('APPSMTP_PORT');
+    const secureEnv = this.configService.get<string>('APPSMTP_SECURE');
+    const secure =
+      typeof secureEnv === 'string'
+        ? ['1', 'true', 'yes'].includes(secureEnv.toLowerCase())
+        : Boolean(secureEnv);
+
+    if (host) {
+      // Use custom SMTP (recommended for sending to corporate domains)
+      this.transporter = nodemailer.createTransport({
+        host,
+        port: port || 465,
+        secure: port ? port === 465 || secure : true,
+        auth: {
+          user: this.configService.get<string>('APPSMTPUSER'),
+          pass: this.configService.get<string>('APPSMTPPASS'),
+        },
+      });
+    } else {
+      // Fallback to Gmail service
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: this.configService.get<string>('APPSMTPUSER'),
+          pass: this.configService.get<string>('APPSMTPPASS'),
+        },
+      });
+    }
     this.baseURL = this.configService.get<string>('APPBASEURLFRONT') as string;
   }
   private async generateDocumentFromHtml(
@@ -82,6 +106,7 @@ export class MailService {
     basePrice,
     stripeFee,
     totalAmount,
+    errorMessage,
   }: {
     as: string;
     firstName?: string;
@@ -93,6 +118,7 @@ export class MailService {
     basePrice?: number;
     stripeFee?: number;
     totalAmount?: number;
+    errorMessage?: string;
   }): string {
     const color = '#0077b6'; // Utilisation de votre couleur primaire
     const ringColor = '#0096c7'; // Utilisation de votre couleur ring
@@ -1269,6 +1295,167 @@ export class MailService {
 </html>
         `;
         break;
+      case 'payment-card-failure':
+        return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: #1a202c;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background-color: ${destructiveColor};
+            padding: 20px;
+            color: #ffffff;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content .highlight {
+            font-weight: bold;
+            color: ${destructiveColor};
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: ${destructiveColor};
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .error-box {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .error-box p {
+            margin: 5px 0;
+            color: #dc2626;
+            font-weight: 500;
+        }
+        .footer {
+            background: ${secondaryColor};
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: ${color};
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: ${ringColor};
+        }
+        .training-info {
+            background-color: ${secondaryColor};
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .training-info h3 {
+            margin: 0 0 10px 0;
+            color: ${color};
+        }
+        .training-info p {
+            margin: 5px 0;
+        }
+    </style>
+    <title>Problème de paiement - ${appname}</title>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>❌ Problème de paiement</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
+            
+            <p>Nous avons rencontré un problème lors du traitement de votre paiement pour la formation.</p>
+            
+            <div class="status-badge">PAIEMENT NON VALIDÉ</div>
+            
+            <div class="error-box">
+                <p><strong>Raison du problème :</strong></p>
+                <p>${errorMessage || 'Une erreur est survenue lors de la validation du paiement.'}</p>
+            </div>
+            
+            ${
+              cours
+                ? `
+            <div class="training-info">
+                <h3>📚 Détails de la formation</h3>
+                <p><strong>Formation :</strong> ${cours}</p>
+                ${dateOn ? `<p><strong>Date :</strong> ${dateOn}</p>` : ''}
+                ${prixCours ? `<p><strong>Prix :</strong> ${prixCours} €</p>` : ''}
+            </div>
+            `
+                : ''
+            }
+            
+            <p><strong>Que faire maintenant ?</strong></p>
+            <ul>
+                <li>Vérifiez que votre carte bancaire a des fonds suffisants</li>
+                <li>Assurez-vous que votre carte n'est pas expirée</li>
+                <li>Contactez votre banque si le problème persiste</li>
+                <li>Réessayez le paiement depuis votre espace personnel</li>
+            </ul>
+            
+            <p>Si vous avez des questions ou besoin d'aide, n'hésitez pas à nous contacter.</p>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="${url}" class="button">Retourner à la plateforme</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Cordialement,</p>
+            <p><strong>L'équipe ${appname}</strong></p>
+            <p>${appowner}</p>
+            <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        break;
       default:
         return this.configService.get<string>('APPSMTPUSER') || '';
         break;
@@ -1287,21 +1474,25 @@ export class MailService {
   }): Promise<IInternalResponse> {
     return new Promise(async (resolve, reject) => {
       try {
+        const fromAddress =
+          this.configService.get<string>('APPSMTP_FROM') ||
+          this.configService.get<string>('APPSMTPUSER');
         const mailOptions = {
-          from: `"${this.configService.get<string>('APPNAME')}" <${this.configService.get<string>('APPSMTPUSER')}>`,
+          from: `"${this.configService.get<string>('APPNAME')}" <${fromAddress}>`,
           to,
           subject: (subject || 'Configuration').toUpperCase(),
           html: content,
           attachments,
         };
         const info = await this.transporter.sendMail(mailOptions);
-        log('[ Status Mail ] ', info.messageId);
+        log('[ Status Mail ] ', info.messageId, info.response || '');
         return resolve({
           code: 200,
           message: 'Email envoyé',
           data: info.messageId,
         });
       } catch (error) {
+        log('[ Mail Error ]', error?.code || '', error?.response || error);
         return reject({ code: 500, message: 'Erreur', data: error });
       }
     });
@@ -1550,6 +1741,214 @@ export class MailService {
         .catch((err) => ({ code: 500, message: 'Error occured', data: err }));
     } catch (error) {
       return { code: 500, message: 'Error occured', data: error };
+    }
+  }
+
+  async sendPaymentFailureEmail(
+    sessionId: string,
+    userId: string,
+    errorMessage: string,
+  ): Promise<IInternalResponse> {
+    try {
+      console.log('📧 [MAIL SERVICE] Sending payment failure email...');
+      console.log('  - Session ID:', sessionId);
+      console.log('  - User ID:', userId);
+      console.log('  - Error Message:', errorMessage);
+
+      // Get user and training session details
+      const { Users } = await import('../models/model.users');
+      const { TrainingSession } = await import(
+        '../models/model.trainingssession'
+      );
+      const { Training } = await import('../models/model.trainings');
+
+      const user = await Users.findByPk(userId);
+      if (!user) {
+        console.log(
+          '❌ [MAIL SERVICE] User not found for payment failure email',
+        );
+        return {
+          code: 404,
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      const trainingSession = await TrainingSession.findByPk(sessionId, {
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            required: false,
+            attributes: ['id', 'title', 'prix'],
+          },
+        ],
+      });
+
+      if (!trainingSession) {
+        console.log(
+          '❌ [MAIL SERVICE] Training session not found for payment failure email',
+        );
+        return {
+          code: 404,
+          message: 'Training session not found',
+          data: null,
+        };
+      }
+
+      const trainingTitle = trainingSession.trainings?.title || 'Formation';
+      const trainingPrice = trainingSession.trainings?.prix || 0;
+      const sessionDate = trainingSession.begining_date
+        ? new Date(trainingSession.begining_date).toLocaleDateString('fr-FR')
+        : '';
+
+      console.log('📧 [MAIL SERVICE] Email data prepared:', {
+        userEmail: user.email,
+        userFirstName: user.firstName,
+        userLastName: user.lastName,
+        trainingTitle,
+        trainingPrice,
+        sessionDate,
+        errorMessage,
+      });
+
+      const emailContent = this.templates({
+        as: 'payment-card-failure',
+        firstName: user.firstName || 'Utilisateur',
+        lastName: user.lastName || '',
+        cours: trainingTitle,
+        dateOn: sessionDate,
+        prixCours: trainingPrice.toString(),
+        errorMessage: errorMessage,
+      });
+
+      const result = await this.sendMail({
+        to: user.email,
+        subject: `❌ Problème de paiement - ${trainingTitle}`,
+        content: emailContent,
+      });
+
+      console.log('✅ [MAIL SERVICE] Payment failure email sent successfully');
+      return result;
+    } catch (error) {
+      console.error(
+        '❌ [MAIL SERVICE] Error sending payment failure email:',
+        error,
+      );
+      return {
+        code: 500,
+        message: 'Failed to send payment failure email',
+        data: { error: error.message },
+      };
+    }
+  }
+
+  async sendPaymentConfirmationEmail(
+    sessionId: string,
+    userId: string,
+    basePrice?: number,
+    stripeFee?: number,
+    totalAmount?: number,
+  ): Promise<IInternalResponse> {
+    try {
+      console.log('📧 [MAIL SERVICE] Sending payment confirmation email...');
+      console.log('  - Session ID:', sessionId);
+      console.log('  - User ID:', userId);
+      console.log('  - Base Price:', basePrice);
+      console.log('  - Stripe Fee:', stripeFee);
+      console.log('  - Total Amount:', totalAmount);
+
+      // Get user and training session details
+      const { Users } = await import('../models/model.users');
+      const { TrainingSession } = await import(
+        '../models/model.trainingssession'
+      );
+      const { Training } = await import('../models/model.trainings');
+
+      const user = await Users.findByPk(userId);
+      if (!user) {
+        console.log(
+          '❌ [MAIL SERVICE] User not found for payment confirmation email',
+        );
+        return {
+          code: 404,
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      const trainingSession = await TrainingSession.findByPk(sessionId, {
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            required: false,
+            attributes: ['id', 'title', 'prix'],
+          },
+        ],
+      });
+
+      if (!trainingSession) {
+        console.log(
+          '❌ [MAIL SERVICE] Training session not found for payment confirmation email',
+        );
+        return {
+          code: 404,
+          message: 'Training session not found',
+          data: null,
+        };
+      }
+
+      const trainingTitle = trainingSession.trainings?.title || 'Formation';
+      const trainingPrice = trainingSession.trainings?.prix || 0;
+      const sessionDate = trainingSession.begining_date
+        ? new Date(trainingSession.begining_date).toLocaleDateString('fr-FR')
+        : '';
+
+      console.log('📧 [MAIL SERVICE] Email data prepared:', {
+        userEmail: user.email,
+        userFirstName: user.firstName,
+        userLastName: user.lastName,
+        trainingTitle,
+        trainingPrice,
+        sessionDate,
+        basePrice,
+        stripeFee,
+        totalAmount,
+      });
+
+      const emailContent = this.templates({
+        as: 'payment-card-success',
+        firstName: user.firstName || 'Utilisateur',
+        lastName: user.lastName || '',
+        cours: trainingTitle,
+        dateOn: sessionDate,
+        prixCours: trainingPrice.toString(),
+        basePrice: basePrice,
+        stripeFee: stripeFee,
+        totalAmount: totalAmount,
+      });
+
+      const result = await this.sendMail({
+        to: user.email,
+        subject: `✅ Paiement confirmé - ${trainingTitle}`,
+        content: emailContent,
+      });
+
+      console.log(
+        '✅ [MAIL SERVICE] Payment confirmation email sent successfully',
+      );
+      return result;
+    } catch (error) {
+      console.error(
+        '❌ [MAIL SERVICE] Error sending payment confirmation email:',
+        error,
+      );
+      return {
+        code: 500,
+        message: 'Failed to send payment confirmation email',
+        data: { error: error.message },
+      };
     }
   }
 }
