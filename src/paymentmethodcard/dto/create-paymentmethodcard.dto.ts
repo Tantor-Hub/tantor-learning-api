@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { IsUUID, IsOptional, IsString } from 'class-validator';
 
 export class CreatePaymentMethodCardDto {
   @ApiProperty({
@@ -8,4 +8,13 @@ export class CreatePaymentMethodCardDto {
   })
   @IsUUID()
   id_session: string;
+
+  @ApiProperty({
+    example: 'pi_1234567890abcdef',
+    description:
+      'Stripe Payment Intent ID (required - payment will be validated)',
+    required: true,
+  })
+  @IsString()
+  stripe_payment_intent_id: string;
 }

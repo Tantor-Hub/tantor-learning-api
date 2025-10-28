@@ -7,6 +7,8 @@ import { Users } from 'src/models/model.users';
 import { UserRoles } from 'src/models/model.userroles';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { Lesson } from 'src/models/model.lesson';
+import { Lessondocument } from 'src/models/model.lessondocument';
+import { UserInSession } from 'src/models/model.userinsession';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AllSercices } from 'src/services/serices.all';
@@ -14,6 +16,7 @@ import { JwtService } from 'src/services/service.jwt';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardUniversalFactory } from 'src/guard/guard.universal-factory';
 import { JwtAuthGuardUniversalMultiRole } from 'src/guard/guard.universal-multi-role';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @Module({
   imports: [
@@ -23,6 +26,8 @@ import { JwtAuthGuardUniversalMultiRole } from 'src/guard/guard.universal-multi-
       UserRoles,
       TrainingSession,
       Lesson,
+      Lessondocument,
+      UserInSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -44,6 +49,7 @@ import { JwtAuthGuardUniversalMultiRole } from 'src/guard/guard.universal-multi-
     JwtAuthGuardAsSuperviseur,
     JwtAuthGuardUniversalFactory,
     JwtAuthGuardUniversalMultiRole,
+    JwtAuthGuardAsStudentInSession,
   ],
   exports: [SessionCoursService],
 })

@@ -3,6 +3,9 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { Lessondocument } from 'src/models/model.lessondocument';
 import { Users } from 'src/models/model.users';
 import { Lesson } from 'src/models/model.lesson';
+import { SessionCours } from 'src/models/model.sessioncours';
+import { UserInSession } from 'src/models/model.userinsession';
+import { TrainingSession } from 'src/models/model.trainingssession';
 import { LessondocumentController } from './lessondocument.controller';
 import { LessondocumentService } from './lessondocument.service';
 import { JwtModule } from '@nestjs/jwt';
@@ -11,10 +14,18 @@ import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Lessondocument, Users, Lesson]),
+    SequelizeModule.forFeature([
+      Lessondocument,
+      Users,
+      Lesson,
+      SessionCours,
+      UserInSession,
+      TrainingSession,
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -34,6 +45,7 @@ import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
     AllSercices,
     GoogleDriveService,
     JwtAuthGuardAsInstructor,
+    JwtAuthGuardAsStudentInSession,
   ],
   exports: [LessondocumentService],
 })

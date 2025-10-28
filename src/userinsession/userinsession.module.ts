@@ -10,6 +10,8 @@ import { Training } from '../models/model.trainings';
 import { Users } from '../models/model.users';
 import { AllSercices } from '../services/serices.all';
 import { JwtService } from '../services/service.jwt';
+import { MailService } from '../services/service.mail';
+import { GoogleDriveService } from '../services/service.googledrive';
 
 @Module({
   imports: [
@@ -32,7 +34,13 @@ import { JwtService } from '../services/service.jwt';
     }),
   ],
   controllers: [UserInSessionController],
-  providers: [UserInSessionService, AllSercices, JwtService],
+  providers: [
+    UserInSessionService,
+    AllSercices,
+    JwtService,
+    MailService,
+    GoogleDriveService,
+  ],
   exports: [UserInSessionService],
 })
 export class UserInSessionModule {}

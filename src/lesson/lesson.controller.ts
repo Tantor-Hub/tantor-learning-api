@@ -25,6 +25,7 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { LessonService } from './lesson.service';
@@ -149,7 +150,7 @@ export class LessonController {
   }
 
   @Get('student/cours/:id/lessons')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get lessons by sessioncours ID (Student access)',

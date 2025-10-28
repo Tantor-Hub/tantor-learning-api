@@ -22,6 +22,7 @@ import { UpdateEvaluationStatusDto } from './dto/update-evaluation-status.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
@@ -321,7 +322,7 @@ export class StudentevaluationController {
   }
 
   @Get('sessioncours/:sessionCoursId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiOperation({
     summary: 'Get student evaluations by session course ID',
     description:
@@ -421,7 +422,7 @@ export class StudentevaluationController {
   }
 
   @Get('student/sessioncours/:sessionCoursId')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiOperation({
     summary: 'Get student evaluations by session course ID (Student access)',
     description:

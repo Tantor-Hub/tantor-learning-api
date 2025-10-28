@@ -27,6 +27,7 @@ import { UpdateLessondocumentDto } from './dto/update-lessondocument.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -675,7 +676,7 @@ export class LessondocumentController {
   }
 
   @Get('student/lesson/:lessonId')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get lesson documents by lesson ID (Student access)',

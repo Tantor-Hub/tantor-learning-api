@@ -56,7 +56,6 @@ import { EvaluationQuestionModule } from './evaluationquestion/evaluationquestio
 import { EvaluationQuestionOptionModule } from './evaluationquestionoption/evaluationquestionoption.module';
 import { StudentAnswerModule } from './studentanswer/studentanswer.module';
 import { StudentAnswerOptionModule } from './studentansweroption/studentansweroption.module';
-import { SecretaryModule } from './secretary/secretary.module';
 import { JwtStrategy } from './strategy/strategy.jwt';
 import { Document } from './models/model.document';
 import { DocumentField } from './models/model.documentfield';
@@ -160,8 +159,6 @@ import { DocumentsModule } from './documents/documents.module';
     EvaluationQuestionOptionModule,
     StudentAnswerModule,
     StudentAnswerOptionModule,
-    // Secretary Module
-    SecretaryModule,
     DocumentsModule,
   ],
   providers: [

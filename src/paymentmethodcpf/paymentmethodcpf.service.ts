@@ -264,13 +264,18 @@ export class PaymentMethodCpfService {
         include: [
           {
             model: TrainingSession,
+            as: 'trainingSession',
+            required: false,
             attributes: ['id', 'title', 'nb_places', 'available_places'],
           },
           {
             model: Users,
+            as: 'user',
+            required: false,
             attributes: ['id', 'firstName', 'lastName', 'email'],
           },
         ],
+        order: [['createdAt', 'DESC']],
       });
 
       return Responder({
@@ -406,6 +411,132 @@ export class PaymentMethodCpfService {
         data: null,
         customMessage:
           'Erreur lors de la suppression de la méthode de paiement.',
+      });
+    }
+  }
+
+  async getSecretaryPayments() {
+    try {
+      const cpfPayments = await this.paymentMethodCpfModel.findAll({
+        include: [
+          {
+            model: Users,
+            as: 'user',
+            attributes: ['id', 'email'],
+          },
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            attributes: ['id', 'title', 'cpf_link'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Get UserInSession data separately for each payment
+      const formattedPayments = await Promise.all(
+        cpfPayments.map(async (payment) => {
+          const userInSession = await this.userInSessionModel.findOne({
+            where: {
+              id_user: payment.id_user,
+              id_session: payment.id_session,
+            },
+            attributes: ['status'],
+          });
+
+          return {
+            userId: payment.user?.id,
+            // userEmail: payment.user?.email,
+            sessionId: payment.trainingSession?.id,
+            sessionTitle: payment.trainingSession?.title,
+            status: payment?.status || 'pending',
+            // cpfLink: payment.trainingSession?.cpf_link,
+          };
+        }),
+      );
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: formattedPayments,
+        customMessage: 'CPF payments retrieved successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error fetching CPF payments',
+      });
+    }
+  }
+
+  async updateSecretaryPaymentStatus(
+    userId: string,
+    sessionId: string,
+    status: string,
+  ) {
+    try {
+      // Find the payment method
+      const paymentMethod = await this.paymentMethodCpfModel.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (!paymentMethod) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            message: 'Payment method not found for this user and session',
+          },
+          customMessage: 'Payment method not found',
+        });
+      }
+
+      // Find the user in session
+      const userInSession = await this.userInSessionModel.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (!userInSession) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: { message: 'User not found in this session' },
+          customMessage: 'User not found in session',
+        });
+      }
+
+      // Update payment method status
+      await paymentMethod.update({ status: status as any });
+
+      // Update user in session status based on payment status
+      if (status === 'validated') {
+        await userInSession.update({ status: 'in' as any });
+      } else if (status === 'rejected') {
+        await userInSession.update({ status: 'refusedpayment' as any });
+      } else if (status === 'pending') {
+        await userInSession.update({ status: 'pending' as any });
+      }
+
+      // Return simplified payment method data
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          id: paymentMethod.id,
+          status: paymentMethod.status,
+          id_user: paymentMethod.id_user,
+          id_session: paymentMethod.id_session,
+        },
+        customMessage: 'CPF payment status updated successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error updating CPF payment status',
       });
     }
   }

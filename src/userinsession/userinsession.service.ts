@@ -10,6 +10,7 @@ import { DeleteUserInSessionDto } from './dto/delete-userinsession.dto';
 import { Responder } from '../strategy/strategy.responder';
 import { HttpStatusCode } from '../config/config.statuscodes';
 import { UserInSessionStatus } from '../enums/user-in-session-status.enum';
+import { MailService } from '../services/service.mail';
 
 @Injectable()
 export class UserInSessionService {
@@ -22,6 +23,7 @@ export class UserInSessionService {
     private trainingModel: typeof Training,
     @InjectModel(Users)
     private usersModel: typeof Users,
+    private mailService: MailService,
   ) {}
 
   async create(createUserInSessionDto: CreateUserInSessionDto) {
@@ -181,6 +183,201 @@ export class UserInSessionService {
           originalError: error.original || null,
         },
         customMessage: 'Failed to create user in session',
+      });
+    }
+  }
+
+  async createFreeSessionEnrollment(sessionId: string, userId: string) {
+    try {
+      console.log(
+        '[FREE SESSION ENROLLMENT] Starting free session enrollment:',
+        {
+          userId,
+          sessionId,
+        },
+      );
+
+      // Step 1: Verify that the training session exists and get training price
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        sessionId,
+        {
+          include: [
+            {
+              model: Training,
+              as: 'trainings',
+              required: false,
+              attributes: ['id', 'title', 'prix'],
+            },
+          ],
+        },
+      );
+
+      if (!trainingSession) {
+        console.log(
+          '❌ [FREE SESSION ENROLLMENT] Training session not found:',
+          sessionId,
+        );
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: null,
+          customMessage: 'Session de formation non trouvée',
+        });
+      }
+
+      // Step 2: Check if the training session is free (price = 0)
+      const trainingPrice = parseFloat(
+        String(trainingSession.trainings?.prix || '0'),
+      );
+      console.log(
+        '💰 [FREE SESSION ENROLLMENT] Training price:',
+        trainingPrice,
+      );
+
+      if (trainingPrice !== 0) {
+        console.log(
+          '❌ [FREE SESSION ENROLLMENT] Session is not free:',
+          trainingPrice,
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            error: "Cette session de formation n'est pas gratuite",
+            sessionPrice: trainingPrice,
+          },
+          customMessage: "Cette session de formation n'est pas gratuite",
+        });
+      }
+
+      // Step 3: Check if user is already enrolled in this session
+      const existingEnrollment = await this.userInSessionModel.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (existingEnrollment) {
+        console.log('❌ [FREE SESSION ENROLLMENT] User already enrolled:', {
+          userId,
+          sessionId,
+        });
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            error: 'Vous êtes déjà inscrit à cette session de formation',
+            existingEnrollment: existingEnrollment.toJSON(),
+          },
+          customMessage: 'Vous êtes déjà inscrit à cette session de formation',
+        });
+      }
+
+      // Step 4: Check if there are available places
+      if (trainingSession.available_places <= 0) {
+        console.log('❌ [FREE SESSION ENROLLMENT] No available places:', {
+          availablePlaces: trainingSession.available_places,
+        });
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            error: 'Aucune place disponible pour cette session',
+            availablePlaces: trainingSession.available_places,
+            totalPlaces: trainingSession.nb_places,
+          },
+          customMessage: 'Aucune place disponible pour cette session',
+        });
+      }
+
+      // Step 5: Create UserInSession with IN status
+      console.log('✅ [FREE SESSION ENROLLMENT] Creating UserInSession...');
+
+      const userInSession = await this.userInSessionModel.create({
+        id_user: userId,
+        id_session: sessionId,
+        status: UserInSessionStatus.IN,
+      });
+
+      console.log(
+        '✅ [FREE SESSION ENROLLMENT] UserInSession created:',
+        userInSession.toJSON(),
+      );
+
+      // Step 6: Reduce available places for the training session
+      await trainingSession.update({
+        available_places: trainingSession.available_places - 1,
+      });
+      console.log('✅ [FREE SESSION ENROLLMENT] Available places reduced');
+
+      // Step 7: Send enrollment confirmation email
+      try {
+        const user = await this.usersModel.findByPk(userId);
+        if (user && user.email) {
+          console.log(
+            '📧 [FREE SESSION ENROLLMENT] Sending enrollment confirmation email...',
+          );
+
+          // Create a custom email template for free enrollment
+          const emailContent = this.mailService.templates({
+            as: 'payment-card-success',
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            cours: trainingSession.trainings?.title || 'Formation gratuite',
+            basePrice: 0,
+            stripeFee: 0,
+            totalAmount: 0,
+          });
+
+          await this.mailService.sendMail({
+            to: user.email,
+            subject:
+              'Inscription gratuite confirmée - ' +
+              (trainingSession.trainings?.title || 'Formation'),
+            content: emailContent,
+          });
+
+          console.log(
+            '✅ [FREE SESSION ENROLLMENT] Confirmation email sent successfully',
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          '❌ [FREE SESSION ENROLLMENT] Error sending email notification:',
+          emailError,
+        );
+        // Don't fail the enrollment if email fails
+      }
+
+      console.log(
+        '🎉 [FREE SESSION ENROLLMENT] Free session enrollment completed successfully!',
+      );
+
+      return Responder({
+        status: HttpStatusCode.Created,
+        data: userInSession.toJSON(),
+        customMessage: 'Inscription gratuite créée avec succès',
+      });
+    } catch (error) {
+      console.error(
+        '❌ [FREE SESSION ENROLLMENT] Error creating free session enrollment:',
+        error,
+      );
+      console.error(
+        '❌ [FREE SESSION ENROLLMENT] Error message:',
+        error.message,
+      );
+      console.error('❌ [FREE SESSION ENROLLMENT] Error stack:', error.stack);
+      console.error('❌ [FREE SESSION ENROLLMENT] Request data:', {
+        userId,
+        sessionId,
+      });
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        },
+        customMessage: "Erreur lors de la création de l'inscription gratuite",
       });
     }
   }

@@ -9,9 +9,12 @@ import { Training } from 'src/models/model.trainings';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
+import { Lessondocument } from 'src/models/model.lessondocument';
 import { Users } from 'src/models/model.users';
+import { UserInSession } from 'src/models/model.userinsession';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @Module({
   imports: [
@@ -21,7 +24,9 @@ import { JwtService } from 'src/services/service.jwt';
       TrainingSession,
       SessionCours,
       Lesson,
+      Lessondocument,
       Users,
+      UserInSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -36,7 +41,12 @@ import { JwtService } from 'src/services/service.jwt';
     }),
   ],
   controllers: [EventController],
-  providers: [EventService, AllSercices, JwtService],
+  providers: [
+    EventService,
+    AllSercices,
+    JwtService,
+    JwtAuthGuardAsStudentInSession,
+  ],
   exports: [EventService],
 })
 export class EventModule {}

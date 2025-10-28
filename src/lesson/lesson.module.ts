@@ -16,8 +16,12 @@ import { Contacts } from 'src/models/model.contactform';
 import { JwtService } from 'src/services/service.jwt';
 import { LessonService } from './lesson.service';
 import { Lesson } from 'src/models/model.lesson';
+import { Lessondocument } from 'src/models/model.lessondocument';
 import { Newsletter } from 'src/models/model.newsletter';
 import { SessionCours } from 'src/models/model.sessioncours';
+import { UserInSession } from 'src/models/model.userinsession';
+import { TrainingSession } from 'src/models/model.trainingssession';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @Module({
   imports: [
@@ -26,10 +30,12 @@ import { SessionCours } from 'src/models/model.sessioncours';
       Newsletter,
       Users,
       Messages,
-
       Contacts,
       Lesson,
+      Lessondocument,
       SessionCours,
+      UserInSession,
+      TrainingSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -52,6 +58,7 @@ import { SessionCours } from 'src/models/model.sessioncours';
     GoogleDriveService,
     UsersService,
     LessonService,
+    JwtAuthGuardAsStudentInSession,
   ],
 })
 export class LessonModule {}

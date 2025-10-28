@@ -21,6 +21,7 @@ import { UpdateEvaluationQuestionDto } from './dto/update-evaluationquestion.dto
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
@@ -162,7 +163,7 @@ export class EvaluationQuestionController {
   }
 
   @Get('student/evaluation/:evaluationId')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiOperation({
     summary: 'Get evaluation questions by evaluation ID (Student access)',
     description:

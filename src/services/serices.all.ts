@@ -238,11 +238,10 @@ export class AllSercices {
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount,
         currency,
-        automatic_payment_methods: { enabled: true },
-        // ...(payment_method_types?.length
-        //     ? { payment_method_types }
-        //     : { automatic_payment_methods: { enabled: true } }),
-        // ...(return_url ? { return_url } : {}),
+        ...(payment_method_types?.length
+          ? { payment_method_types }
+          : { automatic_payment_methods: { enabled: true } }),
+        ...(return_url ? { return_url } : {}),
       });
 
       return {

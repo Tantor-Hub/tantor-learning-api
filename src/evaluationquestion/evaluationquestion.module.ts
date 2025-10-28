@@ -9,8 +9,14 @@ import { Studentevaluation } from 'src/models/model.studentevaluation';
 import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
 import { StudentAnswer } from 'src/models/model.studentanswer';
 import { Users } from 'src/models/model.users';
+import { SessionCours } from 'src/models/model.sessioncours';
+import { Lesson } from 'src/models/model.lesson';
+import { Lessondocument } from 'src/models/model.lessondocument';
+import { UserInSession } from 'src/models/model.userinsession';
+import { TrainingSession } from 'src/models/model.trainingssession';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @Module({
   imports: [
@@ -20,6 +26,11 @@ import { JwtService } from 'src/services/service.jwt';
       EvaluationQuestionOption,
       StudentAnswer,
       Users,
+      SessionCours,
+      Lesson,
+      Lessondocument,
+      UserInSession,
+      TrainingSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -34,7 +45,12 @@ import { JwtService } from 'src/services/service.jwt';
     }),
   ],
   controllers: [EvaluationQuestionController],
-  providers: [EvaluationQuestionService, AllSercices, JwtService],
+  providers: [
+    EvaluationQuestionService,
+    AllSercices,
+    JwtService,
+    JwtAuthGuardAsStudentInSession,
+  ],
   exports: [EvaluationQuestionService],
 })
 export class EvaluationQuestionModule {}

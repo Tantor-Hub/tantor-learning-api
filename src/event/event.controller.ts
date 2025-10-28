@@ -25,6 +25,7 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @ApiTags('Events')
@@ -520,7 +521,7 @@ export class EventController {
   }
 
   @Get('student/session/:sessionId')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiOperation({
     summary: 'Get events by session ID (Student access)',
     description:
@@ -619,6 +620,11 @@ export class EventController {
         },
       },
     },
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Accès refusé - Veuillez attendre que le secrétaire vous laisse entrer',
   })
   @ApiResponse({
     status: 401,

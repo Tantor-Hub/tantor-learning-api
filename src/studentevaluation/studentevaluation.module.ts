@@ -10,8 +10,12 @@ import { EvaluationQuestion } from 'src/models/model.evaluationquestion';
 import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
+import { Lessondocument } from 'src/models/model.lessondocument';
+import { UserInSession } from 'src/models/model.userinsession';
+import { TrainingSession } from 'src/models/model.trainingssession';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @Module({
   imports: [
@@ -22,6 +26,9 @@ import { JwtService } from 'src/services/service.jwt';
       EvaluationQuestionOption,
       SessionCours,
       Lesson,
+      Lessondocument,
+      UserInSession,
+      TrainingSession,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -36,7 +43,12 @@ import { JwtService } from 'src/services/service.jwt';
     }),
   ],
   controllers: [StudentevaluationController],
-  providers: [StudentevaluationService, AllSercices, JwtService],
+  providers: [
+    StudentevaluationService,
+    AllSercices,
+    JwtService,
+    JwtAuthGuardAsStudentInSession,
+  ],
   exports: [StudentevaluationService],
 })
 export class StudentevaluationModule {}

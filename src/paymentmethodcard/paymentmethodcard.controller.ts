@@ -28,8 +28,9 @@ import {
   StripePaymentIntentResponseDto,
   StripePaymentIntentStatusDto,
 } from './dto/stripe-session-response.dto';
-import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
+import { JwtAuthGuardAsManagerSystem } from '../guard/guard.asadmin';
+import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { PaymentMethodCardStatus } from '../enums/payment-method-card-status.enum';
 
 @ApiTags('Payment Method Card - Stripe Integration')
@@ -49,21 +50,62 @@ export class PaymentMethodCardController {
 \`\`\`typescript
 {
   id_session: string;                    // Required - Training session ID
+  stripe_payment_intent_id: string;     // Required - Stripe Payment Intent ID
 }
 \`\`\`
 
+**Payment Flow:**
+- **Payment Intent Required**: Always validates payment and creates paid payment method card + UserInSession
+- **No Pending Records**: All records are created only after successful payment validation
+
+**🔐 Webhook Validation:**
+- **Real Payment Verification**: All payments are validated via Stripe webhooks
+- **Webhook Events**: \`payment_intent.succeeded\` events trigger automatic validation
+- **Double Validation**: Payment is validated both at API call and webhook level
+- **Security**: Prevents fake or invalid payment records
+
+**📋 Frontend Integration:**
+\`\`\`javascript
+// 1. Create payment intent
+const paymentIntent = await stripe.paymentIntents.create({...});
+
+// 2. Process payment with Stripe.js
+const { paymentIntent: confirmedPayment } = await stripe.confirmCardPayment(clientSecret, {
+  payment_method: { card: cardElement }
+});
+
+// 3. Create records with payment intent ID (validates via webhook)
+const response = await fetch('/api/paymentmethodcard/create', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id_session: '550e8400-e29b-41d4-a716-446655440000',
+    stripe_payment_intent_id: confirmedPayment.id
+  })
+});
+\`\`\`
+
+**✅ Validation Process:**
+1. **API Validation**: Checks payment intent status, amount, currency, metadata
+2. **Webhook Validation**: Stripe webhook confirms payment is real and successful
+3. **Record Creation**: Only creates records after both validations pass
+4. **Error Handling**: Returns French error messages for all validation failures
+
 **Note:** 
 - The user ID is automatically extracted from the JWT token
-- The status is automatically set to 'pending'
-- The training price is automatically fetched from the training session's associated training
-- Only the session ID is required from the frontend
+- Payment must be real and successful (validated by Stripe webhooks)
+- Records are only created for valid, webhook-confirmed payments
+- French error messages are returned for validation failures
     `,
   })
   @ApiBody({
     type: CreatePaymentMethodCardDto,
     schema: {
       type: 'object',
-      required: ['id_session'],
+      required: ['id_session', 'stripe_payment_intent_id'],
       properties: {
         id_session: {
           type: 'string',
@@ -72,13 +114,27 @@ export class PaymentMethodCardController {
           description:
             'Training session ID that this payment method belongs to',
         },
+        stripe_payment_intent_id: {
+          type: 'string',
+          example: 'pi_1234567890abcdef',
+          description:
+            'Stripe Payment Intent ID (required - payment will be validated)',
+        },
       },
     },
     examples: {
       example1: {
-        summary: 'Payment method card creation',
+        summary: 'Payment method card creation with payment intent validation',
         value: {
           id_session: '550e8400-e29b-41d4-a716-446655440000',
+          stripe_payment_intent_id: 'pi_1234567890abcdef',
+        },
+      },
+      example2: {
+        summary: 'Another payment method card creation example',
+        value: {
+          id_session: '550e8400-e29b-41d4-a716-446655440000',
+          stripe_payment_intent_id: 'pi_abcdef1234567890',
         },
       },
     },
@@ -194,7 +250,7 @@ export class PaymentMethodCardController {
   }
 
   @Get('getall')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all payment methods card' })
   @ApiResponse({
@@ -305,7 +361,7 @@ export class PaymentMethodCardController {
   }
 
   @Get('session/:sessionId')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get payment methods card by session ID',
@@ -336,7 +392,7 @@ export class PaymentMethodCardController {
   }
 
   @Get('stripe/:stripePaymentId')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get payment method card by Stripe payment ID',
@@ -369,7 +425,7 @@ export class PaymentMethodCardController {
   }
 
   @Get('status/:status')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get payment methods card by status',
@@ -398,7 +454,7 @@ export class PaymentMethodCardController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a payment method card by ID' })
   @ApiParam({
@@ -429,7 +485,7 @@ export class PaymentMethodCardController {
   }
 
   @Patch('update')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update a payment method card',
@@ -488,7 +544,7 @@ export class PaymentMethodCardController {
   }
 
   @Delete()
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a payment method card' })
   @ApiBody({
@@ -523,7 +579,7 @@ export class PaymentMethodCardController {
   }
 
   @Delete('delete-all')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete all payment methods card' })
   @ApiResponse({
@@ -540,6 +596,73 @@ export class PaymentMethodCardController {
   })
   deleteAll() {
     return this.paymentMethodCardService.deleteAll();
+  }
+
+  @Get('secretary/payments')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all Card payments for secretary management',
+    description:
+      'Retrieve all Card payments with user email, session title, and status for secretary management.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Card payments retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Card payments retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              userId: {
+                type: 'string',
+                format: 'uuid',
+                example: '123e4567-e89b-12d3-a456-426614174000',
+              },
+              userEmail: { type: 'string', example: 'student@example.com' },
+              sessionId: {
+                type: 'string',
+                format: 'uuid',
+                example: '123e4567-e89b-12d3-a456-426614174000',
+              },
+              sessionTitle: {
+                type: 'string',
+                example: 'JavaScript Fundamentals',
+              },
+              status: { type: 'string', example: 'in' },
+              paymentStatus: {
+                type: 'string',
+                enum: ['pending', 'rejected', 'validated'],
+                example: 'validated',
+              },
+              stripePaymentId: {
+                type: 'string',
+                example: 'pi_1234567890abcdef',
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  getSecretaryPayments() {
+    return this.paymentMethodCardService.getSecretaryPayments();
   }
 
   // Stripe Integration Endpoints
@@ -592,6 +715,12 @@ if (error) {
 - **Currency**: EUR (Euro)
 - **Conversion**: Automatically converted to cents for Stripe
 - **Validation**: Ensures training session and price exist
+
+## 💳 Payment Method Configuration
+- **Automatic Payment Methods**: Uses Stripe's automatic payment method detection
+- **Card Support**: Automatically supports all major card networks (Visa, Mastercard, etc.)
+- **Secure**: Compatible with Stripe Elements for enhanced security
+- **Flexible**: Supports various payment methods as configured by Stripe
 
 ## 🔐 Authentication
 - **Required**: Valid JWT token with student role
@@ -848,23 +977,174 @@ switch (status) {
     );
   }
 
+  @Get('payment-validation/:id')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Comprehensive Payment Validation with Error Details',
+    description: `
+# 🔍 Comprehensive Payment Validation
+
+**Enhanced payment status checking with detailed error information for insufficient funds, expired cards, and refused transactions**
+
+This endpoint provides comprehensive payment validation with detailed error categorization and user-friendly messages in French.
+
+## 🚨 Error Handling Features
+- **Insufficient Funds**: Detects and provides specific messaging
+- **Expired Cards**: Identifies expired card errors
+- **Refused Transactions**: Handles various card decline scenarios
+- **3D Secure**: Manages authentication requirements
+- **Processing Errors**: Categorizes technical issues
+
+## 📋 Response Format
+\`\`\`json
+{
+  "status": "succeeded|requires_action|requires_payment_method|error",
+  "errorCode": "insufficient_funds|expired_card|card_declined|etc",
+  "errorMessage": "User-friendly French error message",
+  "errorDetails": {
+    "type": "card_error",
+    "code": "insufficient_funds",
+    "message": "Your card has insufficient funds.",
+    "decline_code": "insufficient_funds"
+  },
+  "requiresAction": false,
+  "nextAction": {
+    "type": "use_stripe_sdk",
+    "redirectToUrl": "https://..."
+  }
+}
+\`\`\`
+
+## 🔧 Frontend Integration
+\`\`\`javascript
+// Check payment status with comprehensive error handling
+const checkPaymentStatus = async (paymentIntentId) => {
+  try {
+    const response = await fetch(\`/api/paymentmethodcard/payment-validation/\${paymentIntentId}\`, {
+      headers: {
+        'Authorization': 'Bearer YOUR_JWT_TOKEN'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'succeeded') {
+      console.log('✅ Payment successful!');
+      // Handle success
+    } else if (data.requiresAction) {
+      console.log('🔄 Additional action required:', data.nextAction);
+      // Handle 3D Secure or other actions
+    } else if (data.errorCode) {
+      console.error('❌ Payment failed:', data.errorMessage);
+      // Handle specific error types
+      switch (data.errorCode) {
+        case 'insufficient_funds':
+          showError('Fonds insuffisants. Veuillez utiliser une autre carte.');
+          break;
+        case 'expired_card':
+          showError('Votre carte a expiré. Veuillez utiliser une carte valide.');
+          break;
+        case 'card_declined':
+          showError('Votre carte a été refusée. Veuillez contacter votre banque.');
+          break;
+        default:
+          showError(data.errorMessage);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking payment status:', error);
+  }
+};
+\`\`\`
+
+## 🎯 Use Cases
+- **Pre-payment validation**: Check if payment will likely succeed
+- **Post-payment verification**: Confirm payment status after processing
+- **Error handling**: Provide specific user guidance for different failure types
+- **3D Secure flow**: Handle additional authentication requirements
+    `,
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Stripe Payment Intent ID',
+    example: 'pi_1234567890abcdef',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment validation completed successfully.',
+    type: StripePaymentIntentStatusDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid payment intent ID or payment failed.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Invalid payment intent ID' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+        error: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error during payment validation.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: {
+          type: 'string',
+          example: 'Failed to validate payment: Stripe API error',
+        },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async validatePaymentWithErrorDetails(
+    @Param('id') paymentIntentId: string,
+    @Request() req,
+  ) {
+    console.log(
+      '🔍 [PAYMENT VALIDATION CONTROLLER] Comprehensive payment validation for:',
+      paymentIntentId,
+    );
+    const userId = req.user.id_user;
+    return this.paymentMethodCardService.getStripePaymentIntentStatus(
+      paymentIntentId,
+      userId,
+    );
+  }
+
   @Post('payment-success')
   @UseGuards(JwtAuthGuardAsStudent)
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      'Create Payment Method Card After Successful Payment (with validation)',
+    summary: 'Payment Success Confirmation',
     description: `
-# ✅ Payment Success Handler
+# ✅ Payment Success Confirmation
 
-**Create payment method card and user session after successful Stripe payment - ONLY if payment is valid**
+**Confirms that a Stripe payment was successful - NO records are created automatically**
 
-This endpoint should be called by the frontend after confirming that a Stripe payment was successful. The payment will be validated before creating any records.
+This endpoint should be called by the frontend after confirming that a Stripe payment was successful. It only confirms the payment status and does not create any records.
 
 ## ⚠️ Important:
-- **No records are created if payment validation fails**
-- **French error messages are returned for validation failures**
-- **Payment must be valid and user must have sufficient funds**
+- **No records are created by this endpoint**
+- **Use /api/paymentmethodcard/create with payment intent ID to create records**
+- **This endpoint only confirms payment success**
 
 ## 📋 Frontend Workflow
 \`\`\`javascript
@@ -906,7 +1186,7 @@ if (paymentIntent.status === 'succeeded') {
   "message": "Payment method card and user session created successfully",
   "data": {
     "id": "payment-method-card-id",
-    "id_session": "session-id",
+    "id_session": "550e8400-e29b-41d4-a716-446655440000",
     "id_user": "user-id",
     "id_stripe_payment": "pi_1234567890abcdef",
     "status": "PAID"
@@ -936,43 +1216,176 @@ if (paymentIntent.status === 'succeeded') {
     },
   })
   @ApiResponse({
-    status: 201,
-    description: 'Payment method card and user session created successfully',
+    status: 200,
+    description: 'Payment confirmed successfully',
     schema: {
       example: {
-        status: 201,
-        message: 'Payment method card and user session created successfully',
+        status: 200,
+        message: 'Payment confirmed successfully',
         data: {
-          id: 'payment-method-card-id',
-          id_session: '550e8400-e29b-41d4-a716-446655440000',
-          id_user: 'user-id',
-          id_stripe_payment: 'pi_1234567890abcdef',
-          status: 'VALIDATED',
+          paymentIntentId: 'pi_1234567890abcdef',
+          status: 'succeeded',
         },
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Bad Request - Payment validation failed, duplicate payment method, or invalid data. No records will be created if payment validation fails.',
+    description: 'Bad Request - Payment validation failed or invalid data',
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  async createPaymentMethodCardAfterPayment(
+  async confirmPaymentSuccess(
     @Body() body: { sessionId: string; stripePaymentIntentId: string },
     @Request() req,
   ) {
-    console.log(
-      '✅ [PAYMENT SUCCESS CONTROLLER] Creating payment method card after successful payment',
-    );
+    console.log('✅ [PAYMENT SUCCESS CONTROLLER] Confirming payment success');
     const userId = req.user.id_user;
-    return this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
-      body.sessionId,
-      userId,
-      body.stripePaymentIntentId,
+
+    // Just validate the payment and return confirmation
+    const paymentStatus =
+      await this.paymentMethodCardService.getStripePaymentIntentStatus(
+        body.stripePaymentIntentId,
+        userId,
+      );
+
+    return paymentStatus;
+  }
+
+  @Get('webhook-validation/:id')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Validate payment via webhook verification',
+    description: `
+# 🔐 Webhook Payment Validation
+
+**Validates payment authenticity using webhook-level verification**
+
+## 🔒 Security Features
+- **Real Payment Verification**: Confirms payment exists in Stripe
+- **Freshness Check**: Ensures payment is recent (within 24 hours)
+- **Metadata Validation**: Verifies required session and user data
+- **Double Validation**: Both API and webhook validation
+
+## 📋 Validation Process
+1. **Stripe Verification**: Retrieves payment intent from Stripe
+2. **Status Check**: Confirms payment is actually succeeded
+3. **Age Verification**: Ensures payment is recent (max 24 hours old)
+4. **Metadata Check**: Validates sessionId and userId are present
+5. **Security Logging**: Logs all validation steps for audit
+
+## 🎯 Use Cases
+- Verify payment authenticity before record creation
+- Debug webhook processing issues
+- Ensure payment is real and not fake
+- Validate payment age and metadata
+
+## 📊 Response Format
+\`\`\`json
+{
+  "status": 200,
+  "data": {
+    "isValid": true,
+    "paymentIntent": {
+      "id": "pi_1234567890abcdef",
+      "status": "succeeded",
+      "amount": 20305,
+      "currency": "eur",
+      "created": 1640995200,
+      "metadata": {
+        "sessionId": "550e8400-e29b-41d4-a716-446655440000",
+        "userId": "123e4567-e89b-12d3-a456-426614174000"
+      }
+    },
+    "error": null
+  },
+  "message": "Webhook validation successful"
+}
+\`\`\`
+
+## ❌ Error Handling
+- **Invalid Payment**: Returns 400 if payment doesn't exist
+- **Wrong Status**: Returns 400 if payment not succeeded
+- **Too Old**: Returns 400 if payment older than 24 hours
+- **Missing Metadata**: Returns 400 if required data missing
+- **Stripe Error**: Returns 500 if Stripe API fails
+    `,
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Stripe Payment Intent ID to validate',
+    example: 'pi_1234567890abcdef',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Webhook validation successful',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            isValid: { type: 'boolean', example: true },
+            paymentIntent: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', example: 'pi_1234567890abcdef' },
+                status: { type: 'string', example: 'succeeded' },
+                amount: { type: 'number', example: 20305 },
+                currency: { type: 'string', example: 'eur' },
+                created: { type: 'number', example: 1640995200 },
+                metadata: {
+                  type: 'object',
+                  properties: {
+                    sessionId: {
+                      type: 'string',
+                      example: '550e8400-e29b-41d4-a716-446655440000',
+                    },
+                    userId: {
+                      type: 'string',
+                      example: '123e4567-e89b-12d3-a456-426614174000',
+                    },
+                  },
+                },
+              },
+            },
+            error: { type: 'string', example: null },
+          },
+        },
+        message: { type: 'string', example: 'Webhook validation successful' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Webhook validation failed',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 400 },
+        data: {
+          type: 'object',
+          properties: {
+            isValid: { type: 'boolean', example: false },
+            error: { type: 'string', example: 'Payment not succeeded' },
+            paymentIntent: { type: 'object', example: null },
+          },
+        },
+        message: { type: 'string', example: 'Webhook validation failed' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async validateWebhookPayment(@Param('id') paymentIntentId: string) {
+    return this.paymentMethodCardService.validateWebhookPayment(
+      paymentIntentId,
     );
   }
 
@@ -997,7 +1410,7 @@ const response = await fetch('/api/paymentmethodcard/test-create', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    sessionId: 'session-id',
+        sessionId: '550e8400-e29b-41d4-a716-446655440000',
     stripePaymentIntentId: 'pi_test_1234567890abcdef'
   })
 });
@@ -1062,7 +1475,7 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
 ## 📋 Automatic Actions
 - **payment_intent.succeeded**: Creates payment method card and user session (for Payment Intents)
 - **checkout.session.completed**: Creates payment method card and user session (for Checkout)
-- **payment_intent.payment_failed**: Logs failure (no action needed)
+- **payment_intent.payment_failed**: Logs detailed failure information with error categorization
     `,
   })
   @ApiResponse({
@@ -1150,32 +1563,50 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
 
         if (sessionId && userId) {
           console.log(
-            '🔔 [STRIPE WEBHOOK] Metadata valid - validating payment before creating records',
-          );
-          console.log(
-            '🔔 [STRIPE WEBHOOK] Calling createPaymentMethodCardAfterPayment with validation...',
-          );
-          const result =
-            await this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
-              sessionId,
-              userId,
-              paymentIntent.id,
-            );
-          console.log(
-            '✅ [STRIPE WEBHOOK] Payment method card creation result:',
-            JSON.stringify(result, null, 2),
+            '🔔 [STRIPE WEBHOOK] Metadata valid - validating payment authenticity',
           );
 
-          // Check if the result indicates a validation failure
-          if (result.status === 400) {
+          // First validate the payment is real and authentic
+          const webhookValidation =
+            await this.paymentMethodCardService.validateWebhookPayment(
+              paymentIntent.id,
+            );
+
+          if (!webhookValidation.isValid) {
             console.log(
-              '❌ [STRIPE WEBHOOK] Payment validation failed - no records created:',
-              result.message,
+              '❌ [STRIPE WEBHOOK] Payment validation failed:',
+              webhookValidation.error,
+            );
+            console.log(
+              '❌ [STRIPE WEBHOOK] No records will be created for invalid payment',
             );
           } else {
             console.log(
-              '✅ [STRIPE WEBHOOK] Payment validation successful - records created',
+              '✅ [STRIPE WEBHOOK] Payment authenticity confirmed - creating records',
             );
+
+            const result =
+              await this.paymentMethodCardService.createPaymentMethodCardAfterPayment(
+                sessionId,
+                userId,
+                paymentIntent.id,
+              );
+            console.log(
+              '✅ [STRIPE WEBHOOK] Payment method card creation result:',
+              JSON.stringify(result, null, 2),
+            );
+
+            // Check if the result indicates a validation failure
+            if (result.status === 400) {
+              console.log(
+                '❌ [STRIPE WEBHOOK] Payment validation failed - no records created:',
+                result.message,
+              );
+            } else {
+              console.log(
+                '✅ [STRIPE WEBHOOK] Payment validation successful - records created',
+              );
+            }
           }
 
           console.log(
@@ -1240,6 +1671,112 @@ This endpoint receives webhooks from Stripe when payment events occur. It automa
             '⚠️ [STRIPE WEBHOOK] Missing sessionId, userId, or payment_intent in checkout session - skipping creation',
           );
         }
+      } else if (event.type === 'payment_intent.payment_failed') {
+        console.log(
+          '🔄 [STRIPE WEBHOOK] Processing payment_intent.payment_failed event',
+        );
+        const paymentIntent = event.data.object;
+        console.log('❌ [STRIPE WEBHOOK] Payment failed:', paymentIntent.id);
+        console.log(
+          '❌ [STRIPE WEBHOOK] Payment failure reason:',
+          paymentIntent.last_payment_error,
+        );
+        console.log(
+          '❌ [STRIPE WEBHOOK] Payment intent metadata:',
+          JSON.stringify(paymentIntent.metadata, null, 2),
+        );
+
+        // Extract session ID and user ID from metadata for logging
+        const sessionId = paymentIntent.metadata?.sessionId;
+        const userId = paymentIntent.metadata?.userId;
+
+        console.log('❌ [STRIPE WEBHOOK] Failed payment details:', {
+          paymentIntentId: paymentIntent.id,
+          sessionId,
+          userId,
+          failureReason: paymentIntent.last_payment_error?.message,
+          errorCode: paymentIntent.last_payment_error?.code,
+          errorType: paymentIntent.last_payment_error?.type,
+          declineCode: paymentIntent.last_payment_error?.decline_code,
+        });
+
+        // Log specific error types for monitoring
+        if (paymentIntent.last_payment_error) {
+          // Create a simple error categorization for webhook logging
+          const error = paymentIntent.last_payment_error;
+          let errorCode = 'unknown_error';
+          let errorMessage = 'Payment failed';
+
+          if (error.type === 'card_error') {
+            errorCode = error.code || 'card_error';
+            switch (error.code) {
+              case 'insufficient_funds':
+                errorMessage = 'Insufficient funds';
+                break;
+              case 'expired_card':
+                errorMessage = 'Expired card';
+                break;
+              case 'card_declined':
+                errorMessage = 'Card declined';
+                break;
+              case 'authentication_required':
+                errorMessage = 'Authentication required';
+                break;
+              default:
+                errorMessage = error.message || 'Card error';
+            }
+          }
+
+          const errorInfo = {
+            errorCode,
+            errorMessage,
+            requiresAction: error.code === 'authentication_required',
+          };
+          console.log('❌ [STRIPE WEBHOOK] Categorized payment failure:', {
+            errorCode: errorInfo.errorCode,
+            errorMessage: errorInfo.errorMessage,
+            requiresAction: errorInfo.requiresAction,
+          });
+
+          // Log specific failure types for monitoring
+          switch (errorInfo.errorCode) {
+            case 'insufficient_funds':
+              console.log(
+                '💰 [STRIPE WEBHOOK] INSUFFICIENT FUNDS detected for payment:',
+                paymentIntent.id,
+              );
+              break;
+            case 'expired_card':
+              console.log(
+                '📅 [STRIPE WEBHOOK] EXPIRED CARD detected for payment:',
+                paymentIntent.id,
+              );
+              break;
+            case 'card_declined':
+              console.log(
+                '🚫 [STRIPE WEBHOOK] CARD DECLINED detected for payment:',
+                paymentIntent.id,
+              );
+              break;
+            case 'authentication_required':
+              console.log(
+                '🔐 [STRIPE WEBHOOK] AUTHENTICATION REQUIRED for payment:',
+                paymentIntent.id,
+              );
+              break;
+            default:
+              console.log(
+                '⚠️ [STRIPE WEBHOOK] OTHER PAYMENT FAILURE:',
+                errorInfo.errorCode,
+                'for payment:',
+                paymentIntent.id,
+              );
+          }
+        }
+
+        console.log(
+          '✅ [STRIPE WEBHOOK] payment_intent.payment_failed processing completed',
+        );
       } else {
         console.log(
           'ℹ️ [STRIPE WEBHOOK] Unhandled event type:',

@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import { TrainingSession } from '../models/model.trainingssession';
 import { Training } from '../models/model.trainings';
 import { UserInSession } from '../models/model.userinsession';
+import { Users } from '../models/model.users';
 import { CreateTrainingSessionDto } from './dto/create-trainingssession.dto';
 import { UpdateTrainingSessionDto } from './dto/update-trainingssession.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -20,6 +21,8 @@ export class TrainingSessionService {
     private readonly trainingModel: typeof Training,
     @InjectModel(UserInSession)
     private readonly userInSessionModel: typeof UserInSession,
+    @InjectModel(Users)
+    private readonly usersModel: typeof Users,
   ) {}
 
   async create(createTrainingSessionDto: CreateTrainingSessionDto) {

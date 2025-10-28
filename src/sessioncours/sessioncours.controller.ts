@@ -41,6 +41,7 @@ import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 
 @ApiTags('Session Courses')
 @Controller('sessioncours')
@@ -221,7 +222,7 @@ export class SessionCoursController {
     return this.sessionCoursService.findAll();
   }
 
-  @Get('session/:sessionId')
+  @Get('admin/session/:sessionId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiOperation({ summary: 'Get all session courses by session ID' })
   @ApiResponse({
@@ -307,7 +308,7 @@ export class SessionCoursController {
   }
 
   @Get('student/session/:sessionId')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get courses by session ID (Student access)',
@@ -426,7 +427,7 @@ export class SessionCoursController {
   }
 
   @Get(':id/lessons')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiOperation({ summary: 'Get lessons by session course ID' })
   @ApiParam({ name: 'id', description: 'Session course ID', type: String })
   @ApiResponse({

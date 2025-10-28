@@ -27,4 +27,48 @@ export class StripePaymentIntentStatusDto {
     enumName: 'PaymentStatus',
   })
   status: string;
+
+  @ApiProperty({
+    example: null,
+    description: 'Error code from Stripe if payment failed',
+    required: false,
+  })
+  errorCode?: string;
+
+  @ApiProperty({
+    example: null,
+    description: 'Human-readable error message for the user',
+    required: false,
+  })
+  errorMessage?: string;
+
+  @ApiProperty({
+    example: null,
+    description: 'Detailed error information from Stripe',
+    required: false,
+  })
+  errorDetails?: {
+    type: string;
+    code: string;
+    message: string;
+    decline_code?: string;
+  };
+
+  @ApiProperty({
+    example: false,
+    description:
+      'Whether the payment requires additional action (3D Secure, etc.)',
+    required: false,
+  })
+  requiresAction?: boolean;
+
+  @ApiProperty({
+    example: null,
+    description: 'Next action required for the payment (if any)',
+    required: false,
+  })
+  nextAction?: {
+    type: string;
+    redirectToUrl?: string;
+  };
 }

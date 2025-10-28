@@ -1477,6 +1477,14 @@ export class MailService {
         const fromAddress =
           this.configService.get<string>('APPSMTP_FROM') ||
           this.configService.get<string>('APPSMTPUSER');
+        console.log('📧 [SEND MAIL] Preparing email with options:', {
+          from: `"${this.configService.get<string>('APPNAME')}" <${fromAddress}>`,
+          to: to,
+          subject: (subject || 'Configuration').toUpperCase(),
+          hasContent: !!content,
+          hasAttachments: !!attachments,
+        });
+
         const mailOptions = {
           from: `"${this.configService.get<string>('APPNAME')}" <${fromAddress}>`,
           to,
@@ -1917,6 +1925,18 @@ export class MailService {
         totalAmount,
       });
 
+      // Verify email address is valid
+      if (!user.email || !user.email.includes('@')) {
+        console.log('❌ [MAIL SERVICE] Invalid email address:', user.email);
+        return {
+          code: 400,
+          message: 'Invalid email address',
+          data: null,
+        };
+      }
+
+      console.log('📧 [MAIL SERVICE] Sending email to:', user.email);
+
       const emailContent = this.templates({
         as: 'payment-card-success',
         firstName: user.firstName || 'Utilisateur',
@@ -1924,9 +1944,9 @@ export class MailService {
         cours: trainingTitle,
         dateOn: sessionDate,
         prixCours: trainingPrice.toString(),
-        basePrice: basePrice,
-        stripeFee: stripeFee,
-        totalAmount: totalAmount,
+        basePrice: Number(basePrice) || 0,
+        stripeFee: Number(stripeFee) || 0,
+        totalAmount: Number(totalAmount) || 0,
       });
 
       const result = await this.sendMail({

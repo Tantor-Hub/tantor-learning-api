@@ -15,6 +15,8 @@ import { UpdateTrainingSessionDto } from './dto/update-trainingssession.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
+import { JwtAuthGuardAsStudentInSession } from '../guard/guard.asstudentinsession';
+import { JwtAuthGuard } from '../guard/guard.asglobal';
 import {
   ApiTags,
   ApiOperation,
@@ -196,7 +198,7 @@ export class TrainingSessionController {
   }
 
   @Get('student/:id')
-  @UseGuards(JwtAuthGuardAsStudent)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get training session by ID (Student access)',
@@ -320,7 +322,7 @@ export class TrainingSessionController {
   }
 
   @Get(':id')
-  // @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @TrainingSessionFindOneApiOperation()
   @TrainingSessionFindOneApiParam()

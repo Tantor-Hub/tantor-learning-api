@@ -39,6 +39,8 @@ export class PaymentMethodCardService {
     private trainingModel: typeof Training,
     @InjectModel(Users)
     private usersModel: typeof Users,
+    @InjectModel(UserInSession)
+    private userInSessionModel: typeof UserInSession,
     private mailService: MailService,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -49,15 +51,57 @@ export class PaymentMethodCardService {
   async create(
     createPaymentMethodCardDto: CreatePaymentMethodCardDto,
     userId: string,
-    stripePaymentId?: string,
   ) {
     const sessionId = createPaymentMethodCardDto.id_session;
+    const stripePaymentIntentId =
+      createPaymentMethodCardDto.stripe_payment_intent_id;
+
     try {
       console.log('[PAYMENT METHOD CARD CREATE] Starting creation with data:', {
         userId,
         sessionId,
-        stripePaymentId,
+        stripePaymentIntentId,
       });
+
+      // Payment intent ID is now mandatory - validate it's provided
+      if (!stripePaymentIntentId) {
+        console.log(
+          '❌ [PAYMENT METHOD CARD CREATE] Missing required stripe_payment_intent_id',
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            error: 'stripe_payment_intent_id is required',
+          },
+          customMessage: "L'ID de l'intention de paiement Stripe est requis",
+        });
+      }
+
+      // Always validate the payment since it's mandatory
+      console.log(
+        '🔍 [PAYMENT VALIDATION] Validating Stripe payment intent...',
+      );
+      const paymentValidation = await this.validateStripePayment(
+        stripePaymentIntentId,
+        sessionId,
+        userId,
+      );
+
+      if (!paymentValidation.isValid) {
+        console.log(
+          '❌ [PAYMENT VALIDATION] Payment validation failed:',
+          paymentValidation.error,
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            error: paymentValidation.error,
+            paymentIntentId: stripePaymentIntentId,
+          },
+          customMessage: paymentValidation.error,
+        });
+      }
+      console.log('✅ [PAYMENT VALIDATION] Payment validation successful');
 
       // Verify that the training session exists and get training price
       const trainingSession = await this.trainingSessionModel.findByPk(
@@ -155,8 +199,10 @@ export class PaymentMethodCardService {
       try {
         paymentMethodCard = await this.paymentMethodCardModel.create({
           id_session: sessionId,
-          id_stripe_payment: stripePaymentId || undefined, // Will be set later when Stripe payment is processed
-          status: PaymentMethodCardStatus.PENDING, // Set to pending until payment is validated
+          id_stripe_payment: stripePaymentIntentId || undefined,
+          status: stripePaymentIntentId
+            ? PaymentMethodCardStatus.VALIDATED
+            : PaymentMethodCardStatus.PENDING,
           id_user: userId,
         });
       } catch (error) {
@@ -242,40 +288,86 @@ export class PaymentMethodCardService {
         totalAmount: trainingPrice,
       };
 
-      // Send email notification to user
+      // Payment intent is mandatory, so always create UserInSession and send email
+      console.log(
+        '📋 [PAYMENT METHOD CARD] Creating UserInSession for validated payment...',
+      );
+
+      // Create or update UserInSession
+      const { UserInSession } = await import('../models/model.userinsession');
+      const { UserInSessionStatus } = await import(
+        '../enums/user-in-session-status.enum'
+      );
+
+      const existingUserInSession = await UserInSession.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (existingUserInSession) {
+        console.log(
+          '⚠️ [USER IN SESSION] UserInSession already exists, updating status to IN',
+        );
+        await existingUserInSession.update({
+          status: UserInSessionStatus.IN,
+        });
+      } else {
+        console.log(
+          '✅ [USER IN SESSION] Creating new UserInSession with IN status',
+        );
+        await UserInSession.create({
+          id_user: userId,
+          id_session: sessionId,
+          status: UserInSessionStatus.IN,
+        });
+      }
+
+      // Reduce available places for the training session
+      await this.reduceAvailablePlaces(sessionId);
+
+      // Send payment confirmation email
       try {
         const user = await this.usersModel.findByPk(userId);
         if (user && user.email) {
-          await this.mailService.sendMail({
-            to: user.email,
-            subject: 'Paiement par carte confirmé',
-            content: this.mailService.templates({
-              as: 'payment-card-success',
-              firstName: user.firstName || '',
-              lastName: user.lastName || '',
-              cours: trainingSession.trainings?.title || 'Formation',
-              basePrice: trainingPrice,
-              stripeFee: 0, // No fees for manual creation
-              totalAmount: trainingPrice,
-            }),
-          });
           console.log(
-            '[PAYMENT METHOD CARD CREATE] ✅ Email notification sent to user:',
-            user.email,
+            '📧 [PAYMENT METHOD CARD SERVICE] Sending payment confirmation email...',
+          );
+          await this.mailService.sendPaymentConfirmationEmail(
+            sessionId,
+            userId,
+            trainingPrice,
+            0, // stripeFee
+            trainingPrice, // totalAmount
+          );
+          console.log(
+            '📧 [PAYMENT METHOD CARD SERVICE] Payment confirmation email sent successfully',
           );
         }
       } catch (emailError) {
         console.error(
-          '[PAYMENT METHOD CARD CREATE] ⚠️ Failed to send email notification:',
+          '❌ [PAYMENT METHOD CARD SERVICE] Error sending email notification:',
           emailError,
         );
-        // Don't fail the entire operation if email fails
       }
+
+      console.log('🎉 [PAYMENT COMPLETE] All records created successfully!');
+      console.log(
+        '🎉 [PAYMENT COMPLETE] PaymentMethodCard ID:',
+        paymentMethodCard.id,
+      );
+      console.log(
+        '🎉 [PAYMENT COMPLETE] UserInSession created/updated for user:',
+        userId,
+      );
+      console.log('🎉 [PAYMENT COMPLETE] Training session places reduced');
+      console.log('🎉 [PAYMENT COMPLETE] Confirmation email sent to user');
 
       return Responder({
         status: HttpStatusCode.Created,
         data: responseData,
-        customMessage: 'Payment method card created successfully',
+        customMessage: 'Méthode de paiement et inscription créées avec succès',
       });
     } catch (error) {
       console.error(
@@ -290,7 +382,7 @@ export class PaymentMethodCardService {
       console.error('[PAYMENT METHOD CARD CREATE] Request data:', {
         userId,
         sessionId,
-        stripePaymentId,
+        stripePaymentIntentId,
       });
 
       return Responder({
@@ -801,22 +893,9 @@ export class PaymentMethodCardService {
         '✅ [STRIPE PAYMENT INTENT] No existing payment methods found, proceeding with payment intent creation',
       );
 
-      // Create the payment method card with PENDING status
-      const createPaymentMethodCardDto: CreatePaymentMethodCardDto = {
-        id_session: stripePaymentIntentDto.id_session,
-      };
-      try {
-        await this.create(createPaymentMethodCardDto, userId, undefined);
-        console.log(
-          '✅ [STRIPE PAYMENT INTENT] Payment method card created with VALIDATED status',
-        );
-      } catch (error) {
-        console.error(
-          '❌ [STRIPE PAYMENT INTENT] Error creating payment method card:',
-          error,
-        );
-        // Continue with payment intent creation even if card creation fails
-      }
+      // Note: Payment method card and user session should only be created
+      // after successful payment validation in createPaymentMethodCardAfterPayment method.
+      // No records should be created at this stage.
 
       // Fetch training session with training price
       console.log(
@@ -939,31 +1018,8 @@ export class PaymentMethodCardService {
         userId,
       );
 
-      // Create UserInSession if not exists
-      console.log(
-        '📋 [STRIPE PAYMENT INTENT] Creating UserInSession if not exists...',
-      );
-      const existingUserInSession = await UserInSession.findOne({
-        where: {
-          id_user: userId,
-          id_session: stripePaymentIntentDto.id_session,
-        },
-      });
-
-      if (!existingUserInSession) {
-        console.log(
-          '✅ [USER IN SESSION] Creating new UserInSession with IN status',
-        );
-        await UserInSession.create({
-          id_user: userId,
-          id_session: stripePaymentIntentDto.id_session,
-          status: UserInSessionStatus.IN,
-        });
-      } else {
-        console.log(
-          'ℹ️ [USER IN SESSION] UserInSession already exists, skipping creation',
-        );
-      }
+      // Note: UserInSession should only be created after successful payment validation
+      // in the createPaymentMethodCardAfterPayment method. No records should be created here.
 
       const response = Responder({
         status: HttpStatusCode.Ok,
@@ -974,7 +1030,8 @@ export class PaymentMethodCardService {
           totalAmount: totalAmount,
           amountInCents: amountInCents,
         },
-        customMessage: 'Stripe Payment Intent created successfully',
+        customMessage:
+          'Stripe Payment Intent created successfully - Use clientSecret to complete payment with card details',
       });
 
       console.log(
@@ -1024,61 +1081,55 @@ export class PaymentMethodCardService {
         {
           id: paymentIntent.id,
           status: paymentIntent.status,
+          last_payment_error: paymentIntent.last_payment_error,
         },
       );
 
-      // If payment succeeded and we have the necessary data, automatically create payment method card
+      // Prepare response data with enhanced error information
+      const responseData: any = {
+        status: paymentIntent.status,
+      };
+
+      // Handle payment failures and errors
+      if (paymentIntent.last_payment_error) {
+        console.log(
+          '⚠️ [STRIPE PAYMENT INTENT] Payment has errors:',
+          paymentIntent.last_payment_error,
+        );
+
+        const errorInfo = this.categorizePaymentError(
+          paymentIntent.last_payment_error,
+        );
+        responseData.errorCode = errorInfo.errorCode;
+        responseData.errorMessage = errorInfo.errorMessage;
+        responseData.errorDetails = errorInfo.errorDetails;
+        responseData.requiresAction = errorInfo.requiresAction;
+        responseData.nextAction = errorInfo.nextAction;
+      }
+
+      // Handle payment intent status-specific cases
       if (
-        paymentIntent.status === 'succeeded' &&
-        userId &&
-        paymentIntent.metadata?.sessionId
+        paymentIntent.status === 'requires_action' &&
+        paymentIntent.next_action
       ) {
         console.log(
-          '🔄 [STRIPE PAYMENT INTENT] Payment succeeded, checking if payment method card exists...',
+          '🔄 [STRIPE PAYMENT INTENT] Payment requires additional action:',
+          paymentIntent.next_action,
         );
-
-        // Check if payment method card already exists
-        const existingPaymentMethod = await this.paymentMethodCardModel.findOne(
-          {
-            where: {
-              id_session: paymentIntent.metadata.sessionId,
-              id_user: userId,
-            },
-          },
-        );
-
-        if (!existingPaymentMethod) {
-          console.log(
-            '🔄 [STRIPE PAYMENT INTENT] Creating payment method card automatically...',
-          );
-          try {
-            await this.createPaymentMethodCardAfterPayment(
-              paymentIntent.metadata.sessionId,
-              userId,
-              paymentIntentId,
-            );
-            console.log(
-              '✅ [STRIPE PAYMENT INTENT] Payment method card created automatically',
-            );
-          } catch (error) {
-            console.error(
-              '❌ [STRIPE PAYMENT INTENT] Error creating payment method card automatically:',
-              error,
-            );
-            // Don't throw error, just log it and continue
-          }
-        } else {
-          console.log(
-            'ℹ️ [STRIPE PAYMENT INTENT] Payment method card already exists, skipping creation',
-          );
-        }
+        responseData.requiresAction = true;
+        responseData.nextAction = {
+          type: paymentIntent.next_action.type,
+          redirectToUrl: paymentIntent.next_action.redirect_to_url?.url,
+        };
       }
+
+      // Note: Payment method card and user session creation should only happen through
+      // the createPaymentMethodCardAfterPayment method with proper validation.
+      // This status check method should only return status information.
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: {
-          status: paymentIntent.status,
-        },
+        data: responseData,
         customMessage: 'Payment intent status retrieved successfully',
       });
     } catch (error) {
@@ -1091,19 +1142,342 @@ export class PaymentMethodCardService {
         throw error;
       }
 
-      // Handle Stripe-specific errors
+      // Handle Stripe-specific errors with enhanced error information
       if (error.type === 'StripeInvalidRequestError') {
-        throw new HttpException(
-          'Invalid payment intent ID',
-          HttpStatus.BAD_REQUEST,
-        );
+        const errorInfo = this.categorizePaymentError(error);
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            status: 'error',
+            errorCode: errorInfo.errorCode,
+            errorMessage: errorInfo.errorMessage,
+            errorDetails: errorInfo.errorDetails,
+          },
+          customMessage: 'Invalid payment intent ID',
+        });
       }
 
-      throw new HttpException(
-        `Failed to retrieve payment intent status: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      // For other Stripe errors, provide detailed error information
+      const errorInfo = this.categorizePaymentError(error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          status: 'error',
+          errorCode: errorInfo.errorCode,
+          errorMessage: errorInfo.errorMessage,
+          errorDetails: errorInfo.errorDetails,
+        },
+        customMessage: 'Failed to retrieve payment intent status',
+      });
     }
+  }
+
+  // Webhook validation method to ensure payment authenticity
+  async validateWebhookPayment(paymentIntentId: string): Promise<any> {
+    try {
+      console.log(
+        '🔍 [WEBHOOK VALIDATION] Validating webhook payment:',
+        paymentIntentId,
+      );
+
+      // Retrieve payment intent from Stripe to verify it's real
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
+
+      console.log(
+        '🔍 [WEBHOOK VALIDATION] Payment intent retrieved from Stripe:',
+        {
+          id: paymentIntent.id,
+          status: paymentIntent.status,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          created: new Date(paymentIntent.created * 1000).toISOString(),
+        },
+      );
+
+      // Verify payment is actually succeeded
+      if (paymentIntent.status !== 'succeeded') {
+        console.log(
+          '❌ [WEBHOOK VALIDATION] Payment not succeeded:',
+          paymentIntent.status,
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            isValid: false,
+            paymentIntent: null,
+            error: `Payment not succeeded. Status: ${paymentIntent.status}`,
+          },
+          customMessage: 'Webhook validation failed',
+        });
+      }
+
+      // Verify payment is recent (within last 24 hours)
+      const paymentAge = Date.now() - paymentIntent.created * 1000;
+      const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+      if (paymentAge > maxAge) {
+        console.log('❌ [WEBHOOK VALIDATION] Payment too old:', {
+          age: Math.round(paymentAge / (60 * 60 * 1000)),
+          hours: 'hours',
+        });
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            isValid: false,
+            paymentIntent: null,
+            error: 'Payment is too old to be processed',
+          },
+          customMessage: 'Webhook validation failed',
+        });
+      }
+
+      // Verify payment has required metadata
+      if (
+        !paymentIntent.metadata?.sessionId ||
+        !paymentIntent.metadata?.userId
+      ) {
+        console.log(
+          '❌ [WEBHOOK VALIDATION] Missing required metadata:',
+          paymentIntent.metadata,
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            isValid: false,
+            paymentIntent: null,
+            error: 'Payment missing required metadata',
+          },
+          customMessage: 'Webhook validation failed',
+        });
+      }
+
+      console.log('✅ [WEBHOOK VALIDATION] Payment validation successful');
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          isValid: true,
+          paymentIntent,
+          error: null,
+        },
+        customMessage: 'Webhook validation successful',
+      });
+    } catch (error) {
+      console.error(
+        '❌ [WEBHOOK VALIDATION] Error validating webhook payment:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.BadRequest,
+        data: {
+          isValid: false,
+          paymentIntent: null,
+          error: 'Failed to validate payment with Stripe',
+        },
+        customMessage: 'Webhook validation failed',
+      });
+    }
+  }
+
+  // Helper method to categorize payment errors and provide user-friendly messages
+  private categorizePaymentError(error: any): {
+    errorCode: string;
+    errorMessage: string;
+    errorDetails: any;
+    requiresAction: boolean;
+    nextAction?: any;
+  } {
+    console.log('🔍 [PAYMENT ERROR] Categorizing payment error:', error);
+
+    // Default values
+    let errorCode = 'unknown_error';
+    let errorMessage = "Une erreur inattendue s'est produite lors du paiement.";
+    let requiresAction = false;
+    let nextAction: any = null;
+
+    // Handle Stripe errors
+    if (error.type) {
+      switch (error.type) {
+        case 'card_error':
+          errorCode = error.code || 'card_error';
+          switch (error.code) {
+            case 'insufficient_funds':
+              errorMessage =
+                'Fonds insuffisants. Veuillez vérifier votre solde ou utiliser une autre carte.';
+              console.log(
+                '💰 [INSUFFICIENT FUNDS] Card has insufficient funds',
+              );
+              console.log(
+                '💰 [INSUFFICIENT FUNDS] User needs to add money or use different card',
+              );
+              console.log(
+                '💰 [INSUFFICIENT FUNDS] Decline code:',
+                error.decline_code || 'N/A',
+              );
+              break;
+            case 'expired_card':
+              errorMessage =
+                'Votre carte a expiré. Veuillez utiliser une carte valide.';
+              console.log('📅 [EXPIRED CARD] Card has expired');
+              console.log(
+                '📅 [EXPIRED CARD] User needs to use a valid, non-expired card',
+              );
+              console.log(
+                '📅 [EXPIRED CARD] Card expiry:',
+                error.exp_month + '/' + error.exp_year || 'Unknown',
+              );
+              break;
+            case 'card_declined':
+              errorMessage =
+                'Votre carte a été refusée. Veuillez contacter votre banque ou utiliser une autre carte.';
+              console.log('❌ [CARD DECLINED] Card was refused by bank');
+              console.log(
+                '❌ [CARD DECLINED] User needs to contact bank or use different card',
+              );
+              console.log(
+                '❌ [CARD DECLINED] Decline code:',
+                error.decline_code || 'N/A',
+              );
+              console.log(
+                '❌ [CARD DECLINED] Decline reason:',
+                error.message || 'No specific reason',
+              );
+              break;
+            case 'incorrect_cvc':
+              errorMessage =
+                'Le code de sécurité de votre carte est incorrect.';
+              console.log('🔐 [INCORRECT CVC] CVC code is incorrect');
+              console.log(
+                '🔐 [INCORRECT CVC] User needs to enter correct 3-digit CVC',
+              );
+              break;
+            case 'incorrect_number':
+              errorMessage = 'Le numéro de votre carte est incorrect.';
+              console.log('🔢 [INCORRECT NUMBER] Card number is incorrect');
+              console.log(
+                '🔢 [INCORRECT NUMBER] User needs to enter correct card number',
+              );
+              break;
+            case 'invalid_expiry_month':
+            case 'invalid_expiry_year':
+              errorMessage =
+                "La date d'expiration de votre carte est invalide.";
+              console.log('📅 [INVALID EXPIRY] Card expiry date is invalid');
+              console.log(
+                '📅 [INVALID EXPIRY] User needs to enter valid expiry date',
+              );
+              console.log('📅 [INVALID EXPIRY] Error type:', error.code);
+              break;
+            case 'processing_error':
+              errorMessage =
+                "Une erreur s'est produite lors du traitement de votre carte. Veuillez réessayer.";
+              console.log('⚙️ [PROCESSING ERROR] Card processing failed');
+              console.log(
+                '⚙️ [PROCESSING ERROR] Temporary issue, user should retry',
+              );
+              break;
+            case 'authentication_required':
+              errorMessage =
+                'Votre banque nécessite une authentification supplémentaire.';
+              requiresAction = true;
+              nextAction = {
+                type: 'use_stripe_sdk',
+                use_stripe_sdk:
+                  error.payment_intent?.next_action?.use_stripe_sdk,
+              };
+              console.log(
+                '🔐 [AUTHENTICATION REQUIRED] 3D Secure authentication needed',
+              );
+              console.log(
+                '🔐 [AUTHENTICATION REQUIRED] User needs to complete 3D Secure verification',
+              );
+              console.log(
+                '🔐 [AUTHENTICATION REQUIRED] Next action:',
+                nextAction,
+              );
+              break;
+            default:
+              errorMessage =
+                error.message ||
+                'Votre carte a été refusée. Veuillez contacter votre banque.';
+          }
+          break;
+
+        case 'invalid_request_error':
+          errorCode = 'invalid_request';
+          errorMessage = 'Demande de paiement invalide. Veuillez réessayer.';
+          break;
+
+        case 'api_error':
+          errorCode = 'api_error';
+          errorMessage =
+            'Erreur temporaire du service de paiement. Veuillez réessayer dans quelques minutes.';
+          break;
+
+        case 'authentication_error':
+          errorCode = 'authentication_error';
+          errorMessage = "Erreur d'authentification. Veuillez réessayer.";
+          break;
+
+        case 'rate_limit_error':
+          errorCode = 'rate_limit';
+          errorMessage =
+            'Trop de tentatives. Veuillez attendre avant de réessayer.';
+          break;
+
+        default:
+          errorCode = error.type || 'unknown_error';
+          errorMessage =
+            error.message || "Une erreur s'est produite lors du paiement.";
+      }
+    }
+
+    // Handle payment intent status errors
+    if (error.status) {
+      switch (error.status) {
+        case 'requires_payment_method':
+          errorCode = 'requires_payment_method';
+          errorMessage = 'Veuillez fournir une méthode de paiement valide.';
+          break;
+        case 'requires_action':
+          errorCode = 'requires_action';
+          errorMessage =
+            'Une action supplémentaire est requise pour finaliser le paiement.';
+          requiresAction = true;
+          if (error.next_action) {
+            nextAction = error.next_action;
+          }
+          break;
+        case 'requires_confirmation':
+          errorCode = 'requires_confirmation';
+          errorMessage = 'Le paiement nécessite une confirmation.';
+          break;
+        case 'canceled':
+          errorCode = 'canceled';
+          errorMessage = 'Le paiement a été annulé.';
+          break;
+      }
+    }
+
+    console.log('✅ [PAYMENT ERROR] Error categorized:', {
+      errorCode,
+      errorMessage,
+      requiresAction,
+      nextAction,
+    });
+
+    return {
+      errorCode,
+      errorMessage,
+      errorDetails: {
+        type: error.type,
+        code: error.code,
+        message: error.message,
+        decline_code: error.decline_code,
+      },
+      requiresAction,
+      nextAction,
+    };
   }
 
   // Validate Stripe payment intent
@@ -1137,7 +1511,32 @@ export class PaymentMethodCardService {
       });
 
       // Step 2: Check payment intent status
-      if (paymentIntent.status !== 'succeeded') {
+      console.log(
+        '🔍 [PAYMENT VALIDATION] Payment intent status:',
+        paymentIntent.status,
+      );
+
+      if (paymentIntent.status === 'succeeded') {
+        console.log('✅ [PAYMENT SUCCESS] Payment completed successfully!');
+        console.log(
+          '✅ [PAYMENT SUCCESS] Payment Intent ID:',
+          paymentIntent.id,
+        );
+        console.log(
+          '✅ [PAYMENT SUCCESS] Amount charged:',
+          paymentIntent.amount,
+          'cents',
+        );
+        console.log('✅ [PAYMENT SUCCESS] Currency:', paymentIntent.currency);
+        console.log(
+          '✅ [PAYMENT SUCCESS] Payment method ID:',
+          paymentIntent.payment_method,
+        );
+        console.log(
+          '✅ [PAYMENT SUCCESS] Receipt URL:',
+          (paymentIntent as any).receipt_url || 'N/A',
+        );
+      } else {
         console.log(
           '❌ [PAYMENT VALIDATION] Payment intent status is not succeeded:',
           paymentIntent.status,
@@ -1362,6 +1761,27 @@ export class PaymentMethodCardService {
         '📋 [PAYMENT METHOD CARD] Starting database operations - records will be created only after successful validation...',
       );
 
+      // Get training price for email notifications
+      const trainingSession = await this.trainingSessionModel.findByPk(
+        sessionId,
+        {
+          include: [
+            {
+              model: this.trainingModel,
+              as: 'trainings',
+              required: false,
+              attributes: ['prix'],
+            },
+          ],
+        },
+      );
+
+      const trainingPrice = trainingSession?.trainings?.prix || 0;
+      console.log(
+        '💰 [PAYMENT METHOD CARD] Training price for email:',
+        trainingPrice,
+      );
+
       // Check if payment method card already exists
       const existingPaymentMethod = await this.paymentMethodCardModel.findOne({
         where: {
@@ -1384,7 +1804,13 @@ export class PaymentMethodCardService {
         console.log(
           '📧 [PAYMENT METHOD CARD] About to send email for existing payment method...',
         );
-        await this.mailService.sendPaymentConfirmationEmail(sessionId, userId);
+        await this.mailService.sendPaymentConfirmationEmail(
+          sessionId,
+          userId,
+          trainingPrice,
+          0, // stripeFee
+          trainingPrice, // totalAmount
+        );
         console.log(
           '📧 [PAYMENT METHOD CARD] Email sending completed for existing payment method',
         );
@@ -1416,7 +1842,13 @@ export class PaymentMethodCardService {
       console.log(
         '📧 [PAYMENT METHOD CARD] About to send email for new payment method...',
       );
-      await this.mailService.sendPaymentConfirmationEmail(sessionId, userId);
+      await this.mailService.sendPaymentConfirmationEmail(
+        sessionId,
+        userId,
+        trainingPrice,
+        0, // stripeFee
+        trainingPrice, // totalAmount
+      );
       console.log(
         '📧 [PAYMENT METHOD CARD] Email sending completed for new payment method',
       );
@@ -1515,6 +1947,62 @@ export class PaymentMethodCardService {
         error,
       );
       throw error;
+    }
+  }
+
+  async getSecretaryPayments() {
+    try {
+      const cardPayments = await this.paymentMethodCardModel.findAll({
+        include: [
+          {
+            model: Users,
+            as: 'user',
+            attributes: ['id', 'email'],
+          },
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            attributes: ['id', 'title'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Fetch UserInSession data separately for each payment
+      const formattedPayments = await Promise.all(
+        cardPayments.map(async (payment) => {
+          // Find the corresponding UserInSession record
+          const userInSession = await this.userInSessionModel.findOne({
+            where: {
+              id_user: payment.id_user,
+              id_session: payment.id_session,
+            },
+            attributes: ['status'],
+          });
+
+          return {
+            userId: payment.user?.id,
+            userEmail: payment.user?.email,
+            sessionId: payment.trainingSession?.id,
+            sessionTitle: payment.trainingSession?.title,
+            status: userInSession?.status || 'pending',
+            paymentStatus: payment.status,
+            stripePaymentId: payment.id_stripe_payment,
+          };
+        }),
+      );
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: formattedPayments,
+        customMessage: 'Card payments retrieved successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error fetching Card payments',
+      });
     }
   }
 

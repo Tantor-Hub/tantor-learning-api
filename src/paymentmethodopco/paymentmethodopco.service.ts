@@ -802,6 +802,139 @@ export class PaymentMethodOpcoService {
     }
   }
 
+  async getSecretaryPayments() {
+    try {
+      const opcoPayments = await this.paymentMethodOpcoModel.findAll({
+        include: [
+          {
+            model: Users,
+            as: 'user',
+            attributes: ['id', 'email'],
+          },
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            attributes: ['id', 'title'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Get UserInSession data separately for each payment
+      const formattedPayments = await Promise.all(
+        opcoPayments.map(async (payment) => {
+          const userInSession = await this.userInSessionModel.findOne({
+            where: {
+              id_user: payment.id_user,
+              id_session: payment.id_session,
+            },
+            attributes: ['status'],
+          });
+
+          return {
+            userId: payment.user?.id,
+            userEmail: payment.user?.email,
+            sessionId: payment.trainingSession?.id,
+            sessionTitle: payment.trainingSession?.title,
+            status: userInSession?.status || 'pending',
+            paymentStatus: payment.status,
+            nomOpco: payment.nom_opco,
+            nomEntreprise: payment.nom_entreprise,
+            siren: payment.siren,
+          };
+        }),
+      );
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: formattedPayments,
+        customMessage: 'OPCO payments retrieved successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error fetching OPCO payments',
+      });
+    }
+  }
+
+  async updateSecretaryPaymentStatus(
+    userId: string,
+    sessionId: string,
+    status: string,
+  ) {
+    try {
+      // Find the payment method
+      const paymentMethod = await this.paymentMethodOpcoModel.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (!paymentMethod) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: {
+            message: 'Payment method not found for this user and session',
+          },
+          customMessage: 'Payment method not found',
+        });
+      }
+
+      // Find the user in session
+      const userInSession = await this.userInSessionModel.findOne({
+        where: {
+          id_user: userId,
+          id_session: sessionId,
+        },
+      });
+
+      if (!userInSession) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: { message: 'User not found in this session' },
+          customMessage: 'User not found in session',
+        });
+      }
+
+      // Update payment method status
+      await paymentMethod.update({ status: status as any });
+
+      // Update user in session status based on payment status
+      if (status === 'validated') {
+        await userInSession.update({ status: 'in' as any });
+      } else if (status === 'rejected') {
+        await userInSession.update({ status: 'refusedpayment' as any });
+      } else if (status === 'pending') {
+        await userInSession.update({ status: 'pending' as any });
+      }
+
+      // Return simplified payment method data
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          id: paymentMethod.id,
+          siren: paymentMethod.siren,
+          nom_responsable: paymentMethod.nom_responsable,
+          telephone_responsable: paymentMethod.telephone_responsable,
+          email_responsable: paymentMethod.email_responsable,
+          status: paymentMethod.status,
+          id_user: paymentMethod.id_user,
+          id_session: paymentMethod.id_session,
+        },
+        customMessage: 'OPCO payment status updated successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error updating OPCO payment status',
+      });
+    }
+  }
+
   // Reduce available places for training session when payment is validated
   private async reduceAvailablePlaces(sessionId: string) {
     if (!this.trainingSessionModel.sequelize) {

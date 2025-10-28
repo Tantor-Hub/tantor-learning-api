@@ -22,8 +22,9 @@ import { PaymentMethodOpcoService } from './paymentmethodopco.service';
 import { CreatePaymentMethodOpcoDto } from './dto/create-paymentmethodopco.dto';
 import { UpdatePaymentMethodOpcoDto } from './dto/update-paymentmethodopco.dto';
 import { DeletePaymentMethodOpcoDto } from './dto/delete-paymentmethodopco.dto';
-import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
+import { JwtAuthGuardAsManagerSystem } from '../guard/guard.asadmin';
+import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { PaymentMethodOpcoStatus } from '../enums/payment-method-opco-status.enum';
 
 @ApiTags('Payment Method OPCO')
@@ -231,7 +232,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Get('getall')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all payment methods OPCO' })
   @ApiResponse({
@@ -339,7 +340,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Get('session/:sessionId')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get payment methods OPCO by session ID',
@@ -370,7 +371,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Get('siren/:siren')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get payment methods OPCO by SIREN',
@@ -400,7 +401,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Get('status/:status')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get payment methods OPCO by status',
@@ -429,7 +430,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a payment method OPCO by ID' })
   @ApiParam({
@@ -460,7 +461,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Patch('update')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update a payment method OPCO',
@@ -524,7 +525,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Delete()
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a payment method OPCO' })
   @ApiBody({
@@ -559,7 +560,7 @@ export class PaymentMethodOpcoController {
   }
 
   @Delete('delete-all')
-  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseGuards(JwtAuthGuardAsManagerSystem)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete all payment methods OPCO' })
   @ApiResponse({
@@ -576,5 +577,157 @@ export class PaymentMethodOpcoController {
   })
   deleteAll() {
     return this.paymentMethodOpcoService.deleteAll();
+  }
+
+  @Get('secretary/payments')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all OPCO payments for secretary management',
+    description:
+      'Retrieve all OPCO payments with user email, session title, and status for secretary management.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OPCO payments retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'OPCO payments retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              userId: {
+                type: 'string',
+                format: 'uuid',
+                example: '123e4567-e89b-12d3-a456-426614174000',
+              },
+              userEmail: { type: 'string', example: 'student@example.com' },
+              sessionId: {
+                type: 'string',
+                format: 'uuid',
+                example: '123e4567-e89b-12d3-a456-426614174000',
+              },
+              sessionTitle: {
+                type: 'string',
+                example: 'JavaScript Fundamentals',
+              },
+              status: { type: 'string', example: 'in' },
+              paymentStatus: {
+                type: 'string',
+                enum: ['pending', 'rejected', 'validated'],
+                example: 'validated',
+              },
+              nomOpco: { type: 'string', example: 'OPCO Mobilités' },
+              nomEntreprise: { type: 'string', example: 'Entreprise ABC' },
+              siren: { type: 'string', example: '123456789' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  getSecretaryPayments() {
+    return this.paymentMethodOpcoService.getSecretaryPayments();
+  }
+
+  @Patch('secretary/update-status')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update OPCO payment status for secretary management',
+    description:
+      'Update the status of an OPCO payment and the corresponding UserInSession status.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['userId', 'sessionId', 'status'],
+      properties: {
+        userId: {
+          type: 'string',
+          format: 'uuid',
+          example: '123e4567-e89b-12d3-a456-426614174000',
+          description: 'User ID',
+        },
+        sessionId: {
+          type: 'string',
+          format: 'uuid',
+          example: '123e4567-e89b-12d3-a456-426614174000',
+          description: 'Session ID',
+        },
+        status: {
+          type: 'string',
+          enum: ['pending', 'rejected', 'validated'],
+          example: 'validated',
+          description: 'New payment status',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OPCO payment status updated successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'OPCO payment status updated successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            siren: { type: 'string' },
+            nom_responsable: { type: 'string' },
+            telephone_responsable: { type: 'string' },
+            email_responsable: { type: 'string' },
+            status: {
+              type: 'string',
+              enum: ['pending', 'rejected', 'validated'],
+            },
+            id_user: { type: 'string', format: 'uuid' },
+            id_session: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid data or payment not found.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  updateSecretaryPaymentStatus(
+    @Body() body: { userId: string; sessionId: string; status: string },
+  ) {
+    return this.paymentMethodOpcoService.updateSecretaryPaymentStatus(
+      body.userId,
+      body.sessionId,
+      body.status,
+    );
   }
 }
