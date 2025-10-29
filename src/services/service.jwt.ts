@@ -6,7 +6,6 @@ import { IMicroServices } from 'src/interface/interface.servicesinternesresponse
 import { AllSercices } from './serices.all';
 
 @Injectable()
-@Global()
 export class JwtService {
   round: number;
   constructor(

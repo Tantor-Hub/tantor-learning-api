@@ -1,7 +1,6 @@
 export * from './swagger.config';
 export * from './swagger.app';
 export * from './swagger.users';
-export * from './swagger.documents';
 export * from './swagger.lessons';
 export * from './swagger.cms';
 export * from './swagger.stripe';
@@ -20,3 +19,4 @@ export * from './swagger.trainingcategory';
 export * from './swagger.trainings';
 export * from './swagger.studentevaluation';
 export * from './swagger.responses';
+export * from './swagger.uploads';

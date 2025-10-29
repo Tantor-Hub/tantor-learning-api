@@ -11,6 +11,8 @@ import { tables } from 'src/config/config.tablesname';
 import { IUsers, UserRole } from 'src/interface/interface.users';
 import { Lesson } from './model.lesson';
 import { UserRoles } from './model.userroles';
+import { DocumentTemplate } from './model.documenttemplate';
+import { DocumentInstance } from './model.documentinstance';
 
 @Table({ tableName: tables['users'], timestamps: true })
 export class Users extends Model<IUsers> {
@@ -90,4 +92,10 @@ export class Users extends Model<IUsers> {
 
   @HasMany(() => UserRoles, 'user_id')
   userRoles?: UserRoles[];
+
+  @HasMany(() => DocumentTemplate, 'createdById')
+  documentTemplates?: DocumentTemplate[];
+
+  @HasMany(() => DocumentInstance, 'userId')
+  documentInstances?: DocumentInstance[];
 }

@@ -35,4 +35,7 @@ export enum tables {
   userinsession = `${table_prefix}userinsession`,
   paymentmethodcard = `${table_prefix}paymentmethodcard`,
   paymentmethodopco = `${table_prefix}paymentmethodopco`,
+  documenttemplate = `${table_prefix}documenttemplate`,
+  documentinstance = `${table_prefix}documentinstance`,
+  uploadedfile = `${table_prefix}uploadedfile`,
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Global } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import randomstring from 'randomstring';
 import { IInternalResponse } from 'src/interface/interface.internalresponse';
@@ -9,6 +9,7 @@ import { literal, Op } from 'sequelize';
 import Stripe from 'stripe';
 
 @Injectable()
+@Global()
 export class AllSercices {
   private stripe: Stripe;
   private stripeCommission: number;

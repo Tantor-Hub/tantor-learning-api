@@ -170,6 +170,15 @@ export class UsersController {
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.userService.refreshTokenUser(refreshTokenDto);
   }
+
+  @Post('auth/refresh')
+  async refreshTokenPost(@Body() refreshTokenDto: RefreshTokenDto) {
+    console.log(
+      '[USERS CONTROLLER] 🔄 Refresh token POST request:',
+      refreshTokenDto,
+    );
+    return this.userService.refreshTokenUser(refreshTokenDto);
+  }
   @Put('user/resendcode')
   async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
     return this.userService.resentVerificationCode(resentCodeDto);

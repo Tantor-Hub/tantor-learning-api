@@ -16,9 +16,11 @@ import * as bodyParser from 'body-parser';
 import { SwaggerConfig } from './swagger';
 
 async function tantorAPP() {
+  console.log('[MAIN] 🚀 Starting TANTOR APP...');
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>('TANTORPORT', 3000);
+  console.log('[MAIN] 📡 Port configured:', port);
 
   // ✅ CORS setup for credentials & custom headers
   const allowedOrigins = [
@@ -90,6 +92,40 @@ async function tantorAPP() {
   });
 
   app.setGlobalPrefix('/api/');
+
+  // Add request logging middleware
+  app.use((req, res, next) => {
+    console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
+    console.log(`[REQUEST] Headers:`, {
+      authorization: req.headers.authorization ? 'Bearer [PRESENT]' : 'Missing',
+      'content-type': req.headers['content-type'],
+      origin: req.headers.origin,
+    });
+    if (req.body && Object.keys(req.body).length > 0) {
+      console.log(`[REQUEST] Body:`, JSON.stringify(req.body, null, 2));
+    }
+    console.log(
+      `[REQUEST] User:`,
+      req.user
+        ? { id: req.user.id_user || req.user.id, role: req.user.role }
+        : 'Not authenticated',
+    );
+
+    // Log response
+    const originalSend = res.send;
+    res.send = function (body) {
+      console.log(
+        `[RESPONSE] ${res.statusCode} ${req.method} ${req.originalUrl}`,
+      );
+      if (body && typeof body === 'object') {
+        console.log(`[RESPONSE] Body:`, JSON.stringify(body, null, 2));
+      }
+      return originalSend.call(this, body);
+    };
+
+    next();
+  });
+
   app.use(bodyParser.json({ limit: '500mb' }));
   app.use(bodyParser.urlencoded({ limit: '500mb', extended: true }));
   app.use(

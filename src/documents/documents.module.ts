@@ -1,45 +1,32 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { DocumentsService } from './documents.service';
 import { DocumentsController } from './documents.controller';
-import { Document } from 'src/models/model.document';
-import { DocumentField } from 'src/models/model.documentfield';
-import { DocumentResponse } from 'src/models/model.documentresponse';
-import { Users } from 'src/models/model.users';
-import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
-import { JwtService } from 'src/services/service.jwt';
-import { AllSercices } from 'src/services/serices.all';
-import { JwtModule } from '@nestjs/jwt';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { DocumentTemplate } from '../models/model.documenttemplate';
+import { DocumentInstance } from '../models/model.documentinstance';
+import { Users } from '../models/model.users';
+import { TrainingSession } from '../models/model.trainingssession';
+import { JwtService } from '../services/service.jwt';
+import { ConfigService } from '@nestjs/config';
+import { AllSercices } from '../services/serices.all';
+import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 
 @Module({
   imports: [
-    ConfigModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('APPJWTTOKEN', 'defaultSecret'),
-        signOptions: {
-          expiresIn: configService.get<string>('APPJWTMAXLIFE', '1h'),
-        },
-      }),
-    }),
     SequelizeModule.forFeature([
-      Document,
-      DocumentField,
-      DocumentResponse,
+      DocumentTemplate,
+      DocumentInstance,
       Users,
+      TrainingSession,
     ]),
   ],
   controllers: [DocumentsController],
   providers: [
     DocumentsService,
-    JwtAuthGuardAsManagerSystem,
     JwtService,
+    ConfigService,
     AllSercices,
-    GoogleDriveService,
+    JwtAuthGuardAsSecretary,
   ],
   exports: [DocumentsService],
 })
