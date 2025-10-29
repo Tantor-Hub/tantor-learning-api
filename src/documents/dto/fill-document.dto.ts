@@ -13,22 +13,14 @@ export class FillDocumentDto {
   templateId: string;
 
   @ApiProperty({
-    description: 'User-filled TipTap JSON content',
-    example: {
-      type: 'doc',
-      content: [
-        {
-          type: 'heading',
-          attrs: { level: 1 },
-          content: [{ type: 'text', text: 'My Evaluation' }],
-        },
-      ],
-    },
-    type: 'object',
-    additionalProperties: true,
+    description:
+      'Deprecated: content is generated server-side from template + variableValues. If provided, it will be ignored.',
+    required: false,
+    type: Object,
   })
+  @IsOptional()
   @IsObject()
-  filledContent: object;
+  filledContent?: object;
 
   @ApiProperty({
     description: 'Values for the template variables defined by the secretary',

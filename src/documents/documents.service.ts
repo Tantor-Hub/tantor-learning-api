@@ -219,11 +219,29 @@ export class DocumentsService {
       throw new NotFoundException('Template not found');
     }
 
+    // Generate filled content on the server if not provided, by replacing
+    // {{variable}} placeholders in the TipTap JSON with provided values.
+    const variableValues = (dto.variableValues as any) ?? {};
+    let filledContent: any = dto.filledContent;
+    if (!filledContent) {
+      const raw = JSON.stringify(template.content ?? {});
+      const replaced = raw.replace(/\{\{(.*?)\}\}/g, (_m, p1) => {
+        const key = String(p1).trim();
+        const val = variableValues[key];
+        return val !== undefined && val !== null ? String(val) : '';
+      });
+      try {
+        filledContent = JSON.parse(replaced);
+      } catch {
+        filledContent = template.content ?? {};
+      }
+    }
+
     return await this.instanceModel.create({
       templateId: dto.templateId,
       userId,
-      filledContent: dto.filledContent,
-      variableValues: dto.variableValues,
+      filledContent,
+      variableValues,
     });
   }
 

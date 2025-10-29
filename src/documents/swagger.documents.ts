@@ -992,8 +992,9 @@ Variables are placeholder names that can be used in the TipTap content. They sho
 
   // Instance endpoints
   fillDocument: {
-    summary: 'Fill out a document template',
-    description: 'Creates a new document instance by filling out a template',
+    summary: 'Create a document instance (student fills variables only)',
+    description:
+      'Creates a new document instance. The server generates the filled content from the template and provided variableValues. Students should only send variableValues; any provided filledContent will be ignored.',
     operationId: 'fillDocument',
     tags: ['Documents'],
     security: [{ bearerAuth: [] }],
@@ -1010,108 +1011,23 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 description: 'ID of the template to fill out',
                 example: '123e4567-e89b-12d3-a456-426614174000',
               },
-              filledContent: {
+              variableValues: {
                 type: 'object',
-                description: 'User-filled TipTap JSON content',
+                description:
+                  'Values for the template variables. Only these may be modified by the student. The server will generate the TipTap content.',
                 example: {
-                  type: 'doc',
-                  content: [
-                    {
-                      type: 'heading',
-                      attrs: { level: 1 },
-                      content: [{ type: 'text', text: 'My Evaluation' }],
-                    },
-                  ],
+                  employeeName: 'Alice',
+                  department: 'Sales',
+                  evaluationDate: '2025-11-01',
                 },
               },
             },
-            required: ['templateId', 'filledContent'],
+            required: ['templateId'],
             example: {
               templateId: '123e4567-e89b-12d3-a456-426614174000',
-              filledContent: {
-                type: 'doc',
-                content: [
-                  {
-                    type: 'heading',
-                    attrs: { level: 1 },
-                    content: [
-                      { type: 'text', text: 'Pre-Training Assessment Form' },
-                    ],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Please fill out this form before attending the training session. This will help us understand your current knowledge level.',
-                      },
-                    ],
-                  },
-                  {
-                    type: 'heading',
-                    attrs: { level: 2 },
-                    content: [{ type: 'text', text: 'Personal Information' }],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Name: John Doe',
-                      },
-                    ],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Email: john.doe@example.com',
-                      },
-                    ],
-                  },
-                  {
-                    type: 'heading',
-                    attrs: { level: 2 },
-                    content: [{ type: 'text', text: 'Assessment Questions' }],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: '1. What is your current experience level with this topic?',
-                      },
-                    ],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Answer: I have basic knowledge but would like to learn more advanced concepts.',
-                      },
-                    ],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: '2. What specific areas would you like to focus on during the training?',
-                      },
-                    ],
-                  },
-                  {
-                    type: 'paragraph',
-                    content: [
-                      {
-                        type: 'text',
-                        text: 'Answer: I am particularly interested in practical applications and hands-on exercises.',
-                      },
-                    ],
-                  },
-                ],
+              variableValues: {
+                employeeName: 'Alice',
+                department: 'Sales',
               },
             },
           },
