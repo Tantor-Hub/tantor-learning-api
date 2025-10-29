@@ -307,6 +307,18 @@ export class SessionCoursController {
     return this.sessionCoursService.findBySessionId(sessionId);
   }
 
+  // Alias route for secretary: GET /api/sessioncours/session/:sessionId
+  @Get('session/:sessionId')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Alias: Get all session courses by session ID (Secretary)' })
+  @ApiParam({ name: 'sessionId', description: 'Training Session UUID' })
+  @ApiResponse({ status: 200, description: 'Session courses retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  async findBySessionIdAlias(@Param('sessionId') sessionId: string) {
+    return this.sessionCoursService.findBySessionId(sessionId);
+  }
+
   @Get('student/session/:sessionId')
   @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiBearerAuth()
