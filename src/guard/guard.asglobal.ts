@@ -106,6 +106,14 @@ export class JwtAuthGuard implements CanActivate {
         throw new CustomUnauthorizedException('Utilisateur non trouvé');
       }
 
+      // Check if user is verified
+      if (user.is_verified === false) {
+        console.log('❌ JwtAuthGuard (Global): User not verified:', user.email);
+        throw new CustomUnauthorizedException(
+          "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        );
+      }
+
       // Attach user info to request for downstream handlers
       request.user = {
         ...decoded,

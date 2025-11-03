@@ -38,4 +38,7 @@ export enum tables {
   documenttemplate = `${table_prefix}documenttemplate`,
   documentinstance = `${table_prefix}documentinstance`,
   uploadedfile = `${table_prefix}uploadedfile`,
+  otps = `${table_prefix}otps`,
+  legaldocuments = `${table_prefix}legaldocuments`,
+  catalogueformation = `${table_prefix}catalogueformation`,
 }

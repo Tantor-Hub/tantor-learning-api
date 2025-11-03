@@ -237,12 +237,28 @@ export class DocumentsService {
       }
     }
 
-    return await this.instanceModel.create({
+    const instance = await this.instanceModel.create({
       templateId: dto.templateId,
       userId,
       filledContent,
       variableValues,
     });
+    // Fetch with associations for response consistency
+    const created = await this.instanceModel.findOne({
+      where: { id: instance.id },
+      include: [
+        {
+          model: DocumentTemplate,
+          as: 'template',
+          attributes: ['id', 'title', 'content'],
+        },
+      ],
+    });
+    return {
+      status: 200,
+      message: 'Document filled successfully',
+      data: created,
+    };
   }
 
   async getUserDocuments(userId: string) {
@@ -315,5 +331,21 @@ export class DocumentsService {
 
     await template.destroy();
     return { message: 'Template deleted successfully' };
+  }
+
+  async getDocumentInstancesByTemplateForUser(
+    templateId: string,
+    userId: string,
+  ) {
+    return await this.instanceModel.findAll({
+      where: { templateId, userId },
+      include: [
+        {
+          model: DocumentTemplate,
+          as: 'template',
+          attributes: ['id', 'title', 'content'],
+        },
+      ],
+    });
   }
 }

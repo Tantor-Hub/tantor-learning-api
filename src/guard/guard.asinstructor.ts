@@ -99,6 +99,17 @@ export class JwtAuthGuardAsInstructor implements CanActivate {
         throw new CustomUnauthorizedException('Utilisateur non trouvé');
       }
 
+      // Check if user is verified
+      if (user.is_verified === false) {
+        console.log(
+          '❌ JwtAuthGuardAsInstructor: User not verified:',
+          user.email,
+        );
+        throw new CustomUnauthorizedException(
+          "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        );
+      }
+
       // Check if user has instructor role only
       if (!this.allowedRoles.includes(user.role)) {
         console.log(

@@ -126,6 +126,17 @@ export class JwtAuthGuardUniversalMultiRole implements CanActivate {
         throw new CustomUnauthorizedException('Utilisateur non trouvé');
       }
 
+      // Check if user is verified
+      if (user.is_verified === false) {
+        console.log(
+          '❌ JwtAuthGuardUniversalMultiRole: User not verified:',
+          user.email,
+        );
+        throw new CustomUnauthorizedException(
+          "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        );
+      }
+
       // Get user roles (both from legacy role field and new userRoles table)
       const userRoles = await this.getUserRoles(user);
 

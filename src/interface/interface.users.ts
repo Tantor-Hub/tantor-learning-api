@@ -22,5 +22,4 @@ export interface IUsers {
   city?: string;
   dateBirth?: string;
   role: UserRole;
-  otp?: string;
 }

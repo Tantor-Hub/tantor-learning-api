@@ -84,6 +84,9 @@ export class Users extends Model<IUsers> {
   @Column({ type: DataType.STRING, allowNull: true })
   otp?: string;
 
+  @Column({ type: DataType.DATE, allowNull: true })
+  otp_expires_at?: Date;
+
   // roles table removed; rely on single user.role
 
   // Relationships

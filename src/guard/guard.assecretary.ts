@@ -106,6 +106,17 @@ export class JwtAuthGuardAsSecretary implements CanActivate {
         throw new CustomUnauthorizedException('Utilisateur non trouvé');
       }
 
+      // Check if user is verified
+      if (user.is_verified === false) {
+        console.log(
+          '❌ JwtAuthGuardAsSecretary: User not verified:',
+          user.email,
+        );
+        throw new CustomUnauthorizedException(
+          "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        );
+      }
+
       // Check if user has secretary role
       if (user.role !== 'secretary') {
         console.log(

@@ -298,6 +298,17 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
         throw new ForbiddenException('Utilisateur non trouvé');
       }
 
+      // Check if user is verified
+      if (user.is_verified === false) {
+        console.log(
+          '❌ JwtAuthGuardAsStudentInSession: User not verified:',
+          user.email,
+        );
+        throw new ForbiddenException(
+          "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        );
+      }
+
       // Check if user has student role
       if (user.role !== 'student') {
         console.log(

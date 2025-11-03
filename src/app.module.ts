@@ -63,6 +63,11 @@ import { DocumentTemplate } from './models/model.documenttemplate';
 import { DocumentInstance } from './models/model.documentinstance';
 import { UploadsModule } from './uploads/uploads.module';
 import { UploadedFile } from './models/model.uploadedfile';
+import { Otp } from './models/model.otp';
+import { LegalDocumentsModule } from './legaldocuments/legaldocuments.module';
+import { LegalDocument } from './models/model.legaldocument';
+import { CatalogueFormationModule } from './catalogueformation/catalogueformation.module';
+import { CatalogueFormation } from './models/model.catalogueformation';
 
 @Module({
   imports: [
@@ -144,6 +149,8 @@ import { UploadedFile } from './models/model.uploadedfile';
       DocumentTemplate,
       DocumentInstance,
       UploadedFile,
+      Otp,
+      LegalDocument,
     ]),
     // Removed RolesModule as roles module is deleted
     // RolesModule,
@@ -174,6 +181,8 @@ import { UploadedFile } from './models/model.uploadedfile';
     StudentAnswerOptionModule,
     DocumentsModule,
     UploadsModule,
+    LegalDocumentsModule,
+    CatalogueFormationModule,
   ],
   providers: [
     AppService,
