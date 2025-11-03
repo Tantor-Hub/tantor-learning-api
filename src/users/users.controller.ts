@@ -23,6 +23,7 @@ import { FindByEmailDto } from './dto/find-by-email.dto';
 import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';
 import { LoginPasswordlessDto } from './dto/login-passwordless.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { SetVerifiedStatusDto } from './dto/set-verified-status.dto';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -51,6 +52,7 @@ import { log } from 'console';
 import { Users } from 'src/models/model.users';
 import { UserRole, ALL_ROLES } from 'src/interface/interface.userrole';
 import { IListUserByRoleResponse } from 'src/interface/interface.listuserbyroleresponse';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -170,6 +172,15 @@ export class UsersController {
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.userService.refreshTokenUser(refreshTokenDto);
   }
+
+  @Post('auth/refresh')
+  async refreshTokenPost(@Body() refreshTokenDto: RefreshTokenDto) {
+    console.log(
+      '[USERS CONTROLLER] 🔄 Refresh token POST request:',
+      refreshTokenDto,
+    );
+    return this.userService.refreshTokenUser(refreshTokenDto);
+  }
   @Put('user/resendcode')
   async resentCodeAsStudent(@Body() resentCodeDto: ResentCodeDto) {
     return this.userService.resentVerificationCode(resentCodeDto);
@@ -188,9 +199,115 @@ export class UsersController {
   @UseInterceptors(
     FileInterceptor('avatar', { limits: { fileSize: 10_000_000 } }),
   )
+  @ApiOperation({
+    summary: 'Update user profile',
+    description:
+      'Allows authenticated users to update their own profile information including personal details and profile picture (avatar).',
+  })
+  @ApiBody({
+    type: UpdateUserProfileDto,
+    description: 'User profile update data',
+    examples: {
+      updateProfile: {
+        summary: 'Update user profile',
+        value: {
+          firstName: 'John',
+          lastName: 'Doe',
+          phone: '+1234567890',
+          address: '123 Main St',
+          city: 'Paris',
+          country: 'France',
+          dateBirth: '1990-01-01',
+          num_piece_identite: 'ID123456',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: { type: 'string', example: 'Success' },
+        data: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            email: { type: 'string', example: 'user@example.com' },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            avatar: {
+              type: 'string',
+              nullable: true,
+              example: 'https://drive.google.com/file/d/...',
+            },
+            role: { type: 'string', example: 'student' },
+            phone: { type: 'string', nullable: true, example: '+1234567890' },
+            address: { type: 'string', nullable: true, example: '123 Main St' },
+            city: { type: 'string', nullable: true, example: 'Paris' },
+            country: { type: 'string', nullable: true, example: 'France' },
+            dateBirth: {
+              type: 'string',
+              nullable: true,
+              example: '1990-01-01',
+            },
+            num_piece_identite: {
+              type: 'string',
+              nullable: true,
+              example: 'ID123456',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid data provided',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Bad Request' },
+        data: {
+          type: 'string',
+          example: 'Le body de la requete ne peut etre vide',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Not Found' },
+        data: { type: 'null', example: null },
+      },
+    },
+  })
   async updateProfileAsStudent(
     @User() user: IJwtSignin,
-    @Body() profile: any,
+    @Body() profile: UpdateUserProfileDto,
     @Request() req: Request,
     @UploadedFile() file: Express.Multer.File,
   ) {
@@ -552,5 +669,512 @@ export class UsersController {
       status: HttpStatusCode.Ok,
       data: 'Access granted: You meet the custom role requirements',
     });
+  }
+
+  @Get('admin/user/:userId/login-count')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiOperation({
+    summary: 'Get user login count in past 7 days (Admin only)',
+    description:
+      'Get the number of times a user has logged in during the past 7 days. Only admins can access this endpoint.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'UUID of the user',
+    type: String,
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login count retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 200,
+          description: 'HTTP status code',
+        },
+        message: {
+          type: 'string',
+          example: 'Success',
+          description: 'Response message',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            userId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+              description: 'User ID',
+            },
+            loginCount: {
+              type: 'number',
+              example: 5,
+              description: 'Total number of logins in the past 7 days',
+            },
+            period: {
+              type: 'string',
+              example: '7 days',
+              description: 'Time period for the data',
+            },
+          },
+          required: ['userId', 'loginCount', 'period'],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin access required',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 401,
+        },
+        message: {
+          type: 'string',
+          example: 'Unauthorized',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 500,
+        },
+        data: {
+          type: 'object',
+          properties: {
+            error: {
+              type: 'string',
+              example: 'Erreur lors de la récupération du nombre de connexions',
+            },
+          },
+        },
+      },
+    },
+  })
+  async getUserLoginCount(@Param('userId') userId: string) {
+    return this.userService.getUserLoginCount(userId);
+  }
+
+  @Get('admin/daily-logins')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiOperation({
+    summary: 'Get daily login counts for all users - past 7 days (Admin only)',
+    description:
+      'Get the aggregated number of logins per day for all users in the past 7 days, formatted for graph visualization. Only admins can access this endpoint.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily login counts retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 200,
+          description: 'HTTP status code',
+        },
+        message: {
+          type: 'string',
+          example: 'Success',
+          description: 'Response message',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            dailyLogins: {
+              type: 'array',
+              description:
+                'Array of daily login counts (aggregated across all users) for the past 7 days',
+              items: {
+                type: 'object',
+                properties: {
+                  date: {
+                    type: 'string',
+                    format: 'date',
+                    example: '2025-01-30',
+                    description: 'Date in YYYY-MM-DD format',
+                  },
+                  count: {
+                    type: 'number',
+                    example: 15,
+                    description:
+                      'Total number of logins from all users on this date',
+                  },
+                },
+                required: ['date', 'count'],
+              },
+              example: [
+                { date: '2025-01-24', count: 12 },
+                { date: '2025-01-25', count: 8 },
+                { date: '2025-01-26', count: 5 },
+                { date: '2025-01-27', count: 20 },
+                { date: '2025-01-28', count: 15 },
+                { date: '2025-01-29', count: 10 },
+                { date: '2025-01-30', count: 18 },
+              ],
+            },
+            period: {
+              type: 'string',
+              example: '7 days',
+              description: 'Time period for the data',
+            },
+            totalLogins: {
+              type: 'number',
+              example: 88,
+              description:
+                'Total number of logins from all users in the past 7 days',
+            },
+          },
+          required: ['dailyLogins', 'period', 'totalLogins'],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin access required',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 401,
+        },
+        message: {
+          type: 'string',
+          example: 'Unauthorized',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 500,
+        },
+        data: {
+          type: 'object',
+          properties: {
+            error: {
+              type: 'string',
+              example:
+                'Erreur lors de la récupération des connexions quotidiennes',
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAllUsersDailyLoginCount() {
+    return this.userService.getAllUsersDailyLoginCount();
+  }
+
+  @Patch('admin/user/verification-status')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiOperation({
+    summary: 'Set user verification status (Admin only)',
+    description:
+      'Update the is_verified status of a user. Setting to false will prevent the user from logging in. Only admins can access this endpoint.',
+  })
+  @ApiBody({
+    type: SetVerifiedStatusDto,
+    description: 'User ID and verification status',
+    examples: {
+      revokeVerification: {
+        summary: 'Revoke user verification',
+        value: {
+          userId: '550e8400-e29b-41d4-a716-446655440000',
+          is_verified: false,
+        },
+      },
+      grantVerification: {
+        summary: 'Grant user verification',
+        value: {
+          userId: '550e8400-e29b-41d4-a716-446655440000',
+          is_verified: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification status updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 200,
+        },
+        message: {
+          type: 'string',
+          example: 'Success',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            userId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            email: {
+              type: 'string',
+              example: 'user@example.com',
+            },
+            is_verified: {
+              type: 'boolean',
+              example: false,
+            },
+            message: {
+              type: 'string',
+              example: "Vérification de l'utilisateur révoquée",
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin access required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async setUserVerifiedStatus(
+    @Body() setVerifiedStatusDto: SetVerifiedStatusDto,
+  ) {
+    return this.userService.setUserVerifiedStatus(
+      setVerifiedStatusDto.userId,
+      setVerifiedStatusDto.is_verified,
+    );
+  }
+
+  @Patch('admin/user/:userId/toggle-verification')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiOperation({
+    summary: 'Toggle user verification status (Admin only)',
+    description:
+      'Toggle the is_verified status of a user. If true, sets it to false; if false, sets it to true. This endpoint automatically changes the verification status. Only admins can access this endpoint.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'UUID of the user',
+    type: String,
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification status toggled successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 200,
+        },
+        message: {
+          type: 'string',
+          example: 'Success',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            userId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            email: {
+              type: 'string',
+              example: 'user@example.com',
+            },
+            previousStatus: {
+              type: 'boolean',
+              example: true,
+              description: 'Previous is_verified status',
+            },
+            newStatus: {
+              type: 'boolean',
+              example: false,
+              description: 'New is_verified status after toggle',
+            },
+            message: {
+              type: 'string',
+              example: "Vérification de l'utilisateur révoquée",
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin access required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async toggleUserVerifiedStatus(@Param('userId') userId: string) {
+    return this.userService.toggleUserVerifiedStatus(userId);
+  }
+
+  @Get('admin/user/:userId/profile')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @ApiOperation({
+    summary: 'Get user profile by ID (Admin only)',
+    description:
+      'Retrieve the profile information of any user by their ID. Only admins can access this endpoint. Sensitive fields like verification_code, is_verified, and last_login are excluded from the response.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'UUID of the user to retrieve profile for',
+    type: String,
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 200,
+        },
+        message: {
+          type: 'string',
+          example: 'Success',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            email: {
+              type: 'string',
+              example: 'user@example.com',
+            },
+            firstName: {
+              type: 'string',
+              example: 'John',
+            },
+            lastName: {
+              type: 'string',
+              example: 'Doe',
+            },
+            avatar: {
+              type: 'string',
+              nullable: true,
+              example: 'https://example.com/avatar.jpg',
+            },
+            role: {
+              type: 'string',
+              example: 'student',
+            },
+            phone: {
+              type: 'string',
+              nullable: true,
+              example: '+1234567890',
+            },
+            address: {
+              type: 'string',
+              nullable: true,
+              example: '123 Main St',
+            },
+            city: {
+              type: 'string',
+              nullable: true,
+              example: 'Paris',
+            },
+            country: {
+              type: 'string',
+              nullable: true,
+              example: 'France',
+            },
+            dateBirth: {
+              type: 'string',
+              nullable: true,
+              example: '1990-01-01',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2023-01-01T00:00:00.000Z',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2023-01-01T00:00:00.000Z',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin access required',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 401,
+        },
+        message: {
+          type: 'string',
+          example: 'Unauthorized',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'number',
+          example: 404,
+        },
+        message: {
+          type: 'string',
+          example: 'Not Found',
+        },
+        data: {
+          type: 'null',
+          example: null,
+        },
+      },
+    },
+  })
+  async getUserProfileById(@Param('userId') userId: string) {
+    return this.userService.getUserProfileById(userId);
   }
 }

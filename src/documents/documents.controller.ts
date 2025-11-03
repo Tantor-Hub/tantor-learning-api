@@ -1,106 +1,166 @@
 import {
-  Body,
   Controller,
   Get,
-  Param,
   Post,
-  UploadedFile,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
   UseGuards,
-  UseInterceptors,
+  Req,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
   ApiTags,
-  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { AddFieldsDto } from './dto/add-fields.dto';
-import { SubmitResponseDto } from './dto/submit-response.dto';
-import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
+import { CreateTemplateDto } from './dto/create-template.dto';
+import { UpdateTemplateDto } from './dto/update-template.dto';
+import { FillDocumentDto } from './dto/fill-document.dto';
+import { JwtAuthGuard } from '../guard/guard.asglobal';
+import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
+import { DocumentSwagger } from './swagger.documents';
 
 @ApiTags('Documents')
-@ApiBearerAuth()
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post()
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.createTemplate)
+  @Post('templates')
+  createTemplate(@Body() dto: CreateTemplateDto, @Req() req) {
+    return this.documentsService.createTemplate(dto, req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.updateTemplate)
+  @Patch('templates/:id')
+  updateTemplate(
+    @Param('id') id: string,
+    @Body() dto: UpdateTemplateDto,
+    @Req() req,
+  ) {
+    return this.documentsService.updateTemplate(id, dto, req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.getAllTemplates)
+  @Get('templates')
+  getAllTemplates() {
+    return this.documentsService.getAllTemplates();
+  }
+
+  @ApiOperation(DocumentSwagger.getTemplateById)
+  @Get('templates/:id')
+  getTemplateById(@Param('id') id: string) {
+    return this.documentsService.getTemplateById(id);
+  }
+
+  @ApiOperation(DocumentSwagger.getTemplatesBySessionId)
+  @Get('templates/session/:sessionId')
+  getTemplatesBySessionId(@Param('sessionId') sessionId: string) {
+    return this.documentsService.getTemplatesBySessionId(sessionId);
+  }
+
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.deleteTemplate)
+  @Delete('templates/:id')
+  deleteTemplate(@Param('id') id: string, @Req() req) {
+    return this.documentsService.deleteTemplate(id, req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.fillDocument)
+  @Post('instances')
+  fillDocument(@Body() dto: FillDocumentDto, @Req() req) {
+    return this.documentsService.fillDocument(dto, req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.getUserDocuments)
+  @Get('instances/my')
+  getUserDocuments(@Req() req) {
+    return this.documentsService.getUserDocuments(req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.getDocumentInstanceById)
+  @Get('instances/:id')
+  getDocumentInstanceById(@Param('id') id: string, @Req() req) {
+    return this.documentsService.getDocumentInstanceById(id, req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.updateDocumentInstance)
+  @Put('instances/:id')
+  updateDocumentInstance(
+    @Param('id') id: string,
+    @Body() body: { filledContent: object; variableValues?: object },
+    @Req() req,
+  ) {
+    return this.documentsService.updateDocumentInstance(
+      id,
+      req.user.id_user,
+      body.filledContent,
+      body.variableValues,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.deleteDocumentInstance)
+  @Delete('instances/:id')
+  deleteDocumentInstance(@Param('id') id: string, @Req() req) {
+    return this.documentsService.deleteDocumentInstance(id, req.user.id_user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Create a new document',
-    description: 'Upload a document for a lesson',
+    summary: 'Update my document instance',
+    description:
+      "Updates the filled content and/or variable values of the authenticated student's own document instance.",
   })
-  @ApiBody({ type: CreateDocumentDto })
-  @ApiResponse({ status: 201, description: 'Document created' })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - Invalid data provided',
-  })
-  @ApiResponse({ status: 404, description: 'Resource not found' })
-  create(@Body() dto: CreateDocumentDto) {
-    return this.documentsService.createDocument(dto);
+  @Patch('instances/:id')
+  updateMyDocumentInstance(
+    @Param('id') id: string,
+    @Body() body: { filledContent?: object; variableValues?: object },
+    @Req() req,
+  ) {
+    return this.documentsService.updateDocumentInstance(
+      id,
+      req.user.id_user,
+      body.filledContent ?? {},
+      body.variableValues ?? {},
+    );
   }
 
-  @Post(':id/fields')
-  @ApiOperation({ summary: 'Add fillable fields to a document' })
-  @ApiParam({ name: 'id', description: 'Document ID' })
-  @ApiBody({ type: AddFieldsDto })
-  @ApiResponse({ status: 201, description: 'Fields added' })
-  addFields(@Param('id') id: string, @Body() dto: AddFieldsDto) {
-    return this.documentsService.addFields(id, dto);
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a document with its fields' })
-  @ApiParam({ name: 'id', description: 'Document ID' })
-  @ApiResponse({ status: 200, description: 'Document with fields returned' })
-  getDocument(@Param('id') id: string) {
-    return this.documentsService.getDocument(id);
-  }
-
-  @Post(':id/submit')
-  @ApiOperation({ summary: 'Submit a response to a document' })
-  @ApiParam({ name: 'id', description: 'Document ID' })
-  @ApiBody({ type: SubmitResponseDto })
-  @ApiResponse({ status: 201, description: 'Response saved' })
-  submit(@Param('id') id: string, @Body() dto: SubmitResponseDto) {
-    return this.documentsService.submitResponse(id, dto);
-  }
-
-  @UseGuards(JwtAuthGuardAsManagerSystem)
-  @Get(':id/responses')
-  @ApiOperation({ summary: 'Get all responses for a document (admin only)' })
-  @ApiParam({ name: 'id', description: 'Document ID' })
-  @ApiResponse({ status: 200, description: 'List of responses returned' })
-  getResponses(@Param('id') id: string) {
-    return this.documentsService.getResponses(id);
-  }
-
-  @Post('upload/signature')
-  @ApiOperation({ summary: 'Upload a signature image (PNG) to use in fields' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description:
-            'Signature or logo image (PNG/JPG/WebP) captured from screen or uploaded',
-        },
-      },
-      required: ['file'],
-    },
-  })
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiResponse({ status: 201, description: 'Signature image uploaded' })
-  uploadSignature(@UploadedFile() file: Express.Multer.File) {
-    return this.documentsService.uploadSignatureImage(file);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.getMyDocumentInstancesByTemplate)
+  @ApiResponse(DocumentSwagger.getMyDocumentInstancesByTemplate.responses[200])
+  @ApiResponse(DocumentSwagger.getMyDocumentInstancesByTemplate.responses[401])
+  @ApiResponse(DocumentSwagger.getMyDocumentInstancesByTemplate.responses[404])
+  @Get('instances/by-template/:templateId')
+  getMyDocumentInstancesByTemplate(
+    @Param('templateId') templateId: string,
+    @Req() req,
+  ) {
+    return this.documentsService.getDocumentInstancesByTemplateForUser(
+      templateId,
+      req.user.id_user,
+    );
   }
 }

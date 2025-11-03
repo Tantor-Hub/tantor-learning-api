@@ -17,8 +17,8 @@ import { InjectModel } from '@nestjs/sequelize';
 @Global()
 export class JwtAuthGuardAsManagerSystem implements CanActivate {
   keyname: string;
-  allowedRoles: string[] = ['admin']; // This should match the string role in the Roles table
-  accessLevel: number = 91; // c'est à dire que le niveau pour les utilisateurs admins
+  allowedRoles: string[] = ['admin', 'secretary']; // This should match the string role in the Roles table
+  accessLevel: number = 91; // c'est à dire que le niveau pour les utilisateurs admins ou secrétaires
 
   constructor(
     @InjectModel(Users)
@@ -106,14 +106,25 @@ export class JwtAuthGuardAsManagerSystem implements CanActivate {
         throw new CustomUnauthorizedException('Utilisateur non trouvé');
       }
 
-      // Check if user has admin role
-      if (user.role !== 'admin') {
+      // Check if user is verified
+      if (user.is_verified === false) {
+        console.log(
+          '❌ JwtAuthGuardAsManagerSystem: User not verified:',
+          user.email,
+        );
+        throw new CustomUnauthorizedException(
+          "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        );
+      }
+
+      // Check if user has admin or secretary role
+      if (!this.allowedRoles.includes(user.role)) {
         console.log(
           '❌ JwtAuthGuardAsManagerSystem: Access denied for',
           user.email,
           '- Role:',
           user.role,
-          '(Required: admin)',
+          '(Required: admin or secretary)',
         );
         throw new CustomUnauthorizedException(
           "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",

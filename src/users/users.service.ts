@@ -23,6 +23,7 @@ import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Messages } from 'src/models/model.messages';
+import { Otp } from 'src/models/model.otp';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';
@@ -39,6 +40,9 @@ export class UsersService {
 
     @InjectModel(Messages)
     private readonly messagesModel: typeof Messages,
+
+    @InjectModel(Otp)
+    private readonly otpModel: typeof Otp,
 
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -277,7 +281,7 @@ export class UsersService {
       .findAll({
         include: [],
         attributes: {
-          exclude: ['verification_code', 'is_verified'],
+          exclude: ['verification_code'],
         },
         where: {},
       })
@@ -329,7 +333,6 @@ export class UsersService {
         attributes: {
           exclude: [
             'verification_code',
-            'is_verified',
             'createdAt',
             'updatedAt',
             'last_login',
@@ -726,12 +729,10 @@ export class UsersService {
             is_verified,
             id,
             verification_code: as_code,
-            otp: current_otp,
           } = student?.toJSON();
 
           console.log(`[Resend OTP] Found user: ${email}`);
           console.log(`[Resend OTP] Current verification_code: ${as_code}`);
-          console.log(`[Resend OTP] Current otp: ${current_otp}`);
 
           this.onWelcomeNewStudent({
             to: email,
@@ -741,14 +742,13 @@ export class UsersService {
             otp: verif_code,
           });
 
-          // Update both fields to be safe
+          // Update verification_code field
           await student.update({
             verification_code: verif_code,
-            otp: verif_code,
           });
 
           console.log(
-            `[Resend OTP] ✅ Updated both verification_code and otp to: ${verif_code}`,
+            `[Resend OTP] ✅ Updated verification_code to: ${verif_code}`,
           );
 
           return Responder({
@@ -980,7 +980,12 @@ export class UsersService {
     req: Request,
   ): Promise<ResponseServer> {
     const { id_user, uuid_user, level_indicator } = user;
-    if (Object.keys(profile as {}).length <= 0) {
+    // Allow empty body if avatar is being updated
+    const hasProfileFields = Object.keys(profile as {}).length > 0;
+    const hasAvatar =
+      profile['as_avatar'] !== undefined && profile['as_avatar'] !== null;
+
+    if (!hasProfileFields && !hasAvatar) {
       return Responder({
         status: HttpStatusCode.NotAcceptable,
         data: 'Le body de la requete ne peut etre vide',
@@ -1003,7 +1008,14 @@ export class UsersService {
       })
       .then(async (student) => {
         if (student instanceof Users) {
-          student.update({ ...profile, avatar: profile['as_avatar'] });
+          const updateData = { ...profile };
+          if (
+            profile['as_avatar'] !== undefined &&
+            profile['as_avatar'] !== null
+          ) {
+            updateData.avatar = profile['as_avatar'];
+          }
+          student.update(updateData);
           const record = this.allService.filterUserFields(student.toJSON());
           return Responder({ status: HttpStatusCode.Ok, data: record });
         } else {
@@ -1063,7 +1075,7 @@ export class UsersService {
       });
     }
 
-    const otp = this.allService.randomLongNumber({ length: 6 });
+    const otpCode = this.allService.randomLongNumber({ length: 6 });
 
     try {
       const user = await this.userModel.create({
@@ -1076,9 +1088,15 @@ export class UsersService {
         city,
         dateBirth: dateBirth ?? '',
         role: UserRole.STUDENT,
-        otp,
         is_verified: false,
       } as any);
+
+      // Create OTP record in the new OTP table
+      await this.otpModel.create({
+        userId: user.id,
+        otp: otpCode,
+        connected: false,
+      });
 
       // Send OTP email
       this.mailService.sendMail({
@@ -1086,7 +1104,7 @@ export class UsersService {
           as: 'otp',
           firstName: firstName || '',
           lastName: lastName || '',
-          code: otp,
+          code: otpCode,
         }),
         to: email,
         subject: 'Code de vérification pour inscription',
@@ -1133,9 +1151,14 @@ export class UsersService {
       });
     }
 
-    const otp = this.allService.randomLongNumber({ length: 6 });
+    const otpCode = this.allService.randomLongNumber({ length: 6 });
 
-    await user.update({ otp });
+    // Create OTP record in the new OTP table
+    await this.otpModel.create({
+      userId: user.id,
+      otp: otpCode,
+      connected: false,
+    });
 
     // Send OTP email
     this.mailService.sendMail({
@@ -1143,7 +1166,7 @@ export class UsersService {
         as: 'otp',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        code: otp,
+        code: otpCode,
       }),
       to: email,
       subject: 'Code de vérification pour connexion',
@@ -1171,11 +1194,20 @@ export class UsersService {
       `[OTP Verification] Attempting verification for email: ${email}`,
     );
     console.log(`[OTP Verification] OTP from request body: ${otp}`);
-    console.log(`[OTP Verification] OTP stored in database: ${user.otp}`);
 
-    if (!user.otp || user.otp !== otp) {
+    // Find the most recent OTP for this user that is not connected
+    const otpRecord = await this.otpModel.findOne({
+      where: {
+        userId: user.id,
+        otp: otp,
+        connected: false,
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!otpRecord) {
       console.log(
-        `[OTP Verification] ❌ INVALID OTP - Email: ${email}, Requested OTP: ${otp}, Stored OTP: ${user.otp}`,
+        `[OTP Verification] ❌ INVALID OTP - Email: ${email}, Requested OTP: ${otp}`,
       );
       return Responder({
         status: HttpStatusCode.BadRequest,
@@ -1183,12 +1215,33 @@ export class UsersService {
       });
     }
 
+    // Check if OTP is older than 10 minutes (expiration check)
+    const otpAge = Date.now() - new Date(otpRecord.createdAt).getTime();
+    const tenMinutes = 10 * 60 * 1000;
+
+    if (otpAge > tenMinutes) {
+      console.log(`[OTP Verification] ❌ EXPIRED OTP - Email: ${email}`);
+      return Responder({
+        status: HttpStatusCode.BadRequest,
+        data: 'OTP expiré',
+      });
+    }
+
+    // Check if user is verified
+    if (user.is_verified === false) {
+      console.log(`[OTP Verification] ❌ USER NOT VERIFIED - Email: ${email}`);
+      return Responder({
+        status: HttpStatusCode.Forbidden,
+        data: "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+      });
+    }
+
     console.log(
       `[OTP Verification] ✅ SUCCESSFUL OTP verification for email: ${email}`,
     );
 
-    // Clear OTP
-    await user.update({ otp: undefined });
+    // Update OTP record to set connected = true
+    await otpRecord.update({ connected: true });
 
     console.log('User logged in:', user.toJSON());
 
@@ -1281,6 +1334,288 @@ export class UsersService {
         userId: user.id,
       },
     });
+  }
+
+  async getUserLoginCount(userId: string): Promise<ResponseServer> {
+    try {
+      // Calculate date 7 days ago
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      // Count OTPs where connected = true and created within the last 7 days
+      const loginCount = await this.otpModel.count({
+        where: {
+          userId: userId,
+          connected: true,
+          createdAt: {
+            [Op.gte]: sevenDaysAgo,
+          },
+        },
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          userId: userId,
+          loginCount: loginCount,
+          period: '7 days',
+        },
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors de la récupération du nombre de connexions',
+          details: error.message,
+        },
+      });
+    }
+  }
+
+  async getUserDailyLoginCount(userId: string): Promise<ResponseServer> {
+    try {
+      // Calculate date 7 days ago (start of day)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      // Get all successful logins (connected = true) in the past 7 days
+      const logins = await this.otpModel.findAll({
+        where: {
+          userId: userId,
+          connected: true,
+          createdAt: {
+            [Op.gte]: sevenDaysAgo,
+          },
+        },
+        attributes: ['createdAt'],
+        order: [['createdAt', 'ASC']],
+      });
+
+      // Create an array of the past 7 days with date strings
+      const dailyCounts: Array<{ date: string; count: number }> = [];
+      const today = new Date();
+
+      // Initialize all 7 days with count 0
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+
+        const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+        dailyCounts.push({
+          date: dateString,
+          count: 0,
+        });
+      }
+
+      // Count logins per day
+      logins.forEach((login) => {
+        const loginDate = new Date(login.createdAt);
+        loginDate.setHours(0, 0, 0, 0);
+        const dateString = loginDate.toISOString().split('T')[0];
+
+        const dayIndex = dailyCounts.findIndex(
+          (day) => day.date === dateString,
+        );
+        if (dayIndex !== -1) {
+          dailyCounts[dayIndex].count++;
+        }
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          userId: userId,
+          dailyLogins: dailyCounts,
+          period: '7 days',
+          totalLogins: logins.length,
+        },
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors de la récupération des connexions quotidiennes',
+          details: error.message,
+        },
+      });
+    }
+  }
+
+  async setUserVerifiedStatus(
+    userId: string,
+    isVerified: boolean,
+  ): Promise<ResponseServer> {
+    try {
+      const user = await this.userModel.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Utilisateur non trouvé',
+        });
+      }
+
+      await user.update({ is_verified: isVerified });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          userId: userId,
+          email: user.email,
+          is_verified: isVerified,
+          message: isVerified
+            ? 'Utilisateur vérifié avec succès'
+            : "Vérification de l'utilisateur révoquée",
+        },
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors de la mise à jour du statut de vérification',
+          details: error.message,
+        },
+      });
+    }
+  }
+
+  async toggleUserVerifiedStatus(userId: string): Promise<ResponseServer> {
+    try {
+      const user = await this.userModel.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Utilisateur non trouvé',
+        });
+      }
+
+      // Toggle is_verified status
+      const previousStatus = user.is_verified;
+      const newVerifiedStatus = !previousStatus;
+      await user.update({ is_verified: newVerifiedStatus });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          userId: userId,
+          email: user.email,
+          previousStatus: previousStatus,
+          newStatus: newVerifiedStatus,
+          message: newVerifiedStatus
+            ? 'Utilisateur vérifié avec succès'
+            : "Vérification de l'utilisateur révoquée",
+        },
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors du changement du statut de vérification',
+          details: error.message,
+        },
+      });
+    }
+  }
+
+  async getAllUsersDailyLoginCount(): Promise<ResponseServer> {
+    try {
+      // Calculate date 7 days ago (start of day)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      // Get all successful logins (connected = true) from all users in the past 7 days
+      const logins = await this.otpModel.findAll({
+        where: {
+          connected: true,
+          createdAt: {
+            [Op.gte]: sevenDaysAgo,
+          },
+        },
+        attributes: ['createdAt'],
+        order: [['createdAt', 'ASC']],
+      });
+
+      // Create an array of the past 7 days with date strings
+      const dailyCounts: Array<{ date: string; count: number }> = [];
+      const today = new Date();
+
+      // Initialize all 7 days with count 0
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+
+        const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+        dailyCounts.push({
+          date: dateString,
+          count: 0,
+        });
+      }
+
+      // Count logins per day (aggregated across all users)
+      logins.forEach((login) => {
+        const loginDate = new Date(login.createdAt);
+        loginDate.setHours(0, 0, 0, 0);
+        const dateString = loginDate.toISOString().split('T')[0];
+
+        const dayIndex = dailyCounts.findIndex(
+          (day) => day.date === dateString,
+        );
+        if (dayIndex !== -1) {
+          dailyCounts[dayIndex].count++;
+        }
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          dailyLogins: dailyCounts,
+          period: '7 days',
+          totalLogins: logins.length,
+        },
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors de la récupération des connexions quotidiennes',
+          details: error.message,
+        },
+      });
+    }
+  }
+
+  async getUserProfileById(userId: string): Promise<ResponseServer> {
+    return this.userModel
+      .findOne({
+        include: [],
+        attributes: {
+          exclude: ['verification_code', 'is_verified', 'last_login'],
+        },
+        where: {
+          id: userId,
+        },
+      })
+      .then(async (user) => {
+        if (user instanceof Users) {
+          const record = this.allService.filterUserFields(user.toJSON());
+          return Responder({ status: HttpStatusCode.Ok, data: record });
+        } else
+          return Responder({ status: HttpStatusCode.NotFound, data: null });
+      })
+      .catch((err) =>
+        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
+      );
   }
 
   async authWithGoogle(user: IAuthWithGoogle, res: Response): Promise<any> {

@@ -11,6 +11,8 @@ import { tables } from 'src/config/config.tablesname';
 import { IUsers, UserRole } from 'src/interface/interface.users';
 import { Lesson } from './model.lesson';
 import { UserRoles } from './model.userroles';
+import { DocumentTemplate } from './model.documenttemplate';
+import { DocumentInstance } from './model.documentinstance';
 
 @Table({ tableName: tables['users'], timestamps: true })
 export class Users extends Model<IUsers> {
@@ -82,6 +84,9 @@ export class Users extends Model<IUsers> {
   @Column({ type: DataType.STRING, allowNull: true })
   otp?: string;
 
+  @Column({ type: DataType.DATE, allowNull: true })
+  otp_expires_at?: Date;
+
   // roles table removed; rely on single user.role
 
   // Relationships
@@ -90,4 +95,10 @@ export class Users extends Model<IUsers> {
 
   @HasMany(() => UserRoles, 'user_id')
   userRoles?: UserRoles[];
+
+  @HasMany(() => DocumentTemplate, 'createdById')
+  documentTemplates?: DocumentTemplate[];
+
+  @HasMany(() => DocumentInstance, 'userId')
+  documentInstances?: DocumentInstance[];
 }

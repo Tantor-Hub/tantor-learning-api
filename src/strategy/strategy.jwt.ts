@@ -18,12 +18,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    console.log('[JWT STRATEGY] 🔐 Validating JWT payload:', payload);
     // The payload contains the decoded JWT token
     // You can add additional validation here if needed
-    return {
+    const user = {
       id_user: payload.id_user,
       uuid_user: payload.id_user, // Map id_user to uuid_user for backward compatibility
       level_indicator: payload.level_indicator,
     };
+    console.log('[JWT STRATEGY] ✅ Validated user:', user);
+    return user;
   }
 }

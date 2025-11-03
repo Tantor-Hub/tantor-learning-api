@@ -398,12 +398,34 @@ export class UserInSessionService {
               'begining_date',
               'ending_date',
             ],
+            include: [
+              {
+                model: Training,
+                as: 'trainings',
+                required: false,
+                attributes: ['title', 'prix'],
+              },
+            ],
           },
           {
             model: Users,
             as: 'user',
             required: false,
-            attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
+            attributes: [
+              'id',
+              'firstName',
+              'lastName',
+              'email',
+              'phone',
+              'address',
+              'country',
+              'city',
+              'dateBirth',
+              'role',
+              'is_verified',
+              'num_piece_identite',
+              'avatar',
+            ],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -767,6 +789,86 @@ export class UserInSessionService {
         status: HttpStatusCode.InternalServerError,
         data: { message: error.message },
         customMessage: 'Failed to delete user in session',
+      });
+    }
+  }
+
+  async findAllAdmin() {
+    try {
+      const usersInSessions = await this.userInSessionModel.findAll({
+        include: [
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            required: false,
+            attributes: ['id', 'title'],
+            include: [
+              {
+                model: Training,
+                as: 'trainings',
+                required: false,
+                attributes: ['title'],
+              },
+            ],
+          },
+          {
+            model: Users,
+            as: 'user',
+            required: false,
+            attributes: [
+              'id',
+              'avatar',
+              'email',
+              'phone',
+              'is_verified',
+              'firstName',
+              'lastName',
+              'address',
+              'country',
+              'city',
+              'dateBirth',
+            ],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Format the response according to the required structure
+      const formattedData = usersInSessions.map((userInSession) => ({
+        status: userInSession.status,
+        trainingSession: {
+          id: userInSession.trainingSession?.id,
+          title: userInSession.trainingSession?.title,
+          trainings: {
+            title: userInSession.trainingSession?.trainings?.title,
+          },
+        },
+        user: {
+          id: userInSession.user?.id,
+          avatar: userInSession.user?.avatar,
+          email: userInSession.user?.email,
+          phone: userInSession.user?.phone,
+          is_verified: userInSession.user?.is_verified,
+          firstName: userInSession.user?.firstName,
+          lastName: userInSession.user?.lastName,
+          address: userInSession.user?.address,
+          country: userInSession.user?.country,
+          city: userInSession.user?.city,
+          dateBirth: userInSession.user?.dateBirth,
+        },
+      }));
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: formattedData,
+        customMessage:
+          'Users in sessions retrieved successfully (Admin access)',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Failed to retrieve users in sessions',
       });
     }
   }

@@ -110,58 +110,6 @@ export class UserResponse {
   updatedAt: string;
 }
 
-// Document Response Schemas
-export class DocumentResponse {
-  @ApiProperty({
-    example: 1,
-    description: 'Document ID',
-  })
-  id: number;
-
-  @ApiProperty({
-    example: 'Course Material',
-    description: 'Document title',
-  })
-  nom: string;
-
-  @ApiProperty({
-    example: 'https://drive.google.com/file/d/...',
-    description: 'Document URL or file path',
-  })
-  url: string;
-
-  @ApiProperty({
-    example: 'pdf',
-    description: 'Document type',
-  })
-  type: string;
-
-  @ApiProperty({
-    example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'ID of the lesson this document belongs to',
-  })
-  id_lesson: string;
-
-  @ApiProperty({
-    example: 1,
-    description: 'ID of the user who created it',
-    required: false,
-  })
-  createdBy?: number;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Creation timestamp',
-  })
-  createdAt: string;
-
-  @ApiProperty({
-    example: '2025-01-15T10:30:00.000Z',
-    description: 'Last update timestamp',
-  })
-  updatedAt: string;
-}
-
 // Lesson Response Schemas
 export class LessonResponse {
   @ApiProperty({

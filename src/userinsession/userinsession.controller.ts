@@ -23,6 +23,7 @@ import { UpdateUserInSessionDto } from './dto/update-userinsession.dto';
 import { DeleteUserInSessionDto } from './dto/delete-userinsession.dto';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
+import { JwtAuthGuardAsManagerSystem as JwtAuthGuardAsAdmin } from '../guard/guard.asadmin';
 import { UserInSessionStatus } from '../enums/user-in-session-status.enum';
 import { User } from '../strategy/strategy.globaluser';
 import { IJwtSignin } from '../interface/interface.payloadjwtsignin';
@@ -123,6 +124,13 @@ export class UserInSessionController {
                 lastname: { type: 'string' },
                 email: { type: 'string' },
                 phone: { type: 'string' },
+                otp: { type: 'string' },
+                otp_expires_at: { type: 'string', format: 'date-time' },
+                password: { type: 'string' },
+                reset_token: { type: 'string' },
+                reset_token_expires_at: { type: 'string', format: 'date-time' },
+                createdAt: { type: 'string', format: 'date-time' },
+                updatedAt: { type: 'string', format: 'date-time' },
               },
             },
           },
@@ -356,6 +364,16 @@ export class UserInSessionController {
                   lastname: { type: 'string' },
                   email: { type: 'string' },
                   phone: { type: 'string' },
+                  otp: { type: 'string' },
+                  otp_expires_at: { type: 'string', format: 'date-time' },
+                  password: { type: 'string' },
+                  reset_token: { type: 'string' },
+                  reset_token_expires_at: {
+                    type: 'string',
+                    format: 'date-time',
+                  },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
                 },
               },
             },
@@ -377,6 +395,92 @@ export class UserInSessionController {
       '[USER IN SESSION CONTROLLER] Root endpoint called - getting all user sessions',
     );
     return this.userInSessionService.findAll();
+  }
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuardAsAdmin)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all users in sessions (Admin access only)',
+    description:
+      'Retrieve all user-session relationships. Admin-only endpoint for getting all user sessions.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Users in sessions retrieved successfully (Admin access)',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Users in sessions retrieved successfully (Admin access)',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', example: 'in' },
+              trainingSession: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: 'aa86416e-3657-4c2a-b35b-a64fff19c3c2',
+                  },
+                  title: { type: 'string', example: 'session test ' },
+                  trainings: {
+                    type: 'object',
+                    properties: {
+                      title: { type: 'string', example: 'formation test ' },
+                    },
+                  },
+                },
+              },
+              user: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '3cc06b0f-7241-4371-a967-fe9ab1273337',
+                  },
+                  avatar: { type: 'string', nullable: true, example: null },
+                  email: {
+                    type: 'string',
+                    example: 'jethronbwira@gmail.com',
+                  },
+                  phone: { type: 'string', nullable: true, example: null },
+                  is_verified: { type: 'boolean', example: true },
+                  firstName: { type: 'string', example: 'Kashira' },
+                  lastName: { type: 'string', example: 'Jéthron' },
+                  address: { type: 'string', nullable: true, example: null },
+                  country: { type: 'string', nullable: true, example: null },
+                  city: { type: 'string', nullable: true, example: null },
+                  dateBirth: { type: 'string', example: '' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin role required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  findAllAdmin() {
+    console.log(
+      '[USER IN SESSION CONTROLLER] Admin endpoint called - getting all user sessions',
+    );
+    return this.userInSessionService.findAllAdmin();
   }
 
   @Get('getall')
@@ -427,6 +531,16 @@ export class UserInSessionController {
                   lastname: { type: 'string' },
                   email: { type: 'string' },
                   phone: { type: 'string' },
+                  otp: { type: 'string' },
+                  otp_expires_at: { type: 'string', format: 'date-time' },
+                  password: { type: 'string' },
+                  reset_token: { type: 'string' },
+                  reset_token_expires_at: {
+                    type: 'string',
+                    format: 'date-time',
+                  },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
                 },
               },
             },

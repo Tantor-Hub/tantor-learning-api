@@ -7,7 +7,7 @@ import {
   ApiProperty,
   ApiParam,
 } from '@nestjs/swagger';
-import { LessonResponse, DocumentResponse } from './swagger.responses';
+import { LessonResponse } from './swagger.responses';
 
 // Lesson DTOs with Swagger decorators
 export class CreateLessonDto {

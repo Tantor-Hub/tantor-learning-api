@@ -2,6 +2,7 @@ import { Module, OnModuleInit } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { SequelizeModule } from '@nestjs/sequelize';
 import databaseConfig, { cloudinaryConfig } from './config/database.config';
 import { Users } from './models/model.users';
@@ -57,16 +58,33 @@ import { EvaluationQuestionOptionModule } from './evaluationquestionoption/evalu
 import { StudentAnswerModule } from './studentanswer/studentanswer.module';
 import { StudentAnswerOptionModule } from './studentansweroption/studentansweroption.module';
 import { JwtStrategy } from './strategy/strategy.jwt';
-import { Document } from './models/model.document';
-import { DocumentField } from './models/model.documentfield';
-import { DocumentResponse } from './models/model.documentresponse';
 import { DocumentsModule } from './documents/documents.module';
+import { DocumentTemplate } from './models/model.documenttemplate';
+import { DocumentInstance } from './models/model.documentinstance';
+import { UploadsModule } from './uploads/uploads.module';
+import { UploadedFile } from './models/model.uploadedfile';
+import { Otp } from './models/model.otp';
+import { LegalDocumentsModule } from './legaldocuments/legaldocuments.module';
+import { LegalDocument } from './models/model.legaldocument';
+import { CatalogueFormationModule } from './catalogueformation/catalogueformation.module';
+import { CatalogueFormation } from './models/model.catalogueformation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, cloudinaryConfig],
+    }),
+    JwtModule.registerAsync({
+      global: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('APPJWTTOKEN'),
+        signOptions: {
+          expiresIn: configService.get<string>('APPJWTMAXLIFE', '24h'),
+        },
+      }),
     }),
     SequelizeModule.forRootAsync({
       imports: [ConfigModule],
@@ -121,9 +139,6 @@ import { DocumentsModule } from './documents/documents.module';
       Messages,
       Newsletter,
       PaymentMethodOpco,
-      Document,
-      DocumentField,
-      DocumentResponse,
       // Student Evaluation Models
       require('./models/model.studentevaluation').Studentevaluation,
       require('./models/model.evaluationquestion').EvaluationQuestion,
@@ -131,6 +146,11 @@ import { DocumentsModule } from './documents/documents.module';
         .EvaluationQuestionOption,
       require('./models/model.studentanswer').StudentAnswer,
       require('./models/model.studentansweroption').StudentAnswerOption,
+      DocumentTemplate,
+      DocumentInstance,
+      UploadedFile,
+      Otp,
+      LegalDocument,
     ]),
     // Removed RolesModule as roles module is deleted
     // RolesModule,
@@ -160,6 +180,9 @@ import { DocumentsModule } from './documents/documents.module';
     StudentAnswerModule,
     StudentAnswerOptionModule,
     DocumentsModule,
+    UploadsModule,
+    LegalDocumentsModule,
+    CatalogueFormationModule,
   ],
   providers: [
     AppService,
@@ -169,7 +192,6 @@ import { DocumentsModule } from './documents/documents.module';
     DocsService,
     AllSercices,
     JwtService,
-    NestJwtService,
     CryptoService,
     MailService,
     UsersService,

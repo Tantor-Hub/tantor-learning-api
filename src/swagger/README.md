@@ -15,7 +15,6 @@ This directory contains reusable response schemas for consistent API documentati
 ```typescript
 import {
   UserResponse,
-  DocumentResponse,
   LessonResponse,
   SuccessResponse,
   ErrorResponse,
@@ -58,7 +57,6 @@ import {
 #### Entity Schemas
 
 - `UserResponse` - User entity response
-- `DocumentResponse` - Document entity response
 - `LessonResponse` - Lesson entity response
 - `CourseResponse` - Course entity response
 - `FormationResponse` - Formation entity response
@@ -88,30 +86,6 @@ import {
 4. **Use proper examples**: Provide realistic example data in schema examples
 
 ## 🔧 Example Controller Implementation
-
-```typescript
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiResponse, ApiOperation } from '@nestjs/swagger';
-import { DocumentResponse } from '../swagger';
-
-@Controller('documents')
-export class DocumentController {
-  @Get(':id')
-  @ApiOperation({ summary: 'Get document by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Document retrieved successfully',
-    type: DocumentResponse,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Document not found',
-  })
-  async findOne(@Param('id') id: string) {
-    // Implementation
-  }
-}
-```
 
 ## 📋 Response Format Standards
 
