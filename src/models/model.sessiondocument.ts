@@ -49,6 +49,10 @@ export class SessionDocument extends Model<ISessionDocument> {
   @Column(DataType.ENUM('pending', 'rejected', 'validated'))
   status: 'pending' | 'rejected' | 'validated';
 
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  comment?: string;
+
   @BelongsTo(() => Users, { foreignKey: 'id_student', targetKey: 'id' })
   student: Users;
 

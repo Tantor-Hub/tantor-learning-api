@@ -389,29 +389,70 @@ export class CmsService {
         Responder({ status: HttpStatusCode.InternalServerError, data: err }),
       );
   }
-  async onContactForm(infos: CreateContactDto): Promise<ResponseServer> {
+  async onContactForm(
+    infos: CreateContactDto,
+    piece_jointe?: string,
+  ): Promise<ResponseServer> {
     const { content, from_mail, from_name, subject } = infos;
-    return this.contactModel
-      .create({
-        content,
-        from_mail,
-        from_name,
-        subject,
-      })
-      .then((infos) => {
-        this.mailService
-          .sendMail({
-            to: 'support@tantorlearning.com', //this.configService.get<string>('APPSMTPUSER') as string,
-            content,
-            subject,
-          })
-          .then((_) => {})
-          .catch((__) => {});
-        return Responder({ status: HttpStatusCode.Created, data: infos });
-      })
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-      );
+    const contactData: any = {
+      content,
+      from_mail,
+      from_name,
+      subject,
+    };
+
+    // Only include piece_jointe if it has a value
+    if (piece_jointe) {
+      contactData.piece_jointe = piece_jointe;
+    }
+
+    try {
+      const infos = await this.contactModel.create(contactData);
+
+      // Send email notification (don't wait for it)
+      this.mailService
+        .sendMail({
+          to: 'support@tantorlearning.com', //this.configService.get<string>('APPSMTPUSER') as string,
+          content,
+          subject,
+        })
+        .then((_) => {})
+        .catch((__) => {});
+
+      return Responder({ status: HttpStatusCode.Created, data: infos });
+    } catch (err) {
+      console.error('❌ [CONTACT FORM] Error creating contact:', err);
+      console.error('❌ [CONTACT FORM] Error name:', err.name);
+      console.error('❌ [CONTACT FORM] Error message:', err.message);
+
+      // Log the actual database error if available
+      if (err.original) {
+        console.error(
+          '❌ [CONTACT FORM] Database error:',
+          err.original.message,
+        );
+        console.error(
+          '❌ [CONTACT FORM] Database error code:',
+          err.original.code,
+        );
+        console.error(
+          '❌ [CONTACT FORM] Database error detail:',
+          err.original.detail,
+        );
+      }
+
+      if (err.parent) {
+        console.error('❌ [CONTACT FORM] Parent error:', err.parent.message);
+      }
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data:
+          err.original?.message ||
+          err.message ||
+          'Une erreur interne est survenue lors de la création du contact.',
+      });
+    }
   }
   async getSubsribersOnTheNewsLetter(): Promise<ResponseServer> {
     try {

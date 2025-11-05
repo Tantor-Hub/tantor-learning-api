@@ -10,7 +10,17 @@ import { tables } from 'src/config/config.tablesname';
 import { DocumentTemplate } from './model.documenttemplate';
 import { Users } from './model.users';
 
-@Table({ tableName: tables.documentinstance, timestamps: true })
+@Table({
+  tableName: tables.documentinstance,
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['userId', 'templateId'],
+      name: 'unique_user_template',
+    },
+  ],
+})
 export class DocumentInstance extends Model {
   @Column({
     type: DataType.UUID,
@@ -40,6 +50,18 @@ export class DocumentInstance extends Model {
 
   @Column({ type: DataType.JSONB, allowNull: true })
   variableValues: object;
+
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  is_published: boolean;
+
+  @Column({
+    type: DataType.ENUM('pending', 'validated', 'rejected'),
+    defaultValue: 'pending',
+  })
+  status: 'pending' | 'validated' | 'rejected';
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  comment: string;
 
   @Column({ type: DataType.DATE, defaultValue: DataType.NOW })
   createdAt: Date;

@@ -107,7 +107,7 @@ export class DocumentsController {
   @Put('instances/:id')
   updateDocumentInstance(
     @Param('id') id: string,
-    @Body() body: { filledContent: object; variableValues?: object },
+    @Body() body: { filledContent: object; variableValues?: object; is_published?: boolean },
     @Req() req,
   ) {
     return this.documentsService.updateDocumentInstance(
@@ -115,6 +115,7 @@ export class DocumentsController {
       req.user.id_user,
       body.filledContent,
       body.variableValues,
+      body.is_published,
     );
   }
 
@@ -131,19 +132,20 @@ export class DocumentsController {
   @ApiOperation({
     summary: 'Update my document instance',
     description:
-      "Updates the filled content and/or variable values of the authenticated student's own document instance.",
+      "Updates the filled content and/or variable values and/or is_published of the authenticated student's own document instance.",
   })
   @Patch('instances/:id')
   updateMyDocumentInstance(
     @Param('id') id: string,
-    @Body() body: { filledContent?: object; variableValues?: object },
+    @Body() body: { filledContent?: object; variableValues?: object; is_published?: boolean },
     @Req() req,
   ) {
     return this.documentsService.updateDocumentInstance(
       id,
       req.user.id_user,
       body.filledContent ?? {},
-      body.variableValues ?? {},
+      body.variableValues,
+      body.is_published,
     );
   }
 

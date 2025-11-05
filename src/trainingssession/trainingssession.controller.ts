@@ -84,6 +84,57 @@ export class TrainingSessionController {
     return this.trainingSessionService.findAll();
   }
 
+  @Get('getall-simplified')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all training sessions (simplified)',
+    description: `Get all training sessions with only essential information.
+    
+**Returns only:**
+- sessionId: The training session ID
+- sessionTitle: The training session title
+- trainingId: The training ID
+- trainingTitle: The training title
+
+This endpoint is optimized for dropdowns and lists where minimal data is needed.`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Training sessions retrieved successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Training sessions retrieved successfully',
+        data: [
+          {
+            sessionId: '550e8400-e29b-41d4-a716-446655440001',
+            sessionTitle: 'Advanced React Development - Session 1',
+            trainingId: '550e8400-e29b-41d4-a716-446655440000',
+            trainingTitle: 'Advanced React Development',
+          },
+          {
+            sessionId: '550e8400-e29b-41d4-a716-446655440002',
+            sessionTitle: 'Node.js Backend - Session 1',
+            trainingId: '550e8400-e29b-41d4-a716-446655440003',
+            trainingTitle: 'Node.js Backend Development',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  findAllSimplified() {
+    return this.trainingSessionService.findAllSimplified();
+  }
+
   @Get('training/:trainingId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()

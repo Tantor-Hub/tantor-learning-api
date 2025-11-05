@@ -41,4 +41,10 @@ export class Contacts extends Model<IContact> {
     allowNull: false,
   })
   content: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  piece_jointe?: string;
 }

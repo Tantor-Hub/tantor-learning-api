@@ -10,6 +10,7 @@ import { TrainingSession } from 'src/models/model.trainingssession';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
+import { GoogleDriveService } from 'src/services/service.googledrive';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { JwtService } from 'src/services/service.jwt';
     }),
   ],
   controllers: [SessionDocumentController],
-  providers: [SessionDocumentService, AllSercices, JwtService],
+  providers: [SessionDocumentService, AllSercices, JwtService, GoogleDriveService],
   exports: [SessionDocumentService],
 })
 export class SessionDocumentModule {}

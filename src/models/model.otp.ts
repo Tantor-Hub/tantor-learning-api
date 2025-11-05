@@ -29,9 +29,9 @@ export class Otp extends Model<IOtp> {
   @ForeignKey(() => Users)
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true,
   })
-  userId: string;
+  userId: string | null;
 
   @Column({
     type: DataType.STRING,

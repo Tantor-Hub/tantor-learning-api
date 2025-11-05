@@ -77,19 +77,123 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       return entityId;
     }
 
-    // 3. Check if it's a sessioncours ID (sessioncours endpoint)
+    // 3. Check if it's a studentevaluation route with sessioncours, lesson, or session ID
+    // This must come before generic checks to properly handle studentevaluation routes
+    if (requestUrl.includes('/studentevaluation/')) {
+      console.log(
+        '🔍 [ENTITY RESOLVER] StudentEvaluation route detected, checking entity type...',
+      );
+      
+      // Check if it's a sessioncours ID in studentevaluation route
+      if (requestUrl.includes('/sessioncours/')) {
+        console.log(
+          '🔍 [ENTITY RESOLVER] SessionCours ID detected in studentevaluation route',
+        );
+        const sessionCours = await this.sessionCoursModel.findByPk(entityId);
+        if (!sessionCours) {
+          throw new ForbiddenException(
+            `Erreur: Le cours de session avec l'identifiant "${entityId}" n'existe pas.`,
+          );
+        }
+        if (!sessionCours.id_session) {
+          throw new ForbiddenException(
+            `Erreur: Le cours de session "${sessionCours.title || entityId}" n'est pas lié à une session de formation.`,
+          );
+        }
+        console.log(
+          '🔍 [ENTITY RESOLVER] Found session ID from sessioncours (studentevaluation route):',
+          sessionCours.id_session,
+        );
+        return sessionCours.id_session;
+      }
+      
+      // Check if it's a lesson ID in studentevaluation route
+      if (requestUrl.includes('/lesson/')) {
+        console.log(
+          '🔍 [ENTITY RESOLVER] Lesson ID detected in studentevaluation route',
+        );
+        const lesson = await this.lessonModel.findByPk(entityId);
+        if (!lesson) {
+          throw new ForbiddenException(
+            `Erreur: La leçon avec l'identifiant "${entityId}" n'existe pas.`,
+          );
+        }
+        if (!lesson.id_cours) {
+          throw new ForbiddenException(
+            `Erreur: La leçon "${lesson.title || entityId}" n'est pas liée à un cours de session.`,
+          );
+        }
+        const sessionCours = await this.sessionCoursModel.findByPk(
+          lesson.id_cours,
+        );
+        if (!sessionCours) {
+          throw new ForbiddenException(
+            `Erreur: Le cours de session associé à la leçon "${lesson.title || entityId}" n'existe pas.`,
+          );
+        }
+        if (!sessionCours.id_session) {
+          throw new ForbiddenException(
+            `Erreur: Le cours de session "${sessionCours.title || lesson.id_cours}" n'est pas lié à une session de formation.`,
+          );
+        }
+        console.log(
+          '🔍 [ENTITY RESOLVER] Found session ID from lesson (studentevaluation route):',
+          sessionCours.id_session,
+        );
+        return sessionCours.id_session;
+      }
+      
+      // If it's a direct session ID in studentevaluation route, return it
+      if (requestUrl.includes('/session/')) {
+        console.log(
+          '🔍 [ENTITY RESOLVER] Direct session ID detected in studentevaluation route',
+        );
+        return entityId;
+      }
+    }
+
+    // 3.5. Check if it's a sessioncours ID (sessioncours endpoint)
     if (requestUrl.includes('/sessioncours/')) {
       console.log(
         '🔍 [ENTITY RESOLVER] SessionCours ID detected, looking up session',
       );
       const sessionCours = await this.sessionCoursModel.findByPk(entityId);
-      if (!sessionCours || !sessionCours.id_session) {
+      if (!sessionCours) {
         throw new ForbiddenException(
-          'Session course not found or not linked to a session',
+          `Erreur: Le cours de session avec l'identifiant "${entityId}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || entityId}" n'est pas lié à une session de formation.`,
         );
       }
       console.log(
         '🔍 [ENTITY RESOLVER] Found session ID from sessioncours:',
+        sessionCours.id_session,
+      );
+      return sessionCours.id_session;
+    }
+
+    // 3.6. Check if it's a sessioncours ID in lesson/student/cours/:id/lessons route
+    // This must come before the generic /lesson/ check to avoid misinterpreting the ID
+    if (requestUrl.includes('/lesson/student/cours/') && requestUrl.includes('/lessons')) {
+      console.log(
+        '🔍 [ENTITY RESOLVER] SessionCours ID detected in lesson/student/cours route, looking up session',
+      );
+      const sessionCours = await this.sessionCoursModel.findByPk(entityId);
+      if (!sessionCours) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session avec l'identifiant "${entityId}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || entityId}" n'est pas lié à une session de formation.`,
+        );
+      }
+      console.log(
+        '🔍 [ENTITY RESOLVER] Found session ID from sessioncours (lesson route):',
         sessionCours.id_session,
       );
       return sessionCours.id_session;
@@ -101,18 +205,28 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
         '🔍 [ENTITY RESOLVER] Lesson ID detected, looking up sessioncours then session',
       );
       const lesson = await this.lessonModel.findByPk(entityId);
-      if (!lesson || !lesson.id_cours) {
+      if (!lesson) {
         throw new ForbiddenException(
-          'Lesson not found or not linked to a course',
+          `Erreur: La leçon avec l'identifiant "${entityId}" n'existe pas.`,
+        );
+      }
+      if (!lesson.id_cours) {
+        throw new ForbiddenException(
+          `Erreur: La leçon "${lesson.title || entityId}" n'est pas liée à un cours de session.`,
         );
       }
 
       const sessionCours = await this.sessionCoursModel.findByPk(
         lesson.id_cours,
       );
-      if (!sessionCours || !sessionCours.id_session) {
+      if (!sessionCours) {
         throw new ForbiddenException(
-          'Lesson course not found or not linked to a session',
+          `Erreur: Le cours de session associé à la leçon "${lesson.title || entityId}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || lesson.id_cours}" n'est pas lié à une session de formation.`,
         );
       }
 
@@ -129,25 +243,40 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
         '🔍 [ENTITY RESOLVER] LessonDocument ID detected, looking up lesson then sessioncours then session',
       );
       const lessondocument = await this.lessondocumentModel.findByPk(entityId);
-      if (!lessondocument || !lessondocument.id_lesson) {
+      if (!lessondocument) {
         throw new ForbiddenException(
-          'Lesson document not found or not linked to a lesson',
+          `Erreur: Le document de leçon avec l'identifiant "${entityId}" n'existe pas.`,
+        );
+      }
+      if (!lessondocument.id_lesson) {
+        throw new ForbiddenException(
+          `Erreur: Le document "${lessondocument.title || entityId}" n'est pas lié à une leçon.`,
         );
       }
 
       const lesson = await this.lessonModel.findByPk(lessondocument.id_lesson);
-      if (!lesson || !lesson.id_cours) {
+      if (!lesson) {
         throw new ForbiddenException(
-          'Lesson not found or not linked to a course',
+          `Erreur: La leçon associée au document "${lessondocument.title || entityId}" n'existe pas.`,
+        );
+      }
+      if (!lesson.id_cours) {
+        throw new ForbiddenException(
+          `Erreur: La leçon "${lesson.title || lessondocument.id_lesson}" n'est pas liée à un cours de session.`,
         );
       }
 
       const sessionCours = await this.sessionCoursModel.findByPk(
         lesson.id_cours,
       );
-      if (!sessionCours || !sessionCours.id_session) {
+      if (!sessionCours) {
         throw new ForbiddenException(
-          'Lesson course not found or not linked to a session',
+          `Erreur: Le cours de session associé à la leçon "${lesson.title || lesson.id_cours}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || lesson.id_cours}" n'est pas lié à une session de formation.`,
         );
       }
 
@@ -175,17 +304,27 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       console.log('🔍 [ENTITY RESOLVER] Detected as lessondocument ID');
       // Resolve directly to avoid recursion
       const lesson = await this.lessonModel.findByPk(lessondocument.id_lesson);
-      if (!lesson || !lesson.id_cours) {
+      if (!lesson) {
         throw new ForbiddenException(
-          'Lesson not found or not linked to a course',
+          `Erreur: La leçon associée au document "${lessondocument.title || entityId}" n'existe pas.`,
+        );
+      }
+      if (!lesson.id_cours) {
+        throw new ForbiddenException(
+          `Erreur: La leçon "${lesson.title || lessondocument.id_lesson}" n'est pas liée à un cours de session.`,
         );
       }
       const sessionCours = await this.sessionCoursModel.findByPk(
         lesson.id_cours,
       );
-      if (!sessionCours || !sessionCours.id_session) {
+      if (!sessionCours) {
         throw new ForbiddenException(
-          'Lesson course not found or not linked to a session',
+          `Erreur: Le cours de session associé à la leçon "${lesson.title || lesson.id_cours}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || lesson.id_cours}" n'est pas lié à une session de formation.`,
         );
       }
       return sessionCours.id_session;
@@ -199,9 +338,14 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       const sessionCours = await this.sessionCoursModel.findByPk(
         lesson.id_cours,
       );
-      if (!sessionCours || !sessionCours.id_session) {
+      if (!sessionCours) {
         throw new ForbiddenException(
-          'Lesson course not found or not linked to a session',
+          `Erreur: Le cours de session associé à la leçon "${lesson.title || entityId}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || lesson.id_cours}" n'est pas lié à une session de formation.`,
         );
       }
       return sessionCours.id_session;
@@ -226,8 +370,12 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers[this.keyname] as string;
 
-    // Extract sessionId from params - handle both 'sessionId' and 'id' parameters
-    let sessionId = request.params.sessionId || request.params.id;
+    // Extract sessionId from params - handle sessionId, id, sessionCoursId, lessonId parameters
+    let sessionId = 
+      request.params.sessionId || 
+      request.params.id || 
+      request.params.sessionCoursId || 
+      request.params.lessonId;
 
     console.log('🔍 [JWT GUARD STUDENT IN SESSION] Debug Info:');
     console.log('  - Request URL:', request.url);
@@ -254,24 +402,26 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       );
       const decoded = await this.jwtService.verifyTokenWithRound(token);
 
-      // if (!decoded || decoded.error) {
-      //   console.log(
-      //     '❌ JwtAuthGuardAsStudentInSession: Token verification failed for',
-      //     request.url,
-      //   );
+      if (!decoded || decoded.error) {
+        console.log(
+          '❌ JwtAuthGuardAsStudentInSession: Token verification failed for',
+          request.url,
+        );
 
-      //   if (decoded && decoded.type === 'TokenExpiredError') {
-      //     throw new ForbiddenException(
-      //       'Votre session a expiré. Veuillez vous reconnecter.',
-      //     );
-      //   } else if (decoded && decoded.type === 'JsonWebTokenError') {
-      //     throw new ForbiddenException("Token d'authentification invalide");
-      //   } else {
-      //     throw new ForbiddenException(
-      //       "La clé d'authentification fournie a déjà expiré",
-      //     );
-      //   }
-      // }
+        if (decoded && decoded.type === 'TokenExpiredError') {
+          throw new ForbiddenException(
+            'Votre session a expiré. Veuillez vous reconnecter.',
+          );
+        } else if (decoded && decoded.type === 'JsonWebTokenError') {
+          throw new ForbiddenException(
+            "Token d'authentification invalide ou malformé. Veuillez vous reconnecter.",
+          );
+        } else {
+          throw new ForbiddenException(
+            "La clé d'authentification fournie est invalide ou a expiré. Veuillez vous reconnecter.",
+          );
+        }
+      }
 
       const userId = decoded.id_user;
 
@@ -281,7 +431,7 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
           request.url,
         );
         throw new ForbiddenException(
-          "La clé d'authentification ne contient pas d'identifiant utilisateur",
+          "Erreur d'authentification: Le token ne contient pas d'identifiant utilisateur. Veuillez vous reconnecter.",
         );
       }
 
@@ -295,7 +445,9 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
           '❌ JwtAuthGuardAsStudentInSession: User not found in database for ID:',
           userId,
         );
-        throw new ForbiddenException('Utilisateur non trouvé');
+        throw new ForbiddenException(
+          "Erreur d'authentification: Utilisateur non trouvé dans la base de données. Veuillez contacter le support.",
+        );
       }
 
       // Check if user is verified
@@ -319,7 +471,7 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
           '(Required: student)',
         );
         throw new ForbiddenException(
-          "La clé d'authentification fournie n'a pas les droits requis pour accéder à ces ressources",
+          `Accès refusé: Cette ressource est réservée aux étudiants. Votre rôle actuel est "${user.role}".`,
         );
       }
 
@@ -330,15 +482,31 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
           request.url,
         );
         throw new ForbiddenException(
-          'Session ID is required (parameter should be sessionId or id)',
+          "Erreur: L'identifiant de session est requis pour accéder à cette ressource.",
         );
       }
 
       // Use the entity resolver to get the actual session ID
-      const actualSessionId = await this.resolveEntityToSessionId(
-        sessionId,
-        request.url,
-      );
+      let actualSessionId: string;
+      try {
+        actualSessionId = await this.resolveEntityToSessionId(
+          sessionId,
+          request.url,
+        );
+      } catch (resolveError) {
+        console.log(
+          '❌ JwtAuthGuardAsStudentInSession: Error resolving entity to session ID:',
+          resolveError.message,
+        );
+        // If it's already a ForbiddenException, re-throw it
+        if (resolveError instanceof ForbiddenException) {
+          throw resolveError;
+        }
+        // Otherwise, provide a clear error message
+        throw new ForbiddenException(
+          `Erreur: Impossible de trouver la session associée à l'identifiant "${sessionId}". Veuillez vérifier que la ressource existe et est correctement liée à une session.`,
+        );
+      }
 
       const enrollment = await this.userInSessionModel.findOne({
         where: {
@@ -393,8 +561,12 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
           userId,
         );
         throw new HttpException(
-          `Accès refusé - Vous n'êtes pas inscrit à la session "${sessionTitle}"`,
-          402,
+          {
+            statusCode: 403,
+            message: `Accès refusé: Vous n'êtes pas inscrit à la session "${sessionTitle}". Veuillez contacter un administrateur pour vous inscrire.`,
+            error: 'Accès refusé',
+          },
+          403,
         );
       }
 
@@ -406,8 +578,12 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
           'Required status: "in"',
         );
         throw new HttpException(
-          `Accès refusé - Votre inscription à la session "${sessionTitle}" est en statut "${getStatusInFrench(enrollment.status)}". Veuillez attendre que le secrétaire vous laisse entrer.`,
-          402,
+          {
+            statusCode: 403,
+            message: `Accès refusé: Votre inscription à la session "${sessionTitle}" est en statut "${getStatusInFrench(enrollment.status)}". Vous devez avoir le statut "actif" pour accéder à cette ressource. Veuillez contacter le secrétaire pour activer votre accès.`,
+            error: 'Accès refusé',
+          },
+          403,
         );
       }
 
@@ -428,6 +604,7 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
 
       return true;
     } catch (error) {
+      // Re-throw known exceptions with their clear messages
       if (
         error instanceof ForbiddenException ||
         error instanceof HttpException
@@ -440,8 +617,11 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
         ':',
         error.message,
       );
+      console.error('Full error:', error);
+      
+      // Provide a clear error message for unexpected errors
       throw new ForbiddenException(
-        "La clé d'authentification fournie a déjà expiré",
+        `Erreur d'authentification: ${error.message || "Une erreur inattendue s'est produite lors de la vérification de l'accès. Veuillez réessayer ou contacter le support."}`,
       );
     }
   }

@@ -6,6 +6,7 @@ import {
   PrimaryKey,
   ForeignKey,
   BelongsTo,
+  Unique,
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import {
@@ -14,7 +15,17 @@ import {
 } from 'src/interface/interface.catalogueformation';
 import { Users } from './model.users';
 
-@Table({ tableName: tables['catalogueformation'], timestamps: true })
+@Table({
+  tableName: tables['catalogueformation'],
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['type'],
+      name: 'unique_catalogue_type',
+    },
+  ],
+})
 export class CatalogueFormation extends Model<ICatalogueFormation> {
   @PrimaryKey
   @Column({
@@ -24,6 +35,7 @@ export class CatalogueFormation extends Model<ICatalogueFormation> {
   })
   id: string;
 
+  @Unique('unique_catalogue_type')
   @Column({
     type: DataType.ENUM('user', 'student', 'instructor', 'secretary', 'admin'),
     allowNull: false,

@@ -538,4 +538,40 @@ export class TrainingSessionService {
       });
     }
   }
+
+  async findAllSimplified() {
+    try {
+      const trainingSessions = await this.trainingSessionModel.findAll({
+        attributes: ['id', 'title', 'id_trainings'],
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            attributes: ['id', 'title'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Transform the data to match the requested format
+      const simplifiedSessions = trainingSessions.map((session) => ({
+        sessionId: session.id,
+        sessionTitle: session.title,
+        trainingId: session.id_trainings,
+        trainingTitle: session.trainings?.title || null,
+      }));
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: simplifiedSessions,
+        customMessage: 'Training sessions retrieved successfully',
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: { message: error.message },
+        customMessage: 'Error fetching training sessions',
+      });
+    }
+  }
 }

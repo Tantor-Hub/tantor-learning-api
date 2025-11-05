@@ -1195,19 +1195,19 @@ export class UsersService {
     );
     console.log(`[OTP Verification] OTP from request body: ${otp}`);
 
-    // Find the most recent OTP for this user that is not connected
-    const otpRecord = await this.otpModel.findOne({
+    // Find the most recent (latest) OTP for this user that is not connected
+    // Only the latest OTP can be used, even if user has multiple OTPs
+    const latestOtpRecord = await this.otpModel.findOne({
       where: {
         userId: user.id,
-        otp: otp,
         connected: false,
       },
       order: [['createdAt', 'DESC']],
     });
 
-    if (!otpRecord) {
+    if (!latestOtpRecord) {
       console.log(
-        `[OTP Verification] ❌ INVALID OTP - Email: ${email}, Requested OTP: ${otp}`,
+        `[OTP Verification] ❌ NO OTP FOUND - Email: ${email}, Requested OTP: ${otp}`,
       );
       return Responder({
         status: HttpStatusCode.BadRequest,
@@ -1215,11 +1215,24 @@ export class UsersService {
       });
     }
 
-    // Check if OTP is older than 10 minutes (expiration check)
-    const otpAge = Date.now() - new Date(otpRecord.createdAt).getTime();
-    const tenMinutes = 10 * 60 * 1000;
+    // Verify that the provided OTP code matches the latest OTP
+    if (latestOtpRecord.otp !== otp) {
+      console.log(
+        `[OTP Verification] ❌ OTP MISMATCH - Email: ${email}, Requested OTP: ${otp}, Latest OTP: ${latestOtpRecord.otp}`,
+      );
+      return Responder({
+        status: HttpStatusCode.BadRequest,
+        data: 'OTP invalide. Veuillez utiliser le code OTP le plus récent.',
+      });
+    }
 
-    if (otpAge > tenMinutes) {
+    const otpRecord = latestOtpRecord;
+
+    // Check if OTP is older than 5 minutes (expiration check)
+    const otpAge = Date.now() - new Date(otpRecord.createdAt).getTime();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    if (otpAge > fiveMinutes) {
       console.log(`[OTP Verification] ❌ EXPIRED OTP - Email: ${email}`);
       return Responder({
         status: HttpStatusCode.BadRequest,
@@ -1527,36 +1540,98 @@ export class UsersService {
 
   async getAllUsersDailyLoginCount(): Promise<ResponseServer> {
     try {
-      // Calculate date 7 days ago (start of day)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      sevenDaysAgo.setHours(0, 0, 0, 0);
+      // Helper function to get current date in French timezone (Europe/Paris)
+      const getFrenchDate = (): Date => {
+        const now = new Date();
+        // Get the date string in French timezone
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/Paris',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        });
+        const dateParts = formatter.formatToParts(now);
+        const year = parseInt(dateParts.find((p) => p.type === 'year')!.value);
+        const month = parseInt(
+          dateParts.find((p) => p.type === 'month')!.value,
+        ) - 1; // Month is 0-indexed
+        const day = parseInt(dateParts.find((p) => p.type === 'day')!.value);
+        // Create a date object with the French timezone date at midnight
+        return new Date(Date.UTC(year, month, day));
+      };
 
-      // Get all successful logins (connected = true) from all users in the past 7 days
+      // Get today's date in French timezone
+      const frenchToday = getFrenchDate();
+
+      // Calculate date 6 days ago (start of day) in French timezone - to include today in the 7-day range
+      const sixDaysAgo = new Date(frenchToday);
+      sixDaysAgo.setUTCDate(sixDaysAgo.getUTCDate() - 6);
+      sixDaysAgo.setUTCHours(0, 0, 0, 0);
+
+      // Calculate end of today in French timezone (23:59:59.999 Paris time) as UTC
+      // Use a simple approach: get tomorrow 02:00:00 UTC to ensure we cover all of today in Paris timezone
+      // (Paris is UTC+1 or UTC+2, so 23:59:59 Paris = 21:59:59 or 22:59:59 UTC)
+      const endOfTodayUTC = new Date();
+      endOfTodayUTC.setUTCDate(endOfTodayUTC.getUTCDate() + 1);
+      endOfTodayUTC.setUTCHours(2, 0, 0, 0);
+
+      // Get all successful logins (connected = true) from all users in the past 7 days (including today)
       const logins = await this.otpModel.findAll({
         where: {
           connected: true,
           createdAt: {
-            [Op.gte]: sevenDaysAgo,
+            [Op.between]: [sixDaysAgo, endOfTodayUTC],
           },
         },
         attributes: ['createdAt'],
         order: [['createdAt', 'ASC']],
       });
 
-      // Create an array of the past 7 days with date strings
+      // Create an array of the past 7 days with date strings (including today)
       const dailyCounts: Array<{ date: string; count: number }> = [];
-      const today = new Date();
 
-      // Initialize all 7 days with count 0
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        date.setHours(0, 0, 0, 0);
+      // Helper function to format date in French timezone as YYYY-MM-DD
+      const formatDateInFrenchTZ = (date: Date): string => {
+        // Convert the date to French timezone for formatting
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/Paris',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        });
+        const dateParts = formatter.formatToParts(date);
+        const year = dateParts.find((p) => p.type === 'year')!.value;
+        const month = dateParts.find((p) => p.type === 'month')!.value;
+        const day = dateParts.find((p) => p.type === 'day')!.value;
+        return `${year}-${month}-${day}`;
+      };
 
-        const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      // Get today's date components in French timezone
+      const todayFormatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      const todayParts = todayFormatter.formatToParts(new Date());
+      const todayYear = parseInt(todayParts.find((p) => p.type === 'year')!.value);
+      const todayMonth = parseInt(todayParts.find((p) => p.type === 'month')!.value) - 1;
+      const todayDay = parseInt(todayParts.find((p) => p.type === 'day')!.value);
 
-        dailyCounts.push({
+      // Initialize all 7 days with count 0, starting from today (i=0) going back 6 days
+      // This ensures today is definitely included as the first/latest date
+      for (let i = 0; i <= 6; i++) {
+        // Calculate date i days ago from today in French timezone
+        // Create a date for today in French timezone, then subtract i days
+        const baseDate = new Date(Date.UTC(todayYear, todayMonth, todayDay));
+        const date = new Date(baseDate);
+        date.setUTCDate(date.getUTCDate() - i);
+        
+        // Use French timezone for date string
+        const dateString = formatDateInFrenchTZ(date);
+
+        // Insert at beginning to maintain chronological order (oldest to newest)
+        dailyCounts.unshift({
           date: dateString,
           count: 0,
         });
@@ -1564,9 +1639,9 @@ export class UsersService {
 
       // Count logins per day (aggregated across all users)
       logins.forEach((login) => {
+        // Convert login date to French timezone for comparison
         const loginDate = new Date(login.createdAt);
-        loginDate.setHours(0, 0, 0, 0);
-        const dateString = loginDate.toISOString().split('T')[0];
+        const dateString = formatDateInFrenchTZ(loginDate);
 
         const dayIndex = dailyCounts.findIndex(
           (day) => day.date === dateString,

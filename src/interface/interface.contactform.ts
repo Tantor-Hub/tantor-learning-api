@@ -5,4 +5,5 @@ export interface IContact extends IGlobale {
   from_mail: string;
   subject: string;
   content: string;
+  piece_jointe?: string;
 }

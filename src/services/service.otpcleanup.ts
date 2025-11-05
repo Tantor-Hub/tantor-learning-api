@@ -13,48 +13,39 @@ export class OtpCleanupService {
     private readonly otpModel: typeof Otp,
   ) {}
 
-  // Automatic cleanup is disabled - OTP records are kept permanently
-  // Uncomment the @Cron decorator below and adjust the date threshold in cleanupOldOtps() to re-enable automatic cleanup
-  // @Cron(CronExpression.EVERY_DAY_AT_3AM)
-  async handleOtpCleanup() {
-    // Automatic cleanup disabled - OTP records are permanent
-    this.logger.log(
-      'Automatic OTP cleanup is disabled. OTP records are kept permanently.',
-    );
-    return {
-      status: 200,
-      data: { message: 'Automatic cleanup is disabled', cleanedCount: 0 },
-    };
-  }
+  // Automatic cleanup DISABLED - OTP records are kept forever in the database
+  // Expired OTPs (>5 minutes) cannot be used for login but remain in DB
+  // @Cron(CronExpression.EVERY_MINUTE)
+  // async handleOtpCleanup() {
+  //   return await this.cleanupOldOtps();
+  // }
 
-  // Manual cleanup method - only for manual execution if needed
-  // Note: Automatic cleanup is disabled - OTP records are kept permanently by default
+  // Automatic cleanup method - deletes OTPs older than 5 minutes
   async cleanupOldOtps() {
     try {
-      console.log('=== OTP cleanupOldOtps: Starting ===');
+      this.logger.log('=== OTP cleanupOldOtps: Starting ===');
 
-      // Calculate date 7 days ago
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // Calculate date 5 minutes ago
+      const fiveMinutesAgo = new Date();
+      fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
 
-      console.log(
-        'Cleaning up OTPs created before:',
-        sevenDaysAgo.toISOString(),
+      this.logger.log(
+        `Cleaning up OTPs created before: ${fiveMinutesAgo.toISOString()}`,
       );
 
-      // Find all OTPs created more than 7 days ago
+      // Find all OTPs created more than 5 minutes ago
       const oldOtps = await this.otpModel.findAll({
         where: {
           createdAt: {
-            [Op.lt]: sevenDaysAgo,
+            [Op.lt]: fiveMinutesAgo,
           },
         },
       });
 
-      console.log('Found OTPs to cleanup:', oldOtps.length);
+      this.logger.log(`Found OTPs to cleanup: ${oldOtps.length}`);
 
       if (oldOtps.length === 0) {
-        console.log('=== OTP cleanupOldOtps: No OTPs to cleanup ===');
+        this.logger.log('=== OTP cleanupOldOtps: No OTPs to cleanup ===');
         return {
           status: 200,
           data: { cleanedCount: 0 },
@@ -73,8 +64,8 @@ export class OtpCleanupService {
         },
       });
 
-      console.log('=== OTP cleanupOldOtps: Success ===');
-      console.log('Permanently deleted OTPs:', otpIds.length);
+      this.logger.log('=== OTP cleanupOldOtps: Success ===');
+      this.logger.log(`Permanently deleted OTPs: ${otpIds.length}`);
 
       return {
         status: 200,
@@ -84,8 +75,8 @@ export class OtpCleanupService {
         },
       };
     } catch (error) {
-      console.error('=== OTP cleanupOldOtps: ERROR ===');
-      console.error('Error:', error);
+      this.logger.error('=== OTP cleanupOldOtps: ERROR ===');
+      this.logger.error(`Error: ${error.message}`, error.stack);
       return {
         status: 500,
         data: { error: error.message },

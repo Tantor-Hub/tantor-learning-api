@@ -188,7 +188,10 @@ export class SessionCoursService {
       }
 
       const sessionCours = await this.sessionCoursModel.findAll({
-        where: { id_session: sessionId },
+        where: { 
+          id_session: sessionId,
+          is_published: true,
+        },
         attributes: [
           'id',
           'title',

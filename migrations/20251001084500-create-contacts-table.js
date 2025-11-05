@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('___tbl_tantor_otps', {
+    await queryInterface.createTable('___tbl_tantor_contacts', {
       id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -11,24 +11,21 @@ module.exports = {
         primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
       },
-      userId: {
-        type: Sequelize.UUID,
-        allowNull: true,
-        references: {
-          model: '___tbl_tantor_users',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
-      },
-      otp: {
+      from_name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      connected: {
-        type: Sequelize.BOOLEAN,
+      from_mail: {
+        type: Sequelize.STRING,
         allowNull: false,
-        defaultValue: false,
+      },
+      subject: {
+        type: Sequelize.TEXT,
+        allowNull: false,
+      },
+      content: {
+        type: Sequelize.TEXT,
+        allowNull: false,
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -41,14 +38,10 @@ module.exports = {
         defaultValue: Sequelize.NOW,
       },
     });
-
-    // Add index on userId for faster queries
-    await queryInterface.addIndex('___tbl_tantor_otps', ['userId']);
-    // Add index on createdAt for faster cleanup queries
-    await queryInterface.addIndex('___tbl_tantor_otps', ['createdAt']);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('___tbl_tantor_otps');
+    await queryInterface.dropTable('___tbl_tantor_contacts');
   },
 };
+

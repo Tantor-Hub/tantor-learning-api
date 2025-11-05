@@ -6,6 +6,7 @@ import { DocumentTemplate } from '../models/model.documenttemplate';
 import { DocumentInstance } from '../models/model.documentinstance';
 import { Users } from '../models/model.users';
 import { TrainingSession } from '../models/model.trainingssession';
+import { UserInSession } from '../models/model.userinsession';
 import { JwtService } from '../services/service.jwt';
 import { ConfigService } from '@nestjs/config';
 import { AllSercices } from '../services/serices.all';
@@ -18,6 +19,7 @@ import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
       DocumentInstance,
       Users,
       TrainingSession,
+      UserInSession,
     ]),
   ],
   controllers: [DocumentsController],

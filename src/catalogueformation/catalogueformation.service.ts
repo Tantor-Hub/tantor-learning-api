@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CatalogueFormation } from 'src/models/model.catalogueformation';
 import { Users } from 'src/models/model.users';
@@ -20,10 +20,34 @@ export class CatalogueFormationService {
     createDto: CreateCatalogueFormationDto,
     userId: string,
   ): Promise<CatalogueFormation> {
-    return this.catalogueFormationModel.create({
-      ...createDto,
-      createdBy: userId,
+    // Check if a catalogue with this type already exists
+    const existingCatalogue = await this.catalogueFormationModel.findOne({
+      where: { type: createDto.type },
     });
+
+    if (existingCatalogue) {
+      throw new ConflictException(
+        `Un catalogue de formation de type "${createDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+      );
+    }
+
+    try {
+      return await this.catalogueFormationModel.create({
+        ...createDto,
+        createdBy: userId,
+      });
+    } catch (error: any) {
+      // Handle unique constraint violation at database level (safety check)
+      if (
+        error.name === 'SequelizeUniqueConstraintError' ||
+        error.message?.includes('unique_catalogue_type')
+      ) {
+        throw new ConflictException(
+          `Un catalogue de formation de type "${createDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+        );
+      }
+      throw error;
+    }
   }
 
   async findAll(): Promise<ResponseServer> {
@@ -138,11 +162,38 @@ export class CatalogueFormationService {
     updateDto: Partial<CreateCatalogueFormationDto>,
   ): Promise<CatalogueFormation | null> {
     const catalogue = await this.findOne(id);
-    if (catalogue) {
+    if (!catalogue) {
+      return null;
+    }
+
+    // If type is being updated, check if another catalogue with that type exists
+    if (updateDto.type && updateDto.type !== catalogue.type) {
+      const existingCatalogue = await this.catalogueFormationModel.findOne({
+        where: { type: updateDto.type },
+      });
+
+      if (existingCatalogue && existingCatalogue.id !== id) {
+        throw new ConflictException(
+          `Un catalogue de formation de type "${updateDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+        );
+      }
+    }
+
+    try {
       await catalogue.update(updateDto);
       return catalogue.reload();
+    } catch (error: any) {
+      // Handle unique constraint violation at database level
+      if (
+        error.name === 'SequelizeUniqueConstraintError' ||
+        error.message?.includes('unique_catalogue_type')
+      ) {
+        throw new ConflictException(
+          `Un catalogue de formation de type "${updateDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+        );
+      }
+      throw error;
     }
-    return null;
   }
 
   async remove(id: string): Promise<void> {

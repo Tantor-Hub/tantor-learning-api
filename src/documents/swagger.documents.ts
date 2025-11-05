@@ -1112,6 +1112,18 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                   templateId: { type: 'string', format: 'uuid' },
                   userId: { type: 'string', format: 'uuid' },
                   filledContent: { type: 'object' },
+                  variableValues: { type: 'object' },
+                  is_published: { type: 'boolean' },
+                  status: {
+                    type: 'string',
+                    enum: ['pending', 'validated', 'rejected'],
+                    description: 'Status of the document instance',
+                  },
+                  comment: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Comment associated with the document instance',
+                  },
                   template: {
                     type: 'object',
                     properties: {
@@ -1160,6 +1172,17 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 userId: { type: 'string', format: 'uuid' },
                 filledContent: { type: 'object' },
                 variableValues: { type: 'object' },
+                is_published: { type: 'boolean' },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'validated', 'rejected'],
+                  description: 'Status of the document instance',
+                },
+                comment: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Comment associated with the document instance',
+                },
                 template: {
                   type: 'object',
                   properties: {
@@ -1182,6 +1205,9 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                   ],
                 },
                 variableValues: { score: 95, name: 'Alice' },
+                is_published: false,
+                status: 'pending',
+                comment: null,
                 createdAt: '2025-11-01T10:00:00.000Z',
                 updatedAt: '2025-11-01T10:01:00.000Z',
                 template: {
@@ -1239,6 +1265,11 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                     },
                   ],
                 },
+              },
+              is_published: {
+                type: 'boolean',
+                description: 'Whether the document instance is published',
+                example: true,
               },
             },
             required: ['filledContent'],
@@ -1345,6 +1376,17 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 templateId: { type: 'string', format: 'uuid' },
                 userId: { type: 'string', format: 'uuid' },
                 filledContent: { type: 'object' },
+                is_published: { type: 'boolean' },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'validated', 'rejected'],
+                  description: 'Status of the document instance',
+                },
+                comment: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Comment associated with the document instance',
+                },
                 createdAt: { type: 'string', format: 'date-time' },
                 updatedAt: { type: 'string', format: 'date-time' },
               },
@@ -1434,6 +1476,17 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                       userId: { type: 'string', format: 'uuid' },
                       filledContent: { type: 'object' },
                       variableValues: { type: 'object' },
+                      is_published: { type: 'boolean' },
+                      status: {
+                        type: 'string',
+                        enum: ['pending', 'validated', 'rejected'],
+                        description: 'Status of the document instance',
+                      },
+                      comment: {
+                        type: 'string',
+                        nullable: true,
+                        description: 'Comment associated with the document instance',
+                      },
                       createdAt: { type: 'string', format: 'date-time' },
                       updatedAt: { type: 'string', format: 'date-time' },
                       template: {
@@ -1575,6 +1628,10 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 type: 'object',
                 description: 'Updated variable values',
               },
+              is_published: {
+                type: 'boolean',
+                description: 'Whether the document instance is published',
+              },
             },
             example: {
               filledContent: {
@@ -1584,6 +1641,7 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 ],
               },
               variableValues: { score: 98 },
+              is_published: true,
             },
           },
         },
@@ -1602,6 +1660,17 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 userId: { type: 'string', format: 'uuid' },
                 filledContent: { type: 'object' },
                 variableValues: { type: 'object' },
+                is_published: { type: 'boolean' },
+                status: {
+                  type: 'string',
+                  enum: ['pending', 'validated', 'rejected'],
+                  description: 'Status of the document instance',
+                },
+                comment: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Comment associated with the document instance',
+                },
                 createdAt: { type: 'string', format: 'date-time' },
                 updatedAt: { type: 'string', format: 'date-time' },
               },
