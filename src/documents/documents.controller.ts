@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -15,11 +16,13 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { DocumentsService } from './documents.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { FillDocumentDto } from './dto/fill-document.dto';
+import { UpdateDocumentInstanceSecretaryDto } from './dto/update-document-instance-secretary.dto';
 import { JwtAuthGuard } from '../guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
 import { DocumentSwagger } from './swagger.documents';
@@ -163,6 +166,70 @@ export class DocumentsController {
     return this.documentsService.getDocumentInstancesByTemplateForUser(
       templateId,
       req.user.id_user,
+    );
+  }
+
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.getAllDocumentInstancesForSecretary)
+  @ApiQuery({
+    name: 'sessionId',
+    required: false,
+    type: String,
+    format: 'uuid',
+    description:
+      'Optional training session ID filter. If not provided, returns all document instances from all sessions.',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['pending', 'validated', 'rejected'],
+    description:
+      'Optional document instance status filter. If not provided, returns document instances with all statuses.',
+    example: 'pending',
+  })
+  @ApiResponse(DocumentSwagger.getAllDocumentInstancesForSecretary.responses[200])
+  @ApiResponse(DocumentSwagger.getAllDocumentInstancesForSecretary.responses[401])
+  @Get('instances/secretary/all')
+  getAllDocumentInstancesForSecretary(
+    @Query('sessionId') sessionId?: string,
+    @Query('status') status?: 'pending' | 'validated' | 'rejected',
+  ) {
+    return this.documentsService.getAllDocumentInstancesForSecretary(
+      sessionId,
+      status,
+    );
+  }
+
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.getDocumentInstanceByIdForSecretary)
+  @ApiResponse(DocumentSwagger.getDocumentInstanceByIdForSecretary.responses[200])
+  @ApiResponse(DocumentSwagger.getDocumentInstanceByIdForSecretary.responses[401])
+  @ApiResponse(DocumentSwagger.getDocumentInstanceByIdForSecretary.responses[404])
+  @Get('instances/secretary/:id')
+  getDocumentInstanceByIdForSecretary(@Param('id') id: string) {
+    return this.documentsService.getDocumentInstanceByIdForSecretary(id);
+  }
+
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation(DocumentSwagger.updateDocumentInstanceBySecretary)
+  @ApiResponse(DocumentSwagger.updateDocumentInstanceBySecretary.responses[200])
+  @ApiResponse(DocumentSwagger.updateDocumentInstanceBySecretary.responses[401])
+  @ApiResponse(DocumentSwagger.updateDocumentInstanceBySecretary.responses[404])
+  @Patch('instances/secretary/update/:id')
+  updateDocumentInstanceBySecretary(
+    @Param('id') id: string,
+    @Body() dto: UpdateDocumentInstanceSecretaryDto,
+    @Req() req,
+  ) {
+    return this.documentsService.updateDocumentInstanceBySecretary(
+      id,
+      req.user.id_user,
+      dto.status,
+      dto.comment,
     );
   }
 }

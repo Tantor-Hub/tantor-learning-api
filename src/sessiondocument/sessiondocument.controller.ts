@@ -1130,9 +1130,11 @@ export class SessionDocumentController {
   async updateBySecretary(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSecretaryDto: UpdateSessionDocumentSecretaryDto,
+    @User() user: IJwtSignin,
   ) {
     return this.sessionDocumentService.updateBySecretary(
       id,
+      user.id_user,
       updateSecretaryDto,
     );
   }

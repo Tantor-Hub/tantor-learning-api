@@ -53,8 +53,16 @@ export class SessionDocument extends Model<ISessionDocument> {
   @Column(DataType.TEXT)
   comment?: string;
 
+  @ForeignKey(() => Users)
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  updatedBy?: string;
+
   @BelongsTo(() => Users, { foreignKey: 'id_student', targetKey: 'id' })
   student: Users;
+
+  @BelongsTo(() => Users, 'updatedBy')
+  updatedByUser: Users;
 
   @BelongsTo(() => TrainingSession, 'id_session')
   trainingSession: TrainingSession;

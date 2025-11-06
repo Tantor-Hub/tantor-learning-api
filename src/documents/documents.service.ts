@@ -495,4 +495,210 @@ export class DocumentsService {
       data: instances,
     };
   }
+
+  async getAllDocumentInstancesForSecretary(
+    sessionId?: string,
+    status?: 'pending' | 'validated' | 'rejected',
+  ) {
+    // Build where clause for instance filtering
+    const instanceWhere: any = {
+      is_published: true,
+    };
+    if (status) {
+      instanceWhere.status = status;
+    }
+
+    // Build where clause for template filtering
+    const templateWhere: any = {};
+    if (sessionId) {
+      templateWhere.sessionId = sessionId;
+    }
+
+    const includeOptions: any = [
+      {
+        model: DocumentTemplate,
+        as: 'template',
+        required: true,
+        attributes: [
+          'id',
+          'title',
+          'content',
+          'sessionId',
+          'type',
+          'variables',
+          'imageUrl',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: require('../models/model.trainingssession').TrainingSession,
+            as: 'trainingSession',
+            required: false,
+            attributes: ['id', 'title', 'regulation_text'],
+          },
+        ],
+        ...(Object.keys(templateWhere).length > 0
+          ? { where: templateWhere }
+          : {}),
+      },
+      {
+        model: Users,
+        as: 'user',
+        required: false,
+        attributes: ['id', 'firstName', 'lastName', 'email'],
+      },
+    ];
+
+    const instances = await this.instanceModel.findAll({
+      where: instanceWhere,
+      include: includeOptions,
+      order: [['createdAt', 'DESC']],
+    });
+
+    return {
+      status: 200,
+      message: 'Document instances retrieved successfully',
+      data: instances,
+    };
+  }
+
+  async updateDocumentInstanceBySecretary(
+    id: string,
+    secretaryId: string,
+    status?: 'pending' | 'validated' | 'rejected',
+    comment?: string,
+  ) {
+    const instance = await this.instanceModel.findByPk(id, {
+      include: [
+        {
+          model: DocumentTemplate,
+          as: 'template',
+          attributes: ['id', 'title', 'sessionId'],
+        },
+        {
+          model: Users,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+      ],
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Document instance not found');
+    }
+
+    // Always update updatedBy with the secretary ID from the token
+    // This ensures we track which secretary made the change, even if
+    // it's the same secretary or only status/comment is being updated
+    const updateData: any = {
+      updatedBy: secretaryId,
+    };
+    
+    // Update status if provided
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+    
+    // Update comment if provided (can be null to clear it)
+    if (comment !== undefined) {
+      updateData.comment = comment;
+    }
+
+    // Update the instance - updatedBy will always be set to the current secretary's ID
+    await instance.update(updateData);
+
+    // Reload the instance to get updated data with associations
+    await instance.reload({
+      include: [
+        {
+          model: DocumentTemplate,
+          as: 'template',
+          attributes: [
+            'id',
+            'title',
+            'content',
+            'sessionId',
+            'type',
+            'variables',
+            'imageUrl',
+          ],
+          include: [
+            {
+              model: require('../models/model.trainingssession').TrainingSession,
+              as: 'trainingSession',
+              attributes: ['id', 'title', 'regulation_text'],
+            },
+          ],
+        },
+        {
+          model: Users,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+        {
+          model: Users,
+          as: 'updatedByUser',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          required: false,
+        },
+      ],
+    });
+
+    return {
+      status: 200,
+      message: 'Document instance updated successfully',
+      data: instance,
+    };
+  }
+
+  async getDocumentInstanceByIdForSecretary(id: string) {
+    const instance = await this.instanceModel.findByPk(id, {
+      include: [
+        {
+          model: DocumentTemplate,
+          as: 'template',
+          attributes: [
+            'id',
+            'title',
+            'content',
+            'sessionId',
+            'type',
+            'variables',
+            'imageUrl',
+            'createdAt',
+            'updatedAt',
+          ],
+          include: [
+            {
+              model: require('../models/model.trainingssession').TrainingSession,
+              as: 'trainingSession',
+              attributes: ['id', 'title', 'regulation_text'],
+            },
+          ],
+        },
+        {
+          model: Users,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+        {
+          model: Users,
+          as: 'updatedByUser',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          required: false,
+        },
+      ],
+    });
+
+    if (!instance) {
+      throw new NotFoundException('Document instance not found');
+    }
+
+    return {
+      status: 200,
+      message: 'Document instance retrieved successfully',
+      data: instance,
+    };
+  }
 }

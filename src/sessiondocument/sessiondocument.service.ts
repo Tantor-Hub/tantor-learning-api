@@ -396,6 +396,7 @@ export class SessionDocumentService {
 
   async updateBySecretary(
     id: string,
+    secretaryId: string,
     updateDto: UpdateSessionDocumentSecretaryDto,
   ): Promise<ResponseServer> {
     try {
@@ -407,15 +408,24 @@ export class SessionDocumentService {
         });
       }
 
-      // Update only status and/or comment
-      const updateData: any = {};
+      // Always update updatedBy with the secretary ID from the token
+      // This ensures we track which secretary made the change, even if
+      // it's the same secretary or only status/comment is being updated
+      const updateData: any = {
+        updatedBy: secretaryId,
+      };
+      
+      // Update status if provided
       if (updateDto.status !== undefined) {
         updateData.status = updateDto.status;
       }
+      
+      // Update comment if provided (can be null to clear it)
       if (updateDto.comment !== undefined) {
         updateData.comment = updateDto.comment;
       }
 
+      // Update the document - updatedBy will always be set to the current secretary's ID
       await sessionDocument.update(updateData);
 
       // Reload the document to get updated data
@@ -430,6 +440,12 @@ export class SessionDocumentService {
             model: TrainingSession,
             as: 'trainingSession',
             attributes: ['id', 'title'],
+          },
+          {
+            model: Users,
+            as: 'updatedByUser',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+            required: false,
           },
         ],
       });

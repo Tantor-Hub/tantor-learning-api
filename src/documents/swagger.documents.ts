@@ -1146,7 +1146,11 @@ Variables are placeholder names that can be used in the TipTap content. They sho
 
   getDocumentInstanceById: {
     summary: 'Get document instance by ID',
-    description: 'Retrieves a specific document instance by its ID',
+    description: `Retrieves a specific document instance by its ID. Users can only access their own document instances.
+
+**Response includes:**
+- Document instance details (filledContent, variableValues, status, comment, is_published)
+- Document template information (id, title, **content**)`,
     operationId: 'getDocumentInstanceById',
     tags: ['Documents'],
     security: [{ bearerAuth: [] }],
@@ -1680,6 +1684,706 @@ Variables are placeholder names that can be used in the TipTap content. They sho
       },
       404: { description: 'Document instance not found' },
       401: { description: 'Unauthorized' },
+    },
+  },
+
+  getAllDocumentInstancesForSecretary: {
+    summary: 'Get all document instances (Secretary only)',
+    description: `Retrieves all published document instances in the system. Secretaries can view all published document instances submitted by students.
+
+**Note:** Only document instances with \`is_published: true\` are returned.
+
+**Optional Filters:**
+- **sessionId**: Filter by training session ID (UUID). If not provided, returns all document instances from all sessions.
+- **status**: Filter by document instance status (pending, validated, rejected). If not provided, returns document instances with all statuses.
+
+**Examples:**
+- GET /api/documents/instances/secretary/all - Get all published document instances
+- GET /api/documents/instances/secretary/all?sessionId={uuid} - Get published document instances for a specific session
+- GET /api/documents/instances/secretary/all?status=pending - Get published document instances with "pending" status
+- GET /api/documents/instances/secretary/all?status=validated - Get published document instances with "validated" status
+- GET /api/documents/instances/secretary/all?sessionId={uuid}&status=pending - Combine both filters
+
+**Response includes:**
+- Document instance details (filledContent, variableValues, status, comment, is_published)
+- Document template information (id, title, content, sessionId, type, variables, imageUrl)
+- Training session information (id, title, regulation_text)
+- User information (id, firstName, lastName, email)`,
+    operationId: 'getAllDocumentInstancesForSecretary',
+    tags: ['Documents'],
+    security: [{ bearerAuth: [] }],
+    parameters: [
+      {
+        name: 'sessionId',
+        in: 'query' as const,
+        required: false,
+        schema: { type: 'string', format: 'uuid' },
+        description:
+          'Optional training session ID filter. If not provided, returns all document instances from all sessions.',
+        example: '550e8400-e29b-41d4-a716-446655440001',
+      },
+      {
+        name: 'status',
+        in: 'query' as const,
+        required: false,
+        schema: {
+          type: 'string',
+          enum: ['pending', 'validated', 'rejected'],
+        },
+        description:
+          'Optional document instance status filter. If not provided, returns document instances with all statuses.',
+        example: 'pending',
+      },
+    ],
+    responses: {
+      200: {
+        description: 'Document instances retrieved successfully',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                status: { type: 'number', example: 200 },
+                message: {
+                  type: 'string',
+                  example: 'Document instances retrieved successfully',
+                },
+                data: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      templateId: { type: 'string', format: 'uuid' },
+                      userId: { type: 'string', format: 'uuid' },
+                      filledContent: { type: 'object' },
+                      variableValues: { type: 'object' },
+                      is_published: { type: 'boolean' },
+                      status: {
+                        type: 'string',
+                        enum: ['pending', 'validated', 'rejected'],
+                        description: 'Status of the document instance',
+                      },
+                      comment: {
+                        type: 'string',
+                        nullable: true,
+                        description: 'Comment associated with the document instance',
+                      },
+                      createdAt: { type: 'string', format: 'date-time' },
+                      updatedAt: { type: 'string', format: 'date-time' },
+                      template: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          title: { type: 'string' },
+                          content: { type: 'object' },
+                          sessionId: { type: 'string', format: 'uuid' },
+                          type: {
+                            type: 'string',
+                            enum: ['before', 'during', 'after'],
+                          },
+                          variables: { type: 'object' },
+                          imageUrl: { type: 'string', nullable: true },
+                          createdAt: { type: 'string', format: 'date-time' },
+                          updatedAt: { type: 'string', format: 'date-time' },
+                          trainingSession: {
+                            type: 'object',
+                            properties: {
+                              id: { type: 'string', format: 'uuid' },
+                              title: { type: 'string' },
+                              regulation_text: { type: 'string' },
+                            },
+                          },
+                        },
+                      },
+                      user: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', format: 'uuid' },
+                          firstName: { type: 'string' },
+                          lastName: { type: 'string' },
+                          email: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              example: {
+                status: 200,
+                message: 'Document instances retrieved successfully',
+                data: [
+                  {
+                    id: 'instance-uuid-1',
+                    templateId: 'template-uuid-1',
+                    userId: 'student-uuid-1',
+                    filledContent: {
+                      type: 'doc',
+                      content: [
+                        {
+                          type: 'heading',
+                          attrs: { level: 1 },
+                          content: [{ type: 'text', text: 'Assessment Form' }],
+                        },
+                        {
+                          type: 'paragraph',
+                          content: [
+                            {
+                              type: 'text',
+                              text: 'Student Name: Alice Johnson',
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    variableValues: { studentName: 'Alice Johnson', score: 95 },
+                    is_published: false,
+                    status: 'pending',
+                    comment: null,
+                    createdAt: '2025-11-01T10:00:00.000Z',
+                    updatedAt: '2025-11-01T10:01:00.000Z',
+                    template: {
+                      id: 'template-uuid-1',
+                      title: 'Pre-Training Assessment',
+                      content: {
+                        type: 'doc',
+                        content: [
+                          {
+                            type: 'heading',
+                            attrs: { level: 1 },
+                            content: [
+                              { type: 'text', text: 'Assessment Form' },
+                            ],
+                          },
+                          {
+                            type: 'paragraph',
+                            content: [
+                              {
+                                type: 'text',
+                                text: 'Student Name: {{studentName}}',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      sessionId: 'session-uuid-1',
+                      type: 'before',
+                      variables: ['studentName', 'score'],
+                      imageUrl: null,
+                      createdAt: '2025-10-15T08:00:00.000Z',
+                      updatedAt: '2025-10-15T08:00:00.000Z',
+                      trainingSession: {
+                        id: 'session-uuid-1',
+                        title: 'React Training Workshop',
+                        regulation_text: 'Training regulations...',
+                      },
+                    },
+                    user: {
+                      id: 'student-uuid-1',
+                      firstName: 'Alice',
+                      lastName: 'Johnson',
+                      email: 'alice.johnson@example.com',
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Invalid or missing JWT token, or user is not a secretary',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 401 },
+                message: {
+                  type: 'string',
+                  example:
+                    "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  updateDocumentInstanceBySecretary: {
+    summary: 'Update document instance status and comment (Secretary only)',
+    description: `Secretaries can update the status and/or add comments to document instances.
+    
+**Allowed Updates:**
+- **status**: Update the document instance status (pending, rejected, validated)
+- **comment**: Add or update a comment/note about the document instance (optional)
+
+**Use Cases:**
+- Validate a document: Set status to 'validated' and optionally add a comment
+- Reject a document: Set status to 'rejected' and add a comment explaining why
+- Add notes: Update comment without changing status
+- Reset status: Change status back to 'pending' if needed
+
+**Note:** 
+- This endpoint only allows updating status and comment fields. Other fields cannot be modified by secretaries.
+- The comment field is completely optional. You can update only the status, only the comment, or both.`,
+    operationId: 'updateDocumentInstanceBySecretary',
+    tags: ['Documents'],
+    security: [{ bearerAuth: [] }],
+    parameters: [
+      {
+        name: 'id',
+        in: 'path' as const,
+        required: true,
+        schema: { type: 'string', format: 'uuid' },
+        description: 'Document instance ID',
+        example: '550e8400-e29b-41d4-a716-446655440001',
+      },
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              status: {
+                type: 'string',
+                enum: ['pending', 'validated', 'rejected'],
+                description: 'Status of the document instance',
+              },
+              comment: {
+                type: 'string',
+                nullable: true,
+                description: 'Comment or note from the secretary (optional)',
+              },
+            },
+            example: {
+              status: 'validated',
+              comment: 'Document verified successfully. All information is correct.',
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Document instance updated successfully',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                status: { type: 'number', example: 200 },
+                message: {
+                  type: 'string',
+                  example: 'Document instance updated successfully',
+                },
+                data: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    templateId: { type: 'string', format: 'uuid' },
+                    userId: { type: 'string', format: 'uuid' },
+                    filledContent: { type: 'object' },
+                    variableValues: { type: 'object' },
+                    is_published: { type: 'boolean' },
+                    status: {
+                      type: 'string',
+                      enum: ['pending', 'validated', 'rejected'],
+                      description: 'Status of the document instance',
+                    },
+                    comment: {
+                      type: 'string',
+                      nullable: true,
+                      description: 'Comment associated with the document instance',
+                    },
+                    updatedBy: {
+                      type: 'string',
+                      format: 'uuid',
+                      nullable: true,
+                      description: 'ID of the secretary who last updated this document instance',
+                    },
+                    createdAt: { type: 'string', format: 'date-time' },
+                    updatedAt: { type: 'string', format: 'date-time' },
+                    template: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        title: { type: 'string' },
+                        content: { type: 'object' },
+                        sessionId: { type: 'string', format: 'uuid' },
+                        type: {
+                          type: 'string',
+                          enum: ['before', 'during', 'after'],
+                        },
+                        variables: { type: 'object' },
+                        imageUrl: { type: 'string', nullable: true },
+                        trainingSession: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            title: { type: 'string' },
+                            regulation_text: { type: 'string' },
+                          },
+                        },
+                      },
+                    },
+                    user: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        firstName: { type: 'string' },
+                        lastName: { type: 'string' },
+                        email: { type: 'string' },
+                      },
+                    },
+                    updatedByUser: {
+                      type: 'object',
+                      nullable: true,
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        firstName: { type: 'string' },
+                        lastName: { type: 'string' },
+                        email: { type: 'string' },
+                      },
+                      description: 'Secretary who last updated this document instance',
+                    },
+                  },
+                },
+              },
+              example: {
+                status: 200,
+                message: 'Document instance updated successfully',
+                data: {
+                  id: 'instance-uuid',
+                  templateId: 'template-uuid',
+                  userId: 'user-uuid',
+                  filledContent: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'heading',
+                        attrs: { level: 1 },
+                        content: [{ type: 'text', text: 'Assessment Form' }],
+                      },
+                    ],
+                  },
+                  variableValues: { studentName: 'Alice Johnson' },
+                  is_published: true,
+                  status: 'validated',
+                  comment: 'Document verified successfully. All information is correct.',
+                  updatedBy: 'secretary-uuid',
+                  createdAt: '2025-11-01T10:00:00.000Z',
+                  updatedAt: '2025-11-01T11:00:00.000Z',
+                  template: {
+                    id: 'template-uuid',
+                    title: 'Pre-Training Assessment',
+                    content: {
+                      type: 'doc',
+                      content: [],
+                    },
+                    sessionId: 'session-uuid',
+                    type: 'before',
+                    variables: ['studentName'],
+                    imageUrl: null,
+                    trainingSession: {
+                      id: 'session-uuid',
+                      title: 'React Training Workshop',
+                      regulation_text: 'Training regulations...',
+                    },
+                  },
+                  user: {
+                    id: 'user-uuid',
+                    firstName: 'Alice',
+                    lastName: 'Johnson',
+                    email: 'alice.johnson@example.com',
+                  },
+                  updatedByUser: {
+                    id: 'secretary-uuid',
+                    firstName: 'John',
+                    lastName: 'Secretary',
+                    email: 'secretary@example.com',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Invalid or missing JWT token, or user is not a secretary',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 401 },
+                message: {
+                  type: 'string',
+                  example:
+                    "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+                },
+              },
+            },
+          },
+        },
+      },
+      404: {
+        description: 'Document instance not found',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 404 },
+                message: {
+                  type: 'string',
+                  example: 'Document instance not found',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  getDocumentInstanceByIdForSecretary: {
+    summary: 'Get document instance by ID (Secretary only)',
+    description: `Retrieves a specific document instance by its ID. Secretaries can view any document instance in the system, regardless of who created it.
+
+**Response includes:**
+- Document instance details (filledContent, variableValues, status, comment, is_published, updatedBy)
+- Document template information (id, title, content, sessionId, type, variables, imageUrl)
+- Training session information (id, title, regulation_text)
+- User information (id, firstName, lastName, email) - the student who created the instance
+- UpdatedByUser information (id, firstName, lastName, email) - the secretary who last updated the instance`,
+    operationId: 'getDocumentInstanceByIdForSecretary',
+    tags: ['Documents'],
+    security: [{ bearerAuth: [] }],
+    parameters: [
+      {
+        name: 'id',
+        in: 'path' as const,
+        required: true,
+        schema: { type: 'string', format: 'uuid' },
+        description: 'Document instance ID',
+        example: '550e8400-e29b-41d4-a716-446655440001',
+      },
+    ],
+    responses: {
+      200: {
+        description: 'Document instance retrieved successfully',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                status: { type: 'number', example: 200 },
+                message: {
+                  type: 'string',
+                  example: 'Document instance retrieved successfully',
+                },
+                data: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    templateId: { type: 'string', format: 'uuid' },
+                    userId: { type: 'string', format: 'uuid' },
+                    filledContent: { type: 'object' },
+                    variableValues: { type: 'object' },
+                    is_published: { type: 'boolean' },
+                    status: {
+                      type: 'string',
+                      enum: ['pending', 'validated', 'rejected'],
+                      description: 'Status of the document instance',
+                    },
+                    comment: {
+                      type: 'string',
+                      nullable: true,
+                      description: 'Comment associated with the document instance',
+                    },
+                    updatedBy: {
+                      type: 'string',
+                      format: 'uuid',
+                      nullable: true,
+                      description: 'ID of the secretary who last updated this document instance',
+                    },
+                    createdAt: { type: 'string', format: 'date-time' },
+                    updatedAt: { type: 'string', format: 'date-time' },
+                    template: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        title: { type: 'string' },
+                        content: { type: 'object' },
+                        sessionId: { type: 'string', format: 'uuid' },
+                        type: {
+                          type: 'string',
+                          enum: ['before', 'during', 'after'],
+                        },
+                        variables: { type: 'object' },
+                        imageUrl: { type: 'string', nullable: true },
+                        createdAt: { type: 'string', format: 'date-time' },
+                        updatedAt: { type: 'string', format: 'date-time' },
+                        trainingSession: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string', format: 'uuid' },
+                            title: { type: 'string' },
+                            regulation_text: { type: 'string' },
+                          },
+                        },
+                      },
+                    },
+                    user: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        firstName: { type: 'string' },
+                        lastName: { type: 'string' },
+                        email: { type: 'string' },
+                      },
+                    },
+                    updatedByUser: {
+                      type: 'object',
+                      nullable: true,
+                      properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        firstName: { type: 'string' },
+                        lastName: { type: 'string' },
+                        email: { type: 'string' },
+                      },
+                      description: 'Secretary who last updated this document instance',
+                    },
+                  },
+                },
+              },
+              example: {
+                status: 200,
+                message: 'Document instance retrieved successfully',
+                data: {
+                  id: 'instance-uuid',
+                  templateId: 'template-uuid',
+                  userId: 'student-uuid',
+                  filledContent: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'heading',
+                        attrs: { level: 1 },
+                        content: [{ type: 'text', text: 'Assessment Form' }],
+                      },
+                      {
+                        type: 'paragraph',
+                        content: [
+                          {
+                            type: 'text',
+                            text: 'Student Name: Alice Johnson',
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  variableValues: { studentName: 'Alice Johnson', score: 95 },
+                  is_published: true,
+                  status: 'validated',
+                  comment: 'Document verified successfully. All information is correct.',
+                  updatedBy: 'secretary-uuid',
+                  createdAt: '2025-11-01T10:00:00.000Z',
+                  updatedAt: '2025-11-01T11:00:00.000Z',
+                  template: {
+                    id: 'template-uuid',
+                    title: 'Pre-Training Assessment',
+                    content: {
+                      type: 'doc',
+                      content: [
+                        {
+                          type: 'heading',
+                          attrs: { level: 1 },
+                          content: [
+                            { type: 'text', text: 'Assessment Form' },
+                          ],
+                        },
+                        {
+                          type: 'paragraph',
+                          content: [
+                            {
+                              type: 'text',
+                              text: 'Student Name: {{studentName}}',
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    sessionId: 'session-uuid',
+                    type: 'before',
+                    variables: ['studentName', 'score'],
+                    imageUrl: null,
+                    createdAt: '2025-10-15T08:00:00.000Z',
+                    updatedAt: '2025-10-15T08:00:00.000Z',
+                    trainingSession: {
+                      id: 'session-uuid',
+                      title: 'React Training Workshop',
+                      regulation_text: 'Training regulations...',
+                    },
+                  },
+                  user: {
+                    id: 'student-uuid',
+                    firstName: 'Alice',
+                    lastName: 'Johnson',
+                    email: 'alice.johnson@example.com',
+                  },
+                  updatedByUser: {
+                    id: 'secretary-uuid',
+                    firstName: 'John',
+                    lastName: 'Secretary',
+                    email: 'secretary@example.com',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Invalid or missing JWT token, or user is not a secretary',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 401 },
+                message: {
+                  type: 'string',
+                  example:
+                    "La clé d'authentification fournie n'a pas les droits recquis pour accéder à ces ressources",
+                },
+              },
+            },
+          },
+        },
+      },
+      404: {
+        description: 'Document instance not found',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 404 },
+                message: {
+                  type: 'string',
+                  example: 'Document instance not found',
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };

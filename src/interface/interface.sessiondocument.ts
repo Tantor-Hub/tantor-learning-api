@@ -8,6 +8,9 @@ export interface ISessionDocument extends IGlobale {
   categories: 'before' | 'during' | 'after';
   piece_jointe?: string;
   status: 'pending' | 'rejected' | 'validated';
+  comment?: string;
+  updatedBy?: string;
   student?: any;
   trainingSession?: any;
+  updatedByUser?: any;
 }

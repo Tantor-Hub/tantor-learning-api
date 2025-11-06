@@ -63,6 +63,13 @@ export class DocumentInstance extends Model {
   @Column({ type: DataType.TEXT, allowNull: true })
   comment: string;
 
+  @ForeignKey(() => Users)
+  @Column({ type: DataType.UUID, allowNull: true })
+  updatedBy: string;
+
+  @BelongsTo(() => Users, 'updatedBy')
+  updatedByUser: Users;
+
   @Column({ type: DataType.DATE, defaultValue: DataType.NOW })
   createdAt: Date;
 
