@@ -446,7 +446,7 @@ export class PaymentMethodCpfService {
 
           return {
             userId: payment.user?.id,
-            // userEmail: payment.user?.email,
+            userEmail: payment.user?.email,
             sessionId: payment.trainingSession?.id,
             sessionTitle: payment.trainingSession?.title,
             status: payment?.status || 'pending',

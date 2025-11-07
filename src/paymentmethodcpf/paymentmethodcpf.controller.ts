@@ -227,10 +227,6 @@ export class PaymentMethodCpfController {
                 example: 'JavaScript Fundamentals',
               },
               status: { type: 'string', example: 'in' },
-              cpfLink: {
-                type: 'string',
-                example: 'https://example.com/cpf-document.pdf',
-              },
             },
           },
         },
