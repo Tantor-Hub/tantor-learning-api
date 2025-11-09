@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsObject, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsObject, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class FillDocumentDto {
@@ -31,4 +31,13 @@ export class FillDocumentDto {
   @IsObject()
   @IsOptional()
   variableValues?: object;
+
+  @ApiProperty({
+    description: 'Whether the document instance is published',
+    example: false,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  is_published?: boolean;
 }

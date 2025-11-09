@@ -71,13 +71,12 @@ export class DocumentsService {
     });
 
     if (!enrollment) {
-      console.log(
-        '[DOCUMENTS SERVICE] ❌ User not enrolled in session',
-      );
+      console.log('[DOCUMENTS SERVICE] ❌ User not enrolled in session');
       throw new HttpException(
         {
           statusCode: 402,
-          message: "Accès refusé: Vous n'êtes pas inscrit à cette session. Veuillez contacter un administrateur pour vous inscrire.",
+          message:
+            "Accès refusé: Vous n'êtes pas inscrit à cette session. Veuillez contacter un administrateur pour vous inscrire.",
           error: 'Paiement requis',
         },
         402,
@@ -97,7 +96,7 @@ export class DocumentsService {
         refusedpayment: 'paiement refusé',
       };
       const statusInFrench = statusMap[enrollment.status] || enrollment.status;
-      
+
       throw new HttpException(
         {
           statusCode: 402,
@@ -108,7 +107,9 @@ export class DocumentsService {
       );
     }
 
-    console.log('[DOCUMENTS SERVICE] ✅ User is enrolled and active in session');
+    console.log(
+      '[DOCUMENTS SERVICE] ✅ User is enrolled and active in session',
+    );
   }
 
   async createTemplate(dto: CreateTemplateDto, userId: string) {
@@ -325,12 +326,18 @@ export class DocumentsService {
         );
       }
       // If status is rejected or pending, reset to pending when user modifies
-      if (existingInstance.status === 'rejected' || existingInstance.status === 'pending') {
+      if (
+        existingInstance.status === 'rejected' ||
+        existingInstance.status === 'pending'
+      ) {
         existingInstance.status = 'pending';
       }
       // Update existing instance instead of creating a new one
       existingInstance.filledContent = filledContent;
       existingInstance.variableValues = variableValues;
+      if (dto.is_published !== undefined) {
+        existingInstance.is_published = dto.is_published;
+      }
       await existingInstance.save();
       instance = existingInstance;
     } else {
@@ -341,6 +348,7 @@ export class DocumentsService {
           userId,
           filledContent,
           variableValues,
+          is_published: dto.is_published ?? false,
         });
       } catch (error: any) {
         // Handle unique constraint violation (race condition)
@@ -594,12 +602,12 @@ export class DocumentsService {
     const updateData: any = {
       updatedBy: secretaryId,
     };
-    
+
     // Update status if provided
     if (status !== undefined) {
       updateData.status = status;
     }
-    
+
     // Update comment if provided (can be null to clear it)
     if (comment !== undefined) {
       updateData.comment = comment;
@@ -625,7 +633,8 @@ export class DocumentsService {
           ],
           include: [
             {
-              model: require('../models/model.trainingssession').TrainingSession,
+              model: require('../models/model.trainingssession')
+                .TrainingSession,
               as: 'trainingSession',
               attributes: ['id', 'title', 'regulation_text'],
             },
@@ -671,7 +680,8 @@ export class DocumentsService {
           ],
           include: [
             {
-              model: require('../models/model.trainingssession').TrainingSession,
+              model: require('../models/model.trainingssession')
+                .TrainingSession,
               as: 'trainingSession',
               attributes: ['id', 'title', 'regulation_text'],
             },
