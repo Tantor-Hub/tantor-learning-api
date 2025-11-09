@@ -48,6 +48,25 @@ export class DocumentsService {
     console.log('[DOCUMENTS SERVICE] ✅ User is a secretary');
   }
 
+  private async checkStudentRole(userId: string): Promise<void> {
+    console.log(
+      '[DOCUMENTS SERVICE] 🔍 Checking student role for user:',
+      userId,
+    );
+    const user = await this.usersModel.findByPk(userId);
+    console.log(
+      '[DOCUMENTS SERVICE] 👤 User found:',
+      user ? { id: user.id, role: user.role } : 'Not found',
+    );
+    if (!user || user.role !== 'student') {
+      console.log('[DOCUMENTS SERVICE] ❌ User is not a student or not found');
+      throw new ForbiddenException(
+        'Access denied. Only students can perform this action.',
+      );
+    }
+    console.log('[DOCUMENTS SERVICE] ✅ User is a student');
+  }
+
   /**
    * Check if user is enrolled in the session with status 'in'
    * Returns 402 error if user is not enrolled or status is not 'in'
@@ -288,8 +307,8 @@ export class DocumentsService {
       throw new NotFoundException('Template not found');
     }
 
-    // Check if user is enrolled in the session (status must be 'in')
-    await this.checkUserInSession(userId, template.sessionId);
+    // Check if user is a student
+    await this.checkStudentRole(userId);
 
     // Check if an instance already exists for this user and template
     const existingInstance = await this.instanceModel.findOne({
