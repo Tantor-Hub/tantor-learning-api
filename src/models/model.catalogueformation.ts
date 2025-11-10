@@ -60,6 +60,12 @@ export class CatalogueFormation extends Model<ICatalogueFormation> {
   })
   piece_jointe?: string;
 
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  id_training?: string;
+
   @ForeignKey(() => Users)
   @Column({
     type: DataType.UUID,

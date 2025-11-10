@@ -5,11 +5,16 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   UseGuards,
   Request,
   UseInterceptors,
   UploadedFile,
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,10 +23,14 @@ import {
   ApiBody,
   ApiBearerAuth,
   ApiConsumes,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CatalogueFormationService } from './catalogueformation.service';
 import { CreateCatalogueFormationDto } from './dto/create-catalogueformation.dto';
+import { CreateStudentCatalogueDto } from './dto/create-student-catalogue.dto';
+import { UpdateStudentCatalogueDto } from './dto/update-student-catalogue.dto';
+import { CatalogueType } from 'src/interface/interface.catalogueformation';
 import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
@@ -660,6 +669,969 @@ export class CatalogueFormationController {
   async findAdminCatalogue() {
     console.log('Fetching admin catalogue formation');
     return this.catalogueFormationService.findOneByType('admin');
+  }
+
+  @Post('student')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseInterceptors(
+    FileInterceptor('document', { limits: { fileSize: 100_000_000 } }),
+  )
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Create a student type catalogue formation (Secretary only)',
+    description: `
+      Create a new student type catalogue formation with an associated training ID.
+      Only secretaries can create student catalogues.
+      
+      **Authorization:**
+      - Only secretaries can create student catalogue formations
+      - Bearer token required
+      
+      **Request Format:**
+      - Content-Type: multipart/form-data
+      - Required fields: title, id_training
+      - Optional fields: document (file), description
+      
+      **Supported File Types:**
+      - Documents: PDF, DOC, DOCX, TXT
+      - Images: JPEG, PNG, GIF, WebP, SVG, BMP, TIFF
+      - Presentations: PPT, PPTX
+      - Spreadsheets: XLS, XLSX
+      - Maximum file size: 100MB
+    `,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Create student catalogue formation with optional file upload',
+    schema: {
+      type: 'object',
+      properties: {
+        document: {
+          type: 'string',
+          format: 'binary',
+          description:
+            'Document file to upload (optional). Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, PPT, PPTX, XLS, XLSX. Maximum size: 100MB.',
+        },
+        title: {
+          type: 'string',
+          description: 'Title of the catalogue',
+          example: 'Student Training Catalogue',
+        },
+        id_training: {
+          type: 'string',
+          format: 'uuid',
+          description: 'ID of the training associated with this catalogue',
+          example: '550e8400-e29b-41d4-a716-446655440001',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the catalogue',
+          example: 'Comprehensive training program for students',
+        },
+      },
+      required: ['title', 'id_training'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Student catalogue formation created successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 201 },
+        message: {
+          type: 'string',
+          example: 'Student catalogue formation created successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            type: { type: 'string', example: 'student' },
+            title: { type: 'string', example: 'Student Training Catalogue' },
+            description: {
+              type: 'string',
+              example: 'Comprehensive training program for students',
+            },
+            id_training: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440002',
+            },
+            piece_jointe: { type: 'string' },
+            createdBy: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid data or missing required fields',
+    schema: {
+      examples: {
+        invalidFileType: {
+          summary: 'Invalid file type',
+          value: {
+            status: 400,
+            data: 'File type application/zip is not allowed. Allowed types: Documents (PDF, DOC, DOCX, TXT, PPT, XLS), Images (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF)',
+          },
+        },
+        fileTooLarge: {
+          summary: 'File too large',
+          value: {
+            status: 400,
+            data: 'File size exceeds 100MB limit',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - A student catalogue already exists.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 409 },
+        message: {
+          type: 'string',
+          example:
+            'Un catalogue de formation de type "student" existe déjà. Chaque type de catalogue ne peut exister qu\'une seule fois.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async createStudentCatalogue(
+    @Body() createDto: CreateStudentCatalogueDto,
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      let pieceJointe: string | undefined = undefined;
+
+      // Handle file upload if provided
+      if (file) {
+        console.log(
+          'File uploaded:',
+          file.originalname,
+          'Type:',
+          file.mimetype,
+          'Size:',
+          file.size,
+        );
+
+        // Validate file type
+        const allowedMimeTypes = [
+          // Documents
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          // Images
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'image/svg+xml',
+          'image/bmp',
+          'image/tiff',
+        ];
+
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+          return {
+            status: 400,
+            data: `File type ${file.mimetype} is not allowed. Allowed types: Documents (PDF, DOC, DOCX, TXT, PPT, XLS), Images (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF)`,
+          };
+        }
+
+        // Validate file size (100MB limit)
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+          return {
+            status: 400,
+            data: 'File size exceeds 100MB limit',
+          };
+        }
+
+        // Upload file to Cloudinary
+        const uploadResult =
+          await this.googleDriveService.uploadBufferFile(file);
+
+        if (!uploadResult) {
+          console.error('Upload failed: uploadResult is null');
+          return {
+            status: 500,
+            data: 'Failed to upload document to cloud storage',
+          };
+        }
+
+        if (!uploadResult.link) {
+          console.error(
+            'Upload failed: uploadResult.link is missing',
+            uploadResult,
+          );
+          return {
+            status: 500,
+            data: 'Failed to upload document to cloud storage - no link returned',
+          };
+        }
+
+        pieceJointe = uploadResult.link;
+        console.log('File uploaded successfully, piece_jointe:', pieceJointe);
+      } else {
+        console.log('No file uploaded');
+      }
+
+      // Create catalogue formation with uploaded file info
+      const catalogueData: CreateStudentCatalogueDto = {
+        title: createDto.title,
+        id_training: createDto.id_training,
+      };
+
+      // Only include description if it has a value
+      if (createDto.description) {
+        catalogueData.description = createDto.description;
+      }
+
+      // Use uploaded file link if available, otherwise use DTO value
+      if (pieceJointe) {
+        catalogueData.piece_jointe = pieceJointe;
+      } else if (createDto.piece_jointe) {
+        catalogueData.piece_jointe = createDto.piece_jointe;
+      }
+
+      console.log('Creating student catalogue formation with data:', {
+        title: catalogueData.title,
+        id_training: catalogueData.id_training,
+        description: catalogueData.description,
+        piece_jointe: catalogueData.piece_jointe || '(not set)',
+      });
+
+      const userId = req.user.id_user;
+      const catalogue = await this.catalogueFormationService.createStudentCatalogue(
+        catalogueData,
+        userId,
+      );
+      return {
+        status: 201,
+        message: 'Student catalogue formation created successfully',
+        data: catalogue,
+      };
+    } catch (error) {
+      console.error('Error creating student catalogue formation:', error);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      return {
+        status: 500,
+        data: 'Internal server error during student catalogue formation creation',
+      };
+    }
+  }
+
+  @Patch('student/:id')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @UseInterceptors(
+    FileInterceptor('document', { limits: { fileSize: 100_000_000 } }),
+  )
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'UUID of the catalogue formation to update',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiOperation({
+    summary: 'Update student type catalogue formation (Secretary only)',
+    description: `
+      Update the existing student type catalogue formation by ID.
+      Only secretaries can update student catalogues.
+      
+      **Authorization:**
+      - Only secretaries can update student catalogue formations
+      - Bearer token required
+      
+      **Request Format:**
+      - Content-Type: multipart/form-data
+      
+      **URL Parameters:**
+      - id (required): UUID of the catalogue formation to update
+      
+      **Request Body:**
+      All fields are optional. Only provided fields will be updated.
+      - document (optional): File to upload (up to 100MB). If provided, will update piece_jointe with the uploaded file URL.
+      - title (optional): Title of the catalogue
+      - id_training (optional): UUID of the training to associate with this catalogue
+      - description (optional): Description of the catalogue
+      - piece_jointe (optional): Cloudinary URL for an attached document (if no file is uploaded)
+      
+      **Supported File Types:**
+      - Documents: PDF, DOC, DOCX, TXT
+      - Images: JPEG, PNG, GIF, WebP, SVG, BMP, TIFF
+      - Presentations: PPT, PPTX
+      - Spreadsheets: XLS, XLSX
+      - Maximum file size: 100MB
+      
+      **Note:** The catalogue must be of type "student" to be updated.
+    `,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Update student catalogue formation with optional file upload',
+    schema: {
+      type: 'object',
+      properties: {
+        document: {
+          type: 'string',
+          format: 'binary',
+          description:
+            'Document file to upload (optional). Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, PPT, PPTX, XLS, XLSX. Maximum size: 100MB. If provided, will update piece_jointe.',
+        },
+        title: {
+          type: 'string',
+          description: 'Title of the catalogue',
+          example: 'Student Training Catalogue',
+        },
+        id_training: {
+          type: 'string',
+          format: 'uuid',
+          description: 'ID of the training associated with this catalogue',
+          example: '550e8400-e29b-41d4-a716-446655440001',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the catalogue',
+          example: 'Comprehensive training program for students',
+        },
+        piece_jointe: {
+          type: 'string',
+          description:
+            'Cloudinary URL for an attached document (optional, only used if no file is uploaded)',
+          example:
+            'https://res.cloudinary.com/your-cloud/raw/upload/v1234567890/__tantorLearning/documents/document.pdf',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student catalogue formation updated successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student catalogue formation updated successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            type: { type: 'string', example: 'student' },
+            title: { type: 'string', example: 'Student Training Catalogue' },
+            description: {
+              type: 'string',
+              example: 'Comprehensive training program for students',
+            },
+            id_training: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440002',
+            },
+            piece_jointe: { type: 'string' },
+            createdBy: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid data',
+    schema: {
+      examples: {
+        invalidFileType: {
+          summary: 'Invalid file type',
+          value: {
+            status: 400,
+            data: 'File type application/zip is not allowed. Allowed types: Documents (PDF, DOC, DOCX, TXT, PPT, XLS), Images (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF)',
+          },
+        },
+        fileTooLarge: {
+          summary: 'File too large',
+          value: {
+            status: 400,
+            data: 'File size exceeds 100MB limit',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Catalogue is not of type "student".',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 403 },
+        message: {
+          type: 'string',
+          example: 'Ce catalogue n\'est pas de type "student".',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not found - Catalogue does not exist.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Catalogue de formation non trouvé.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async updateStudentCatalogue(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateStudentCatalogueDto,
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      let pieceJointe: string | undefined = undefined;
+
+      // Handle file upload if provided
+      if (file) {
+        console.log(
+          'File uploaded:',
+          file.originalname,
+          'Type:',
+          file.mimetype,
+          'Size:',
+          file.size,
+        );
+
+        // Validate file type
+        const allowedMimeTypes = [
+          // Documents
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          // Images
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'image/svg+xml',
+          'image/bmp',
+          'image/tiff',
+        ];
+
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+          return {
+            status: 400,
+            data: `File type ${file.mimetype} is not allowed. Allowed types: Documents (PDF, DOC, DOCX, TXT, PPT, XLS), Images (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF)`,
+          };
+        }
+
+        // Validate file size (100MB limit)
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+          return {
+            status: 400,
+            data: 'File size exceeds 100MB limit',
+          };
+        }
+
+        // Upload file to Cloudinary
+        const uploadResult =
+          await this.googleDriveService.uploadBufferFile(file);
+
+        if (!uploadResult) {
+          console.error('Upload failed: uploadResult is null');
+          return {
+            status: 500,
+            data: 'Failed to upload document to cloud storage',
+          };
+        }
+
+        if (!uploadResult.link) {
+          console.error(
+            'Upload failed: uploadResult.link is missing',
+            uploadResult,
+          );
+          return {
+            status: 500,
+            data: 'Failed to upload document to cloud storage - no link returned',
+          };
+        }
+
+        pieceJointe = uploadResult.link;
+        console.log('File uploaded successfully, piece_jointe:', pieceJointe);
+      } else {
+        console.log('No file uploaded');
+      }
+
+      // Prepare update data
+      const updateData: UpdateStudentCatalogueDto = {};
+
+      if (updateDto.title !== undefined) updateData.title = updateDto.title;
+      if (updateDto.description !== undefined)
+        updateData.description = updateDto.description;
+      if (updateDto.id_training !== undefined)
+        updateData.id_training = updateDto.id_training;
+
+      // Use uploaded file link if available, otherwise use DTO value
+      if (pieceJointe) {
+        updateData.piece_jointe = pieceJointe;
+      } else if (updateDto.piece_jointe !== undefined) {
+        updateData.piece_jointe = updateDto.piece_jointe;
+      }
+
+      console.log('Updating student catalogue formation with data:', {
+        id,
+        ...updateData,
+        piece_jointe: updateData.piece_jointe || '(not set)',
+      });
+
+      const catalogue = await this.catalogueFormationService.updateStudentCatalogue(
+        id,
+        updateData,
+      );
+      return {
+        status: 200,
+        message: 'Student catalogue formation updated successfully',
+        data: catalogue,
+      };
+    } catch (error) {
+      console.error('Error updating student catalogue formation:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      return {
+        status: 500,
+        data: 'Internal server error during student catalogue formation update',
+      };
+    }
+  }
+
+  @Get('secretary/all')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all student type catalogue formations (Secretary only)',
+    description: `
+      Retrieve all student type catalogue formations. Secretaries can see student catalogues.
+      
+      **Authorization:**
+      - Only secretaries can access this endpoint
+      - Bearer token required
+      
+      **Note:** This endpoint returns only catalogues of type "student".
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student catalogue formations retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student catalogue formations retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              type: { type: 'string', example: 'student' },
+              title: { type: 'string' },
+              description: { type: 'string' },
+              id_training: { type: 'string', format: 'uuid' },
+              piece_jointe: { type: 'string' },
+              createdBy: { type: 'string', format: 'uuid' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+              creator: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  firstName: { type: 'string' },
+                  lastName: { type: 'string' },
+                  email: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async findAllForSecretary() {
+    const catalogues = await this.catalogueFormationService.findByType(
+      CatalogueType.STUDENT,
+    );
+    return {
+      status: 200,
+      message: 'Student catalogue formations retrieved successfully',
+      data: catalogues,
+    };
+  }
+
+  @Get('training/:trainingId')
+  @ApiOperation({
+    summary: 'Get catalogue formations by training ID (Public)',
+    description: `
+      Retrieve all catalogue formations of type "Student" associated with a specific training ID.
+      This endpoint is public and does not require authentication.
+      Only returns catalogueformations with type "student".
+      
+      **Parameters:**
+      - trainingId (path parameter): UUID of the training
+    `,
+  })
+  @ApiParam({
+    name: 'trainingId',
+    description: 'UUID of the training',
+    type: 'string',
+    format: 'uuid',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Catalogue formations found.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Catalogue formations retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              type: { type: 'string' },
+              title: { type: 'string' },
+              description: { type: 'string' },
+              id_training: { type: 'string', format: 'uuid' },
+              piece_jointe: { type: 'string' },
+              createdBy: { type: 'string', format: 'uuid' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+              creator: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  firstName: { type: 'string' },
+                  lastName: { type: 'string' },
+                  email: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid training ID format.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async findByTrainingId(@Param('trainingId', ParseUUIDPipe) trainingId: string) {
+    const catalogues = await this.catalogueFormationService.findByTrainingIdAndType(
+      trainingId,
+      CatalogueType.STUDENT,
+    );
+    return {
+      status: 200,
+      message: 'Catalogue formations retrieved successfully',
+      data: catalogues,
+    };
+  }
+
+  @Get('secretary/training/:trainingId')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get catalogue formations by training ID (Secretary only)',
+    description: `
+      Retrieve all catalogue formations associated with a specific training ID.
+      Secretaries can access catalogues by training ID.
+      
+      **Authorization:**
+      - Only secretaries can access this endpoint
+      - Bearer token required
+      
+      **Parameters:**
+      - trainingId (path parameter): UUID of the training
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Catalogue formations found.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Catalogue formations retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              type: { type: 'string' },
+              title: { type: 'string' },
+              description: { type: 'string' },
+              id_training: { type: 'string', format: 'uuid' },
+              piece_jointe: { type: 'string' },
+              createdBy: { type: 'string', format: 'uuid' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+              creator: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  firstName: { type: 'string' },
+                  lastName: { type: 'string' },
+                  email: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid training ID format.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async findByTrainingIdForSecretary(@Param('trainingId') trainingId: string) {
+    const catalogues = await this.catalogueFormationService.findByTrainingId(
+      trainingId,
+    );
+    return {
+      status: 200,
+      message: 'Catalogue formations retrieved successfully',
+      data: catalogues,
+    };
+  }
+
+  @Get('secretary/:id')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get a specific catalogue formation by ID (Secretary only)',
+    description: `
+      Retrieve a specific catalogue formation by its ID. Secretaries can access any catalogue.
+      
+      **Authorization:**
+      - Only secretaries can access this endpoint
+      - Bearer token required
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Catalogue formation found.',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        type: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        id_training: { type: 'string', format: 'uuid' },
+        piece_jointe: { type: 'string' },
+        createdBy: { type: 'string', format: 'uuid' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+        creator: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            email: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Catalogue formation not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async findOneForSecretary(@Param('id') id: string) {
+    const catalogue = await this.catalogueFormationService.findOne(id);
+    if (!catalogue) {
+      throw new NotFoundException('Catalogue formation not found');
+    }
+    return catalogue;
+  }
+
+  @Delete('student')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Delete student type catalogue formation (Secretary only)',
+    description: `
+      Delete the student type catalogue formation.
+      Only secretaries can delete student catalogues.
+      
+      **Authorization:**
+      - Only secretaries can delete student catalogue formations
+      - Bearer token required
+      
+      **Note:** This will delete the single student catalogue that exists in the system.
+    `,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student catalogue formation deleted successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student catalogue formation deleted successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not found - Student catalogue does not exist.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example:
+            'Catalogue de formation de type "student" non trouvé.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async deleteStudentCatalogue() {
+    try {
+      // Use the service method that finds by type and returns CatalogueFormation
+      const catalogues = await this.catalogueFormationService.findByType(
+        CatalogueType.STUDENT,
+      );
+      
+      if (!catalogues || catalogues.length === 0) {
+        throw new NotFoundException(
+          'Catalogue de formation de type "student" non trouvé.',
+        );
+      }
+      
+      // Get the first student catalogue (there should only be one)
+      const catalogue = catalogues[0];
+      await this.catalogueFormationService.remove(catalogue.id);
+      
+      return {
+        status: 200,
+        message: 'Student catalogue formation deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error deleting student catalogue formation:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      return {
+        status: 500,
+        data: 'Internal server error during student catalogue formation deletion',
+      };
+    }
   }
 
   @Get(':id')

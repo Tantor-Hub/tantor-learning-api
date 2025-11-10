@@ -147,7 +147,6 @@ This endpoint is optimized for dropdowns and lists where minimal data is needed.
   }
 
   @Get('student/training/:trainingId')
-  @UseGuards(JwtAuthGuardAsStudent)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get training sessions by training ID (Student access)',

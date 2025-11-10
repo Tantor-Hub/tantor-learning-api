@@ -39,6 +39,36 @@ export class CreateCatalogueFormationDto {
   piece_jointe?: string;
 }
 
+export class CreateStudentCatalogueDto {
+  @ApiProperty({
+    description: 'Title of the student catalogue formation',
+    example: 'Student Training Catalogue',
+  })
+  title: string;
+
+  @ApiProperty({
+    description: 'Description of the catalogue formation',
+    example: 'Comprehensive training program for students',
+    required: false,
+  })
+  description?: string;
+
+  @ApiProperty({
+    description: 'ID of the training associated with this catalogue',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+    format: 'uuid',
+  })
+  id_training: string;
+
+  @ApiProperty({
+    description: 'Cloudinary URL for the attached document',
+    example:
+      'https://res.cloudinary.com/your-cloud/raw/upload/v1234567890/__tantorLearning/documents/document.pdf',
+    required: false,
+  })
+  piece_jointe?: string;
+}
+
 export class UpdateCatalogueFormationDto {
   @ApiProperty({
     description: 'UUID of the catalogue formation to update',
@@ -205,3 +235,90 @@ export const CatalogueFormationOnlyAdminDeleteApiResponse = ApiResponse({
   status: 403,
   description: 'Only admin can delete.',
 });
+
+export const CatalogueFormationCreateStudentApiOperation = ApiOperation({
+  summary: 'Create a student type catalogue formation (Secretary only)',
+  description: `
+    Create a new student type catalogue formation with an associated training ID.
+    Only secretaries can create student catalogues.
+    
+    **Authorization:**
+    - Only secretaries can create student catalogue formations
+    - Bearer token required
+    
+    **Request Body:**
+    - title (required): Title of the catalogue
+    - id_training (required): UUID of the training to associate with this catalogue
+    - description (optional): Description of the catalogue
+    - piece_jointe (optional): Cloudinary URL for an attached document
+  `,
+});
+
+export const CatalogueFormationCreateStudentApiResponse = ApiResponse({
+  status: 201,
+  description: 'Student catalogue formation created successfully.',
+  schema: {
+    type: 'object',
+    properties: {
+      status: { type: 'number', example: 201 },
+      message: {
+        type: 'string',
+        example: 'Student catalogue formation created successfully',
+      },
+      data: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          type: { type: 'string', example: 'student' },
+          title: { type: 'string', example: 'Student Training Catalogue' },
+          description: {
+            type: 'string',
+            example: 'Comprehensive training program for students',
+          },
+          id_training: {
+            type: 'string',
+            format: 'uuid',
+            example: '550e8400-e29b-41d4-a716-446655440002',
+          },
+          piece_jointe: { type: 'string' },
+          createdBy: { type: 'string', format: 'uuid' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  },
+});
+
+export const CatalogueFormationCreateStudentBadRequestApiResponse = ApiResponse({
+  status: 400,
+  description: 'Bad request - Invalid data or missing required fields',
+});
+
+export const CatalogueFormationCreateStudentUnauthorizedApiResponse =
+  ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required.',
+  });
+
+export const CatalogueFormationCreateStudentConflictApiResponse = ApiResponse({
+  status: 409,
+  description: 'Conflict - A student catalogue already exists.',
+  schema: {
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 409 },
+      message: {
+        type: 'string',
+        example:
+          'Un catalogue de formation de type "student" existe déjà. Chaque type de catalogue ne peut exister qu\'une seule fois.',
+      },
+    },
+  },
+});
+
+export const CatalogueFormationCreateStudentInternalServerErrorApiResponse =
+  ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  });
