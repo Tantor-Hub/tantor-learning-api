@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { ConfigService } from '@nestjs/config';
+import { v2 as cloudinary } from 'cloudinary';
 import { Event } from 'src/models/model.event';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -12,13 +14,22 @@ import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { Users } from 'src/models/model.users';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectModel(Event)
     private readonly eventModel: typeof Event,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // Configure Cloudinary
+    cloudinary.config({
+      cloud_name: this.configService.get<string>('cloudinary.cloud_name'),
+      api_key: this.configService.get<string>('cloudinary.api_key'),
+      api_secret: this.configService.get<string>('cloudinary.api_secret'),
+    });
+  }
 
   private async fetchLessonsForEvent(event: Event): Promise<Lesson[]> {
     if (!event.id_cible_lesson || event.id_cible_lesson.length === 0) {
@@ -37,12 +48,65 @@ export class EventService {
 
   async create(createEventDto: CreateEventDto): Promise<ResponseServer> {
     try {
+      // Create the event first to get the ID
       const event = await this.eventModel.create({
         ...createEventDto,
         begining_date: new Date(createEventDto.begining_date),
         beginning_hour: createEventDto.beginning_hour,
         ending_hour: createEventDto.ending_hour,
       } as any);
+
+      // If id_cible_lesson exists and has at least one value, generate and upload QR code
+      if (
+        createEventDto.id_cible_lesson &&
+        createEventDto.id_cible_lesson.length > 0
+      ) {
+        try {
+          // Generate QR code containing the event ID
+          const qrCodeBuffer = await QRCode.toBuffer(event.id, {
+            type: 'png',
+            width: 300,
+            margin: 2,
+          });
+
+          // Upload QR code directly to Cloudinary
+          const uploadResult = await new Promise<{
+            secure_url: string;
+            public_id: string;
+          }>((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                folder: '__tantorLearning/qrcodes',
+                resource_type: 'image',
+                public_id: `event-${event.id}-qrcode`,
+                format: 'png',
+                overwrite: true,
+              },
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve({
+                    secure_url: result!.secure_url,
+                    public_id: result!.public_id,
+                  });
+                }
+              },
+            );
+            uploadStream.end(qrCodeBuffer);
+          });
+
+          if (uploadResult && uploadResult.secure_url) {
+            // Update the event with the QR code URL
+            await event.update({ qrcode: uploadResult.secure_url });
+            // Reload the event to get the updated data
+            await event.reload();
+          }
+        } catch (qrError) {
+          console.error('Error generating/uploading QR code:', qrError);
+          // Continue even if QR code generation fails - event is still created
+        }
+      }
 
       return Responder({
         status: HttpStatusCode.Created,

@@ -13,6 +13,8 @@ export interface IEvent extends IGlobale {
   begining_date: Date;
   beginning_hour: string;
   ending_hour: string;
+  qrcode?: string;
+  participant?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }

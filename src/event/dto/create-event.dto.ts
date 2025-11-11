@@ -116,6 +116,29 @@ export class CreateEventDto {
   ending_hour: string;
 
   @ApiProperty({
+    description: 'QR code string for the event',
+    example: 'https://example.com/qr/event-123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  qrcode?: string;
+
+  @ApiProperty({
+    description: 'Array of participant user IDs',
+    example: [
+      '550e8400-e29b-41d4-a716-446655440000',
+      '550e8400-e29b-41d4-a716-446655440001',
+    ],
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  participant?: string[];
+
+  @ApiProperty({
     description: 'ID of the user who created this event',
     example: '550e8400-e29b-41d4-a716-446655440000',
     required: false,

@@ -444,7 +444,7 @@ export class DocumentsService {
         {
           model: DocumentTemplate,
           as: 'template',
-          attributes: ['id', 'sessionId'],
+          attributes: ['id', 'sessionId', 'type'],
         },
       ],
     });
@@ -458,7 +458,10 @@ export class DocumentsService {
     }
 
     // Check if user is enrolled in the session (status must be 'in')
-    await this.checkUserInSession(userId, instance.template.sessionId);
+    // Skip this check for templates with type 'before'
+    if (instance.template.type !== 'before') {
+      await this.checkUserInSession(userId, instance.template.sessionId);
+    }
 
     // If status is rejected or pending, reset to pending when user modifies
     if (instance.status === 'rejected' || instance.status === 'pending') {

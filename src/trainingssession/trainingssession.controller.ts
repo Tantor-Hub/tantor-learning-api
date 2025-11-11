@@ -52,6 +52,16 @@ import {
   TrainingSessionNotFoundApiResponse,
   TrainingSessionTrainingNotFoundApiResponse,
   TrainingSessionInternalServerErrorApiResponse,
+  TrainingSessionFindAllSimplifiedApiOperation,
+  TrainingSessionFindAllSimplifiedApiResponse,
+  TrainingSessionUnauthorizedApiResponse,
+  TrainingSessionFindByTrainingIdForStudentApiOperation,
+  TrainingSessionFindByTrainingIdForStudentApiParam,
+  TrainingSessionFindByTrainingIdForStudentApiResponse,
+  TrainingSessionStudentUnauthorizedApiResponse,
+  TrainingSessionFindOneForStudentApiOperation,
+  TrainingSessionFindOneForStudentApiParam,
+  TrainingSessionFindOneForStudentApiResponse,
 } from '../swagger/swagger.trainingssession';
 
 @TrainingSessionApiTags()
@@ -87,50 +97,10 @@ export class TrainingSessionController {
   @Get('getall-simplified')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get all training sessions (simplified)',
-    description: `Get all training sessions with only essential information.
-    
-**Returns only:**
-- sessionId: The training session ID
-- sessionTitle: The training session title
-- trainingId: The training ID
-- trainingTitle: The training title
-
-This endpoint is optimized for dropdowns and lists where minimal data is needed.`,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Training sessions retrieved successfully',
-    schema: {
-      example: {
-        status: 200,
-        message: 'Training sessions retrieved successfully',
-        data: [
-          {
-            sessionId: '550e8400-e29b-41d4-a716-446655440001',
-            sessionTitle: 'Advanced React Development - Session 1',
-            trainingId: '550e8400-e29b-41d4-a716-446655440000',
-            trainingTitle: 'Advanced React Development',
-          },
-          {
-            sessionId: '550e8400-e29b-41d4-a716-446655440002',
-            sessionTitle: 'Node.js Backend - Session 1',
-            trainingId: '550e8400-e29b-41d4-a716-446655440003',
-            trainingTitle: 'Node.js Backend Development',
-          },
-        ],
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
+  @TrainingSessionFindAllSimplifiedApiOperation()
+  @TrainingSessionFindAllSimplifiedApiResponse()
+  @TrainingSessionUnauthorizedApiResponse()
+  @TrainingSessionInternalServerErrorApiResponse()
   findAllSimplified() {
     return this.trainingSessionService.findAllSimplified();
   }
@@ -148,96 +118,11 @@ This endpoint is optimized for dropdowns and lists where minimal data is needed.
 
   @Get('student/training/:trainingId')
   @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get training sessions by training ID (Student access)',
-    description:
-      'Retrieve all training sessions for a specific training. This endpoint is designed for students to view available sessions for a training they are interested in.',
-  })
-  @ApiParam({
-    name: 'trainingId',
-    description: 'UUID of the training',
-    type: 'string',
-    format: 'uuid',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Training sessions retrieved successfully.',
-    schema: {
-      type: 'object',
-      properties: {
-        status: { type: 'number', example: 200 },
-        message: {
-          type: 'string',
-          example: 'Training sessions retrieved successfully',
-        },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                format: 'uuid',
-                example: '2198c4bd-5386-4a03-a767-eaf78067030a',
-              },
-              title: {
-                type: 'string',
-                example: "L'histoire generale de l'afrique",
-              },
-              nb_places: { type: 'number', example: 10 },
-              available_places: { type: 'number', example: 0 },
-              begining_date: {
-                type: 'string',
-                format: 'date-time',
-                example: '2025-10-01T22:00:00.000Z',
-              },
-              ending_date: {
-                type: 'string',
-                format: 'date-time',
-                example: '2025-10-31T22:00:00.000Z',
-              },
-              createdAt: {
-                type: 'string',
-                format: 'date-time',
-                example: '2025-10-01T11:45:13.413Z',
-              },
-              updatedAt: {
-                type: 'string',
-                format: 'date-time',
-                example: '2025-10-01T12:03:27.863Z',
-              },
-              trainings: {
-                type: 'object',
-                properties: {
-                  title: {
-                    type: 'string',
-                    example: "L'histoire de l'Afrique",
-                  },
-                  subtitle: {
-                    type: 'string',
-                    example: "L'histoire de l'afrique antique",
-                  },
-                  description: {
-                    type: 'string',
-                    example: 'who is ramses II',
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Student access required.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error.',
-  })
+  @TrainingSessionFindByTrainingIdForStudentApiOperation()
+  @TrainingSessionFindByTrainingIdForStudentApiParam()
+  @TrainingSessionFindByTrainingIdForStudentApiResponse()
+  @TrainingSessionStudentUnauthorizedApiResponse()
+  @TrainingSessionInternalServerErrorApiResponse()
   findByTrainingIdForStudent(
     @Param('trainingId', ParseUUIDPipe) trainingId: string,
   ) {
@@ -250,120 +135,12 @@ This endpoint is optimized for dropdowns and lists where minimal data is needed.
   @Get('student/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Get training session by ID (Student access)',
-    description:
-      'Retrieve a specific training session by its ID. This endpoint is designed for students to view detailed information about a particular training session.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'UUID of the training session',
-    type: 'string',
-    format: 'uuid',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Training session retrieved successfully.',
-    schema: {
-      type: 'object',
-      properties: {
-        status: { type: 'number', example: 200 },
-        message: {
-          type: 'string',
-          example: 'Opération réussie.',
-        },
-        data: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              format: 'uuid',
-              example: 'd6ff1fd6-f795-47a3-9abd-24d911d06b22',
-            },
-            title: {
-              type: 'string',
-              example: 'hello javascript',
-            },
-            payment_method: {
-              type: 'array',
-              items: { type: 'string' },
-              nullable: true,
-              example: null,
-            },
-            cpf_link: {
-              type: 'string',
-              nullable: true,
-              example: null,
-            },
-            survey: {
-              type: 'array',
-              items: { type: 'string' },
-              nullable: true,
-              example: null,
-            },
-            regulation_text: {
-              type: 'string',
-              example: 'hello world I am created',
-            },
-            begining_date: {
-              type: 'string',
-              format: 'date-time',
-              example: '2025-10-01T22:00:00.000Z',
-            },
-            ending_date: {
-              type: 'string',
-              format: 'date-time',
-              example: '2025-10-31T22:00:00.000Z',
-            },
-            trainings: {
-              type: 'object',
-              properties: {
-                title: {
-                  type: 'string',
-                  example: "L'histoire de l'Afrique",
-                },
-                subtitle: {
-                  type: 'string',
-                  example: "L'histoire de l'afrique antique",
-                },
-                description: {
-                  type: 'string',
-                  example: 'who is ramses II',
-                },
-                trainingtype: {
-                  type: 'string',
-                  enum: [
-                    'En ligne',
-                    'Vision Conférence',
-                    'En présentiel',
-                    'Hybride',
-                  ],
-                  example: 'En présentiel',
-                },
-                prix: {
-                  type: 'string',
-                  example: '100.00',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Student access required.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Training session not found.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error.',
-  })
+  @TrainingSessionFindOneForStudentApiOperation()
+  @TrainingSessionFindOneForStudentApiParam()
+  @TrainingSessionFindOneForStudentApiResponse()
+  @TrainingSessionStudentUnauthorizedApiResponse()
+  @TrainingSessionNotFoundApiResponse()
+  @TrainingSessionInternalServerErrorApiResponse()
   findOneForStudent(@Param('id', ParseUUIDPipe) id: string) {
     console.log(
       `🎓 [STUDENT TRAINING SESSION] Student requesting training session: ${id}`,

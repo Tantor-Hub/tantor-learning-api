@@ -75,6 +75,14 @@ export class Event extends Model<IEvent> {
   @Column(DataType.STRING)
   ending_hour: string;
 
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  qrcode?: string;
+
+  @AllowNull(true)
+  @Column(DataType.ARRAY(DataType.UUID))
+  participant?: string[];
+
   @Column({
     type: DataType.DATE,
     allowNull: true,
