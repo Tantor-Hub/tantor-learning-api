@@ -38,7 +38,10 @@ export class EventController {
   @Post('create-for-course/:courseId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.createForCourse)
+  @ApiOperation({
+    summary: EventSwagger.createForCourse.summary,
+    description: EventSwagger.createForCourse.description,
+  })
   @ApiParam(EventSwagger.createForCourse.param)
   @ApiBody(EventSwagger.createForCourse.body)
   @ApiResponse(EventSwagger.createForCourse.responses[201])
@@ -63,7 +66,10 @@ export class EventController {
   @Post('create-for-session/:sessionId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.createForSession)
+  @ApiOperation({
+    summary: EventSwagger.createForSession.summary,
+    description: EventSwagger.createForSession.description,
+  })
   @ApiParam(EventSwagger.createForSession.param)
   @ApiBody(EventSwagger.createForSession.body)
   @ApiResponse(EventSwagger.createForSession.responses[201])
@@ -85,7 +91,10 @@ export class EventController {
   @Post('create-for-lesson/:lessonId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.createForLesson)
+  @ApiOperation({
+    summary: EventSwagger.createForLesson.summary,
+    description: EventSwagger.createForLesson.description,
+  })
   @ApiParam(EventSwagger.createForLesson.param)
   @ApiBody(EventSwagger.createForLesson.body)
   @ApiResponse(EventSwagger.createForLesson.responses[201])
@@ -107,7 +116,10 @@ export class EventController {
   @Post('create-for-user/:userId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.createForUser)
+  @ApiOperation({
+    summary: EventSwagger.createForUser.summary,
+    description: EventSwagger.createForUser.description,
+  })
   @ApiParam(EventSwagger.createForUser.param)
   @ApiBody(EventSwagger.createForUser.body)
   @ApiResponse(EventSwagger.createForUser.responses[201])
@@ -129,7 +141,10 @@ export class EventController {
   @Get('getall')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findAll)
+  @ApiOperation({
+    summary: EventSwagger.findAll.summary,
+    description: EventSwagger.findAll.description,
+  })
   @ApiResponse(EventSwagger.findAll.responses[200])
   @ApiResponse(EventSwagger.findAll.responses[401])
   findAll() {
@@ -139,7 +154,10 @@ export class EventController {
   @Get('training/:trainingId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findByTraining)
+  @ApiOperation({
+    summary: EventSwagger.findByTraining.summary,
+    description: EventSwagger.findByTraining.description,
+  })
   @ApiParam(EventSwagger.findByTraining.param)
   @ApiResponse(EventSwagger.findByTraining.responses[200])
   @ApiResponse(EventSwagger.findByTraining.responses[401])
@@ -150,7 +168,11 @@ export class EventController {
 
   @Get('session/:sessionId')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation(EventSwagger.findBySession)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: EventSwagger.findBySession.summary,
+    description: EventSwagger.findBySession.description,
+  })
   @ApiParam(EventSwagger.findBySession.param)
   @ApiResponse(EventSwagger.findBySession.responses[200])
   @ApiResponse(EventSwagger.findBySession.responses[401])
@@ -162,7 +184,10 @@ export class EventController {
   @Get('student/session/:sessionId')
   @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findBySessionForStudent)
+  @ApiOperation({
+    summary: EventSwagger.findBySessionForStudent.summary,
+    description: EventSwagger.findBySessionForStudent.description,
+  })
   @ApiParam(EventSwagger.findBySessionForStudent.param)
   @ApiResponse(EventSwagger.findBySessionForStudent.responses[200])
   @ApiResponse(EventSwagger.findBySessionForStudent.responses[403])
@@ -176,7 +201,10 @@ export class EventController {
   @Get('user')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findByUser)
+  @ApiOperation({
+    summary: EventSwagger.findByUser.summary,
+    description: EventSwagger.findByUser.description,
+  })
   @ApiResponse(EventSwagger.findByUser.responses[200])
   @ApiResponse(EventSwagger.findByUser.responses[401])
   @ApiResponse(EventSwagger.findByUser.responses[404])
@@ -187,7 +215,10 @@ export class EventController {
   @Get('date-range')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findByDateRange)
+  @ApiOperation({
+    summary: EventSwagger.findByDateRange.summary,
+    description: EventSwagger.findByDateRange.description,
+  })
   @ApiQuery(EventSwagger.findByDateRange.queries.startDate)
   @ApiQuery(EventSwagger.findByDateRange.queries.endDate)
   @ApiResponse(EventSwagger.findByDateRange.responses[200])
@@ -203,7 +234,10 @@ export class EventController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findOne)
+  @ApiOperation({
+    summary: EventSwagger.findOne.summary,
+    description: EventSwagger.findOne.description,
+  })
   @ApiParam(EventSwagger.findOne.param)
   @ApiResponse(EventSwagger.findOne.responses[200])
   @ApiResponse(EventSwagger.findOne.responses[401])
@@ -215,7 +249,10 @@ export class EventController {
   @Patch('update/:id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.update)
+  @ApiOperation({
+    summary: EventSwagger.update.summary,
+    description: EventSwagger.update.description,
+  })
   @ApiParam(EventSwagger.update.param)
   @ApiBody(EventSwagger.update.body)
   @ApiResponse(EventSwagger.update.responses[200])
@@ -233,7 +270,10 @@ export class EventController {
   @Get('session/:sessionId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.findBySession)
+  @ApiOperation({
+    summary: EventSwagger.findBySession.summary,
+    description: EventSwagger.findBySession.description,
+  })
   @ApiParam(EventSwagger.findBySession.param)
   @ApiResponse(EventSwagger.findBySession.responses[200])
   @ApiResponse(EventSwagger.findBySession.responses[401])
@@ -245,7 +285,10 @@ export class EventController {
   @Delete(':id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.remove)
+  @ApiOperation({
+    summary: EventSwagger.remove.summary,
+    description: EventSwagger.remove.description,
+  })
   @ApiParam(EventSwagger.remove.param)
   @ApiResponse(EventSwagger.remove.responses[200])
   @ApiResponse(EventSwagger.remove.responses[401])
@@ -258,7 +301,10 @@ export class EventController {
   @Get('instructor/mycourses')
   @UseGuards(JwtAuthGuardAsSuperviseur)
   @ApiBearerAuth()
-  @ApiOperation(EventSwagger.getEventsForInstructorCourses)
+  @ApiOperation({
+    summary: EventSwagger.getEventsForInstructorCourses.summary,
+    description: EventSwagger.getEventsForInstructorCourses.description,
+  })
   @ApiResponse(EventSwagger.getEventsForInstructorCourses.responses[200])
   @ApiResponse(EventSwagger.getEventsForInstructorCourses.responses[401])
   @ApiResponse(EventSwagger.getEventsForInstructorCourses.responses[403])
