@@ -25,6 +25,7 @@ async function tantorAPP() {
   // ✅ CORS setup for credentials & custom headers
   const allowedOrigins = [
     'https://tantorlearning.com',
+    'https://www.tantorlearning.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
