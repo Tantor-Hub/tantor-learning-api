@@ -12,8 +12,11 @@ import { EvaluationQuestion } from 'src/models/model.evaluationquestion';
 import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
+import { StudentAnswer } from 'src/models/model.studentanswer';
+import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 import { Op } from 'sequelize';
 import { MarkingStatus } from 'src/models/model.studentevaluation';
+import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
 export class StudentevaluationService {
@@ -28,6 +31,10 @@ export class StudentevaluationService {
     private usersModel: typeof Users,
     @InjectModel(EvaluationQuestionOption)
     private evaluationQuestionOptionModel: typeof EvaluationQuestionOption,
+    @InjectModel(StudentAnswer)
+    private studentAnswerModel: typeof StudentAnswer,
+    @InjectModel(StudentAnswerOption)
+    private studentAnswerOptionModel: typeof StudentAnswerOption,
   ) {}
 
   async create(
@@ -1317,4 +1324,548 @@ export class StudentevaluationService {
       });
     }
   }
+
+  async findBySessionCoursIdForInstructor(
+    sessionCoursId: string,
+    instructorId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log(
+        '=== findBySessionCoursIdForInstructor: Starting ===',
+      );
+      console.log('SessionCours ID:', sessionCoursId);
+      console.log('Instructor ID:', instructorId);
+
+      // First verify that the session course exists and instructor is assigned
+      const sessionCours = await this.sessionCoursModel.findByPk(
+        sessionCoursId,
+        {
+          attributes: ['id', 'title', 'description', 'id_formateur'],
+        },
+      );
+
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session course not found',
+        });
+      }
+
+      // Verify instructor is assigned to this sessioncours
+      const isInstructorAssigned =
+        sessionCours.id_formateur &&
+        Array.isArray(sessionCours.id_formateur) &&
+        sessionCours.id_formateur.includes(instructorId);
+
+      if (!isInstructorAssigned) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            'You are not assigned as an instructor for this session course',
+        });
+      }
+
+      // Get all evaluations (both published and unpublished) for this sessioncours
+      const evaluations = await this.studentevaluationModel.findAll({
+        where: {
+          sessionCoursId: sessionCoursId,
+          // No filter on ispublish - return both published and unpublished
+        },
+        include: [
+          {
+            model: SessionCours,
+            as: 'sessionCours',
+            attributes: ['id', 'title', 'description'],
+          },
+          {
+            model: EvaluationQuestion,
+            as: 'questions',
+            attributes: ['id', 'type', 'text', 'points'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+            required: false,
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Get all unique lesson IDs from evaluations and fetch lessons
+      const allLessonIds = evaluations.reduce((acc, evaluation) => {
+        if (evaluation.lessonId && Array.isArray(evaluation.lessonId)) {
+          acc.push(...evaluation.lessonId);
+        }
+        return acc;
+      }, [] as string[]);
+
+      const uniqueLessonIds = [...new Set(allLessonIds)];
+
+      const lessons =
+        uniqueLessonIds.length > 0
+          ? await this.lessonModel.findAll({
+              where: { id: { [Op.in]: uniqueLessonIds } },
+              attributes: ['id', 'title', 'description', 'ispublish'],
+            })
+          : [];
+
+      // Add lessons to each evaluation
+      const evaluationsWithLessons = evaluations.map((evaluation) => {
+        const evaluationLessonIds = evaluation.lessonId;
+        const evaluationLessons =
+          evaluationLessonIds && Array.isArray(evaluationLessonIds)
+            ? lessons.filter((lesson) =>
+                evaluationLessonIds.includes(lesson.id),
+              )
+            : [];
+        return {
+          ...evaluation.toJSON(),
+          lessons: evaluationLessons,
+        };
+      });
+
+      console.log(
+        `=== findBySessionCoursIdForInstructor: Success ===`,
+      );
+      console.log(`Found ${evaluations.length} evaluations`);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          evaluations: evaluationsWithLessons,
+          total: evaluations.length,
+          published: evaluations.filter((e) => e.ispublish).length,
+          unpublished: evaluations.filter((e) => !e.ispublish).length,
+          sessionCours: {
+            id: sessionCours.id,
+            title: sessionCours.title,
+            description: sessionCours.description,
+          },
+        },
+        customMessage:
+          'Student evaluations for session course retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        'Error fetching student evaluations by session course ID for instructor:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage:
+          'Error retrieving student evaluations for session course',
+      });
+    }
+  }
+
+  async getStudentsWhoAnsweredEvaluation(
+    evaluationId: string,
+    instructorId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log(
+        '=== getStudentsWhoAnsweredEvaluation: Starting ===',
+      );
+      console.log('Evaluation ID:', evaluationId);
+      console.log('Instructor ID:', instructorId);
+
+      // First get the evaluation with its sessioncours
+      const evaluation = await this.studentevaluationModel.findByPk(
+        evaluationId,
+        {
+          include: [
+            {
+              model: SessionCours,
+              as: 'sessionCours',
+              attributes: ['id', 'title', 'description', 'id_formateur'],
+            },
+            {
+              model: Users,
+              as: 'creator',
+              attributes: ['id', 'firstName', 'lastName', 'email'],
+              required: false,
+            },
+          ],
+        },
+      );
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Evaluation not found',
+        });
+      }
+
+      // Verify instructor is assigned to this sessioncours
+      const sessionCours = evaluation.sessionCours as any;
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session course not found for this evaluation',
+        });
+      }
+
+      const isInstructorAssigned =
+        sessionCours.id_formateur &&
+        Array.isArray(sessionCours.id_formateur) &&
+        sessionCours.id_formateur.includes(instructorId);
+
+      if (!isInstructorAssigned) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            'You are not assigned as an instructor for this evaluation\'s session course',
+        });
+      }
+
+      // Get all student answers for this evaluation with points information
+      const studentAnswers = await this.studentAnswerModel.findAll({
+        where: {
+          evaluationId: evaluationId,
+        },
+        attributes: ['studentId', 'points'],
+        raw: true,
+      });
+
+      // Extract unique student IDs and calculate marked answers percentage
+      const studentAnswerStats = new Map<string, { total: number; marked: number }>();
+      
+      studentAnswers.forEach((answer: any) => {
+        const studentId = answer.studentId;
+        if (!studentAnswerStats.has(studentId)) {
+          studentAnswerStats.set(studentId, { total: 0, marked: 0 });
+        }
+        const stats = studentAnswerStats.get(studentId)!;
+        stats.total++;
+        // An answer is considered marked if it has points assigned (points is not null)
+        if (answer.points !== null && answer.points !== undefined) {
+          stats.marked++;
+        }
+      });
+
+      const uniqueStudentIds = Array.from(studentAnswerStats.keys());
+
+      if (uniqueStudentIds.length === 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            evaluation: {
+              id: evaluation.id,
+              title: evaluation.title,
+              description: evaluation.description,
+              type: evaluation.type,
+              points: evaluation.points,
+              sessionCoursId: evaluation.sessionCoursId,
+            },
+            students: [],
+            totalStudents: 0,
+          },
+          customMessage: 'No students have answered questions in this evaluation yet',
+        });
+      }
+
+      // Get student details
+      const students = await this.usersModel.findAll({
+        where: {
+          id: {
+            [Op.in]: uniqueStudentIds,
+          },
+        },
+        attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+        order: [['lastName', 'ASC'], ['firstName', 'ASC']],
+      });
+
+      // Get lessons for the evaluation
+      const evaluationLessonIds = evaluation.lessonId;
+      const lessons =
+        evaluationLessonIds && Array.isArray(evaluationLessonIds)
+          ? await this.lessonModel.findAll({
+              where: { id: { [Op.in]: evaluationLessonIds } },
+              attributes: ['id', 'title', 'description', 'ispublish'],
+            })
+          : [];
+
+      console.log(
+        `=== getStudentsWhoAnsweredEvaluation: Success ===`,
+      );
+      console.log(`Found ${students.length} unique students who answered questions`);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          evaluation: {
+            id: evaluation.id,
+            title: evaluation.title,
+            description: evaluation.description,
+            type: evaluation.type,
+            points: evaluation.points,
+            submittiondate: evaluation.submittiondate,
+            beginningTime: evaluation.beginningTime,
+            endingTime: evaluation.endingTime,
+            ispublish: evaluation.ispublish,
+            isImmediateResult: evaluation.isImmediateResult,
+            markingStatus: evaluation.markingStatus,
+            sessionCoursId: evaluation.sessionCoursId,
+            lessonId: evaluation.lessonId,
+            createdAt: evaluation.createdAt,
+            updatedAt: evaluation.updatedAt,
+            sessionCours: {
+              id: sessionCours.id,
+              title: sessionCours.title,
+              description: sessionCours.description,
+            },
+            creator: evaluation.creator
+              ? {
+                  id: evaluation.creator.id,
+                  firstName: evaluation.creator.firstName,
+                  lastName: evaluation.creator.lastName,
+                  email: evaluation.creator.email,
+                }
+              : null,
+            lessons: lessons,
+          },
+          students: students.map((student) => {
+            const stats = studentAnswerStats.get(student.id) || { total: 0, marked: 0 };
+            const markedPercentage = stats.total > 0 
+              ? Math.round((stats.marked / stats.total) * 100 * 100) / 100 
+              : 0;
+            
+            return {
+              id: student.id,
+              firstName: student.firstName,
+              lastName: student.lastName,
+              email: student.email,
+              avatar: student.avatar || null,
+              totalAnswers: stats.total,
+              markedAnswers: stats.marked,
+              markedPercentage: markedPercentage,
+            };
+          }),
+          totalStudents: students.length,
+        },
+        customMessage:
+          'Students who answered questions in evaluation retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        'Error fetching students who answered evaluation:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving students who answered evaluation',
+      });
+    }
+  }
+
+  async getAllStudentAnswersForEvaluation(
+    evaluationId: string,
+    instructorId: string,
+    studentId?: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log(
+        '=== getAllStudentAnswersForEvaluation: Starting ===',
+      );
+      console.log('Evaluation ID:', evaluationId);
+      console.log('Instructor ID:', instructorId);
+
+      // First get the evaluation with its sessioncours
+      const evaluation = await this.studentevaluationModel.findByPk(
+        evaluationId,
+        {
+          include: [
+            {
+              model: SessionCours,
+              as: 'sessionCours',
+              attributes: ['id', 'title', 'description', 'id_formateur'],
+            },
+            {
+              model: Users,
+              as: 'creator',
+              attributes: ['id', 'firstName', 'lastName', 'email'],
+              required: false,
+            },
+            {
+              model: EvaluationQuestion,
+              as: 'questions',
+              attributes: ['id', 'type', 'text', 'points'],
+              include: [
+              {
+                model: EvaluationQuestionOption,
+                as: 'options',
+                attributes: ['id', 'text', 'isCorrect'],
+              },
+              ],
+            },
+          ],
+        },
+      );
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Evaluation not found',
+        });
+      }
+
+      // Verify instructor is assigned to this sessioncours
+      const sessionCours = evaluation.sessionCours as any;
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session course not found for this evaluation',
+        });
+      }
+
+      const isInstructorAssigned =
+        sessionCours.id_formateur &&
+        Array.isArray(sessionCours.id_formateur) &&
+        sessionCours.id_formateur.includes(instructorId);
+
+      if (!isInstructorAssigned) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            'You are not assigned as an instructor for this evaluation\'s session course',
+        });
+      }
+
+      // Build where clause - filter by evaluationId and optionally by studentId
+      const whereClause: any = {
+        evaluationId: evaluationId,
+      };
+      
+      if (studentId) {
+        whereClause.studentId = studentId;
+      }
+
+      // Get all student answers for this evaluation with question and student info
+      const studentAnswers = await this.studentAnswerModel.findAll({
+        where: whereClause,
+        include: [
+          {
+            model: Users,
+            as: 'student',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+          {
+            model: EvaluationQuestion,
+            as: 'question',
+            attributes: ['id', 'type', 'text', 'points'],
+            include: [
+              {
+                model: EvaluationQuestionOption,
+                as: 'options',
+                attributes: ['id', 'text', 'isCorrect'],
+              },
+            ],
+          },
+        ],
+        order: [
+          ['studentId', 'ASC'],
+          ['questionId', 'ASC'],
+        ],
+      });
+
+      // Get lessons for the evaluation
+      const evaluationLessonIds = evaluation.lessonId;
+      const lessons =
+        evaluationLessonIds && Array.isArray(evaluationLessonIds)
+          ? await this.lessonModel.findAll({
+              where: { id: { [Op.in]: evaluationLessonIds } },
+              attributes: ['id', 'title', 'description', 'ispublish'],
+            })
+          : [];
+
+      // Format the answers with question data
+      const formattedAnswers = studentAnswers.map((answer) => ({
+        id: answer.id,
+        questionId: answer.questionId,
+        studentId: answer.studentId,
+        evaluationId: answer.evaluationId,
+        answerText: answer.answerText,
+        isCorrect: answer.isCorrect,
+        points: answer.points,
+        createdAt: answer.createdAt,
+        updatedAt: answer.updatedAt,
+        student: answer.student
+          ? {
+              id: answer.student.id,
+              firstName: answer.student.firstName,
+              lastName: answer.student.lastName,
+              email: answer.student.email,
+              avatar: answer.student.avatar || null,
+            }
+          : null,
+        question: answer.question
+          ? {
+              id: answer.question.id,
+              type: answer.question.type,
+              text: answer.question.text,
+              points: answer.question.points,
+              options: answer.question.options || [],
+            }
+          : null,
+      }));
+
+      console.log(
+        `=== getAllStudentAnswersForEvaluation: Success ===`,
+      );
+      console.log(`Found ${studentAnswers.length} student answers`);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          evaluation: {
+            id: evaluation.id,
+            title: evaluation.title,
+            description: evaluation.description,
+            type: evaluation.type,
+            points: evaluation.points,
+            submittiondate: evaluation.submittiondate,
+            beginningTime: evaluation.beginningTime,
+            endingTime: evaluation.endingTime,
+            ispublish: evaluation.ispublish,
+            isImmediateResult: evaluation.isImmediateResult,
+            markingStatus: evaluation.markingStatus,
+            sessionCoursId: evaluation.sessionCoursId,
+            lessonId: evaluation.lessonId,
+            createdAt: evaluation.createdAt,
+            updatedAt: evaluation.updatedAt,
+            sessionCours: {
+              id: sessionCours.id,
+              title: sessionCours.title,
+              description: sessionCours.description,
+            },
+            creator: evaluation.creator
+              ? {
+                  id: evaluation.creator.id,
+                  firstName: evaluation.creator.firstName,
+                  lastName: evaluation.creator.lastName,
+                  email: evaluation.creator.email,
+                }
+              : null,
+            lessons: lessons,
+            questions: evaluation.questions || [],
+          },
+          answers: formattedAnswers,
+          totalAnswers: formattedAnswers.length,
+        },
+        customMessage:
+          'All student answers for evaluation retrieved successfully',
+      });
+    } catch (error) {
+      console.error(
+        'Error fetching all student answers for evaluation:',
+        error,
+      );
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving all student answers for evaluation',
+      });
+    }
+  }
+
 }

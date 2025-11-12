@@ -21,6 +21,12 @@ export class EventService {
   constructor(
     @InjectModel(Event)
     private readonly eventModel: typeof Event,
+    @InjectModel(Lesson)
+    private readonly lessonModel: typeof Lesson,
+    @InjectModel(SessionCours)
+    private readonly sessionCoursModel: typeof SessionCours,
+    @InjectModel(Users)
+    private readonly usersModel: typeof Users,
     private readonly configService: ConfigService,
   ) {
     // Configure Cloudinary
@@ -36,7 +42,7 @@ export class EventService {
       return [];
     }
 
-    return await Lesson.findAll({
+    return await this.lessonModel.findAll({
       where: {
         id: {
           [require('sequelize').Op.in]: event.id_cible_lesson,
@@ -46,15 +52,111 @@ export class EventService {
     });
   }
 
+  async createForLesson(
+    createEventDto: CreateEventDto,
+  ): Promise<ResponseServer> {
+    try {
+      // Validate that id_cible_lesson is provided and not empty
+      if (
+        !createEventDto.id_cible_lesson ||
+        createEventDto.id_cible_lesson.length === 0
+      ) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'At least one lesson ID is required',
+        });
+      }
+
+      // Fetch the lessons to get their sessioncours IDs
+      const lessons = await this.lessonModel.findAll({
+        where: {
+          id: {
+            [require('sequelize').Op.in]: createEventDto.id_cible_lesson,
+          },
+        },
+        attributes: ['id', 'id_cours'],
+      });
+
+      if (lessons.length === 0) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'No lessons found with the provided IDs',
+        });
+      }
+
+      if (lessons.length !== createEventDto.id_cible_lesson.length) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'Some lesson IDs are invalid',
+        });
+      }
+
+      // Get unique sessioncours IDs from the lessons
+      const sessionCoursIds = [
+        ...new Set(lessons.map((lesson) => lesson.id_cours).filter(Boolean)),
+      ];
+
+      if (sessionCoursIds.length === 0) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'Lessons must be associated with a session course',
+        });
+      }
+
+      // If lessons belong to different sessioncours, use the first one
+      // (or you could throw an error if you want to enforce same sessioncours)
+      if (sessionCoursIds.length > 1) {
+        console.warn(
+          `Warning: Lessons belong to different sessioncours. Using the first one: ${sessionCoursIds[0]}`,
+        );
+      }
+
+      // Set id_cible_cours to the first sessioncours ID
+      const eventData: CreateEventDto = {
+        ...createEventDto,
+        id_cible_cours: sessionCoursIds[0],
+      };
+
+      // Create the event using the regular create method
+      return await this.create(eventData);
+    } catch (error) {
+      console.error('Error creating event for lesson:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error creating event for lesson',
+      });
+    }
+  }
+
   async create(createEventDto: CreateEventDto): Promise<ResponseServer> {
     try {
-      // Create the event first to get the ID
-      const event = await this.eventModel.create({
-        ...createEventDto,
+      // Prepare the event data
+      const eventData: any = {
+        title: createEventDto.title,
+        description: createEventDto.description,
+        id_cible_training: createEventDto.id_cible_training,
+        id_cible_session: createEventDto.id_cible_session,
+        id_cible_cours: createEventDto.id_cible_cours,
+        id_cible_user: createEventDto.id_cible_user,
         begining_date: new Date(createEventDto.begining_date),
         beginning_hour: createEventDto.beginning_hour,
         ending_hour: createEventDto.ending_hour,
-      } as any);
+        createdBy: createEventDto.createdBy,
+        qrcode: createEventDto.qrcode,
+        participant: createEventDto.participant,
+      };
+
+      // Set id_cible_lesson as a proper array - ensure it's not undefined
+      if (createEventDto.id_cible_lesson) {
+        eventData.id_cible_lesson = Array.isArray(
+          createEventDto.id_cible_lesson,
+        )
+          ? createEventDto.id_cible_lesson
+          : [createEventDto.id_cible_lesson];
+      }
+
+      // Create the event first to get the ID
+      const event = await this.eventModel.create(eventData);
 
       // If id_cible_lesson exists and has at least one value, generate and upload QR code
       if (
@@ -774,6 +876,287 @@ export class EventService {
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error retrieving events',
+      });
+    }
+  }
+
+  async addStudentToEvent(
+    eventId: string,
+    studentId: string,
+  ): Promise<ResponseServer> {
+    try {
+      // Find the event
+      const event = await this.eventModel.findByPk(eventId);
+      if (!event) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Event not found',
+        });
+      }
+
+      // Get current participant IDs or initialize empty array
+      const currentParticipants = event.participant || [];
+
+      // Check if student is already a participant
+      if (currentParticipants.includes(studentId)) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'Student is already a participant in this event',
+        });
+      }
+
+      // Add student to the participant array
+      const updatedParticipants = [...currentParticipants, studentId];
+      await event.update({ participant: updatedParticipants });
+
+      // Reload to get updated data
+      await event.reload();
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          eventId,
+          studentId,
+          totalParticipants: updatedParticipants.length,
+          participant: updatedParticipants,
+        },
+        customMessage: 'Student added to event successfully',
+      });
+    } catch (error) {
+      console.error('Error adding student to event:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error adding student to event',
+      });
+    }
+  }
+
+  private getProgressionStatus(progression: number): string {
+    if (progression >= 80) {
+      return 'excellent';
+    } else if (progression >= 60) {
+      return 'strong';
+    } else if (progression >= 40) {
+      return 'average';
+    } else if (progression >= 20) {
+      return 'weak';
+    } else {
+      return 'very_weak';
+    }
+  }
+
+  async getStudentsAttendanceForInstructor(
+    user: IJwtSignin,
+  ): Promise<ResponseServer> {
+    try {
+      console.log('=== getStudentsAttendanceForInstructor: Starting ===');
+      console.log('Instructor ID:', user.id_user);
+
+      // Get all sessioncours where the instructor is assigned
+      const sessionCours = await this.sessionCoursModel.findAll({
+        where: {
+          id_formateur: {
+            [require('sequelize').Op.contains]: [user.id_user],
+          },
+        },
+        attributes: ['id', 'title'],
+        include: [
+          {
+            model: Lesson,
+            as: 'lessons',
+            attributes: ['id'],
+          },
+        ],
+      });
+
+      console.log('SessionCours found:', sessionCours.length);
+
+      if (sessionCours.length === 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            length: 0,
+            rows: [],
+          },
+          customMessage: 'No session courses found for this instructor',
+        });
+      }
+
+      const result: any[] = [];
+
+      // Process each sessioncours
+      for (const sessionCour of sessionCours) {
+        const sessionCoursId = sessionCour.id;
+        const sessionCoursTitle = sessionCour.title || 'Untitled Session';
+
+        // Get all lesson IDs for this sessioncours
+        const lessonIds = sessionCour.lessons?.map((lesson) => lesson.id) || [];
+
+        // Find all events for this sessioncours:
+        // 1. Events directly linked to sessioncours (id_cible_cours)
+        // 2. Events linked to lessons in this sessioncours (id_cible_lesson contains any lesson ID)
+        const Sequelize = require('sequelize');
+        const events = await this.eventModel.findAll({
+          where: {
+            [Sequelize.Op.or]: [
+              // Events directly linked to sessioncours
+              { id_cible_cours: sessionCoursId },
+              // Events linked to lessons in this sessioncours
+              // Check if id_cible_lesson array contains any of the lesson IDs
+              ...(lessonIds.length > 0
+                ? lessonIds.map((lessonId) => ({
+                    id_cible_lesson: {
+                      [Sequelize.Op.contains]: [lessonId],
+                    },
+                  }))
+                : []),
+            ],
+          },
+          attributes: ['id', 'begining_date', 'participant'],
+        });
+
+        console.log(
+          `Found ${events.length} events for sessioncours: ${sessionCoursTitle}`,
+        );
+
+        // Calculate total events count
+        const totalEvents = events.length;
+
+        if (totalEvents === 0) {
+          continue; // Skip if no events
+        }
+
+        // Collect all unique student IDs who attended any event
+        const studentEventMap = new Map<string, Set<string>>(); // studentId -> Set of event IDs
+
+        events.forEach((event) => {
+          if (event.participant && event.participant.length > 0) {
+            event.participant.forEach((studentId) => {
+              if (!studentEventMap.has(studentId)) {
+                studentEventMap.set(studentId, new Set());
+              }
+              studentEventMap.get(studentId)?.add(event.id);
+            });
+          }
+        });
+
+        // Get student details and calculate progression
+        const studentIds = Array.from(studentEventMap.keys());
+
+        if (studentIds.length === 0) {
+          continue; // Skip if no students attended
+        }
+
+        const students = await this.usersModel.findAll({
+          where: {
+            id: {
+              [require('sequelize').Op.in]: studentIds,
+            },
+          },
+          attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+        });
+
+        // Build result for each student
+        students.forEach((student) => {
+          const studentId = student.id;
+          const attendedEvents = studentEventMap.get(studentId) || new Set();
+          const attendedCount = attendedEvents.size;
+          const progression =
+            totalEvents > 0 ? (attendedCount / totalEvents) * 100 : 0;
+          const roundedProgression = Math.round(progression * 100) / 100; // Round to 2 decimal places
+          const progressionStatus =
+            this.getProgressionStatus(roundedProgression);
+
+          // Get all event dates for this student
+          const eventDates = events
+            .filter((event) => attendedEvents.has(event.id))
+            .map((event) => event.begining_date.toISOString().split('T')[0])
+            .sort();
+
+          result.push({
+            studentId: student.id,
+            studentName:
+              `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
+              'Unknown',
+            studentEmail: student.email,
+            studentAvatar: student.avatar || null,
+            sessionCoursTitle: sessionCoursTitle,
+            progression: roundedProgression,
+            progressionStatus: progressionStatus,
+            eventsAttended: attendedCount,
+            totalEvents: totalEvents,
+            eventDates: eventDates,
+          });
+        });
+      }
+
+      console.log('=== getStudentsAttendanceForInstructor: Success ===');
+      console.log('Total students found:', result.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: result.length,
+          rows: result,
+        },
+        customMessage: 'Student attendance data retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== getStudentsAttendanceForInstructor: ERROR ===', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving student attendance data',
+      });
+    }
+  }
+
+  async getPastEventsOrderedByDate(): Promise<ResponseServer> {
+    try {
+      console.log('=== getPastEventsOrderedByDate: Starting ===');
+
+      const now = new Date();
+
+      // Get all events that have already happened (begining_date is in the past)
+      const events = await this.eventModel.findAll({
+        where: {
+          begining_date: {
+            [require('sequelize').Op.lt]: now,
+          },
+        },
+        order: [['begining_date', 'ASC']],
+      });
+
+      // Format events with participant count
+      const eventsWithParticipantCount = events.map((event) => {
+        const participantCount = event.participant
+          ? event.participant.length
+          : 0;
+
+        return {
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          begining_date: event.begining_date,
+          participantCount: participantCount,
+        };
+      });
+
+      console.log('=== getPastEventsOrderedByDate: Success ===');
+      console.log(`Found ${eventsWithParticipantCount.length} past events`);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: eventsWithParticipantCount.length,
+          rows: eventsWithParticipantCount,
+        },
+        customMessage: 'Past events retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error retrieving past events:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving past events',
       });
     }
   }

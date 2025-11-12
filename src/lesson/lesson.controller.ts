@@ -149,6 +149,158 @@ export class LessonController {
     return this.lessonService.findLessonsByCoursId(id);
   }
 
+  @Get('secretary/cours/:id/lessons')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get lessons by sessioncours ID (Secretary access)',
+    description:
+      'Retrieves all lessons for a specific sessioncours. This endpoint is accessible to secretaries and returns all lessons regardless of publication status.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'SessionCours UUID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lessons retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Lessons retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 2 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440000',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'Introduction to Programming',
+                  },
+                  description: {
+                    type: 'string',
+                    example: 'Basic concepts of programming',
+                  },
+                  ispublish: {
+                    type: 'boolean',
+                    example: true,
+                  },
+                  id_cours: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
+                  createdAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-15T10:30:00.000Z',
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-15T10:30:00.000Z',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      example: {
+        status: 200,
+        message: 'Lessons retrieved successfully',
+        data: {
+          length: 2,
+          rows: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              title: 'Introduction to Programming',
+              description: 'Basic concepts of programming',
+              ispublish: true,
+              id_cours: '550e8400-e29b-41d4-a716-446655440001',
+              createdAt: '2025-01-15T10:30:00.000Z',
+              updatedAt: '2025-01-15T10:30:00.000Z',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              title: 'Variables and Data Types',
+              description: 'Understanding variables and data types',
+              ispublish: false,
+              id_cours: '550e8400-e29b-41d4-a716-446655440001',
+              createdAt: '2025-01-15T11:30:00.000Z',
+              updatedAt: '2025-01-15T11:30:00.000Z',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Missing or invalid authentication token',
+    schema: {
+      example: {
+        status: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions (Secretary access required)',
+    schema: {
+      example: {
+        status: 403,
+        message: 'Forbidden',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'SessionCours not found',
+    schema: {
+      example: {
+        status: 404,
+        message: 'Session course not found',
+        data: null,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        data: {
+          message: 'Internal server error while retrieving lessons',
+          errorType: 'SequelizeDatabaseError',
+          errorMessage: 'Error message',
+          timestamp: '2025-01-25T10:00:00.000Z',
+        },
+      },
+    },
+  })
+  async findLessonsByCoursIdForSecretary(@Param('id', ParseUUIDPipe) id: string) {
+    return this.lessonService.findLessonsByCoursId(id);
+  }
+
   @Get('student/cours/:id/lessons')
   @UseGuards(JwtAuthGuardAsStudentInSession)
   @ApiBearerAuth()

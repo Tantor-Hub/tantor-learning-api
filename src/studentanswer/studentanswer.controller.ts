@@ -14,12 +14,14 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { StudentAnswerService } from './studentanswer.service';
 import { CreateStudentAnswerDto } from './dto/create-studentanswer.dto';
 import { UpdateStudentAnswerDto } from './dto/update-studentanswer.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
+import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
@@ -375,5 +377,115 @@ export class StudentAnswerController {
   @ApiResponse({ status: 404, description: 'Student answer not found' })
   remove(@Param('id') id: string) {
     return this.studentAnswerService.remove(id);
+  }
+
+  @Patch('instructor/:answerId/points')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update student answer points (Instructor)',
+    description:
+      "Update the points awarded for a specific student answer. Only instructors assigned to the evaluation's session course can update points. Points cannot exceed the question's maximum points or be negative.",
+  })
+  @ApiParam({
+    name: 'answerId',
+    description: 'Answer UUID - The unique identifier of the student answer',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        points: {
+          type: 'number',
+          example: 8,
+          description:
+            'Points to award for this answer (0 or greater, cannot exceed question maximum)',
+          minimum: 0,
+        },
+      },
+      required: ['points'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student answer points updated successfully',
+    example: {
+      status: 200,
+      message: 'Student answer points updated successfully',
+      data: {
+        id: 'answer-uuid-1',
+        questionId: 'question-uuid-1',
+        studentId: 'student-uuid-1',
+        evaluationId: 'eval-uuid-1',
+        answerText: 'React is a JavaScript library',
+        isCorrect: true,
+        points: 8,
+        createdAt: '2025-01-15T10:30:00.000Z',
+        updatedAt: '2025-01-15T11:00:00.000Z',
+        student: {
+          id: 'student-uuid-1',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          email: 'jane.smith@example.com',
+          avatar: 'https://example.com/avatar.jpg',
+        },
+        question: {
+          id: 'question-uuid-1',
+          type: 'text',
+          text: 'What is React?',
+          points: 10,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid points value',
+    example: {
+      status: 400,
+      message: "Points (15) cannot exceed the question's maximum points (10)",
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      "Forbidden - You are not assigned as an instructor for this evaluation's session course",
+    example: {
+      status: 403,
+      message:
+        "You are not assigned as an instructor for this evaluation's session course",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student answer not found',
+    example: {
+      status: 404,
+      message: 'Student answer not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error updating student answer points',
+    },
+  })
+  updateStudentAnswerPoints(
+    @Param('answerId') answerId: string,
+    @Body('points') points: number,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentAnswerService.updateStudentAnswerPoints(
+      answerId,
+      points,
+      user.id_user,
+    );
   }
 }

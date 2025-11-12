@@ -311,11 +311,10 @@ export class SessionCoursController {
   @Get('session/:sessionId')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Alias: Get all session courses by session ID (Secretary)' })
-  @ApiParam({ name: 'sessionId', description: 'Training Session UUID' })
-  @ApiResponse({ status: 200, description: 'Session courses retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Session not found' })
-  async findBySessionIdAlias(@Param('sessionId') sessionId: string) {
+  @SessionCoursFindBySessionIdApiResponse()
+  async findBySessionIdAlias(
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ) {
     return this.sessionCoursService.findBySessionId(sessionId);
   }
 

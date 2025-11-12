@@ -7,7 +7,9 @@ import { ResponseServer } from 'src/interface/interface.response';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { EvaluationQuestion } from 'src/models/model.evaluationquestion';
+import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
 import { Studentevaluation } from 'src/models/model.studentevaluation';
+import { SessionCours } from 'src/models/model.sessioncours';
 import { Users } from 'src/models/model.users';
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 
@@ -16,6 +18,10 @@ export class StudentAnswerService {
   constructor(
     @InjectModel(StudentAnswer)
     private studentAnswerModel: typeof StudentAnswer,
+    @InjectModel(Studentevaluation)
+    private studentevaluationModel: typeof Studentevaluation,
+    @InjectModel(SessionCours)
+    private sessionCoursModel: typeof SessionCours,
   ) {}
 
   async create(
@@ -422,6 +428,128 @@ export class StudentAnswerService {
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error deleting student answer',
+      });
+    }
+  }
+
+  async updateStudentAnswerPoints(
+    answerId: string,
+    points: number,
+    instructorId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log('=== updateStudentAnswerPoints: Starting ===');
+      console.log('Answer ID:', answerId);
+      console.log('Points:', points);
+      console.log('Instructor ID:', instructorId);
+
+      // Get the student answer with question info
+      const studentAnswer = await this.studentAnswerModel.findByPk(answerId, {
+        include: [
+          {
+            model: EvaluationQuestion,
+            as: 'question',
+            attributes: ['id', 'type', 'text', 'points'],
+          },
+        ],
+      });
+
+      if (!studentAnswer) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Student answer not found',
+        });
+      }
+
+      // Get the evaluation to verify instructor access
+      const evaluation = await this.studentevaluationModel.findByPk(
+        studentAnswer.evaluationId,
+        {
+          include: [
+            {
+              model: SessionCours,
+              as: 'sessionCours',
+              attributes: ['id', 'title', 'description', 'id_formateur'],
+            },
+          ],
+        },
+      );
+
+      if (!evaluation || !evaluation.sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Evaluation or session course not found',
+        });
+      }
+
+      const sessionCours = evaluation.sessionCours;
+      const isInstructorAssigned =
+        sessionCours.id_formateur &&
+        Array.isArray(sessionCours.id_formateur) &&
+        sessionCours.id_formateur.includes(instructorId);
+
+      if (!isInstructorAssigned) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            'You are not assigned as an instructor for this evaluation\'s session course',
+        });
+      }
+
+      // Validate points
+      const question = studentAnswer.question as any;
+      if (question && points > question.points) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: `Points (${points}) cannot exceed the question's maximum points (${question.points})`,
+        });
+      }
+
+      if (points < 0) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: 'Points cannot be negative',
+        });
+      }
+
+      // Update the points
+      await studentAnswer.update({ points: points });
+
+      // Reload to get updated data
+      const updatedAnswer = await this.studentAnswerModel.findByPk(answerId, {
+        include: [
+          {
+            model: Users,
+            as: 'student',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+          {
+            model: EvaluationQuestion,
+            as: 'question',
+            attributes: ['id', 'type', 'text', 'points'],
+            include: [
+              {
+                model: EvaluationQuestionOption,
+                as: 'options',
+                attributes: ['id', 'text', 'isCorrect'],
+              },
+            ],
+          },
+        ],
+      });
+
+      console.log('=== updateStudentAnswerPoints: Success ===');
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: updatedAnswer,
+        customMessage: 'Student answer points updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating student answer points:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error updating student answer points',
       });
     }
   }

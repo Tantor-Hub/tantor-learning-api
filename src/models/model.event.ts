@@ -51,7 +51,10 @@ export class Event extends Model<IEvent> {
   id_cible_cours?: string;
 
   @AllowNull(true)
-  @Column(DataType.ARRAY(DataType.UUID))
+  @Column({
+    type: DataType.ARRAY(DataType.UUID),
+    defaultValue: [],
+  })
   id_cible_lesson?: string[];
 
   @AllowNull(true)

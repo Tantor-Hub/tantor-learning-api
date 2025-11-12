@@ -25,6 +25,7 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
+import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
@@ -88,29 +89,21 @@ export class EventController {
     return this.eventService.create(eventData);
   }
 
-  @Post('create-for-lesson/:lessonId')
+  @Post('create-for-lesson')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
   @ApiOperation({
     summary: EventSwagger.createForLesson.summary,
     description: EventSwagger.createForLesson.description,
   })
-  @ApiParam(EventSwagger.createForLesson.param)
   @ApiBody(EventSwagger.createForLesson.body)
   @ApiResponse(EventSwagger.createForLesson.responses[201])
   @ApiResponse(EventSwagger.createForLesson.responses[400])
   @ApiResponse(EventSwagger.createForLesson.responses[401])
   @ApiResponse(EventSwagger.createForLesson.responses[403])
   @ApiResponse(EventSwagger.createForLesson.responses[404])
-  createForLesson(
-    @Param('lessonId') lessonId: string,
-    @Body() createEventDto: Omit<CreateEventDto, 'id_cible_lesson'>,
-  ) {
-    const eventData = {
-      ...createEventDto,
-      id_cible_lesson: [lessonId],
-    };
-    return this.eventService.create(eventData);
+  createForLesson(@Body() createEventDto: CreateEventDto) {
+    return this.eventService.createForLesson(createEventDto);
   }
 
   @Post('create-for-user/:userId')
@@ -311,5 +304,203 @@ export class EventController {
   @ApiResponse(EventSwagger.getEventsForInstructorCourses.responses[500])
   async getEventsForInstructorCourses(@User() user: IJwtSignin) {
     return this.eventService.findByInstructorCourses(user);
+  }
+
+  @Post('student/:eventId/join')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Join event as student',
+    description:
+      'Add the authenticated student to the list of participants for a specific event. The student ID is automatically extracted from the authentication token.',
+  })
+  @ApiParam({
+    name: 'eventId',
+    description: 'Event UUID - The unique identifier of the event',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student joined event successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student added to event successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            eventId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            studentId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440001',
+            },
+            totalParticipants: { type: 'number', example: 5 },
+            participant: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              example: [
+                '550e8400-e29b-41d4-a716-446655440001',
+                '550e8400-e29b-41d4-a716-446655440002',
+              ],
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Student is already a participant in this event',
+    schema: {
+      example: {
+        status: 400,
+        message: 'Student is already a participant in this event',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Missing or invalid authentication token',
+    schema: {
+      example: {
+        status: 401,
+        message: 'Unauthorized',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student access required',
+    schema: {
+      example: {
+        status: 403,
+        message: 'Forbidden',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Event not found',
+    schema: {
+      example: {
+        status: 404,
+        message: 'Event not found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        message: 'Error adding student to event',
+      },
+    },
+  })
+  async joinEvent(@Param('eventId') eventId: string, @User() user: IJwtSignin) {
+    return this.eventService.addStudentToEvent(eventId, user.id_user);
+  }
+
+  @Get('instructor/students-attendance')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: EventSwagger.getStudentsAttendanceForInstructor.summary,
+    description: EventSwagger.getStudentsAttendanceForInstructor.description,
+  })
+  @ApiResponse(EventSwagger.getStudentsAttendanceForInstructor.responses[200])
+  @ApiResponse(EventSwagger.getStudentsAttendanceForInstructor.responses[401])
+  @ApiResponse(EventSwagger.getStudentsAttendanceForInstructor.responses[403])
+  @ApiResponse(EventSwagger.getStudentsAttendanceForInstructor.responses[500])
+  async getStudentsAttendanceForInstructor(@User() user: IJwtSignin) {
+    return this.eventService.getStudentsAttendanceForInstructor(user);
+  }
+
+  @Get('instructor/past-events')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get past events ordered by beginning date (Instructor)',
+    description:
+      'Retrieve all events that have already happened, ordered by their beginning_date in ascending order. Each event includes the number of participants. Only instructors can access this endpoint.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Past events retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 10 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440000',
+                  },
+                  title: {
+                    type: 'string',
+                    example: 'Introduction to React',
+                  },
+                  description: {
+                    type: 'string',
+                    example: 'Learn the basics of React',
+                  },
+                  begining_date: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2025-01-15T09:00:00.000Z',
+                  },
+                  participantCount: {
+                    type: 'number',
+                    example: 15,
+                    description:
+                      'Number of participants who attended the event',
+                  },
+                },
+              },
+            },
+          },
+        },
+        message: {
+          type: 'string',
+          example: 'Past events retrieved successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Instructor access required',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getPastEventsOrderedByDate() {
+    return this.eventService.getPastEventsOrderedByDate();
   }
 }

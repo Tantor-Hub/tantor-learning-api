@@ -156,13 +156,9 @@ export const EventSwagger = {
   },
 
   createForLesson: {
-    summary: 'Create an event for a specific lesson',
-    description: 'Create a new event that targets a specific lesson by its ID',
-    param: {
-      name: 'lessonId',
-      description: 'UUID of the lesson',
-      example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    },
+    summary: 'Create an event for one or more lessons',
+    description:
+      'Create a new event that targets one or more lessons. The sessioncours (id_cible_cours) will be automatically determined from the lessons. All lessons should ideally belong to the same sessioncours. If lessons belong to different sessioncours, the first one will be used.',
     body: {
       description: 'Event data for lesson-specific event',
       schema: {
@@ -177,6 +173,18 @@ export const EventSwagger = {
             type: 'string',
             description: 'Description of the event',
             example: 'Special session on React hooks',
+          },
+          id_cible_lesson: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'uuid',
+            },
+            description: 'Array of lesson IDs that this event targets',
+            example: [
+              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              'b2c3d4e5-f6g7-8901-bcde-f23456789012',
+            ],
           },
           begining_date: {
             type: 'string',
@@ -195,7 +203,13 @@ export const EventSwagger = {
             example: '16:00',
           },
         },
-        required: ['title', 'begining_date', 'beginning_hour', 'ending_hour'],
+        required: [
+          'title',
+          'id_cible_lesson',
+          'begining_date',
+          'beginning_hour',
+          'ending_hour',
+        ],
       },
     },
     responses: {
@@ -210,7 +224,13 @@ export const EventSwagger = {
               id: 'event-uuid',
               title: 'Lesson Deep Dive Event',
               description: 'Special session on React hooks',
-              id_cible_lesson: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              id_cible_lesson: [
+                'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                'b2c3d4e5-f6g7-8901-bcde-f23456789012',
+              ],
+              id_cible_cours: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+              qrcode:
+                'https://res.cloudinary.com/example/image/upload/v1234567890/__tantorLearning/qrcodes/event-uuid-qrcode.png',
               begining_date: '2025-02-12T00:00:00.000Z',
               beginning_hour: '14:00',
               ending_hour: '16:00',
@@ -222,11 +242,15 @@ export const EventSwagger = {
       },
       400: {
         status: 400,
-        description: 'Bad Request - Invalid lesson ID or data',
+        description:
+          'Bad Request - Invalid lesson IDs, missing required fields, or lessons not associated with sessioncours',
       },
       401: { status: 401, description: 'Unauthorized' },
       403: { status: 403, description: 'Forbidden' },
-      404: { status: 404, description: 'Lesson not found' },
+      404: {
+        status: 404,
+        description: 'Lessons not found with the provided IDs',
+      },
     },
   },
 
@@ -886,6 +910,108 @@ export const EventSwagger = {
             message: {
               type: 'string',
               example: 'Events for instructor courses retrieved successfully',
+            },
+          },
+        },
+      },
+      401: {
+        status: 401,
+        description: 'Unauthorized - JWT token required',
+      },
+      403: {
+        status: 403,
+        description: 'Forbidden - Instructor access required',
+      },
+      500: {
+        status: 500,
+        description: 'Internal server error',
+      },
+    },
+  },
+
+  getStudentsAttendanceForInstructor: {
+    summary: 'Get students attendance for instructor sessioncours',
+    description:
+      'Retrieve all students who have attended events in any lesson of the instructor\'s sessioncours. Returns student name, email, sessioncours title, progression percentage (events attended / total events), and event dates.',
+    responses: {
+      200: {
+        status: 200,
+        description: 'Student attendance data retrieved successfully',
+        schema: {
+          type: 'object',
+          properties: {
+            status: { type: 'number', example: 200 },
+            data: {
+              type: 'object',
+              properties: {
+                length: { type: 'number', example: 10 },
+                rows: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      studentId: {
+                        type: 'string',
+                        format: 'uuid',
+                        example: '550e8400-e29b-41d4-a716-446655440001',
+                      },
+                      studentName: {
+                        type: 'string',
+                        example: 'John Doe',
+                      },
+                      studentEmail: {
+                        type: 'string',
+                        example: 'john.doe@example.com',
+                      },
+                      studentAvatar: {
+                        type: 'string',
+                        nullable: true,
+                        example: 'https://example.com/avatars/john-doe.jpg',
+                        description: 'URL or path to the student avatar image',
+                      },
+                      sessionCoursTitle: {
+                        type: 'string',
+                        example: 'React Fundamentals Course',
+                      },
+                      progression: {
+                        type: 'number',
+                        example: 75.5,
+                        description: 'Percentage of events attended (0-100)',
+                      },
+                      progressionStatus: {
+                        type: 'string',
+                        enum: ['excellent', 'strong', 'average', 'weak', 'very_weak'],
+                        example: 'strong',
+                        description:
+                          'Status based on progression: excellent (80-100%), strong (60-79%), average (40-59%), weak (20-39%), very_weak (0-19%)',
+                      },
+                      eventsAttended: {
+                        type: 'number',
+                        example: 15,
+                        description: 'Number of events the student attended',
+                      },
+                      totalEvents: {
+                        type: 'number',
+                        example: 20,
+                        description: 'Total number of events in the sessioncours',
+                      },
+                      eventDates: {
+                        type: 'array',
+                        items: {
+                          type: 'string',
+                          format: 'date',
+                        },
+                        example: ['2025-02-01', '2025-02-05', '2025-02-10'],
+                        description: 'Dates of events the student attended',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            message: {
+              type: 'string',
+              example: 'Student attendance data retrieved successfully',
             },
           },
         },

@@ -140,16 +140,96 @@ export const SessionCoursGetAllApiResponse = () =>
 // Get SessionCours by Session ID
 export const SessionCoursFindBySessionIdApiResponse = () =>
   applyDecorators(
-    ApiOperation({ summary: 'Get all session courses by session ID' }),
+    ApiOperation({
+      summary: 'Get all session courses by session ID (Secretary)',
+      description:
+        'Retrieves all session courses (both published and unpublished) for a specific training session. This endpoint is accessible to secretaries and returns courses with instructor details.',
+    }),
     ApiParam({
       name: 'sessionId',
-      description: 'Training session ID',
+      description: 'Training Session UUID',
+      type: 'string',
+      format: 'uuid',
       example: '550e8400-e29b-41d4-a716-446655440000',
     }),
     ApiResponse({
       status: 200,
       description: 'Session courses retrieved successfully',
       schema: {
+        type: 'object',
+        properties: {
+          status: { type: 'number', example: 200 },
+          message: {
+            type: 'string',
+            example: 'Session courses retrieved successfully',
+          },
+          data: {
+            type: 'object',
+            properties: {
+              length: { type: 'number', example: 2 },
+              rows: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '550e8400-e29b-41d4-a716-446655440001',
+                    },
+                    title: {
+                      type: 'string',
+                      example: 'Advanced React Development',
+                    },
+                    description: {
+                      type: 'string',
+                      example: 'Learn advanced React concepts and best practices',
+                    },
+                    is_published: { type: 'boolean', example: true },
+                    ponderation: { type: 'number', example: 10 },
+                    formateurs: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: {
+                            type: 'string',
+                            format: 'uuid',
+                            example: '550e8400-e29b-41d4-a716-446655440001',
+                          },
+                          firstName: { type: 'string', example: 'John' },
+                          lastName: { type: 'string', example: 'Doe' },
+                        },
+                      },
+                      example: [
+                        {
+                          id: '550e8400-e29b-41d4-a716-446655440001',
+                          firstName: 'John',
+                          lastName: 'Doe',
+                        },
+                        {
+                          id: '550e8400-e29b-41d4-a716-446655440002',
+                          firstName: 'Jane',
+                          lastName: 'Smith',
+                        },
+                      ],
+                    },
+                    createdAt: {
+                      type: 'string',
+                      format: 'date-time',
+                      example: '2025-01-25T10:00:00.000Z',
+                    },
+                    updatedAt: {
+                      type: 'string',
+                      format: 'date-time',
+                      example: '2025-01-25T10:00:00.000Z',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         example: {
           status: 200,
           message: 'Session courses retrieved successfully',
@@ -160,8 +240,20 @@ export const SessionCoursFindBySessionIdApiResponse = () =>
                 id: '550e8400-e29b-41d4-a716-446655440001',
                 title: 'Advanced React Development',
                 description: 'Learn advanced React concepts and best practices',
-                is_published: false,
-                id_formateur: ['1', '2'],
+                is_published: true,
+                ponderation: 10,
+                formateurs: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    firstName: 'John',
+                    lastName: 'Doe',
+                  },
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440002',
+                    firstName: 'Jane',
+                    lastName: 'Smith',
+                  },
+                ],
                 createdAt: '2025-01-25T10:00:00.000Z',
                 updatedAt: '2025-01-25T10:00:00.000Z',
               },
@@ -170,12 +262,39 @@ export const SessionCoursFindBySessionIdApiResponse = () =>
                 title: 'Introduction to JavaScript',
                 description: 'Basic JavaScript concepts and fundamentals',
                 is_published: true,
-                id_formateur: ['3'],
+                ponderation: 5,
+                formateurs: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440003',
+                    firstName: 'Bob',
+                    lastName: 'Johnson',
+                  },
+                ],
                 createdAt: '2025-01-25T10:00:00.000Z',
                 updatedAt: '2025-01-25T10:00:00.000Z',
               },
             ],
           },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Unauthorized - Missing or invalid authentication token',
+      schema: {
+        example: {
+          status: 401,
+          message: 'Unauthorized',
+        },
+      },
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Forbidden - Insufficient permissions',
+      schema: {
+        example: {
+          status: 403,
+          message: 'Forbidden',
         },
       },
     }),

@@ -14,6 +14,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { StudentevaluationService } from './studentevaluation.service';
 import { CreateStudentevaluationDto } from './dto/create-studentevaluation.dto';
@@ -419,6 +420,378 @@ export class StudentevaluationController {
   })
   findBySessionCoursId(@Param('sessionCoursId') sessionCoursId: string) {
     return this.studentevaluationService.findBySessionCoursId(sessionCoursId);
+  }
+
+  @Get('instructor/sessioncours/:sessionCoursId')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get student evaluations by session course ID (Instructor)',
+    description:
+      'Retrieve all student evaluations (both published and unpublished) associated with a specific session course. Only instructors assigned to the session course can access this endpoint.',
+  })
+  @ApiParam({
+    name: 'sessionCoursId',
+    description:
+      'Session Course UUID - The unique identifier of the session course',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Student evaluations for session course retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Student evaluations for session course retrieved successfully',
+      data: {
+        evaluations: [
+          {
+            id: 'eval-uuid-1',
+            title: 'React Fundamentals Assessment',
+            description:
+              'This evaluation tests students on React fundamentals including components, state, and props.',
+            type: 'quiz',
+            points: 100,
+            createdBy: 'user-uuid-1',
+            submittiondate: '2025-12-31T23:59:59.000Z',
+            ispublish: false,
+            isImmediateResult: false,
+            markingStatus: 'pending',
+            sessionCoursId: '550e8400-e29b-41d4-a716-446655440000',
+            lessonId: [
+              '550e8400-e29b-41d4-a716-446655440001',
+              '550e8400-e29b-41d4-a716-446655440002',
+            ],
+            createdAt: '2025-01-15T10:30:00.000Z',
+            updatedAt: '2025-01-15T10:30:00.000Z',
+            sessionCours: {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              title: 'Introduction to Programming',
+              description: 'Basic programming concepts',
+            },
+            creator: {
+              id: 'user-uuid-1',
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john.doe@example.com',
+            },
+            lessons: [
+              {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                title: 'Variables and Data Types',
+                description: 'Understanding basic data types',
+                ispublish: true,
+              },
+            ],
+            questions: [
+              {
+                id: 'question-uuid-1',
+                type: 'multiple_choice',
+                text: 'What is the correct way to create a React component?',
+                points: 1,
+              },
+            ],
+          },
+        ],
+        total: 1,
+        published: 0,
+        unpublished: 1,
+        sessionCours: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          title: 'Introduction to Programming',
+          description: 'Basic programming concepts',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - You are not assigned as an instructor for this session course',
+    example: {
+      status: 403,
+      message: 'You are not assigned as an instructor for this session course',
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session course not found',
+    example: {
+      status: 404,
+      message: 'Session course not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error retrieving student evaluations for session course',
+    },
+  })
+  findBySessionCoursIdForInstructor(
+    @Param('sessionCoursId') sessionCoursId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.findBySessionCoursIdForInstructor(
+      sessionCoursId,
+      user.id_user,
+    );
+  }
+
+  @Get('instructor/evaluation/:evaluationId/students')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get all students who answered questions in an evaluation (Instructor)',
+    description:
+      "Retrieve a list of all unique students who have answered any question in a specific evaluation. Each student appears only once in the response. Only instructors assigned to the evaluation's session course can access this endpoint. Includes the evaluation data.",
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Evaluation UUID - The unique identifier of the student evaluation',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Students who answered questions retrieved successfully',
+    example: {
+      status: 200,
+      message:
+        'Students who answered questions in evaluation retrieved successfully',
+      data: {
+        evaluation: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+          description: 'This evaluation tests students on React fundamentals',
+          type: 'quiz',
+          points: 100,
+          ispublish: true,
+          markingStatus: 'completed',
+          sessionCoursId: 'sessioncours-uuid',
+          sessionCours: {
+            id: 'sessioncours-uuid',
+            title: 'React Course',
+            description: 'Introduction to React',
+          },
+          creator: {
+            id: 'instructor-uuid',
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@example.com',
+          },
+          lessons: [
+            {
+              id: 'lesson-uuid-1',
+              title: 'React Basics',
+              description: 'Introduction to React',
+              ispublish: true,
+            },
+          ],
+        },
+        students: [
+          {
+            id: 'student-uuid-1',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            email: 'jane.smith@example.com',
+            avatar: 'https://example.com/avatar.jpg',
+            totalAnswers: 10,
+            markedAnswers: 8,
+            markedPercentage: 80.0,
+          },
+          {
+            id: 'student-uuid-2',
+            firstName: 'Bob',
+            lastName: 'Johnson',
+            email: 'bob.johnson@example.com',
+            avatar: null,
+            totalAnswers: 10,
+            markedAnswers: 5,
+            markedPercentage: 50.0,
+          },
+        ],
+        totalStudents: 2,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      "Forbidden - You are not assigned as an instructor for this evaluation's session course",
+    example: {
+      status: 403,
+      message:
+        "You are not assigned as an instructor for this evaluation's session course",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Evaluation not found',
+    example: {
+      status: 404,
+      message: 'Evaluation not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error retrieving students who answered evaluation',
+    },
+  })
+  getStudentsWhoAnsweredEvaluation(
+    @Param('evaluationId') evaluationId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.getStudentsWhoAnsweredEvaluation(
+      evaluationId,
+      user.id_user,
+    );
+  }
+
+  @Get('instructor/evaluation/:evaluationId/student/:studentId/answers')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get all student answers for an evaluation by student (Instructor)',
+    description:
+      "Retrieve all student answers for a specific evaluation and student with question data included. This makes it easy to mark answers. Only instructors assigned to the evaluation's session course can access this endpoint. Includes the evaluation data and question information for each answer.",
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Evaluation UUID - The unique identifier of the student evaluation',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiParam({
+    name: 'studentId',
+    description: 'Student UUID - The unique identifier of the student',
+    example: '550e8400-e29b-41d4-a716-446655440001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All student answers for evaluation retrieved successfully',
+    example: {
+      status: 200,
+      message: 'All student answers for evaluation retrieved successfully',
+      data: {
+        evaluation: {
+          id: 'eval-uuid-1',
+          title: 'React Fundamentals Assessment',
+          description: 'This evaluation tests students on React fundamentals',
+          type: 'quiz',
+          points: 100,
+          ispublish: true,
+          markingStatus: 'completed',
+          sessionCours: {
+            id: 'sessioncours-uuid',
+            title: 'React Course',
+            description: 'Introduction to React',
+          },
+          questions: [
+            {
+              id: 'question-uuid-1',
+              type: 'multiple_choice',
+              text: 'What is React?',
+              points: 10,
+            },
+          ],
+        },
+        answers: [
+          {
+            id: 'answer-uuid-1',
+            questionId: 'question-uuid-1',
+            studentId: 'student-uuid-1',
+            evaluationId: 'eval-uuid-1',
+            answerText: null,
+            isCorrect: true,
+            points: 10,
+            createdAt: '2025-01-15T10:30:00.000Z',
+            updatedAt: '2025-01-15T10:30:00.000Z',
+            student: {
+              id: 'student-uuid-1',
+              firstName: 'Jane',
+              lastName: 'Smith',
+              email: 'jane.smith@example.com',
+              avatar: 'https://example.com/avatar.jpg',
+            },
+            question: {
+              id: 'question-uuid-1',
+              type: 'multiple_choice',
+              text: 'What is React?',
+              points: 10,
+              options: [
+                {
+                  id: 'option-uuid-1',
+                  text: 'A JavaScript library',
+                  isCorrect: true,
+                },
+                {
+                  id: 'option-uuid-2',
+                  text: 'A programming language',
+                  isCorrect: false,
+                },
+              ],
+            },
+          },
+        ],
+        totalAnswers: 1,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      "Forbidden - You are not assigned as an instructor for this evaluation's session course",
+    example: {
+      status: 403,
+      message:
+        "You are not assigned as an instructor for this evaluation's session course",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Evaluation not found',
+    example: {
+      status: 404,
+      message: 'Evaluation not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error retrieving all student answers for evaluation',
+    },
+  })
+  getAllStudentAnswersForEvaluation(
+    @Param('evaluationId') evaluationId: string,
+    @Param('studentId') studentId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.getAllStudentAnswersForEvaluation(
+      evaluationId,
+      user.id_user,
+      studentId,
+    );
   }
 
   @Get('student/sessioncours/:sessionCoursId')

@@ -13,9 +13,12 @@ import { Lesson } from 'src/models/model.lesson';
 import { Lessondocument } from 'src/models/model.lessondocument';
 import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
+import { StudentAnswer } from 'src/models/model.studentanswer';
+import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
+import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 
 @Module({
   imports: [
@@ -29,6 +32,8 @@ import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsessi
       Lessondocument,
       UserInSession,
       TrainingSession,
+      StudentAnswer,
+      StudentAnswerOption,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
@@ -48,6 +53,7 @@ import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsessi
     AllSercices,
     JwtService,
     JwtAuthGuardAsStudentInSession,
+    JwtAuthGuardAsInstructor,
   ],
   exports: [StudentevaluationService],
 })
