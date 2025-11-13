@@ -27,7 +27,6 @@ import { Dialect } from 'sequelize';
 import { log } from 'node:console';
 import { Contacts } from './models/model.contactform';
 import { MailService } from './services/service.mail';
-import { Messages } from './models/model.messages';
 
 import { Newsletter } from './models/model.newsletter';
 import { UsersService } from './users/users.service';
@@ -136,7 +135,6 @@ import { CatalogueFormation } from './models/model.catalogueformation';
       TrainingModel,
       AppInfos,
       Contacts,
-      Messages,
       Newsletter,
       PaymentMethodOpco,
       // Student Evaluation Models

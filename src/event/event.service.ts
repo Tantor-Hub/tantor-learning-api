@@ -13,6 +13,7 @@ import { TrainingSession } from 'src/models/model.trainingssession';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { Users } from 'src/models/model.users';
+import { UserInSession } from 'src/models/model.userinsession';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import * as QRCode from 'qrcode';
 
@@ -27,6 +28,8 @@ export class EventService {
     private readonly sessionCoursModel: typeof SessionCours,
     @InjectModel(Users)
     private readonly usersModel: typeof Users,
+    @InjectModel(UserInSession)
+    private readonly userInSessionModel: typeof UserInSession,
     private readonly configService: ConfigService,
   ) {
     // Configure Cloudinary
@@ -1157,6 +1160,135 @@ export class EventService {
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error retrieving past events',
+      });
+    }
+  }
+
+  async getAbsentStudents(eventId: string): Promise<ResponseServer> {
+    try {
+      // Find the event
+      const event = await this.eventModel.findByPk(eventId);
+
+      if (!event) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Event not found',
+        });
+      }
+
+      // Determine the session ID from various sources
+      let sessionId: string | null = null;
+
+      // Priority 1: Check if event has a direct session reference
+      if (event.id_cible_session) {
+        sessionId = event.id_cible_session;
+      }
+      // Priority 2: Get session from id_cible_cours
+      else if (event.id_cible_cours) {
+        const sessionCours = await this.sessionCoursModel.findByPk(
+          event.id_cible_cours,
+          {
+            attributes: ['id', 'id_session'],
+          },
+        );
+        if (sessionCours && sessionCours.id_session) {
+          sessionId = sessionCours.id_session;
+        }
+      }
+      // Priority 3: Get session from id_cible_lesson
+      // All lessons in id_cible_lesson will have the same session ID
+      else if (event.id_cible_lesson && event.id_cible_lesson.length > 0) {
+        // Get the first lesson (all lessons share the same session)
+        const lesson = await this.lessonModel.findByPk(
+          event.id_cible_lesson[0],
+          {
+            attributes: ['id', 'id_cours'],
+          },
+        );
+
+        if (lesson && lesson.id_cours) {
+          // Get the session course
+          const sessionCours = await this.sessionCoursModel.findByPk(
+            lesson.id_cours,
+            {
+              attributes: ['id', 'id_session'],
+            },
+          );
+
+          if (sessionCours && sessionCours.id_session) {
+            sessionId = sessionCours.id_session;
+          }
+        }
+      }
+
+      // If no session ID could be determined, return error
+      if (!sessionId) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage:
+            'Event does not have an associated session. Cannot determine session from id_cible_session, id_cible_cours, or id_cible_lesson.',
+        });
+      }
+
+      // Get all users in the session from UserInSession
+      const usersInSession = await this.userInSessionModel.findAll({
+        where: {
+          id_session: sessionId,
+        },
+        include: [
+          {
+            model: Users,
+            as: 'user',
+            required: true,
+            attributes: [
+              'id',
+              'firstName',
+              'lastName',
+              'email',
+              'phone',
+              'avatar',
+            ],
+          },
+        ],
+      });
+
+      // Get the participant list from the event (or empty array if null)
+      const participants = event.participant || [];
+
+      // Filter users who are in the session but NOT in the participants list
+      const absentStudents = usersInSession
+        .filter(
+          (userInSession) => !participants.includes(userInSession.id_user),
+        )
+        .map((userInSession) => ({
+          id: userInSession.user.id,
+          firstName: userInSession.user.firstName,
+          lastName: userInSession.user.lastName,
+          email: userInSession.user.email,
+          phone: userInSession.user.phone,
+          avatar: userInSession.user.avatar,
+          userInSessionId: userInSession.id,
+          status: userInSession.status,
+        }));
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          eventId: event.id,
+          eventTitle: event.title,
+          sessionId: sessionId,
+          absentCount: absentStudents.length,
+          totalInSession: usersInSession.length,
+          participantsCount: participants.length,
+          absentStudents: absentStudents,
+        },
+        customMessage: 'Absent students retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error retrieving absent students:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving absent students',
       });
     }
   }

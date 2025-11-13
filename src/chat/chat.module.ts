@@ -6,9 +6,11 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { ChatGateway } from './chat.gateway';
+import { TransferChatService } from './transfer-chat.service';
 import { Chat } from 'src/models/model.chat';
 import { Users } from 'src/models/model.users';
 import { RepliesChat } from 'src/models/model.replieschat';
+import { TransferChat } from 'src/models/model.transferechat';
 import { RepliesChatService } from '../replieschat/replieschat.service';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
@@ -17,7 +19,7 @@ import { ChatCleanupService } from 'src/services/service.chatcleanup';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Chat, Users, RepliesChat]),
+    SequelizeModule.forFeature([Chat, Users, RepliesChat, TransferChat]),
     ConfigModule,
     ScheduleModule.forRoot(),
     JwtModule.registerAsync({
@@ -36,6 +38,7 @@ import { ChatCleanupService } from 'src/services/service.chatcleanup';
     ChatService,
     ChatGateway,
     RepliesChatService,
+    TransferChatService,
     JwtService,
     AllSercices,
     GoogleDriveService,

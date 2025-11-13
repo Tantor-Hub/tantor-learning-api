@@ -14,8 +14,10 @@ import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { StudentAnswer } from 'src/models/model.studentanswer';
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
+import { UserInSession } from 'src/models/model.userinsession';
+import { TrainingSession } from 'src/models/model.trainingssession';
 import { Op } from 'sequelize';
-import { MarkingStatus } from 'src/models/model.studentevaluation';
+import { MarkingStatus, StudentevaluationType } from 'src/models/model.studentevaluation';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
@@ -35,6 +37,10 @@ export class StudentevaluationService {
     private studentAnswerModel: typeof StudentAnswer,
     @InjectModel(StudentAnswerOption)
     private studentAnswerOptionModel: typeof StudentAnswerOption,
+    @InjectModel(UserInSession)
+    private userInSessionModel: typeof UserInSession,
+    @InjectModel(TrainingSession)
+    private trainingSessionModel: typeof TrainingSession,
   ) {}
 
   async create(
@@ -1864,6 +1870,145 @@ export class StudentevaluationService {
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error retrieving all student answers for evaluation',
+      });
+    }
+  }
+
+  async getStudentStatisticsBySession(
+    studentId: string,
+    sessionId: string,
+  ): Promise<ResponseServer> {
+    try {
+      // Verify the student is enrolled in this session
+      const userInSession = await this.userInSessionModel.findOne({
+        where: {
+          id_user: studentId,
+          id_session: sessionId,
+          status: 'in', // Only active enrollments
+        },
+        include: [
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            attributes: ['id', 'title'],
+          },
+        ],
+      });
+
+      if (!userInSession || !userInSession.trainingSession) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage:
+            'Session not found or student is not enrolled in this session',
+        });
+      }
+
+      // Get all sessioncours for this specific session
+      const sessionCoursList = await this.sessionCoursModel.findAll({
+        where: {
+          id_session: sessionId,
+        },
+        attributes: ['id'],
+      });
+
+      const sessionCoursIds = sessionCoursList.map((sc) => sc.id);
+
+      if (sessionCoursIds.length === 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            averagePoints: 0,
+            percentage: 0,
+            totalPointsEarned: 0,
+            totalPossiblePoints: 0,
+            futureHomeworkCount: 0,
+            sessionCoursCount: 0,
+          },
+          customMessage: 'Student statistics retrieved successfully',
+        });
+      }
+
+      // Get all evaluations for these sessioncours
+      // Filter by markingStatus = 'published' and type in ['test', 'quiz', 'examen']
+      const evaluations = await this.studentevaluationModel.findAll({
+        where: {
+          sessionCoursId: {
+            [Op.in]: sessionCoursIds,
+          },
+          ispublish: true,
+          markingStatus: MarkingStatus.PUBLISHED,
+          type: {
+            [Op.in]: [
+              StudentevaluationType.TEST,
+              StudentevaluationType.QUIZ,
+              StudentevaluationType.EXAMEN,
+            ],
+          },
+        },
+        attributes: ['id', 'points', 'type', 'submittiondate'],
+      });
+
+      // Calculate total possible points
+      const totalPossiblePoints = evaluations.reduce(
+        (sum, evaluation) => sum + (evaluation.points || 0),
+        0,
+      );
+
+      // Get all student answers for these evaluations
+      const studentAnswers = await this.studentAnswerModel.findAll({
+        where: {
+          studentId: studentId,
+          evaluationId: {
+            [Op.in]: evaluations.map((e) => e.id),
+          },
+        },
+        attributes: ['evaluationId', 'points'],
+      });
+
+      // Calculate total points earned
+      const totalPointsEarned = studentAnswers.reduce(
+        (sum, answer) => sum + (answer.points || 0),
+        0,
+      );
+
+      // Calculate average points (average per evaluation)
+      const evaluationCount = evaluations.length;
+      const averagePoints =
+        evaluationCount > 0 ? totalPointsEarned / evaluationCount : 0;
+
+      // Calculate percentage
+      const percentage =
+        totalPossiblePoints > 0
+          ? (totalPointsEarned / totalPossiblePoints) * 100
+          : 0;
+
+      // Count future homework evaluations
+      const now = new Date();
+      const futureHomeworkCount = evaluations.filter(
+        (evaluation) =>
+          evaluation.type === StudentevaluationType.HOMEWORK &&
+          new Date(evaluation.submittiondate) > now,
+      ).length;
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          sessionId: sessionId,
+          averagePoints: Math.round(averagePoints * 100) / 100, // Round to 2 decimal places
+          percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
+          totalPointsEarned,
+          totalPossiblePoints,
+          futureHomeworkCount,
+          sessionCoursCount: sessionCoursIds.length,
+          evaluationCount,
+        },
+        customMessage: 'Student statistics retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error retrieving student statistics:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving student statistics',
       });
     }
   }

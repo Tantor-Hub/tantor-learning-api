@@ -948,6 +948,111 @@ export class StudentevaluationController {
     );
   }
 
+  @Get('student/session/:sessionId/statistics')
+  @UseGuards(JwtAuthGuardAsStudent)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get student statistics for a specific session',
+    description:
+      'Retrieve student statistics including average points, percentage, and future homework count for a specific session the student is enrolled in.',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: 'UUID of the training session',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student statistics retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            sessionId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+              description: 'The session ID for which statistics are calculated',
+            },
+            averagePoints: {
+              type: 'number',
+              example: 85.5,
+              description:
+                'Average points earned per evaluation for this session',
+            },
+            percentage: {
+              type: 'number',
+              example: 85.5,
+              description:
+                'Percentage of points earned out of total possible points',
+            },
+            totalPointsEarned: {
+              type: 'number',
+              example: 855,
+              description: 'Total points earned across all evaluations',
+            },
+            totalPossiblePoints: {
+              type: 'number',
+              example: 1000,
+              description: 'Total possible points across all evaluations',
+            },
+            futureHomeworkCount: {
+              type: 'number',
+              example: 5,
+              description:
+                'Number of homework evaluations with submission date in the future',
+            },
+            sessionCoursCount: {
+              type: 'number',
+              example: 3,
+              description: 'Number of sessioncours in this session',
+            },
+            evaluationCount: {
+              type: 'number',
+              example: 10,
+              description: 'Total number of evaluations',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - Student access required or student not enrolled in session',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session not found or student not enrolled',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getStudentStatisticsBySession(
+    @Param('sessionId') sessionId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.getStudentStatisticsBySession(
+      user.id_user,
+      sessionId,
+    );
+  }
+
   @Get('student/:evaluationId/questions')
   @UseGuards(JwtAuthGuardAsStudent)
   @ApiOperation({

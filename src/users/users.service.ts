@@ -22,7 +22,6 @@ import { IAuthWithGoogle } from 'src/interface/interface.authwithgoogle';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { IHomeWorks } from 'src/interface/interface.homework';
-import { Messages } from 'src/models/model.messages';
 import { Otp } from 'src/models/model.otp';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
@@ -37,9 +36,6 @@ export class UsersService {
   constructor(
     @InjectModel(Users)
     private readonly userModel: typeof Users,
-
-    @InjectModel(Messages)
-    private readonly messagesModel: typeof Messages,
 
     @InjectModel(Otp)
     private readonly otpModel: typeof Otp,
@@ -179,9 +175,7 @@ export class UsersService {
         {} as Record<string, IHomeWorks[]>,
       );
 
-      const unreadMessages = await this.messagesModel.count({
-        where: { id_user_receiver: id_user, is_readed: 0 },
-      });
+      const unreadMessages = 0; // Messages feature removed
       // const as_groupe = Object.keys(grouped).map(key => {
       //     return {
       //         length: Object.keys(grouped).length,

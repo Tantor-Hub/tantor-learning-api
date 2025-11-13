@@ -12,6 +12,7 @@ import { Lesson } from 'src/models/model.lesson';
 import { Lessondocument } from 'src/models/model.lessondocument';
 import { Users } from 'src/models/model.users';
 import { UserInSession } from 'src/models/model.userinsession';
+import { UserRoles } from 'src/models/model.userroles';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
@@ -28,6 +29,7 @@ import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
       Lessondocument,
       Users,
       UserInSession,
+      UserRoles,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

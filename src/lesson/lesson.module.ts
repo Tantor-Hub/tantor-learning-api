@@ -10,8 +10,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppInfos } from 'src/models/model.appinfos';
 import { Users } from 'src/models/model.users';
-import { Messages } from 'src/models/model.messages';
-
 import { Contacts } from 'src/models/model.contactform';
 import { JwtService } from 'src/services/service.jwt';
 import { LessonService } from './lesson.service';
@@ -30,7 +28,6 @@ import { Otp } from 'src/models/model.otp';
       AppInfos,
       Newsletter,
       Users,
-      Messages,
       Contacts,
       Lesson,
       Lessondocument,

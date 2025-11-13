@@ -28,6 +28,8 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
+import { JwtAuthGuardMultiRole } from 'src/guard/guard.multi-role';
+import { MultiRole } from 'src/guard/decorators/multi-role.decorator';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { EventSwagger } from './swagger.event';
 
@@ -222,6 +224,143 @@ export class EventController {
     @Query('endDate') endDate: string,
   ) {
     return this.eventService.findByDateRange(startDate, endDate);
+  }
+
+  @Get(':eventId/absent-students')
+  @UseGuards(JwtAuthGuardMultiRole)
+  @MultiRole({
+    requiredRoles: ['admin', 'secretary', 'instructor'],
+    requireAll: false, // User needs admin OR secretary OR instructor
+    allowAdminOverride: true, // Admin can always access
+  })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get absent students for an event',
+    description:
+      'Retrieve students who are enrolled in the event session but did not attend the event. Compares users in the session (UserInSession) with event participants and returns those who are in the session but not in the participants list. The session ID is determined from id_cible_session, or derived from id_cible_cours, or from id_cible_lesson if the direct session reference is not available.',
+  })
+  @ApiParam({
+    name: 'eventId',
+    description: 'UUID of the event',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Absent students retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Absent students retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            eventId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            eventTitle: {
+              type: 'string',
+              example: 'Introduction to React',
+            },
+            sessionId: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440001',
+            },
+            absentCount: {
+              type: 'number',
+              example: 5,
+              description: 'Number of absent students',
+            },
+            totalInSession: {
+              type: 'number',
+              example: 20,
+              description: 'Total number of students in the session',
+            },
+            participantsCount: {
+              type: 'number',
+              example: 15,
+              description: 'Number of students who attended the event',
+            },
+            absentStudents: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440002',
+                  },
+                  firstName: {
+                    type: 'string',
+                    example: 'John',
+                  },
+                  lastName: {
+                    type: 'string',
+                    example: 'Doe',
+                  },
+                  email: {
+                    type: 'string',
+                    example: 'john.doe@example.com',
+                  },
+                  phone: {
+                    type: 'string',
+                    example: '+1234567890',
+                  },
+                  avatar: {
+                    type: 'string',
+                    nullable: true,
+                    example: 'https://example.com/avatar.jpg',
+                  },
+                  userInSessionId: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440003',
+                  },
+                  status: {
+                    type: 'string',
+                    enum: ['refusedpayment', 'notpaid', 'pending', 'in', 'out'],
+                    example: 'in',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Event does not have an associated session. Cannot determine session from id_cible_session, id_cible_cours, or id_cible_lesson.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Admin, Secretary, or Instructor role required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Event not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getAbsentStudents(@Param('eventId') eventId: string) {
+    return this.eventService.getAbsentStudents(eventId);
   }
 
   @Get(':id')

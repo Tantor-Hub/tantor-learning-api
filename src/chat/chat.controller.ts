@@ -23,9 +23,12 @@ import {
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ChatService } from './chat.service';
+import { TransferChatService } from './transfer-chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { DeleteChatDto } from './dto/delete-chat.dto';
+import { CreateTransferChatDto } from './dto/create-transfer-chat.dto';
+import { UpdateTransferChatDto } from './dto/update-transfer-chat.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
@@ -38,6 +41,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 export class ChatController {
   constructor(
     private readonly chatService: ChatService,
+    private readonly transferChatService: TransferChatService,
     private readonly googleDriveService: GoogleDriveService,
   ) {}
 
@@ -517,7 +521,11 @@ The error response includes detailed information about what went wrong, includin
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all chat messages' })
+  @ApiOperation({
+    summary: 'Get all chat messages',
+    description:
+      'Retrieve all chat messages. Each message includes an `isOpened` field indicating whether the current authenticated user has read the message.',
+  })
   @ApiResponse({
     status: 200,
     description: 'Chat messages retrieved successfully',
@@ -530,25 +538,63 @@ The error response includes detailed information about what went wrong, includin
           rows: [
             {
               id: '550e8400-e29b-41d4-a716-446655440000',
-              id_user_sender: '550e8400-e29b-41d4-a716-446655440001',
-              id_user_receiver: ['550e8400-e29b-41d4-a716-446655440002'],
               subject: 'Meeting Discussion',
-              content: "Hello everyone, let's discuss the project updates.",
-              reader: ['550e8400-e29b-41d4-a716-446655440002'],
-              status: 'alive',
-              dontshowme: [],
-              piece_joint: ['/uploads/file1.pdf'],
               createdAt: '2025-01-25T10:00:00.000Z',
-              updatedAt: '2025-01-25T10:00:00.000Z',
               sender: {
-                id: 1,
-                fs_name: 'John',
-                ls_name: 'Doe',
+                firstName: 'John',
+                lastName: 'Doe',
                 email: 'john.doe@example.com',
-                uuid: '550e8400-e29b-41d4-a716-446655440001',
               },
+              isOpened: true,
+              role: 'sender',
             },
           ],
+        },
+      },
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Chat messages retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 2 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  subject: { type: 'string', nullable: true },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  sender: {
+                    type: 'object',
+                    nullable: true,
+                    properties: {
+                      firstName: { type: 'string' },
+                      lastName: { type: 'string' },
+                      email: { type: 'string' },
+                    },
+                  },
+                  isOpened: {
+                    type: 'boolean',
+                    description:
+                      'Indicates whether the current authenticated user has opened/read this message. For senders: true if all receivers have read. For receivers: true if the current user has read.',
+                  },
+                  role: {
+                    type: 'string',
+                    enum: ['sender', 'receiver'],
+                    nullable: true,
+                    description:
+                      "Indicates the current user's role in this message: 'sender' if the user sent the message, 'receiver' if the user received it",
+                    example: 'sender',
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -568,8 +614,9 @@ The error response includes detailed information about what went wrong, includin
       },
     },
   })
-  findAll() {
-    return this.chatService.findAll();
+  findAll(@Request() req: any) {
+    const userId = req.user?.id_user; // Extract user ID from JWT token if available
+    return this.chatService.findAll(userId);
   }
 
   @Get('user')
@@ -577,7 +624,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get chat messages for the authenticated user',
     description:
-      'Retrieves all chat messages where the authenticated user is either sender or receiver. User ID is automatically extracted from JWT token.',
+      'Retrieves all chat messages where the authenticated user is either sender or receiver. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message.',
   })
   @ApiResponse({
     status: 200,
@@ -587,27 +634,31 @@ The error response includes detailed information about what went wrong, includin
         status: 200,
         message: 'User chat messages retrieved successfully',
         data: {
-          length: 1,
+          length: 2,
           rows: [
             {
               id: '550e8400-e29b-41d4-a716-446655440000',
-              id_user_sender: '550e8400-e29b-41d4-a716-446655440001',
-              id_user_receiver: ['550e8400-e29b-41d4-a716-446655440002'],
               subject: 'Meeting Discussion',
-              content: "Hello everyone, let's discuss the project updates.",
-              reader: ['550e8400-e29b-41d4-a716-446655440002'],
-              status: 'alive',
-              dontshowme: [],
-              piece_joint: ['/uploads/file1.pdf'],
               createdAt: '2025-01-25T10:00:00.000Z',
-              updatedAt: '2025-01-25T10:00:00.000Z',
               sender: {
-                id: 1,
-                fs_name: 'John',
-                ls_name: 'Doe',
+                firstName: 'John',
+                lastName: 'Doe',
                 email: 'john.doe@example.com',
-                uuid: '550e8400-e29b-41d4-a716-446655440001',
               },
+              isOpened: true,
+              role: 'sender',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              subject: 'Project Update',
+              createdAt: '2025-01-25T11:00:00.000Z',
+              sender: {
+                firstName: 'Jane',
+                lastName: 'Smith',
+                email: 'jane.smith@example.com',
+              },
+              isOpened: false,
+              role: 'receiver',
             },
           ],
         },
@@ -639,7 +690,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get deleted chat messages for the authenticated user',
     description:
-      'Retrieves all deleted chat messages where the authenticated user is either sender or receiver. User ID is automatically extracted from JWT token.',
+      'Retrieves all deleted chat messages where the authenticated user is either sender or receiver. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message.',
   })
   @ApiResponse({
     status: 200,
@@ -653,23 +704,14 @@ The error response includes detailed information about what went wrong, includin
           rows: [
             {
               id: '550e8400-e29b-41d4-a716-446655440000',
-              id_user_sender: '550e8400-e29b-41d4-a716-446655440001',
-              id_user_receiver: ['550e8400-e29b-41d4-a716-446655440002'],
               subject: 'Deleted Message',
-              content: 'This message was deleted.',
-              reader: ['550e8400-e29b-41d4-a716-446655440002'],
-              status: 'deleted',
-              dontshowme: [],
-              piece_joint: [],
               createdAt: '2025-01-25T10:00:00.000Z',
-              updatedAt: '2025-01-25T11:00:00.000Z',
               sender: {
-                id: 1,
-                fs_name: 'John',
-                ls_name: 'Doe',
+                firstName: 'John',
+                lastName: 'Doe',
                 email: 'john.doe@example.com',
-                uuid: '550e8400-e29b-41d4-a716-446655440001',
               },
+              isOpened: true,
             },
           ],
         },
@@ -702,7 +744,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get messages sent by the authenticated user',
     description:
-      'Retrieves all chat messages sent by the authenticated user. User ID is automatically extracted from JWT token.',
+      'Retrieves all chat messages sent by the authenticated user. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message.',
   })
   @ApiResponse({
     status: 200,
@@ -716,23 +758,15 @@ The error response includes detailed information about what went wrong, includin
           rows: [
             {
               id: '550e8400-e29b-41d4-a716-446655440000',
-              id_user_sender: '550e8400-e29b-41d4-a716-446655440001',
-              id_user_receiver: ['550e8400-e29b-41d4-a716-446655440002'],
               subject: 'Meeting Discussion',
-              content: "Hello everyone, let's discuss the project updates.",
-              reader: ['550e8400-e29b-41d4-a716-446655440002'],
-              status: 'alive',
-              dontshowme: [],
-              piece_joint: ['/uploads/file1.pdf'],
               createdAt: '2025-01-25T10:00:00.000Z',
-              updatedAt: '2025-01-25T10:00:00.000Z',
               sender: {
-                id: 1,
-                fs_name: 'John',
-                ls_name: 'Doe',
+                firstName: 'John',
+                lastName: 'Doe',
                 email: 'john.doe@example.com',
-                uuid: '550e8400-e29b-41d4-a716-446655440001',
               },
+              isOpened: true,
+              role: 'sender',
             },
           ],
         },
@@ -764,7 +798,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get messages received by the authenticated user',
     description:
-      'Retrieves all chat messages received by the authenticated user. User ID is automatically extracted from JWT token.',
+      'Retrieves all chat messages received by the authenticated user. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message.',
   })
   @ApiResponse({
     status: 200,
@@ -778,23 +812,15 @@ The error response includes detailed information about what went wrong, includin
           rows: [
             {
               id: '550e8400-e29b-41d4-a716-446655440000',
-              id_user_sender: '550e8400-e29b-41d4-a716-446655440001',
-              id_user_receiver: ['550e8400-e29b-41d4-a716-446655440002'],
               subject: 'Meeting Discussion',
-              content: "Hello everyone, let's discuss the project updates.",
-              reader: ['550e8400-e29b-41d4-a716-446655440002'],
-              status: 'alive',
-              dontshowme: [],
-              piece_joint: ['/uploads/file1.pdf'],
               createdAt: '2025-01-25T10:00:00.000Z',
-              updatedAt: '2025-01-25T10:00:00.000Z',
               sender: {
-                id: 1,
-                fs_name: 'John',
-                ls_name: 'Doe',
+                firstName: 'John',
+                lastName: 'Doe',
                 email: 'john.doe@example.com',
-                uuid: '550e8400-e29b-41d4-a716-446655440001',
               },
+              isOpened: true,
+              role: 'sender',
             },
           ],
         },
@@ -822,7 +848,12 @@ The error response includes detailed information about what went wrong, includin
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a chat message by ID' })
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get a chat message by ID',
+    description:
+      'Retrieve a specific chat message by its ID. When an authenticated user opens this message, their ID is automatically added to the `reader` array. The response includes an `isOpened` field indicating whether the current user has read the message.',
+  })
   @ApiParam({ name: 'id', description: 'Chat message UUID', type: String })
   @ApiResponse({
     status: 200,
@@ -837,10 +868,14 @@ The error response includes detailed information about what went wrong, includin
           id_user_receiver: ['550e8400-e29b-41d4-a716-446655440002'],
           subject: 'Meeting Discussion',
           content: "Hello everyone, let's discuss the project updates.",
-          reader: ['550e8400-e29b-41d4-a716-446655440002'],
+          reader: [
+            '550e8400-e29b-41d4-a716-446655440002',
+            '550e8400-e29b-41d4-a716-446655440003',
+          ],
           status: 'alive',
           dontshowme: [],
           piece_joint: ['/uploads/file1.pdf'],
+          isOpened: true,
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T10:00:00.000Z',
           sender: {
@@ -879,8 +914,9 @@ The error response includes detailed information about what went wrong, includin
       },
     },
   })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.chatService.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+    const userId = req.user.id_user; // Extract user ID from JWT token (required due to guard)
+    return this.chatService.findOne(id, userId);
   }
 
   @Patch()
@@ -1231,5 +1267,361 @@ The error response includes detailed information about what went wrong, includin
   })
   cleanupDeletedChats() {
     return this.chatService.cleanupDeletedChats();
+  }
+
+  // ========== Transfer Chat CRUD Routes ==========
+
+  @Post('transfer')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Transfer a chat to other users',
+    description:
+      'Transfer a chat message to other users. You can only transfer chats where you are the sender or one of the receivers.',
+  })
+  @ApiBody({
+    description: 'Chat transfer data',
+    schema: {
+      type: 'object',
+      required: ['id_chat', 'receivers'],
+      properties: {
+        id_chat: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID of the chat to transfer',
+          example: '550e8400-e29b-41d4-a716-446655440000',
+        },
+        receivers: {
+          type: 'array',
+          items: { type: 'string', format: 'uuid' },
+          description:
+            'Array of user UUIDs who will receive the transferred chat',
+          example: [
+            '550e8400-e29b-41d4-a716-446655440001',
+            '550e8400-e29b-41d4-a716-446655440002',
+          ],
+          minItems: 1,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Chat transfer created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 201 },
+        message: {
+          type: 'string',
+          example: 'Chat transfer created successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            id_chat: { type: 'string', format: 'uuid' },
+            sender: { type: 'string', format: 'uuid' },
+            receivers: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid data or receivers not found',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - You can only transfer chats where you are the sender or one of the receivers',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  createTransfer(
+    @Body() createTransferChatDto: CreateTransferChatDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id_user;
+    return this.transferChatService.create(createTransferChatDto, userId);
+  }
+
+  @Get('transfer')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get all chat transfers',
+    description:
+      'Retrieve all chat transfers where the authenticated user is the sender or one of the receivers.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat transfers retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Chat transfers retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            length: { type: 'number', example: 2 },
+            rows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  id_chat: { type: 'string', format: 'uuid' },
+                  sender: { type: 'string', format: 'uuid' },
+                  receivers: {
+                    type: 'array',
+                    items: { type: 'string', format: 'uuid' },
+                  },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
+                  chat: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      subject: { type: 'string' },
+                      content: { type: 'string' },
+                    },
+                  },
+                  senderUser: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      firstName: { type: 'string' },
+                      lastName: { type: 'string' },
+                      email: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  findAllTransfers(@Request() req: any) {
+    const userId = req.user.id_user;
+    return this.transferChatService.findAll(userId);
+  }
+
+  @Get('transfer/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get a chat transfer by ID',
+    description:
+      'Retrieve a specific chat transfer by its ID. You can only access transfers where you are the sender or one of the receivers.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Chat transfer UUID',
+    type: String,
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat transfer retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Chat transfer retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            id_chat: { type: 'string', format: 'uuid' },
+            sender: { type: 'string', format: 'uuid' },
+            receivers: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - You do not have access to this chat transfer',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat transfer not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  findOneTransfer(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+    const userId = req.user.id_user;
+    return this.transferChatService.findOne(id, userId);
+  }
+
+  @Patch('transfer/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Update a chat transfer',
+    description:
+      'Update a chat transfer by adding or removing people from the receivers list. Only the sender of the transfer can update it. Pass the updated receivers array in the body (this will replace the existing list).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Chat transfer UUID',
+    type: String,
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiBody({
+    description:
+      'Updated receivers array (add or remove people from the receiving list)',
+    schema: {
+      type: 'object',
+      required: ['receivers'],
+      properties: {
+        receivers: {
+          type: 'array',
+          items: { type: 'string', format: 'uuid' },
+          description:
+            'Updated array of receiver UUIDs. This will replace the existing receivers list. Include all users who should receive the transfer.',
+          example: [
+            '550e8400-e29b-41d4-a716-446655440001',
+            '550e8400-e29b-41d4-a716-446655440002',
+          ],
+          minItems: 0,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat transfer updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Chat transfer updated successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            id_chat: { type: 'string', format: 'uuid' },
+            sender: { type: 'string', format: 'uuid' },
+            receivers: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid data or receivers not found',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only the sender can update this chat transfer',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat transfer not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  updateTransfer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateTransferChatDto: UpdateTransferChatDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id_user;
+    return this.transferChatService.update(id, updateTransferChatDto, userId);
+  }
+
+  @Delete('transfer/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Delete a chat transfer',
+    description:
+      'Delete a chat transfer. Only the sender of the transfer can delete it.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Chat transfer UUID',
+    type: String,
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat transfer deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Chat transfer deleted successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only the sender can delete this chat transfer',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat transfer not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  removeTransfer(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+    const userId = req.user.id_user;
+    return this.transferChatService.remove(id, userId);
   }
 }

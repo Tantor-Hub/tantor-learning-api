@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, literal, fn, col } from 'sequelize';
 import { Chat } from 'src/models/model.chat';
 import { Users } from 'src/models/model.users';
 import { CreateChatDto } from './dto/create-chat.dto';
@@ -20,6 +20,72 @@ export class ChatService {
     @InjectModel(Users)
     private readonly usersModel: typeof Users,
   ) {}
+
+  /**
+   * Format chat response to include only required fields
+   */
+  private formatChatResponse(chat: any, userId?: string): any {
+    const chatData = chat.toJSON ? chat.toJSON() : chat;
+    const readerArray = chatData.reader || [];
+    const receiversArray = chatData.id_user_receiver || [];
+    const senderId = chatData.id_user_sender;
+
+    let isOpened = false;
+    let role: 'sender' | 'receiver' | null = null;
+
+    if (userId) {
+      const userIdString = String(userId);
+      const senderIdString = String(senderId);
+
+      // Determine if user is sender or receiver
+      if (userIdString === senderIdString) {
+        role = 'sender';
+        // If current user is the sender: isOpened = true if ALL receivers are in reader array
+        if (receiversArray.length === 0) {
+          // No receivers, consider it as opened
+          isOpened = true;
+        } else {
+          // Check if all receivers are in the reader array
+          const allReceiversRead = receiversArray.every(
+            (receiverId: string) => {
+              const receiverIdString = String(receiverId);
+              return readerArray.some(
+                (readerId: string) => String(readerId) === receiverIdString,
+              );
+            },
+          );
+          isOpened = allReceiversRead;
+        }
+      } else {
+        // Check if user is in receivers array
+        const isReceiver = receiversArray.some(
+          (receiverId: string) => String(receiverId) === userIdString,
+        );
+        if (isReceiver) {
+          role = 'receiver';
+          // If current user is a receiver: isOpened = true if current user is in reader array
+          isOpened = readerArray.some(
+            (readerId: string) => String(readerId) === userIdString,
+          );
+        }
+      }
+    }
+
+    return {
+      id: chatData.id,
+      subject: chatData.subject,
+      createdAt: chatData.createdAt,
+      sender: chatData.sender
+        ? {
+            firstName: chatData.sender.firstName,
+            lastName: chatData.sender.lastName,
+            email: chatData.sender.email,
+          }
+        : null,
+      isOpened,
+      role, // 'sender' or 'receiver' indicating the user's role in this message
+    };
+  }
 
   async create(
     createChatDto: CreateChatDto,
@@ -88,7 +154,7 @@ export class ChatService {
     }
   }
 
-  async findAll(): Promise<ResponseServer> {
+  async findAll(userId?: string): Promise<ResponseServer> {
     try {
       console.log('=== Chat findAll: Starting ===');
 
@@ -103,14 +169,19 @@ export class ChatService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Format chats with simplified response
+      const chatsWithReadStatus = chats.map((chat) =>
+        this.formatChatResponse(chat, userId),
+      );
+
       console.log('=== Chat findAll: Success ===');
       console.log('Found chats:', chats.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: chats.length,
-          rows: chats,
+          length: chatsWithReadStatus.length,
+          rows: chatsWithReadStatus,
         },
         customMessage: 'Chat messages retrieved successfully',
       });
@@ -130,10 +201,10 @@ export class ChatService {
     }
   }
 
-  async findOne(id: string): Promise<ResponseServer> {
+  async findOne(id: string, userId?: string): Promise<ResponseServer> {
     try {
       console.log('=== Chat findOne: Starting ===');
-      console.log('Chat ID:', id);
+      console.log('Chat ID:', id, 'User ID:', userId);
 
       const chat = await this.chatModel.findByPk(id, {
         include: [
@@ -153,11 +224,74 @@ export class ChatService {
         });
       }
 
+      // If userId is provided, add user to reader array if not already present
+      if (userId) {
+        try {
+          const currentReaders = chat.reader || [];
+          console.log(
+            '=== Chat findOne: Current readers before update ===',
+            JSON.stringify(currentReaders),
+          );
+          console.log('=== Chat findOne: User ID to add ===', userId);
+
+          // Check if user is already in the reader array (handle both string and UUID comparisons)
+          const isUserInReaders = currentReaders.some(
+            (readerId: string) => String(readerId) === String(userId),
+          );
+
+          if (!isUserInReaders) {
+            // Create a new array instead of mutating the existing one
+            const updatedReaders = [...currentReaders, userId];
+            console.log(
+              '=== Chat findOne: Updated readers array ===',
+              JSON.stringify(updatedReaders),
+            );
+
+            // Update using the same method as markAsRead
+            await chat.update({ reader: updatedReaders });
+            await chat.reload(); // Reload to get updated data
+
+            console.log('=== Chat findOne: Chat updated and reloaded ===');
+            console.log(
+              '=== Chat findOne: Reader array after update ===',
+              JSON.stringify(chat.reader),
+            );
+          } else {
+            console.log('=== Chat findOne: User already in reader array ===');
+          }
+        } catch (updateError) {
+          console.error(
+            '=== Chat findOne: Error updating reader array ===',
+            updateError,
+          );
+          console.error('=== Chat findOne: Error details ===', {
+            message: updateError.message,
+            stack: updateError.stack,
+          });
+          // Continue even if update fails - don't break the response
+        }
+      } else {
+        console.log('=== Chat findOne: No userId provided ===');
+      }
+
+      // Add isOpened field to response
+      const chatData = chat.toJSON();
+      const readerArray = chatData.reader || [];
+      // Use same string comparison logic as when checking/updating
+      const isOpened = userId
+        ? readerArray.some(
+            (readerId: string) => String(readerId) === String(userId),
+          )
+        : false;
+
       console.log('=== Chat findOne: Success ===');
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: chat,
+        data: {
+          ...chatData,
+          isOpened,
+        },
         customMessage: 'Chat message retrieved successfully',
       });
     } catch (error) {
@@ -199,14 +333,19 @@ export class ChatService {
         order: [['createdAt', 'DESC']],
       });
 
+      // Format chats with simplified response
+      const chatsWithReadStatus = chats.map((chat) =>
+        this.formatChatResponse(chat, userId),
+      );
+
       console.log('=== Chat findByUser: Success ===');
-      console.log('Found chats for user:', chats.length);
+      console.log('Found chats for user:', chatsWithReadStatus.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: chats.length,
-          rows: chats,
+          length: chatsWithReadStatus.length,
+          rows: chatsWithReadStatus,
         },
         customMessage: 'User chat messages retrieved successfully',
       });
@@ -247,11 +386,13 @@ export class ChatService {
         order: [['createdAt', 'DESC']],
       });
 
-      // Filter out chats where user is in dontshowme array
-      const filteredChats = allDeletedChats.filter((chat) => {
-        const dontshowme = chat.dontshowme || [];
-        return !dontshowme.includes(userId);
-      });
+      // Filter out chats where user is in dontshowme array and format response
+      const filteredChats = allDeletedChats
+        .filter((chat) => {
+          const dontshowme = chat.dontshowme || [];
+          return !dontshowme.includes(userId);
+        })
+        .map((chat) => this.formatChatResponse(chat, userId));
 
       console.log('=== Chat findDeletedByUser: Success ===');
       console.log('Found deleted chats sent by user:', filteredChats.length);
@@ -302,11 +443,13 @@ export class ChatService {
         order: [['createdAt', 'DESC']],
       });
 
-      // Filter out chats where user is in dontshowme array
-      const filteredChats = allSentChats.filter((chat) => {
-        const dontshowme = chat.dontshowme || [];
-        return !dontshowme.includes(userId);
-      });
+      // Filter out chats where user is in dontshowme array and format response
+      const filteredChats = allSentChats
+        .filter((chat) => {
+          const dontshowme = chat.dontshowme || [];
+          return !dontshowme.includes(userId);
+        })
+        .map((chat) => this.formatChatResponse(chat, userId));
 
       console.log('=== Chat findSentByUser: Success ===');
       console.log('Found sent chats for user:', filteredChats.length);
@@ -356,22 +499,13 @@ export class ChatService {
         order: [['createdAt', 'DESC']],
       });
 
-      // Filter out chats where user is in dontshowme array and add read status
+      // Filter out chats where user is in dontshowme array and format response
       const filteredChats = allReceivedChats
         .filter((chat) => {
           const dontshowme = chat.dontshowme || [];
           return !dontshowme.includes(userId);
         })
-        .map((chat) => {
-          const readerArray = chat.reader || [];
-          const isRead = readerArray.includes(userId);
-
-          return {
-            ...chat.toJSON(),
-            isRead,
-            readerCount: readerArray.length,
-          };
-        });
+        .map((chat) => this.formatChatResponse(chat, userId));
 
       console.log('=== Chat findReceivedByUser: Success ===');
       console.log('Found received chats for user:', filteredChats.length);

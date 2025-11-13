@@ -16,7 +16,6 @@ export enum tables {
   statgiairehassessionhasseance = `${table_prefix}staghassessionshasseances`,
   reclamations_sanctions = `${table_prefix}docsreclamationformations`,
   payementmethode = `${table_prefix}payementmethode`,
-  messages = `${table_prefix}messages`,
   seancesessions = `${table_prefix}seancessessions`,
   moduledeformation = `${table_prefix}moduledeformation`,
   lesson = `${table_prefix}lesson`,
@@ -41,4 +40,5 @@ export enum tables {
   otps = `${table_prefix}otps`,
   legaldocuments = `${table_prefix}legaldocuments`,
   catalogueformation = `${table_prefix}catalogueformation`,
+  transferechats = `${table_prefix}transferechats`,
 }

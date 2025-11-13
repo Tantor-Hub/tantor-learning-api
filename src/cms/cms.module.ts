@@ -12,7 +12,6 @@ import { CryptoService } from 'src/services/service.crypto';
 import { MailService } from 'src/services/service.mail';
 import { UsersService } from 'src/users/users.service';
 import { Users } from 'src/models/model.users';
-import { Messages } from 'src/models/model.messages';
 
 import { Contacts } from 'src/models/model.contactform';
 import { Newsletter } from 'src/models/model.newsletter';
@@ -24,7 +23,6 @@ import { Otp } from 'src/models/model.otp';
       AppInfos,
       Newsletter,
       Users,
-      Messages,
       Contacts,
       Otp,
     ]),

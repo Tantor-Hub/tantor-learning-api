@@ -12,7 +12,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
 import { GoogleDriveService } from 'src/services/service.googledrive';
-import { Messages } from 'src/models/model.messages';
 import { Otp } from 'src/models/model.otp';
 import { OtpCleanupService } from 'src/services/service.otpcleanup';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -25,7 +24,7 @@ import {
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Users, UserRoles, Messages, Otp]),
+    SequelizeModule.forFeature([Users, UserRoles, Otp]),
     ScheduleModule.forRoot(),
     ConfigModule,
     JwtModule.registerAsync({
