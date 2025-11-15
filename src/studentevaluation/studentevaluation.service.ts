@@ -16,8 +16,12 @@ import { StudentAnswer } from 'src/models/model.studentanswer';
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
+import { Training } from 'src/models/model.trainings';
 import { Op } from 'sequelize';
-import { MarkingStatus, StudentevaluationType } from 'src/models/model.studentevaluation';
+import {
+  MarkingStatus,
+  StudentevaluationType,
+} from 'src/models/model.studentevaluation';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
 @Injectable()
@@ -41,6 +45,8 @@ export class StudentevaluationService {
     private userInSessionModel: typeof UserInSession,
     @InjectModel(TrainingSession)
     private trainingSessionModel: typeof TrainingSession,
+    @InjectModel(Training)
+    private trainingModel: typeof Training,
   ) {}
 
   async create(
@@ -1336,9 +1342,7 @@ export class StudentevaluationService {
     instructorId: string,
   ): Promise<ResponseServer> {
     try {
-      console.log(
-        '=== findBySessionCoursIdForInstructor: Starting ===',
-      );
+      console.log('=== findBySessionCoursIdForInstructor: Starting ===');
       console.log('SessionCours ID:', sessionCoursId);
       console.log('Instructor ID:', instructorId);
 
@@ -1431,9 +1435,7 @@ export class StudentevaluationService {
         };
       });
 
-      console.log(
-        `=== findBySessionCoursIdForInstructor: Success ===`,
-      );
+      console.log(`=== findBySessionCoursIdForInstructor: Success ===`);
       console.log(`Found ${evaluations.length} evaluations`);
 
       return Responder({
@@ -1470,9 +1472,7 @@ export class StudentevaluationService {
     instructorId: string,
   ): Promise<ResponseServer> {
     try {
-      console.log(
-        '=== getStudentsWhoAnsweredEvaluation: Starting ===',
-      );
+      console.log('=== getStudentsWhoAnsweredEvaluation: Starting ===');
       console.log('Evaluation ID:', evaluationId);
       console.log('Instructor ID:', instructorId);
 
@@ -1521,7 +1521,7 @@ export class StudentevaluationService {
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage:
-            'You are not assigned as an instructor for this evaluation\'s session course',
+            "You are not assigned as an instructor for this evaluation's session course",
         });
       }
 
@@ -1535,8 +1535,11 @@ export class StudentevaluationService {
       });
 
       // Extract unique student IDs and calculate marked answers percentage
-      const studentAnswerStats = new Map<string, { total: number; marked: number }>();
-      
+      const studentAnswerStats = new Map<
+        string,
+        { total: number; marked: number }
+      >();
+
       studentAnswers.forEach((answer: any) => {
         const studentId = answer.studentId;
         if (!studentAnswerStats.has(studentId)) {
@@ -1567,7 +1570,8 @@ export class StudentevaluationService {
             students: [],
             totalStudents: 0,
           },
-          customMessage: 'No students have answered questions in this evaluation yet',
+          customMessage:
+            'No students have answered questions in this evaluation yet',
         });
       }
 
@@ -1579,7 +1583,10 @@ export class StudentevaluationService {
           },
         },
         attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
-        order: [['lastName', 'ASC'], ['firstName', 'ASC']],
+        order: [
+          ['lastName', 'ASC'],
+          ['firstName', 'ASC'],
+        ],
       });
 
       // Get lessons for the evaluation
@@ -1592,10 +1599,10 @@ export class StudentevaluationService {
             })
           : [];
 
+      console.log(`=== getStudentsWhoAnsweredEvaluation: Success ===`);
       console.log(
-        `=== getStudentsWhoAnsweredEvaluation: Success ===`,
+        `Found ${students.length} unique students who answered questions`,
       );
-      console.log(`Found ${students.length} unique students who answered questions`);
 
       return Responder({
         status: HttpStatusCode.Ok,
@@ -1632,11 +1639,15 @@ export class StudentevaluationService {
             lessons: lessons,
           },
           students: students.map((student) => {
-            const stats = studentAnswerStats.get(student.id) || { total: 0, marked: 0 };
-            const markedPercentage = stats.total > 0 
-              ? Math.round((stats.marked / stats.total) * 100 * 100) / 100 
-              : 0;
-            
+            const stats = studentAnswerStats.get(student.id) || {
+              total: 0,
+              marked: 0,
+            };
+            const markedPercentage =
+              stats.total > 0
+                ? Math.round((stats.marked / stats.total) * 100 * 100) / 100
+                : 0;
+
             return {
               id: student.id,
               firstName: student.firstName,
@@ -1654,10 +1665,7 @@ export class StudentevaluationService {
           'Students who answered questions in evaluation retrieved successfully',
       });
     } catch (error) {
-      console.error(
-        'Error fetching students who answered evaluation:',
-        error,
-      );
+      console.error('Error fetching students who answered evaluation:', error);
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error retrieving students who answered evaluation',
@@ -1671,9 +1679,7 @@ export class StudentevaluationService {
     studentId?: string,
   ): Promise<ResponseServer> {
     try {
-      console.log(
-        '=== getAllStudentAnswersForEvaluation: Starting ===',
-      );
+      console.log('=== getAllStudentAnswersForEvaluation: Starting ===');
       console.log('Evaluation ID:', evaluationId);
       console.log('Instructor ID:', instructorId);
 
@@ -1698,11 +1704,11 @@ export class StudentevaluationService {
               as: 'questions',
               attributes: ['id', 'type', 'text', 'points'],
               include: [
-              {
-                model: EvaluationQuestionOption,
-                as: 'options',
-                attributes: ['id', 'text', 'isCorrect'],
-              },
+                {
+                  model: EvaluationQuestionOption,
+                  as: 'options',
+                  attributes: ['id', 'text', 'isCorrect'],
+                },
               ],
             },
           ],
@@ -1734,7 +1740,7 @@ export class StudentevaluationService {
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage:
-            'You are not assigned as an instructor for this evaluation\'s session course',
+            "You are not assigned as an instructor for this evaluation's session course",
         });
       }
 
@@ -1742,7 +1748,7 @@ export class StudentevaluationService {
       const whereClause: any = {
         evaluationId: evaluationId,
       };
-      
+
       if (studentId) {
         whereClause.studentId = studentId;
       }
@@ -1816,9 +1822,7 @@ export class StudentevaluationService {
           : null,
       }));
 
-      console.log(
-        `=== getAllStudentAnswersForEvaluation: Success ===`,
-      );
+      console.log(`=== getAllStudentAnswersForEvaluation: Success ===`);
       console.log(`Found ${studentAnswers.length} student answers`);
 
       return Responder({
@@ -2013,4 +2017,238 @@ export class StudentevaluationService {
     }
   }
 
+  async getSecretaryStudentStatistics(filters: {
+    trainingId?: string;
+    trainingsessionId?: string;
+    sessioncoursId?: string;
+    lessonId?: string;
+    studentId?: string;
+  }): Promise<ResponseServer> {
+    try {
+      // Build query to find sessioncours based on filters
+      let sessionCoursIds: string[] = [];
+
+      if (filters.lessonId) {
+        // If lessonId is provided, get sessioncours from lessons
+        const lessons = await this.lessonModel.findAll({
+          where: {
+            id: filters.lessonId,
+          },
+          attributes: ['id_cours'],
+        });
+        sessionCoursIds = lessons.map((l) => l.id_cours).filter(Boolean);
+      } else if (filters.sessioncoursId) {
+        // If sessioncoursId is provided, use it directly
+        sessionCoursIds = [filters.sessioncoursId];
+      } else if (filters.trainingsessionId) {
+        // If trainingsessionId is provided, get all sessioncours for that session
+        const sessionCoursList = await this.sessionCoursModel.findAll({
+          where: {
+            id_session: filters.trainingsessionId,
+          },
+          attributes: ['id'],
+        });
+        sessionCoursIds = sessionCoursList.map((sc) => sc.id);
+      } else if (filters.trainingId) {
+        // If trainingId is provided, get all trainingsessions, then all sessioncours
+        const trainingSessions = await this.trainingSessionModel.findAll({
+          where: {
+            id_trainings: filters.trainingId,
+          },
+          attributes: ['id'],
+        });
+        const sessionIds = trainingSessions.map((ts) => ts.id);
+        if (sessionIds.length > 0) {
+          const sessionCoursList = await this.sessionCoursModel.findAll({
+            where: {
+              id_session: {
+                [Op.in]: sessionIds,
+              },
+            },
+            attributes: ['id'],
+          });
+          sessionCoursIds = sessionCoursList.map((sc) => sc.id);
+        }
+      }
+
+      // If no filters provided or no sessioncours found, return empty result
+      if (
+        sessionCoursIds.length === 0 &&
+        !filters.lessonId &&
+        !filters.sessioncoursId &&
+        !filters.trainingsessionId &&
+        !filters.trainingId
+      ) {
+        // Get all sessioncours if no filter
+        const allSessionCours = await this.sessionCoursModel.findAll({
+          attributes: ['id'],
+        });
+        sessionCoursIds = allSessionCours.map((sc) => sc.id);
+      }
+
+      if (sessionCoursIds.length === 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            students: [],
+            filters: filters,
+          },
+          customMessage: 'No session courses found for the given filters',
+        });
+      }
+
+      // Build evaluation query
+      const evaluationWhere: any = {
+        sessionCoursId: {
+          [Op.in]: sessionCoursIds,
+        },
+        ispublish: true,
+        markingStatus: MarkingStatus.PUBLISHED,
+        type: {
+          [Op.in]: [
+            StudentevaluationType.TEST,
+            StudentevaluationType.QUIZ,
+            StudentevaluationType.EXAMEN,
+          ],
+        },
+      };
+
+      // If lessonId filter is provided, also filter by lessonId in the evaluation
+      if (filters.lessonId) {
+        evaluationWhere[Op.or] = [
+          { lessonId: { [Op.contains]: [filters.lessonId] } },
+          { lessonId: null },
+        ];
+      }
+
+      // Get all evaluations matching the criteria
+      const evaluations = await this.studentevaluationModel.findAll({
+        where: evaluationWhere,
+        attributes: ['id', 'points', 'type', 'submittiondate'],
+      });
+
+      if (evaluations.length === 0) {
+        return Responder({
+          status: HttpStatusCode.Ok,
+          data: {
+            students: [],
+            filters: filters,
+            totalEvaluations: 0,
+          },
+          customMessage: 'No evaluations found for the given filters',
+        });
+      }
+
+      const evaluationIds = evaluations.map((e) => e.id);
+      const totalPossiblePoints = evaluations.reduce(
+        (sum, evaluation) => sum + (evaluation.points || 0),
+        0,
+      );
+
+      // Get all student answers for these evaluations
+      const studentAnswersWhere: any = {
+        evaluationId: {
+          [Op.in]: evaluationIds,
+        },
+      };
+
+      // If studentId is provided, filter for that student only
+      if (filters.studentId) {
+        studentAnswersWhere.studentId = filters.studentId;
+      }
+
+      const studentAnswers = await this.studentAnswerModel.findAll({
+        where: studentAnswersWhere,
+        attributes: ['studentId', 'evaluationId', 'points'],
+      });
+
+      // Group answers by student
+      const studentStatsMap = new Map<
+        string,
+        {
+          studentId: string;
+          totalPointsEarned: number;
+          evaluationCount: number;
+        }
+      >();
+
+      studentAnswers.forEach((answer) => {
+        const studentId = answer.studentId;
+        if (!studentStatsMap.has(studentId)) {
+          studentStatsMap.set(studentId, {
+            studentId,
+            totalPointsEarned: 0,
+            evaluationCount: 0,
+          });
+        }
+        const stats = studentStatsMap.get(studentId)!;
+        stats.totalPointsEarned += answer.points || 0;
+        stats.evaluationCount += 1;
+      });
+
+      // Get student details
+      const studentIds = Array.from(studentStatsMap.keys());
+      const students = await this.usersModel.findAll({
+        where: {
+          id: {
+            [Op.in]: studentIds,
+          },
+        },
+        attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+      });
+
+      // Build result array
+      const result = students
+        .map((student) => {
+          const stats = studentStatsMap.get(student.id);
+          if (!stats) {
+            return null;
+          }
+
+          const averagePoints =
+            stats.evaluationCount > 0
+              ? stats.totalPointsEarned / stats.evaluationCount
+              : 0;
+          const percentage =
+            totalPossiblePoints > 0
+              ? (stats.totalPointsEarned / totalPossiblePoints) * 100
+              : 0;
+
+          return {
+            studentId: student.id,
+            studentName:
+              `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
+              'Unknown',
+            studentEmail: student.email,
+            studentAvatar: student.avatar || null,
+            averagePoints: Math.round(averagePoints * 100) / 100,
+            percentage: Math.round(percentage * 100) / 100,
+            totalPointsEarned: stats.totalPointsEarned,
+            totalPossiblePoints: totalPossiblePoints,
+            evaluationCount: stats.evaluationCount,
+          };
+        })
+        .filter(Boolean);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          students: result,
+          filters: filters,
+          totalEvaluations: evaluations.length,
+          totalPossiblePoints: totalPossiblePoints,
+        },
+        customMessage: 'Student evaluation statistics retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error retrieving secretary student statistics:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving student evaluation statistics',
+        data: {
+          error: error.message,
+        },
+      });
+    }
+  }
 }

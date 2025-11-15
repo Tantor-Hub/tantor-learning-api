@@ -67,6 +67,10 @@ import { LegalDocumentsModule } from './legaldocuments/legaldocuments.module';
 import { LegalDocument } from './models/model.legaldocument';
 import { CatalogueFormationModule } from './catalogueformation/catalogueformation.module';
 import { CatalogueFormation } from './models/model.catalogueformation';
+import { BookModule } from './book/book.module';
+import { Book } from './models/model.book';
+import { BookCategory } from './models/model.bookcategory';
+import { BookCategoryModule } from './bookcategory/bookcategory.module';
 
 @Module({
   imports: [
@@ -149,6 +153,8 @@ import { CatalogueFormation } from './models/model.catalogueformation';
       UploadedFile,
       Otp,
       LegalDocument,
+      Book,
+      BookCategory,
     ]),
     // Removed RolesModule as roles module is deleted
     // RolesModule,
@@ -181,6 +187,8 @@ import { CatalogueFormation } from './models/model.catalogueformation';
     UploadsModule,
     LegalDocumentsModule,
     CatalogueFormationModule,
+    BookModule,
+    BookCategoryModule,
   ],
   providers: [
     AppService,

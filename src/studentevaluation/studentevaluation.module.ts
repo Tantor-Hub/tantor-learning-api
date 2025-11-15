@@ -13,6 +13,7 @@ import { Lesson } from 'src/models/model.lesson';
 import { Lessondocument } from 'src/models/model.lessondocument';
 import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
+import { Training } from 'src/models/model.trainings';
 import { StudentAnswer } from 'src/models/model.studentanswer';
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 import { AllSercices } from 'src/services/serices.all';
@@ -32,6 +33,7 @@ import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
       Lessondocument,
       UserInSession,
       TrainingSession,
+      Training,
       StudentAnswer,
       StudentAnswerOption,
     ]),

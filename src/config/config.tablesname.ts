@@ -41,4 +41,6 @@ export enum tables {
   legaldocuments = `${table_prefix}legaldocuments`,
   catalogueformation = `${table_prefix}catalogueformation`,
   transferechats = `${table_prefix}transferechats`,
+  books = `${table_prefix}books`,
+  bookcategories = `${table_prefix}bookcategories`,
 }

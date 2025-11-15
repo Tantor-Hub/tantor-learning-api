@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,7 @@ import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
+import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
@@ -1668,5 +1670,100 @@ export class StudentevaluationController {
   @ApiResponse({ status: 404, description: 'Student evaluation not found' })
   remove(@Param('evaluationId') evaluationId: string) {
     return this.studentevaluationService.remove(evaluationId);
+  }
+
+  @Get('secretary/statistics')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get student evaluation statistics (Secretary only)',
+    description:
+      'Get average points and percentage for student evaluations. Filter by training, trainingsession, sessioncours, or lesson. Can get statistics for all students or a specific student.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Student evaluation statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Student evaluation statistics retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            students: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  studentId: { type: 'string', format: 'uuid' },
+                  studentName: { type: 'string', example: 'John Doe' },
+                  studentEmail: {
+                    type: 'string',
+                    example: 'john.doe@example.com',
+                  },
+                  studentAvatar: { type: 'string', nullable: true },
+                  averagePoints: { type: 'number', example: 85.5 },
+                  percentage: { type: 'number', example: 85.5 },
+                  totalPointsEarned: { type: 'number', example: 855 },
+                  totalPossiblePoints: { type: 'number', example: 1000 },
+                  evaluationCount: { type: 'number', example: 10 },
+                },
+              },
+            },
+            filters: {
+              type: 'object',
+              properties: {
+                trainingId: { type: 'string', format: 'uuid', nullable: true },
+                trainingsessionId: {
+                  type: 'string',
+                  format: 'uuid',
+                  nullable: true,
+                },
+                sessioncoursId: {
+                  type: 'string',
+                  format: 'uuid',
+                  nullable: true,
+                },
+                lessonId: { type: 'string', format: 'uuid', nullable: true },
+                studentId: { type: 'string', format: 'uuid', nullable: true },
+              },
+            },
+            totalEvaluations: { type: 'number', example: 10 },
+            totalPossiblePoints: { type: 'number', example: 1000 },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only secretaries can access this endpoint',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getSecretaryStatistics(
+    @Query('trainingId') trainingId?: string,
+    @Query('trainingsessionId') trainingsessionId?: string,
+    @Query('sessioncoursId') sessioncoursId?: string,
+    @Query('lessonId') lessonId?: string,
+    @Query('studentId') studentId?: string,
+  ) {
+    return this.studentevaluationService.getSecretaryStudentStatistics({
+      trainingId,
+      trainingsessionId,
+      sessioncoursId,
+      lessonId,
+      studentId,
+    });
   }
 }
