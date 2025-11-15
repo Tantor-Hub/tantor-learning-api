@@ -35,6 +35,33 @@ export class JwtAuthGuardAsManagerSystem implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
+    
+    // Skip authentication for Swagger UI endpoints
+    const swaggerPath = this.configService.get<string>('SWAGGER_PATH', 'api');
+    const path = request.path || request.url?.split('?')[0] || '';
+    const originalUrl = request.originalUrl?.split('?')[0] || '';
+    
+    // Check various path formats (with/without global prefix, with/without leading slash)
+    const swaggerPaths = [
+      `/${swaggerPath}`,
+      `/${swaggerPath}-json`,
+      `/api/${swaggerPath}`,
+      `/api/${swaggerPath}-json`,
+      swaggerPath,
+      `${swaggerPath}-json`,
+    ];
+    
+    const isSwaggerPath = 
+      swaggerPaths.some(sp => path === sp || path.startsWith(`${sp}/`)) ||
+      swaggerPaths.some(sp => originalUrl === sp || originalUrl.startsWith(`${sp}/`)) ||
+      path.includes(`/${swaggerPath}-json`) ||
+      originalUrl.includes(`/${swaggerPath}-json`);
+    
+    if (isSwaggerPath) {
+      // Allow Swagger paths to pass through (they have their own basic auth)
+      return true;
+    }
+    
     const authHeader = request.headers[this.keyname] as string;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

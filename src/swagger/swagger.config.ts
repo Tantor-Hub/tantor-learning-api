@@ -15,10 +15,16 @@ export class SwaggerConfig {
       return;
     }
 
-    // Get Swagger credentials from environment (optional but recommended)
+    // Get Swagger credentials from environment
     const swaggerUser = configService.get<string>('SWAGGER_USER', 'admin');
     const swaggerPassword = configService.get<string>('SWAGGER_PASSWORD', '');
     const swaggerPath = configService.get<string>('SWAGGER_PATH', 'api');
+    
+    // In production, password is required for security
+    if (isProduction && !swaggerPassword) {
+      console.log('[SWAGGER] ⚠️  Swagger password not set in production. Disabling Swagger for security.');
+      return;
+    }
 
     const config = new DocumentBuilder()
       .setTitle('Tantor API')
@@ -76,8 +82,16 @@ export class SwaggerConfig {
 
     document.paths = sortedPaths;
 
-    // Add basic authentication middleware if password is set
-    if (swaggerPassword) {
+    // Add basic authentication middleware only in production
+    // In development, Swagger is open without authentication
+    // In production, authentication is required (password must be set in env)
+    if (isProduction) {
+      // Password check already done above, but double-check for safety
+      if (!swaggerPassword) {
+        console.log('[SWAGGER] ⚠️  Production requires password but none provided. Disabling Swagger.');
+        return;
+      }
+
       app.use((req, res, next) => {
         // Protect Swagger UI and JSON endpoints
         // Check both path and originalUrl to handle global prefix
@@ -126,9 +140,10 @@ export class SwaggerConfig {
     });
 
     if (isProduction) {
-      console.log(`[SWAGGER] ⚠️  Swagger is enabled in production at /${swaggerPath} - Ensure proper security measures are in place`);
+      console.log(`[SWAGGER] 🔒 Swagger is enabled in production at /${swaggerPath} with authentication`);
+      console.log(`[SWAGGER] 📝 Username: ${swaggerUser}`);
     } else {
-      console.log(`[SWAGGER] ✅ Swagger documentation available at /${swaggerPath}`);
+      console.log(`[SWAGGER] ✅ Swagger documentation available at /${swaggerPath} (open in development)`);
     }
   }
 }
