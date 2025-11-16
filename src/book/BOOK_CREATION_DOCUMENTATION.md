@@ -34,7 +34,7 @@ Upload an icon image and a document file to create a new book. The files will be
 - Presentations: PPT, PPTX
 - Spreadsheets: XLS, XLSX
 - Images: JPEG, PNG, GIF, WebP (also allowed for documents)
-- Maximum file size: 2GB
+- Maximum file size: 10GB
 
 **Example cURL:**
 

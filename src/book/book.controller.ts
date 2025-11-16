@@ -45,7 +45,7 @@ export class BookController {
         { name: 'icon', maxCount: 1 },
         { name: 'piece_joint', maxCount: 1 },
       ],
-      { limits: { fileSize: 2 * 1024 * 1024 * 1024 } }, // 2GB limit (for piece_joint)
+      { limits: { fileSize: 10 * 1024 * 1024 * 1024 } }, // 10GB limit (for piece_joint)
     ),
   )
   @ApiBearerAuth()
@@ -80,7 +80,7 @@ export class BookController {
         piece_joint: {
           type: 'string',
           format: 'binary',
-          description: 'Book document file (PDF, DOC, DOCX, etc.) - Max 2GB',
+          description: 'Book document file (PDF, DOC, DOCX, etc.) - Max 10GB',
         },
         public: { type: 'boolean', example: false },
         downloadable: { type: 'boolean', example: false },
@@ -289,12 +289,12 @@ export class BookController {
         };
       }
 
-      // Validate piece_joint file size (2GB limit for documents)
-      const maxPieceJointSize = 2 * 1024 * 1024 * 1024; // 2GB
+      // Validate piece_joint file size (10GB limit for documents)
+      const maxPieceJointSize = 10 * 1024 * 1024 * 1024; // 10GB
       if (pieceJointFile.size > maxPieceJointSize) {
         return {
           status: 400,
-          data: 'Piece joint file size exceeds 2GB limit',
+          data: 'Piece joint file size exceeds 10GB limit',
         };
       }
 
