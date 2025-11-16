@@ -6,15 +6,16 @@ export interface IBook extends IGlobale {
   title: string;
   description?: string;
   session?: string[];
-  author?: string;
+  author: string;
   createby: string;
   status: BookStatus;
-  category?: string[]; // Array of BookCategory IDs
-  icon?: string;
-  piece_joint?: string;
+  category: string[]; // Array of BookCategory IDs
+  icon: string;
+  piece_joint: string;
   views?: number;
   download?: number;
   public?: boolean;
+  downloadable?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

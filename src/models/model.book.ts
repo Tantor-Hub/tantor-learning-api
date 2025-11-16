@@ -44,9 +44,9 @@ export class Book extends Model<Book> {
   })
   session?: string[]; // Array of session IDs
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column({ type: DataType.STRING })
-  author?: string;
+  author: string;
 
   @ForeignKey(() => Users)
   @Column({ type: DataType.UUID, allowNull: false })
@@ -61,18 +61,18 @@ export class Book extends Model<Book> {
 
   @Column({
     type: DataType.ARRAY(DataType.UUID),
-    allowNull: true,
+    allowNull: false,
     defaultValue: [],
   })
-  category?: string[]; // Array of BookCategory IDs
+  category: string[]; // Array of BookCategory IDs
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column({ type: DataType.STRING })
-  icon?: string; // Cloudinary URL
+  icon: string; // Cloudinary URL
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column({ type: DataType.STRING })
-  piece_joint?: string; // Cloudinary URL
+  piece_joint: string; // Cloudinary URL
 
   @Column({
     type: DataType.INTEGER,
@@ -94,6 +94,13 @@ export class Book extends Model<Book> {
     defaultValue: false,
   })
   public: boolean;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  downloadable: boolean;
 
   @BelongsTo(() => Users, { foreignKey: 'createby', targetKey: 'id' })
   creator: Users;

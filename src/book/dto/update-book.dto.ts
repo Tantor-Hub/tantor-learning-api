@@ -107,5 +107,15 @@ export class UpdateBookDto {
   @IsOptional()
   @IsBoolean()
   public?: boolean;
+
+  @ApiProperty({
+    description: 'Whether the book is downloadable',
+    example: false,
+    type: Boolean,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  downloadable?: boolean;
 }
 

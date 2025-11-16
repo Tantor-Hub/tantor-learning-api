@@ -16,7 +16,7 @@ export class BookService {
   ) {}
 
   async create(
-    createDto: CreateBookDto,
+    createDto: CreateBookDto & { icon: string; piece_joint: string },
     userId: string,
   ): Promise<ResponseServer> {
     try {
@@ -33,6 +33,7 @@ export class BookService {
         views: 0,
         download: 0,
         public: createDto.public !== undefined ? createDto.public : false,
+        downloadable: createDto.downloadable !== undefined ? createDto.downloadable : false,
       } as any);
 
       return Responder({

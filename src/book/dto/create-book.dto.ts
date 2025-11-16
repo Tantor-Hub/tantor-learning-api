@@ -48,11 +48,11 @@ export class CreateBookDto {
     description: 'Author of the book',
     example: 'John Doe',
     type: String,
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  author?: string;
+  author: string;
 
   @ApiProperty({
     enum: BookStatus,
@@ -71,32 +71,15 @@ export class CreateBookDto {
       '550e8400-e29b-41d4-a716-446655440001',
     ],
     type: [String],
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsArray()
   @IsUUID('4', { each: true })
-  category?: string[];
+  category: string[];
 
-  @ApiProperty({
-    description: 'Icon URL from Cloudinary',
-    example: 'https://res.cloudinary.com/example/image/upload/v1234567890/icon.jpg',
-    type: String,
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  icon?: string;
-
-  @ApiProperty({
-    description: 'Attachment URL from Cloudinary',
-    example: 'https://res.cloudinary.com/example/image/upload/v1234567890/document.pdf',
-    type: String,
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  piece_joint?: string;
+  // Note: icon and piece_joint are now uploaded as files, not strings
+  // They will be handled in the controller via file uploads
 
   @ApiProperty({
     description: 'Whether the book is public',
@@ -108,5 +91,16 @@ export class CreateBookDto {
   @IsOptional()
   @IsBoolean()
   public?: boolean;
+
+  @ApiProperty({
+    description: 'Whether the book is downloadable',
+    example: false,
+    type: Boolean,
+    required: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  downloadable?: boolean;
 }
 
