@@ -1110,8 +1110,9 @@ The error response includes detailed information about what went wrong, includin
       },
     },
   })
-  remove(@Body() deleteChatDto: DeleteChatDto) {
-    return this.chatService.remove(deleteChatDto);
+  remove(@Body() deleteChatDto: DeleteChatDto, @Request() req: any) {
+    const userId = req.user.id_user; // Extract user ID from JWT token
+    return this.chatService.remove(deleteChatDto, userId);
   }
 
   @Patch('restore/:id')

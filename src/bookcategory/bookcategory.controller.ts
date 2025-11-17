@@ -212,7 +212,7 @@ export class BookCategoryController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Delete a book category (Secretary only)',
-    description: 'Delete a book category. Only secretaries can delete categories.',
+    description: 'Delete a book category. Only secretaries can delete categories. Cannot delete if there are associated books. Returns 409 Conflict if books are associated.',
   })
   @ApiParam({
     name: 'id',
@@ -248,6 +248,20 @@ export class BookCategoryController {
   @ApiResponse({
     status: 404,
     description: 'Book category not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Cannot delete book category because it has associated books',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 409 },
+        data: {
+          type: 'string',
+          example: 'Impossible de supprimer cette catégorie de livre car 3 livre(s) y sont associé(s): Introduction to Programming, Advanced JavaScript, Node.js Basics. Veuillez d\'abord supprimer ou réassigner les livres avant de supprimer la catégorie.',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 500,

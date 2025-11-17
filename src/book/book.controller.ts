@@ -55,15 +55,26 @@ export class BookController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Create a new book (Secretary only)',
-    description: 'Create a new book with icon (image) and piece_joint (document) file uploads. Only secretaries can create books.',
+    description:
+      'Create a new book with icon (image) and piece_joint (document) file uploads. Only secretaries can create books.',
   })
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['title', 'author', 'status', 'category', 'icon', 'piece_joint'],
+      required: [
+        'title',
+        'author',
+        'status',
+        'category',
+        'icon',
+        'piece_joint',
+      ],
       properties: {
         title: { type: 'string', example: 'Introduction to Programming' },
-        description: { type: 'string', example: 'A comprehensive guide to programming fundamentals' },
+        description: {
+          type: 'string',
+          example: 'A comprehensive guide to programming fundamentals',
+        },
         author: { type: 'string', example: 'John Doe' },
         status: { type: 'string', enum: ['premium', 'free'], example: 'free' },
         category: {
@@ -78,7 +89,8 @@ export class BookController {
         icon: {
           type: 'string',
           format: 'binary',
-          description: 'Book icon image file (JPEG, PNG, GIF, WebP) - Max 100MB',
+          description:
+            'Book icon image file (JPEG, PNG, GIF, WebP) - Max 100MB',
         },
         piece_joint: {
           type: 'string',
@@ -105,22 +117,22 @@ export class BookController {
             title: { type: 'string' },
             description: { type: 'string' },
             session: { type: 'array', items: { type: 'string' } },
-            author: { 
+            author: {
               type: 'string',
               description: 'Author of the book (required)',
             },
             createby: { type: 'string', format: 'uuid' },
             status: { type: 'string', enum: ['premium', 'free'] },
-            category: { 
-              type: 'array', 
+            category: {
+              type: 'array',
               items: { type: 'string', format: 'uuid' },
               description: 'Array of BookCategory UUIDs (required)',
             },
-            icon: { 
+            icon: {
               type: 'string',
               description: 'Icon URL from Cloudinary (required)',
             },
-            piece_joint: { 
+            piece_joint: {
               type: 'string',
               description: 'Attachment URL from Cloudinary (required)',
             },
@@ -131,14 +143,23 @@ export class BookController {
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
-          required: ['title', 'author', 'status', 'category', 'icon', 'piece_joint', 'createby'],
+          required: [
+            'title',
+            'author',
+            'status',
+            'category',
+            'icon',
+            'piece_joint',
+            'createby',
+          ],
         },
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Validation error. Required fields: title, author, status, category, icon (file), piece_joint (file)',
+    description:
+      'Bad Request - Validation error. Required fields: title, author, status, category, icon (file), piece_joint (file)',
   })
   @ApiResponse({
     status: 401,
@@ -302,7 +323,8 @@ export class BookController {
       }
 
       // Upload icon to Cloudinary
-      const iconUploadResult = await this.googleDriveService.uploadBufferFile(iconFile);
+      const iconUploadResult =
+        await this.googleDriveService.uploadBufferFile(iconFile);
       if (!iconUploadResult) {
         return {
           status: 500,
@@ -311,7 +333,8 @@ export class BookController {
       }
 
       // Upload piece_joint to Cloudinary
-      const pieceJointUploadResult = await this.googleDriveService.uploadBufferFile(pieceJointFile);
+      const pieceJointUploadResult =
+        await this.googleDriveService.uploadBufferFile(pieceJointFile);
       if (!pieceJointUploadResult) {
         return {
           status: 500,
@@ -327,8 +350,11 @@ export class BookController {
         status: createBookDto.status,
         category: category,
         session: session,
-        public: createBookDto.public === 'true' || createBookDto.public === true,
-        downloadable: createBookDto.downloadable === 'true' || createBookDto.downloadable === true,
+        public:
+          createBookDto.public === 'true' || createBookDto.public === true,
+        downloadable:
+          createBookDto.downloadable === 'true' ||
+          createBookDto.downloadable === true,
         icon: iconUploadResult.link,
         piece_joint: pieceJointUploadResult.link,
       };
@@ -347,7 +373,9 @@ export class BookController {
   @ApiOperation({
     summary: 'Get all books',
     description:
-      'Retrieve public books that have an active session. Supports filtering by session, category, author, minimum views/downloads, and pagination.',
+      'Retrieve public books that have an active session. Supports filtering by session, category, author, status (free/premium), minimum views/downloads, text search, and pagination.\n\n' +
+      'Example URL with all parameters:\n' +
+      '/api/book?session=1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b,9e2d7f4c-3c1b-4f4c-b9c7-2f5f7a6b3c9d&category=e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f&author=John%20Doe&status=free&search=leadership%20fundamentals&minViews=100&minDownload=50&page=1&limit=20',
   })
   @ApiQuery({
     name: 'session',
@@ -355,42 +383,64 @@ export class BookController {
     description:
       'Comma-separated list of session UUIDs. Book must belong to all provided sessions.',
     type: String,
+    example:
+      '1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b,9e2d7f4c-3c1b-4f4c-b9c7-2f5f7a6b3c9d',
   })
   @ApiQuery({
     name: 'category',
     required: false,
     description: 'Comma-separated list of category UUIDs.',
     type: String,
+    example: 'e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f',
   })
   @ApiQuery({
     name: 'author',
     required: false,
     description: 'Partial match on author name.',
     type: String,
+    example: 'John Doe',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search term applied to book title and description.',
+    type: String,
+    example: 'leadership fundamentals',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by book status (free or premium).',
+    enum: ['free', 'premium'],
+    example: 'free',
   })
   @ApiQuery({
     name: 'minViews',
     required: false,
     description: 'Minimum number of views.',
     type: Number,
+    example: 100,
   })
   @ApiQuery({
     name: 'minDownload',
     required: false,
     description: 'Minimum number of downloads.',
     type: Number,
+    example: 50,
   })
   @ApiQuery({
     name: 'page',
     required: false,
     description: 'Page number (starts at 1).',
     type: Number,
+    example: 1,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     description: 'Items per page (max 100).',
     type: Number,
+    example: 20,
   })
   @ApiResponse({
     status: 200,
@@ -409,22 +459,22 @@ export class BookController {
               title: { type: 'string' },
               description: { type: 'string' },
               session: { type: 'array', items: { type: 'string' } },
-              author: { 
+              author: {
                 type: 'string',
                 description: 'Author of the book (required)',
               },
               createby: { type: 'string', format: 'uuid' },
               status: { type: 'string', enum: ['premium', 'free'] },
-              category: { 
-                type: 'array', 
+              category: {
+                type: 'array',
                 items: { type: 'string', format: 'uuid' },
                 description: 'Array of BookCategory UUIDs (required)',
               },
-              icon: { 
+              icon: {
                 type: 'string',
                 description: 'Icon URL from Cloudinary (required)',
               },
-              piece_joint: { 
+              piece_joint: {
                 type: 'string',
                 description: 'Attachment URL from Cloudinary (required)',
               },
@@ -435,7 +485,16 @@ export class BookController {
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
             },
-            required: ['id', 'title', 'author', 'status', 'category', 'icon', 'piece_joint', 'createby'],
+            required: [
+              'id',
+              'title',
+              'author',
+              'status',
+              'category',
+              'icon',
+              'piece_joint',
+              'createby',
+            ],
           },
         },
       },
@@ -510,7 +569,12 @@ export class BookController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateBookDto: UpdateBookDto,
+    @Request() req: any,
   ) {
+    console.log(
+      '[BOOK CONTROLLER] 🌐 Raw request body from frontend:',
+      JSON.stringify(req.body, null, 2),
+    );
     return this.bookService.update(id, updateBookDto);
   }
 
@@ -557,7 +621,8 @@ export class BookController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Increment book views',
-    description: 'Increment the view count for a book. Requires authentication.',
+    description:
+      'Increment the view count for a book. Requires authentication.',
   })
   @ApiParam({
     name: 'id',
@@ -583,7 +648,8 @@ export class BookController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Increment book downloads',
-    description: 'Increment the download count for a book. Requires authentication.',
+    description:
+      'Increment the download count for a book. Requires authentication.',
   })
   @ApiParam({
     name: 'id',
@@ -604,4 +670,3 @@ export class BookController {
     return this.bookService.incrementDownload(id);
   }
 }
-

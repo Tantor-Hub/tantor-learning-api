@@ -14,6 +14,7 @@ import { Lessondocument } from '../models/model.lessondocument';
 import { AllSercices } from '../services/serices.all';
 import { JwtService } from '../services/service.jwt';
 import { JwtAuthGuardAsStudentInSession } from '../guard/guard.asstudentinsession';
+import { Studentevaluation } from '../models/model.studentevaluation';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { JwtAuthGuardAsStudentInSession } from '../guard/guard.asstudentinsessio
       SessionCours,
       Lesson,
       Lessondocument,
+      Studentevaluation,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

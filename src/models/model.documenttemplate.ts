@@ -55,6 +55,13 @@ export class DocumentTemplate extends Model {
   @Column({ type: DataType.STRING, allowNull: true })
   imageUrl: string;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  signature: boolean;
+
   @HasMany(() => DocumentInstance)
   instances: DocumentInstance[];
 

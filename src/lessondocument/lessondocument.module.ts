@@ -15,6 +15,7 @@ import { AllSercices } from 'src/services/serices.all';
 import { GoogleDriveService } from 'src/services/service.googledrive';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
+import { Studentevaluation } from 'src/models/model.studentevaluation';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsessi
       SessionCours,
       UserInSession,
       TrainingSession,
+      Studentevaluation,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

@@ -38,6 +38,20 @@ export class TransferChat extends Model<TransferChat> {
   })
   receivers: string[];
 
+  @Column({
+    type: DataType.ARRAY(DataType.UUID),
+    allowNull: true,
+    defaultValue: [],
+  })
+  reader?: string[];
+
+  @Column({
+    type: DataType.ARRAY(DataType.UUID),
+    allowNull: true,
+    defaultValue: [],
+  })
+  dontshowme?: string[];
+
   @BelongsTo(() => Chat, { foreignKey: 'id_chat', targetKey: 'id' })
   chat: Chat;
 

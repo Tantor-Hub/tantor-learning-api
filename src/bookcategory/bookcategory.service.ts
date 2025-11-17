@@ -1,17 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BookCategory } from 'src/models/model.bookcategory';
+import { Book } from 'src/models/model.book';
 import { ResponseServer } from 'src/interface/interface.response';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { CreateBookCategoryDto } from './dto/create-bookcategory.dto';
 import { UpdateBookCategoryDto } from './dto/update-bookcategory.dto';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class BookCategoryService {
   constructor(
     @InjectModel(BookCategory)
     private readonly bookCategoryModel: typeof BookCategory,
+    @InjectModel(Book)
+    private readonly bookModel: typeof Book,
   ) {}
 
   async create(
@@ -153,6 +157,29 @@ export class BookCategoryService {
         return Responder({
           status: HttpStatusCode.NotFound,
           data: 'Catégorie de livre non trouvée',
+        });
+      }
+
+      // Check if there are any books associated with this category
+      const associatedBooks = await this.bookModel.findAll({
+        where: {
+          category: {
+            [Op.contains]: [id],
+          },
+        },
+        attributes: ['id', 'title'],
+      });
+
+      if (associatedBooks.length > 0) {
+        const bookTitles = associatedBooks
+          .map((book) => book.title)
+          .join(', ');
+
+        const customMessage = `Impossible de supprimer cette catégorie de livre car ${associatedBooks.length} livre(s) y sont associé(s): ${bookTitles}. Veuillez d'abord supprimer ou réassigner les livres avant de supprimer la catégorie.`;
+
+        return Responder({
+          status: HttpStatusCode.Conflict,
+          data: customMessage,
         });
       }
 

@@ -17,6 +17,7 @@ import { SessionCours } from 'src/models/model.sessioncours';
 import { Lesson } from 'src/models/model.lesson';
 import { Lessondocument } from 'src/models/model.lessondocument';
 import { TrainingSession } from 'src/models/model.trainingssession';
+import { Studentevaluation } from 'src/models/model.studentevaluation';
 import { InjectModel } from '@nestjs/sequelize';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 
@@ -42,6 +43,8 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
     private readonly lessondocumentModel: typeof Lessondocument,
     @InjectModel(TrainingSession)
     private readonly trainingSessionModel: typeof TrainingSession,
+    @InjectModel(Studentevaluation)
+    private readonly studentEvaluationModel: typeof Studentevaluation,
   ) {
     this.keyname = this.configService.get<string>(
       'APPKEYAPINAME',
@@ -53,109 +56,73 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
    * Resolves any entity ID to its corresponding session ID
    * Supports: sessionId, sessioncoursId, lessonId, lessondocumentId
    */
+  private matchesParam(
+    params: Record<string, any>,
+    entityId: string,
+    paramNames: string[],
+  ): boolean {
+    if (!params) {
+      return false;
+    }
+    return paramNames.some((name) => {
+      const value = params[name];
+      return value !== undefined && String(value) === String(entityId);
+    });
+  }
+
   private async resolveEntityToSessionId(
     entityId: string,
-    requestUrl: string,
+    requestParams: Record<string, any>,
   ): Promise<string> {
     console.log(
       '🔍 [ENTITY RESOLVER] Resolving entity ID to session ID:',
       entityId,
     );
-    console.log('🔍 [ENTITY RESOLVER] Request URL:', requestUrl);
+    console.log('🔍 [ENTITY RESOLVER] Request params:', requestParams);
 
-    // 1. Check if it's a direct session ID (trainingssession endpoint)
-    if (requestUrl.includes('/trainingssession/')) {
-      console.log('🔍 [ENTITY RESOLVER] Direct session ID detected');
+    // 1. Check if it's a direct session ID (trainingssession endpoints)
+    if (
+      this.matchesParam(
+        requestParams,
+        entityId,
+        ['sessionId', 'id_session', 'trainingSessionId', 'trainingSessionID'],
+      )
+    ) {
+      console.log('🔍 [ENTITY RESOLVER] Direct session ID detected via params');
       return entityId;
     }
 
     // 2. Check if it's a session ID in sessioncours student endpoint
-    if (requestUrl.includes('/sessioncours/student/session/')) {
+    if (
+      this.matchesParam(
+        requestParams,
+        entityId,
+        ['sessionStudentId', 'session_id_student'],
+      )
+    ) {
       console.log(
-        '🔍 [ENTITY RESOLVER] Session ID in sessioncours student endpoint detected',
+        '🔍 [ENTITY RESOLVER] Session ID linked to student session params detected',
       );
       return entityId;
     }
 
-    // 3. Check if it's a studentevaluation route with sessioncours, lesson, or session ID
-    // This must come before generic checks to properly handle studentevaluation routes
-    if (requestUrl.includes('/studentevaluation/')) {
+    // 3. Check if it's a sessioncours ID (sessioncours endpoints)
+    if (
+      this.matchesParam(
+        requestParams,
+        entityId,
+        [
+          'sessionCoursId',
+          'sessioncoursId',
+          'sessionCoursID',
+          'sessioncoursID',
+          'coursId',
+          'id_sessioncours',
+        ],
+      )
+    ) {
       console.log(
-        '🔍 [ENTITY RESOLVER] StudentEvaluation route detected, checking entity type...',
-      );
-      
-      // Check if it's a sessioncours ID in studentevaluation route
-      if (requestUrl.includes('/sessioncours/')) {
-        console.log(
-          '🔍 [ENTITY RESOLVER] SessionCours ID detected in studentevaluation route',
-        );
-        const sessionCours = await this.sessionCoursModel.findByPk(entityId);
-        if (!sessionCours) {
-          throw new ForbiddenException(
-            `Erreur: Le cours de session avec l'identifiant "${entityId}" n'existe pas.`,
-          );
-        }
-        if (!sessionCours.id_session) {
-          throw new ForbiddenException(
-            `Erreur: Le cours de session "${sessionCours.title || entityId}" n'est pas lié à une session de formation.`,
-          );
-        }
-        console.log(
-          '🔍 [ENTITY RESOLVER] Found session ID from sessioncours (studentevaluation route):',
-          sessionCours.id_session,
-        );
-        return sessionCours.id_session;
-      }
-      
-      // Check if it's a lesson ID in studentevaluation route
-      if (requestUrl.includes('/lesson/')) {
-        console.log(
-          '🔍 [ENTITY RESOLVER] Lesson ID detected in studentevaluation route',
-        );
-        const lesson = await this.lessonModel.findByPk(entityId);
-        if (!lesson) {
-          throw new ForbiddenException(
-            `Erreur: La leçon avec l'identifiant "${entityId}" n'existe pas.`,
-          );
-        }
-        if (!lesson.id_cours) {
-          throw new ForbiddenException(
-            `Erreur: La leçon "${lesson.title || entityId}" n'est pas liée à un cours de session.`,
-          );
-        }
-        const sessionCours = await this.sessionCoursModel.findByPk(
-          lesson.id_cours,
-        );
-        if (!sessionCours) {
-          throw new ForbiddenException(
-            `Erreur: Le cours de session associé à la leçon "${lesson.title || entityId}" n'existe pas.`,
-          );
-        }
-        if (!sessionCours.id_session) {
-          throw new ForbiddenException(
-            `Erreur: Le cours de session "${sessionCours.title || lesson.id_cours}" n'est pas lié à une session de formation.`,
-          );
-        }
-        console.log(
-          '🔍 [ENTITY RESOLVER] Found session ID from lesson (studentevaluation route):',
-          sessionCours.id_session,
-        );
-        return sessionCours.id_session;
-      }
-      
-      // If it's a direct session ID in studentevaluation route, return it
-      if (requestUrl.includes('/session/')) {
-        console.log(
-          '🔍 [ENTITY RESOLVER] Direct session ID detected in studentevaluation route',
-        );
-        return entityId;
-      }
-    }
-
-    // 3.5. Check if it's a sessioncours ID (sessioncours endpoint)
-    if (requestUrl.includes('/sessioncours/')) {
-      console.log(
-        '🔍 [ENTITY RESOLVER] SessionCours ID detected, looking up session',
+        '🔍 [ENTITY RESOLVER] SessionCours param detected, looking up session',
       );
       const sessionCours = await this.sessionCoursModel.findByPk(entityId);
       if (!sessionCours) {
@@ -175,32 +142,62 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       return sessionCours.id_session;
     }
 
-    // 3.6. Check if it's a sessioncours ID in lesson/student/cours/:id/lessons route
-    // This must come before the generic /lesson/ check to avoid misinterpreting the ID
-    if (requestUrl.includes('/lesson/student/cours/') && requestUrl.includes('/lessons')) {
+    // 3.1 Check if it's an evaluation ID
+    if (
+      this.matchesParam(
+        requestParams,
+        entityId,
+        [
+          'evaluationId',
+          'evaluationID',
+          'studentevaluationId',
+          'studentEvaluationId',
+          'evaluation_id',
+        ],
+      )
+    ) {
       console.log(
-        '🔍 [ENTITY RESOLVER] SessionCours ID detected in lesson/student/cours route, looking up session',
+        '🔍 [ENTITY RESOLVER] Evaluation ID detected via params, resolving to session',
       );
-      const sessionCours = await this.sessionCoursModel.findByPk(entityId);
+      const evaluation = await this.studentEvaluationModel.findByPk(entityId);
+      if (!evaluation) {
+        throw new ForbiddenException(
+          `Erreur: L'évaluation avec l'identifiant "${entityId}" n'existe pas.`,
+        );
+      }
+      if (!evaluation.sessionCoursId) {
+        throw new ForbiddenException(
+          `Erreur: L'évaluation "${evaluation.title || entityId}" n'est pas liée à un cours de session.`,
+        );
+      }
+      const sessionCours = await this.sessionCoursModel.findByPk(
+        evaluation.sessionCoursId,
+      );
       if (!sessionCours) {
         throw new ForbiddenException(
-          `Erreur: Le cours de session avec l'identifiant "${entityId}" n'existe pas.`,
+          `Erreur: Le cours de session associé à l'évaluation "${evaluation.title || evaluation.sessionCoursId}" n'existe pas.`,
         );
       }
       if (!sessionCours.id_session) {
         throw new ForbiddenException(
-          `Erreur: Le cours de session "${sessionCours.title || entityId}" n'est pas lié à une session de formation.`,
+          `Erreur: Le cours de session "${sessionCours.title || evaluation.sessionCoursId}" n'est pas lié à une session de formation.`,
         );
       }
       console.log(
-        '🔍 [ENTITY RESOLVER] Found session ID from sessioncours (lesson route):',
+        '🔍 [ENTITY RESOLVER] Found session ID from evaluation:',
         sessionCours.id_session,
       );
       return sessionCours.id_session;
     }
 
-    // 4. Check if it's a lesson ID (lesson endpoint)
-    if (requestUrl.includes('/lesson/')) {
+    // 4. Check if it's a lesson ID
+    if (
+      this.matchesParam(
+        requestParams,
+        entityId,
+        ['lessonId', 'lesson_id', 'id_lesson'],
+      )
+    ) {
       console.log(
         '🔍 [ENTITY RESOLVER] Lesson ID detected, looking up sessioncours then session',
       );
@@ -237,8 +234,19 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       return sessionCours.id_session;
     }
 
-    // 5. Check if it's a lessondocument ID (lessondocument endpoint)
-    if (requestUrl.includes('/lessondocument/')) {
+    // 5. Check if it's a lessondocument ID
+    if (
+      this.matchesParam(
+        requestParams,
+        entityId,
+        [
+          'lessondocumentId',
+          'lessonDocumentId',
+          'documentId',
+          'id_lessondocument',
+        ],
+      )
+    ) {
       console.log(
         '🔍 [ENTITY RESOLVER] LessonDocument ID detected, looking up lesson then sessioncours then session',
       );
@@ -287,16 +295,30 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       return sessionCours.id_session;
     }
 
-    // 6. Check if it's an event session ID (event endpoint)
-    if (requestUrl.includes('/event/student/session/')) {
-      console.log('🔍 [ENTITY RESOLVER] Event session ID detected');
-      return entityId;
-    }
-
-    // 7. Fallback: try to determine by checking what entity exists
+    // 6. Fallback: try to determine by checking what entity exists
     console.log(
       '🔍 [ENTITY RESOLVER] Unknown endpoint, trying to determine entity type...',
     );
+
+    // Try evaluation
+    const evaluation = await this.studentEvaluationModel.findByPk(entityId);
+    if (evaluation && evaluation.sessionCoursId) {
+      console.log('🔍 [ENTITY RESOLVER] Detected as evaluation ID in fallback');
+      const sessionCours = await this.sessionCoursModel.findByPk(
+        evaluation.sessionCoursId,
+      );
+      if (!sessionCours) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session associé à l'évaluation "${evaluation.title || evaluation.sessionCoursId}" n'existe pas.`,
+        );
+      }
+      if (!sessionCours.id_session) {
+        throw new ForbiddenException(
+          `Erreur: Le cours de session "${sessionCours.title || evaluation.sessionCoursId}" n'est pas lié à une session de formation.`,
+        );
+      }
+      return sessionCours.id_session;
+    }
 
     // Try lessondocument first (most specific)
     const lessondocument = await this.lessondocumentModel.findByPk(entityId);
@@ -371,11 +393,20 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
     const authHeader = request.headers[this.keyname] as string;
 
     // Extract sessionId from params - handle sessionId, id, sessionCoursId, lessonId parameters
-    let sessionId = 
-      request.params.sessionId || 
-      request.params.id || 
-      request.params.sessionCoursId || 
-      request.params.lessonId;
+    let sessionId =
+      request.params.sessionId ||
+      request.params.trainingSessionId ||
+      request.params.trainingSessionID ||
+      request.params.sessionCoursId ||
+      request.params.sessioncoursId ||
+      request.params.lessonId ||
+      request.params.lesson_id ||
+      request.params.lessondocumentId ||
+      request.params.lessonDocumentId ||
+      request.params.evaluationId ||
+      request.params.studentevaluationId ||
+      request.params.studentEvaluationId ||
+      request.params.id;
 
     console.log('🔍 [JWT GUARD STUDENT IN SESSION] Debug Info:');
     console.log('  - Request URL:', request.url);
@@ -491,7 +522,7 @@ export class JwtAuthGuardAsStudentInSession implements CanActivate {
       try {
         actualSessionId = await this.resolveEntityToSessionId(
           sessionId,
-          request.url,
+          request.params,
         );
       } catch (resolveError) {
         console.log(

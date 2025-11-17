@@ -1,12 +1,14 @@
 import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
   Min,
 } from 'class-validator';
+import { BookStatus } from 'src/models/model.book';
 
 const toArray = (value: any): string[] | undefined => {
   if (value === undefined || value === null || value === '') {
@@ -61,6 +63,14 @@ export class FindBookQueryDto {
   @IsInt()
   @Min(0)
   minDownload?: number;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(BookStatus)
+  status?: BookStatus;
 
   @IsOptional()
   @Transform(({ value }) => {

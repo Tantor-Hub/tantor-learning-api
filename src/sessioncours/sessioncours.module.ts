@@ -17,6 +17,7 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardUniversalFactory } from 'src/guard/guard.universal-factory';
 import { JwtAuthGuardUniversalMultiRole } from 'src/guard/guard.universal-multi-role';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
+import { Studentevaluation } from 'src/models/model.studentevaluation';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsessi
       Lesson,
       Lessondocument,
       UserInSession,
+      Studentevaluation,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

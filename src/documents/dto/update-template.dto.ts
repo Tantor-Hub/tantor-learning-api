@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsUUID,
   IsArray,
+  IsBoolean,
 } from 'class-validator';
 
 export class UpdateTemplateDto {
@@ -77,4 +78,14 @@ export class UpdateTemplateDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Whether the document template requires a signature',
+    example: false,
+    type: 'boolean',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  signature?: boolean;
 }

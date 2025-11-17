@@ -60,13 +60,6 @@ export class ResponseInterceptor implements NestInterceptor {
             response.data = data.data;
           }
 
-          console.log('[RESPONSE INTERCEPTOR] 🚀 Final Response:', {
-            status,
-            message,
-            hasData: data?.data !== undefined,
-            response,
-          });
-
           res.status(status);
           return response;
         }

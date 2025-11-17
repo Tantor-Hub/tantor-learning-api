@@ -68,6 +68,8 @@ export class BookService {
         author,
         minViews,
         minDownload,
+        search,
+        status,
         page = 1,
         limit = 10,
       } = query || {};
@@ -116,9 +118,11 @@ export class BookService {
       type SerializedBook = Record<string, any>;
 
       const serializedBooks = books.map((book) => {
-        const relatedSessions = (
-          Array.isArray(book.session) ? book.session : []
-        )
+        const bookSessionIds = Array.isArray(book.session)
+          ? book.session.filter((id) => !!id)
+          : [];
+
+        const relatedSessions = bookSessionIds
           .map((sessionId) => sessionMap.get(sessionId))
           .filter(
             (session): session is TrainingSession => session !== undefined,
@@ -127,6 +131,8 @@ export class BookService {
         const activeSessions = relatedSessions.filter((session) => {
           const beginingDate = new Date(session.begining_date);
           const endingDate = new Date(session.ending_date);
+          // Set ending date to end of day to include sessions that end today
+          endingDate.setHours(23, 59, 59, 999);
           return beginingDate <= now && now <= endingDate;
         });
 
@@ -171,6 +177,24 @@ export class BookService {
         filteredBooks = filteredBooks.filter((book) =>
           (book.author || '').toLowerCase().includes(normalizedAuthor),
         );
+      }
+
+      if (search) {
+        const normalizedSearch = search.trim().toLowerCase();
+
+        filteredBooks = filteredBooks.filter((book) => {
+          const title = (book.title || '').toLowerCase();
+          const description = (book.description || '').toLowerCase();
+
+          return (
+            title.includes(normalizedSearch) ||
+            description.includes(normalizedSearch)
+          );
+        });
+      }
+
+      if (status) {
+        filteredBooks = filteredBooks.filter((book) => book.status === status);
       }
 
       if (minViews !== undefined) {
@@ -301,25 +325,25 @@ export class BookService {
         });
       }
 
-      await book.update({
-        title: updateDto.title !== undefined ? updateDto.title : book.title,
-        description:
-          updateDto.description !== undefined
-            ? updateDto.description
-            : book.description,
-        session:
-          updateDto.session !== undefined ? updateDto.session : book.session,
-        author: updateDto.author !== undefined ? updateDto.author : book.author,
-        status: updateDto.status !== undefined ? updateDto.status : book.status,
-        category:
-          updateDto.category !== undefined ? updateDto.category : book.category,
-        icon: updateDto.icon !== undefined ? updateDto.icon : book.icon,
-        piece_joint:
-          updateDto.piece_joint !== undefined
-            ? updateDto.piece_joint
-            : book.piece_joint,
-        public: updateDto.public !== undefined ? updateDto.public : book.public,
-      });
+      const updateData: any = {};
+
+      if (updateDto.title !== undefined) updateData.title = updateDto.title;
+      if (updateDto.description !== undefined)
+        updateData.description = updateDto.description;
+      if (updateDto.session !== undefined)
+        updateData.session = updateDto.session;
+      if (updateDto.author !== undefined) updateData.author = updateDto.author;
+      if (updateDto.status !== undefined) updateData.status = updateDto.status;
+      if (updateDto.category !== undefined)
+        updateData.category = updateDto.category;
+      if (updateDto.icon !== undefined) updateData.icon = updateDto.icon;
+      if (updateDto.piece_joint !== undefined)
+        updateData.piece_joint = updateDto.piece_joint;
+      if (updateDto.public !== undefined) updateData.public = updateDto.public;
+      if (updateDto.downloadable !== undefined)
+        updateData.downloadable = updateDto.downloadable;
+
+      await book.update(updateData);
 
       await book.reload();
 

@@ -93,6 +93,8 @@ export class TransferChatService {
         id_chat: createTransferChatDto.id_chat,
         sender: userId,
         receivers: createTransferChatDto.receivers,
+        reader: [],
+        dontshowme: [],
       } as any);
 
       console.log('=== TransferChat create: Success ===');
@@ -236,13 +238,71 @@ export class TransferChatService {
             customMessage: 'You do not have access to this chat transfer',
           });
         }
+
+        // If user is a receiver, add them to the reader array if not already present
+        if (isReceiver) {
+          try {
+            const currentReaders = transfer.reader || [];
+            console.log(
+              '=== TransferChat findOne: Current readers before update ===',
+              JSON.stringify(currentReaders),
+            );
+
+            // Check if user is already in the reader array (handle both string and UUID comparisons)
+            const isUserInReaders = currentReaders.some(
+              (readerId: string) => String(readerId) === String(userId),
+            );
+
+            if (!isUserInReaders) {
+              const updatedReaders = [...currentReaders, userId];
+              console.log(
+                '=== TransferChat findOne: Updated readers array ===',
+                JSON.stringify(updatedReaders),
+              );
+
+              // Update using the same method as markAsRead
+              await transfer.update({ reader: updatedReaders });
+              await transfer.reload();
+
+              console.log(
+                '=== TransferChat findOne: Reader array after update ===',
+                JSON.stringify(transfer.reader),
+              );
+            } else {
+              console.log(
+                '=== TransferChat findOne: User already in reader array ===',
+              );
+            }
+          } catch (readerUpdateError) {
+            console.error(
+              '=== TransferChat findOne: Error updating reader array ===',
+              readerUpdateError,
+            );
+            // Don't fail the request if reader update fails
+          }
+        }
       }
+
+      // Add isOpened field to response
+      const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+      const readerArray = transferData.reader || [];
+      const receiversArray = transferData.receivers || [];
+      const userIdString = userId ? String(userId) : null;
+
+      const isOpened = userIdString
+        ? readerArray.some(
+            (readerId: string) => String(readerId) === String(userIdString),
+          )
+        : false;
 
       console.log('=== TransferChat findOne: Success ===');
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: transfer,
+        data: {
+          ...transferData,
+          isOpened,
+        },
         customMessage: 'Chat transfer retrieved successfully',
       });
     } catch (error) {
@@ -253,6 +313,66 @@ export class TransferChatService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while retrieving chat transfer',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async markAsRead(id: string, userId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== TransferChat markAsRead: Starting ===');
+      console.log('Transfer ID:', id, 'User ID:', userId);
+
+      const transfer = await this.transferChatModel.findByPk(id);
+
+      if (!transfer) {
+        console.log('=== TransferChat markAsRead: Not found ===');
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Chat transfer not found',
+        });
+      }
+
+      // Check if user is a receiver
+      const userIdString = String(userId);
+      const receiversArray = transfer.receivers || [];
+      const isReceiver = receiversArray.some(
+        (receiverId: string) => String(receiverId) === userIdString,
+      );
+
+      if (!isReceiver) {
+        console.log('=== TransferChat markAsRead: User is not a receiver ===');
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'Only receivers can mark transferred chats as read',
+        });
+      }
+
+      const currentReaders = transfer.reader || [];
+      if (!currentReaders.includes(userId)) {
+        const updatedReaders = [...currentReaders, userId];
+        await transfer.update({ reader: updatedReaders });
+        await transfer.reload();
+      }
+
+      console.log('=== TransferChat markAsRead: Success ===');
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: transfer,
+        customMessage: 'Chat transfer marked as read',
+      });
+    } catch (error) {
+      console.error('=== TransferChat markAsRead: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while marking chat transfer as read',
           errorType: error.name,
           errorMessage: error.message,
           timestamp: new Date().toISOString(),

@@ -21,6 +21,7 @@ import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { Otp } from 'src/models/model.otp';
+import { Studentevaluation } from 'src/models/model.studentevaluation';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { Otp } from 'src/models/model.otp';
       SessionCours,
       UserInSession,
       TrainingSession,
+      Studentevaluation,
       Otp,
     ]),
     ConfigModule,

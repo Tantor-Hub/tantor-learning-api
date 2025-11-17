@@ -6,6 +6,7 @@ import {
   IsUUID,
   IsArray,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -89,4 +90,15 @@ export class CreateTemplateDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Whether the document template requires a signature',
+    example: false,
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  signature?: boolean;
 }

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Op, literal, fn, col } from 'sequelize';
 import { Chat } from 'src/models/model.chat';
 import { Users } from 'src/models/model.users';
+import { TransferChat } from 'src/models/model.transferechat';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { DeleteChatDto } from './dto/delete-chat.dto';
@@ -19,6 +20,8 @@ export class ChatService {
     private readonly chatModel: typeof Chat,
     @InjectModel(Users)
     private readonly usersModel: typeof Users,
+    @InjectModel(TransferChat)
+    private readonly transferChatModel: typeof TransferChat,
   ) {}
 
   /**
@@ -507,14 +510,107 @@ export class ChatService {
         })
         .map((chat) => this.formatChatResponse(chat, userId));
 
+      // Get all transferred chats where user is a receiver
+      const transferredChats = await this.transferChatModel.findAll({
+        where: {
+          receivers: { [Op.contains]: [userId] },
+        },
+        include: [
+          {
+            model: this.chatModel,
+            as: 'chat',
+            where: {
+              status: { [Op.ne]: ChatStatus.DELETED },
+            },
+            include: [
+              {
+                model: this.usersModel,
+                as: 'sender',
+                attributes: ['id', 'firstName', 'lastName', 'email'],
+              },
+            ],
+            required: true,
+          },
+          {
+            model: this.usersModel,
+            as: 'senderUser',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Format transferred chats and filter out those where user is in dontshowme
+      const formattedTransferredChats = transferredChats
+        .filter((transfer) => {
+          const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+          // Use transfer chat's dontshowme array instead of original chat's dontshowme
+          const dontshowme = transferData.dontshowme || [];
+          return !dontshowme.includes(userId);
+        })
+        .map((transfer) => {
+          const chat = transfer.chat;
+          if (!chat) return null;
+          
+          // Format the chat similar to regular received chats
+          const chatData = chat.toJSON ? chat.toJSON() : chat;
+          const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+          
+          // Use transfer chat's reader array instead of original chat's reader array
+          const readerArray = transferData.reader || [];
+          const userIdString = String(userId);
+          
+          // For transferred chats, user is always a receiver
+          const isOpened = readerArray.some(
+            (readerId: string) => String(readerId) === userIdString,
+          );
+
+          return {
+            id: chatData.id,
+            subject: chatData.subject,
+            createdAt: transfer.createdAt || chatData.createdAt, // Use transfer date
+            sender: chatData.sender
+              ? {
+                  firstName: chatData.sender.firstName,
+                  lastName: chatData.sender.lastName,
+                  email: chatData.sender.email,
+                }
+              : null,
+            transferSender: transfer.senderUser
+              ? {
+                  firstName: transfer.senderUser.firstName,
+                  lastName: transfer.senderUser.lastName,
+                  email: transfer.senderUser.email,
+                }
+              : null,
+            isOpened,
+            role: 'receiver' as const,
+            isTransferred: true, // Flag to indicate this is a transferred chat
+            transferId: transferData.id, // Include transfer ID for reference
+          };
+        })
+        .filter((chat) => chat !== null);
+
+      // Combine regular received chats and transferred chats
+      const allChats = [...filteredChats, ...formattedTransferredChats];
+
+      // Sort by createdAt descending (most recent first)
+      allChats.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
       console.log('=== Chat findReceivedByUser: Success ===');
       console.log('Found received chats for user:', filteredChats.length);
+      console.log('Found transferred chats for user:', formattedTransferredChats.length);
+      console.log('Total chats:', allChats.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: filteredChats.length,
-          rows: filteredChats,
+          length: allChats.length,
+          rows: allChats,
         },
         customMessage: 'Received messages retrieved successfully',
       });
@@ -673,10 +769,11 @@ export class ChatService {
     }
   }
 
-  async remove(deleteChatDto: DeleteChatDto): Promise<ResponseServer> {
+  async remove(deleteChatDto: DeleteChatDto, userId: string): Promise<ResponseServer> {
     try {
       console.log('=== Chat remove: Starting ===');
       console.log('Delete data:', deleteChatDto);
+      console.log('User ID:', userId);
 
       const chat = await this.chatModel.findByPk(deleteChatDto.id);
 
@@ -688,8 +785,30 @@ export class ChatService {
         });
       }
 
-      // Soft delete by changing status to DELETED
-      await chat.update({ status: ChatStatus.DELETED });
+      // Check if user is the sender
+      if (chat.id_user_sender === userId) {
+        // If user is the sender, change status to DELETED
+        await chat.update({ status: ChatStatus.DELETED });
+        console.log('=== Chat remove: Sender deleted, status set to DELETED ===');
+      } else if (Array.isArray(chat.id_user_receiver) && chat.id_user_receiver.includes(userId)) {
+        // If user is a receiver, add their ID to dontshowme array
+        const currentDontShowMe = Array.isArray(chat.dontshowme) ? chat.dontshowme : [];
+        
+        // Only add if not already in the array
+        if (!currentDontShowMe.includes(userId)) {
+          const updatedDontShowMe = [...currentDontShowMe, userId];
+          await chat.update({ dontshowme: updatedDontShowMe });
+          console.log('=== Chat remove: Receiver deleted, added to dontshowme ===');
+        } else {
+          console.log('=== Chat remove: Receiver already in dontshowme ===');
+        }
+      } else {
+        console.log('=== Chat remove: User is neither sender nor receiver ===');
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'You do not have permission to delete this chat message',
+        });
+      }
 
       console.log('=== Chat remove: Success ===');
 

@@ -17,6 +17,7 @@ import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
+import { Studentevaluation } from 'src/models/model.studentevaluation';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
       Users,
       UserInSession,
       UserRoles,
+      Studentevaluation,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

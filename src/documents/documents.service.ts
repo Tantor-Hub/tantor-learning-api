@@ -152,6 +152,7 @@ export class DocumentsService {
       sessionId: template.sessionId,
       type: template.type,
       imageUrl: template.imageUrl,
+      signature: template.signature,
       createdAt: template.createdAt,
       updatedAt: template.updatedAt,
     };
@@ -194,6 +195,7 @@ export class DocumentsService {
     if (dto.type !== undefined) updateData.type = dto.type;
     if (dto.variables !== undefined) updateData.variables = dto.variables;
     if (dto.imageUrl !== undefined) updateData.imageUrl = dto.imageUrl;
+    if (dto.signature !== undefined) updateData.signature = dto.signature;
 
     await template.update(updateData);
     console.log('[DOCUMENTS SERVICE] ✅ Template updated:', template.id);
