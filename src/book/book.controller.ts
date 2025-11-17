@@ -1,30 +1,33 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  UseGuards,
+  Get,
+  Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
   Request,
-  UseInterceptors,
   UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiParam,
   ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { BookService } from './book.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { FindBookQueryDto } from './dto/find-book.query.dto';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { GoogleDriveService } from 'src/services/service.googledrive';
@@ -343,11 +346,56 @@ export class BookController {
   @Get()
   @ApiOperation({
     summary: 'Get all books',
-    description: 'Retrieve all books. This endpoint is public.',
+    description:
+      'Retrieve public books that have an active session. Supports filtering by session, category, author, minimum views/downloads, and pagination.',
+  })
+  @ApiQuery({
+    name: 'session',
+    required: false,
+    description:
+      'Comma-separated list of session UUIDs. Book must belong to all provided sessions.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: 'Comma-separated list of category UUIDs.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'author',
+    required: false,
+    description: 'Partial match on author name.',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'minViews',
+    required: false,
+    description: 'Minimum number of views.',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'minDownload',
+    required: false,
+    description: 'Minimum number of downloads.',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (starts at 1).',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (max 100).',
+    type: Number,
   })
   @ApiResponse({
     status: 200,
-    description: 'Books retrieved successfully',
+    description:
+      'Books retrieved successfully. Returns paginated results with active sessions.',
     schema: {
       type: 'object',
       properties: {
@@ -393,14 +441,17 @@ export class BookController {
       },
     },
   })
-  findAll() {
-    return this.bookService.findAll();
+  findAll(@Query() query: FindBookQueryDto) {
+    return this.bookService.findAll(query);
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get a book by ID',
-    description: 'Retrieve a specific book by its ID. This endpoint is public.',
+    description:
+      'Retrieve a specific book by its ID. Premium books require an active session payment.',
   })
   @ApiParam({
     name: 'id',
@@ -417,8 +468,8 @@ export class BookController {
     status: 404,
     description: 'Book not found',
   })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.bookService.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+    return this.bookService.findOne(id, req.user.id_user);
   }
 
   @Patch(':id')
