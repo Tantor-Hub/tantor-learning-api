@@ -37,13 +37,13 @@ export class RepliesChatController {
   @Post('create')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary: 'Create a new reply to a chat message',
+    summary: 'Create a new reply to a chat or transfer chat message',
     description:
-      "Create a new reply to a chat message. The id_sender is automatically set from the authenticated user's JWT token.",
+      "Create a new reply to either a regular chat message or a transfer chat message. The id_sender is automatically set from the authenticated user's JWT token. You must provide either id_chat (for regular chat) or id_transferechat (for transfer chat), but not both.",
   })
   @ApiResponse({
     status: 201,
-    description: 'Reply created successfully',
+    description: 'Reply created successfully. Can be for either a regular chat (id_chat) or transfer chat (id_transferechat).',
     schema: {
       example: {
         status: 201,
@@ -53,20 +53,38 @@ export class RepliesChatController {
           content: 'Thank you for your message. I will get back to you soon.',
           id_sender: '550e8400-e29b-41d4-a716-446655440001',
           id_chat: '550e8400-e29b-41d4-a716-446655440002',
+          id_transferechat: null,
           status: 'alive',
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T10:00:00.000Z',
+        },
+      },
+      properties: {
+        status: { type: 'number', example: 201 },
+        message: { type: 'string', example: 'Reply created successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            content: { type: 'string' },
+            id_sender: { type: 'string', format: 'uuid' },
+            id_chat: { type: 'string', format: 'uuid', nullable: true, description: 'UUID of the chat (if reply is for regular chat)' },
+            id_transferechat: { type: 'string', format: 'uuid', nullable: true, description: 'UUID of the transfer chat (if reply is for transfer chat)' },
+            status: { type: 'string', enum: ['alive', 'archive', 'deleted'] },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
         },
       },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - Invalid data or user/chat not found',
+    description: 'Bad request - Invalid data, missing required fields, or user/chat/transfer chat not found. Possible errors: "Either id_chat or id_transferechat must be provided", "Sender user not found", "Chat message not found", or "Transfer chat not found".',
     schema: {
       example: {
         status: 400,
-        message: 'Sender user not found',
+        message: 'Either id_chat or id_transferechat must be provided',
         data: null,
       },
     },
@@ -116,6 +134,7 @@ export class RepliesChatController {
                 'Thank you for your message. I will get back to you soon.',
               id_sender: '550e8400-e29b-41d4-a716-446655440001',
               id_chat: '550e8400-e29b-41d4-a716-446655440002',
+              id_transferechat: null,
               status: 'alive',
               createdAt: '2025-01-25T10:00:00.000Z',
               updatedAt: '2025-01-25T10:00:00.000Z',
@@ -131,6 +150,30 @@ export class RepliesChatController {
                 content: "Hello everyone, let's discuss the project updates.",
                 id_user_sender: '550e8400-e29b-41d4-a716-446655440003',
                 id_user_receiver: ['550e8400-e29b-41d4-a716-446655440001'],
+              },
+              transferChat: null,
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440005',
+              content: 'I have received the transferred message.',
+              id_sender: '550e8400-e29b-41d4-a716-446655440001',
+              id_chat: null,
+              id_transferechat: '550e8400-e29b-41d4-a716-446655440006',
+              status: 'alive',
+              createdAt: '2025-01-25T11:00:00.000Z',
+              updatedAt: '2025-01-25T11:00:00.000Z',
+              sender: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@example.com',
+              },
+              chat: null,
+              transferChat: {
+                id: '550e8400-e29b-41d4-a716-446655440006',
+                id_chat: '550e8400-e29b-41d4-a716-446655440002',
+                sender: '550e8400-e29b-41d4-a716-446655440003',
+                receivers: ['550e8400-e29b-41d4-a716-446655440001'],
               },
             },
           ],
@@ -222,6 +265,119 @@ export class RepliesChatController {
     return this.repliesChatService.findByChat(chatId);
   }
 
+  @Get('transfer/:transferChatId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Get all replies for a specific transfer chat',
+    description:
+      'Get all replies for a transfer chat. If the authenticated user is the creator of the transfer chat, all replies (public and private) are returned. If the user is among the receivers, only public replies are returned.',
+  })
+  @ApiParam({
+    name: 'transferChatId',
+    description: 'Transfer chat UUID',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Transfer chat replies retrieved successfully. If user is the creator, all replies are returned. If user is a receiver, only public replies are returned.',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Transfer chat replies retrieved successfully',
+        data: {
+          length: 2,
+          rows: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              content:
+                'Thank you for your message. I will get back to you soon.',
+              id_sender: '550e8400-e29b-41d4-a716-446655440001',
+              id_chat: null,
+              id_transferechat: '550e8400-e29b-41d4-a716-446655440002',
+              status: 'alive',
+              is_public: true,
+              createdAt: '2025-01-25T10:00:00.000Z',
+              updatedAt: '2025-01-25T10:00:00.000Z',
+              sender: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@example.com',
+              },
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440003',
+              content: 'This is a private reply.',
+              id_sender: '550e8400-e29b-41d4-a716-446655440004',
+              id_chat: null,
+              id_transferechat: '550e8400-e29b-41d4-a716-446655440002',
+              status: 'alive',
+              is_public: false,
+              createdAt: '2025-01-25T11:00:00.000Z',
+              updatedAt: '2025-01-25T11:00:00.000Z',
+              sender: {
+                id: '550e8400-e29b-41d4-a716-446655440004',
+                firstName: 'Jane',
+                lastName: 'Smith',
+                email: 'jane.smith@example.com',
+              },
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - You do not have access to replies for this transfer chat (user is neither the creator nor a receiver)',
+    schema: {
+      example: {
+        status: 403,
+        message:
+          'You do not have access to replies for this transfer chat',
+        data: null,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Transfer chat not found',
+    schema: {
+      example: {
+        status: 404,
+        message: 'Transfer chat not found',
+        data: null,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      example: {
+        status: 500,
+        data: {
+          message:
+            'Internal server error while retrieving transfer chat replies',
+          errorType: 'SequelizeDatabaseError',
+          errorMessage: 'Error message',
+          timestamp: '2025-01-25T10:00:00.000Z',
+        },
+      },
+    },
+  })
+  findByTransferChat(
+    @Param('transferChatId', ParseUUIDPipe) transferChatId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.repliesChatService.findByTransferChat(
+      transferChatId,
+      user.id_user,
+    );
+  }
+
   @Get('sender/:senderId')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all replies from a specific sender' })
@@ -242,6 +398,7 @@ export class RepliesChatController {
                 'Thank you for your message. I will get back to you soon.',
               id_sender: '550e8400-e29b-41d4-a716-446655440001',
               id_chat: '550e8400-e29b-41d4-a716-446655440002',
+              id_transferechat: null,
               status: 'alive',
               createdAt: '2025-01-25T10:00:00.000Z',
               updatedAt: '2025-01-25T10:00:00.000Z',
@@ -252,6 +409,7 @@ export class RepliesChatController {
                 id_user_sender: '550e8400-e29b-41d4-a716-446655440003',
                 id_user_receiver: ['550e8400-e29b-41d4-a716-446655440001'],
               },
+              transferChat: null,
             },
           ],
         },
@@ -304,6 +462,7 @@ export class RepliesChatController {
           content: 'Thank you for your message. I will get back to you soon.',
           id_sender: '550e8400-e29b-41d4-a716-446655440001',
           id_chat: '550e8400-e29b-41d4-a716-446655440002',
+          id_transferechat: null,
           status: 'alive',
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T10:00:00.000Z',
@@ -321,6 +480,7 @@ export class RepliesChatController {
             id_user_sender: '550e8400-e29b-41d4-a716-446655440003',
             id_user_receiver: ['550e8400-e29b-41d4-a716-446655440001'],
           },
+          transferChat: null,
         },
       },
     },
@@ -370,6 +530,7 @@ export class RepliesChatController {
           content: 'Updated reply content.',
           id_sender: '550e8400-e29b-41d4-a716-446655440001',
           id_chat: '550e8400-e29b-41d4-a716-446655440002',
+          id_transferechat: null,
           status: 'alive',
           createdAt: '2025-01-25T10:00:00.000Z',
           updatedAt: '2025-01-25T11:00:00.000Z',

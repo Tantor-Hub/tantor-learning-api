@@ -12,6 +12,7 @@ import {
 import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
 import { Chat } from './model.chat';
+import { TransferChat } from './model.transferechat';
 import { v4 as uuidv4 } from 'uuid';
 
 // Enum for replies chat status
@@ -40,8 +41,12 @@ export class RepliesChat extends Model<RepliesChat> {
   id_sender: string;
 
   @ForeignKey(() => Chat)
-  @Column({ type: DataType.UUID, allowNull: false })
-  id_chat: string;
+  @Column({ type: DataType.UUID, allowNull: true })
+  id_chat?: string;
+
+  @ForeignKey(() => TransferChat)
+  @Column({ type: DataType.UUID, allowNull: true })
+  id_transferechat?: string;
 
   @Column({
     type: DataType.ENUM(...Object.values(RepliesChatStatus)),
@@ -60,6 +65,12 @@ export class RepliesChat extends Model<RepliesChat> {
   @BelongsTo(() => Users, { foreignKey: 'id_sender', targetKey: 'id' })
   sender: Users;
 
-  @BelongsTo(() => Chat, { foreignKey: 'id_chat' })
-  chat: Chat;
+  @BelongsTo(() => Chat, { foreignKey: 'id_chat', targetKey: 'id' })
+  chat?: Chat;
+
+  @BelongsTo(() => TransferChat, {
+    foreignKey: 'id_transferechat',
+    targetKey: 'id',
+  })
+  transferChat?: TransferChat;
 }

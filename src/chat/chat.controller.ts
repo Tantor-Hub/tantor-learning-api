@@ -524,7 +524,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get all chat messages',
     description:
-      'Retrieve all chat messages. Each message includes an `isOpened` field indicating whether the current authenticated user has read the message.',
+      'Retrieve all chat messages (both regular and transferred chats). Each message includes an `isOpened` field indicating whether the current authenticated user has read the message, and an `isTransferred` field (true for transfer chats, false for regular chats). If a user ID is provided (from JWT token), transfer chats where the user is involved are also included.',
   })
   @ApiResponse({
     status: 200,
@@ -547,6 +547,7 @@ The error response includes detailed information about what went wrong, includin
               },
               isOpened: true,
               role: 'sender',
+              isTransferred: false,
             },
           ],
         },
@@ -591,6 +592,12 @@ The error response includes detailed information about what went wrong, includin
                       "Indicates the current user's role in this message: 'sender' if the user sent the message, 'receiver' if the user received it",
                     example: 'sender',
                   },
+                  isTransferred: {
+                    type: 'boolean',
+                    description:
+                      'Indicates whether this is a transferred chat (true) or a regular chat (false). Transfer chats include additional fields like transferSender and transferId.',
+                    example: false,
+                  },
                 },
               },
             },
@@ -624,7 +631,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get chat messages for the authenticated user',
     description:
-      'Retrieves all chat messages where the authenticated user is either sender or receiver. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message.',
+      'Retrieves all chat messages where the authenticated user is either sender or receiver, including both regular chats and transferred chats. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message, and an `isTransferred` field (true for transfer chats, false for regular chats). Transferred chats also include a `transferSender` field and `transferId` field.',
   })
   @ApiResponse({
     status: 200,
@@ -647,6 +654,7 @@ The error response includes detailed information about what went wrong, includin
               },
               isOpened: true,
               role: 'sender',
+              isTransferred: false,
             },
             {
               id: '550e8400-e29b-41d4-a716-446655440001',
@@ -659,6 +667,26 @@ The error response includes detailed information about what went wrong, includin
               },
               isOpened: false,
               role: 'receiver',
+              isTransferred: false,
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440002',
+              subject: 'Transferred Message',
+              createdAt: '2025-01-25T11:00:00.000Z',
+              sender: {
+                firstName: 'Original',
+                lastName: 'Sender',
+                email: 'original.sender@example.com',
+              },
+              transferSender: {
+                firstName: 'Transfer',
+                lastName: 'Sender',
+                email: 'transfer.sender@example.com',
+              },
+              isOpened: false,
+              role: 'receiver',
+              isTransferred: true,
+              transferId: '550e8400-e29b-41d4-a716-446655440003',
             },
           ],
         },
@@ -798,7 +826,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Get messages received by the authenticated user',
     description:
-      'Retrieves all chat messages received by the authenticated user. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message.',
+      'Retrieves all chat messages received by the authenticated user, including transferred chats. User ID is automatically extracted from JWT token. Each message includes an `isOpened` field indicating whether the current user has read the message. All chats include an `isTransferred` field (true for transfer chats, false for regular chats). Transferred chats also include a `transferSender` field and `transferId` field.',
   })
   @ApiResponse({
     status: 200,
@@ -1057,7 +1085,7 @@ The error response includes detailed information about what went wrong, includin
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Delete a chat message (soft delete)',
-    description: 'Performs a soft delete by changing the status to deleted.',
+    description: 'Delete a chat message. If the user is the sender, the status is changed to deleted (hidden from everyone). If the user is a receiver, their ID is added to the dontshowme array (hidden only from that receiver).',
   })
   @ApiBody({
     description: 'Chat message deletion data',
@@ -1097,6 +1125,10 @@ The error response includes detailed information about what went wrong, includin
         },
       },
     },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - You do not have permission to delete this chat message (user is neither sender nor receiver)',
   })
   @ApiResponse({
     status: 404,
@@ -1326,6 +1358,18 @@ The error response includes detailed information about what went wrong, includin
               type: 'array',
               items: { type: 'string', format: 'uuid' },
             },
+            reader: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              description: 'Array of user IDs who have read this transferred chat (initialized as empty)',
+              example: [],
+            },
+            dontshowme: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              description: 'Array of user IDs who have hidden this transferred chat (initialized as empty)',
+              example: [],
+            },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -1444,8 +1488,64 @@ The error response includes detailed information about what went wrong, includin
   })
   @ApiResponse({
     status: 200,
-    description: 'Chat transfer retrieved successfully',
+    description: 'Chat transfer retrieved successfully. When a receiver opens the transfer, their ID is automatically added to the reader array. The chat object contains selected fields from the original chat message (subject, content, piece_joint, sender, createdAt, updatedAt).',
     schema: {
+      example: {
+        status: 200,
+        message: 'Chat transfer retrieved successfully',
+        data: {
+          id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+          id_chat: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+          sender: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+          receivers: ['3fa85f64-5717-4562-b3fc-2c963f66afa6'],
+          reader: ['550e8400-e29b-41d4-a716-446655440001'],
+          dontshowme: [],
+          isOpened: true,
+          isTransferred: true,
+          chat: {
+            subject: 'Meeting Discussion',
+            content: "Hello everyone, let's discuss the project updates.",
+            piece_joint: ['https://example.com/file.pdf'],
+            sender: {
+              id: '3fa85f64-5717-4562-b3fc-2c963f66afa7',
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john.doe@example.com',
+              avatar: 'https://example.com/avatar.jpg',
+            },
+            createdAt: '2025-11-18T11:40:43.225Z',
+            updatedAt: '2025-11-18T11:40:43.225Z',
+          },
+          senderUser: {
+            id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            email: 'jane.smith@example.com',
+            avatar: 'https://example.com/avatar2.jpg',
+          },
+          replies: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440003',
+              content: 'Thank you for transferring this message.',
+              id_sender: '550e8400-e29b-41d4-a716-446655440001',
+              id_transferechat: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+              status: 'alive',
+              is_public: true,
+              createdAt: '2025-11-18T11:45:43.225Z',
+              updatedAt: '2025-11-18T11:45:43.225Z',
+              sender: {
+                id: '550e8400-e29b-41d4-a716-446655440001',
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@example.com',
+                avatar: 'https://example.com/avatar.jpg',
+              },
+            },
+          ],
+          createdAt: '2025-11-18T11:40:43.225Z',
+          updatedAt: '2025-11-18T11:40:43.225Z',
+        },
+      },
       type: 'object',
       properties: {
         status: { type: 'number', example: 200 },
@@ -1462,6 +1562,120 @@ The error response includes detailed information about what went wrong, includin
             receivers: {
               type: 'array',
               items: { type: 'string', format: 'uuid' },
+            },
+            reader: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              description: 'Array of user IDs who have read this transferred chat',
+              example: ['550e8400-e29b-41d4-a716-446655440001'],
+            },
+            dontshowme: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              description: 'Array of user IDs who have hidden this transferred chat',
+              example: [],
+            },
+            isOpened: {
+              type: 'boolean',
+              description: 'Whether the current authenticated user has read this transferred chat',
+              example: true,
+            },
+            isTransferred: {
+              type: 'boolean',
+              description: 'Indicates that this is a transferred chat (always true for transfer chat responses)',
+              example: true,
+            },
+            chat: {
+              type: 'object',
+              description: 'The original chat that was transferred (simplified chat object with selected fields)',
+              properties: {
+                subject: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Subject/title of the chat message',
+                },
+                content: {
+                  type: 'string',
+                  nullable: true,
+                  description: 'Text content of the chat message',
+                },
+                piece_joint: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Array of file attachment URLs',
+                },
+                sender: {
+                  type: 'object',
+                  description: 'User information of the original chat sender',
+                  properties: {
+                    id: { type: 'string', format: 'uuid' },
+                    firstName: { type: 'string' },
+                    lastName: { type: 'string' },
+                    email: { type: 'string' },
+                    avatar: { type: 'string', nullable: true },
+                  },
+                },
+                createdAt: { type: 'string', format: 'date-time' },
+                updatedAt: { type: 'string', format: 'date-time' },
+              },
+            },
+            senderUser: {
+              type: 'object',
+              description: 'User information of the person who transferred the chat',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                firstName: { type: 'string' },
+                lastName: { type: 'string' },
+                email: { type: 'string' },
+                avatar: { type: 'string', nullable: true },
+              },
+            },
+            replies: {
+              type: 'array',
+              description: 'Array of replies to this transfer chat. If user is a receiver (not sender), only public replies are shown.',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  content: { type: 'string' },
+                  id_sender: { type: 'string', format: 'uuid' },
+                  id_transferechat: { type: 'string', format: 'uuid' },
+                  status: { type: 'string', enum: ['alive', 'archive', 'deleted'] },
+                  is_public: { type: 'boolean' },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
+                  sender: {
+                    type: 'object',
+                    description: 'User information of the reply sender',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      firstName: { type: 'string' },
+                      lastName: { type: 'string' },
+                      email: { type: 'string' },
+                      avatar: { type: 'string', nullable: true },
+                    },
+                  },
+                },
+              },
+              example: [
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440003',
+                  content: 'Thank you for transferring this message.',
+                  id_sender: '550e8400-e29b-41d4-a716-446655440001',
+                  id_transferechat: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                  status: 'alive',
+                  is_public: true,
+                  createdAt: '2025-11-18T11:45:43.225Z',
+                  updatedAt: '2025-11-18T11:45:43.225Z',
+                  sender: {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'john.doe@example.com',
+                    avatar: 'https://example.com/avatar.jpg',
+                  },
+                },
+              ],
             },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
@@ -1580,7 +1794,7 @@ The error response includes detailed information about what went wrong, includin
   @ApiOperation({
     summary: 'Delete a chat transfer',
     description:
-      'Delete a chat transfer. Only the sender of the transfer can delete it.',
+      'Delete a chat transfer. If the user is the sender, the transfer is permanently deleted. If the user is a receiver, their ID is added to the dontshowme array (hidden only from that receiver).',
   })
   @ApiParam({
     name: 'id',
@@ -1611,7 +1825,7 @@ The error response includes detailed information about what went wrong, includin
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Only the sender can delete this chat transfer',
+    description: 'Forbidden - You do not have permission to delete this chat transfer (user is neither sender nor receiver)',
   })
   @ApiResponse({
     status: 404,
@@ -1624,5 +1838,98 @@ The error response includes detailed information about what went wrong, includin
   removeTransfer(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     const userId = req.user.id_user;
     return this.transferChatService.remove(id, userId);
+  }
+
+  @Patch('transfer/:id/read')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Mark a chat transfer as read by the authenticated user',
+    description:
+      'Marks a chat transfer as read by the authenticated user. User ID is automatically extracted from JWT token.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Chat transfer UUID',
+    type: String,
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat transfer marked as read',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Chat transfer marked as read',
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          reader: ['550e8400-e29b-41d4-a716-446655440002'],
+          updatedAt: '2025-01-25T11:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat transfer not found',
+    schema: {
+      example: {
+        status: 404,
+        message: 'Chat transfer not found',
+        data: null,
+      },
+    },
+  })
+  markTransferAsRead(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: any,
+  ) {
+    const userId = req.user.id_user;
+    return this.transferChatService.markAsRead(id, userId);
+  }
+
+  @Patch('transfer/:id/hide')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Hide a chat transfer for the authenticated user',
+    description:
+      'Hides a chat transfer for the authenticated user. User ID is automatically extracted from JWT token.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Chat transfer UUID',
+    type: String,
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat transfer hidden successfully',
+    schema: {
+      example: {
+        status: 200,
+        message: 'Chat transfer hidden successfully',
+        data: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          dontshowme: ['550e8400-e29b-41d4-a716-446655440002'],
+          updatedAt: '2025-01-25T11:00:00.000Z',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat transfer not found',
+    schema: {
+      example: {
+        status: 404,
+        message: 'Chat transfer not found',
+        data: null,
+      },
+    },
+  })
+  hideTransfer(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+    const userId = req.user.id_user;
+    return this.transferChatService.hideMessage(id, userId);
   }
 }

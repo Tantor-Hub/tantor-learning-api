@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import { RepliesChat } from 'src/models/model.replieschat';
 import { Users } from 'src/models/model.users';
 import { Chat } from 'src/models/model.chat';
+import { TransferChat } from 'src/models/model.transferechat';
 import { CreateRepliesChatDto } from './dto/create-replieschat.dto';
 import { UpdateRepliesChatDto } from './dto/update-replieschat.dto';
 import { DeleteRepliesChatDto } from './dto/delete-replieschat.dto';
@@ -25,6 +26,8 @@ export class RepliesChatService {
     private readonly usersModel: typeof Users,
     @InjectModel(Chat)
     private readonly chatModel: typeof Chat,
+    @InjectModel(TransferChat)
+    private readonly transferChatModel: typeof TransferChat,
   ) {}
 
   async create(
@@ -47,15 +50,49 @@ export class RepliesChatService {
         });
       }
 
-      // Verify chat exists
-      const chat = await this.chatModel.findByPk(createRepliesChatDto.id_chat);
-
-      if (!chat) {
-        console.log('=== RepliesChat create: Chat not found ===');
+      // Validate that at least one of id_chat or id_transferechat is provided
+      if (
+        !createRepliesChatDto.id_chat &&
+        !createRepliesChatDto.id_transferechat
+      ) {
+        console.log(
+          '=== RepliesChat create: Either id_chat or id_transferechat must be provided ===',
+        );
         return Responder({
-          status: HttpStatusCode.NotFound,
-          customMessage: 'Chat message not found',
+          status: HttpStatusCode.BadRequest,
+          customMessage:
+            'Either id_chat or id_transferechat must be provided',
         });
+      }
+
+      // Verify chat exists if id_chat is provided
+      if (createRepliesChatDto.id_chat) {
+        const chat = await this.chatModel.findByPk(
+          createRepliesChatDto.id_chat,
+        );
+
+        if (!chat) {
+          console.log('=== RepliesChat create: Chat not found ===');
+          return Responder({
+            status: HttpStatusCode.NotFound,
+            customMessage: 'Chat message not found',
+          });
+        }
+      }
+
+      // Verify transfer chat exists if id_transferechat is provided
+      if (createRepliesChatDto.id_transferechat) {
+        const transferChat = await this.transferChatModel.findByPk(
+          createRepliesChatDto.id_transferechat,
+        );
+
+        if (!transferChat) {
+          console.log('=== RepliesChat create: Transfer chat not found ===');
+          return Responder({
+            status: HttpStatusCode.NotFound,
+            customMessage: 'Transfer chat not found',
+          });
+        }
       }
 
       const repliesChat = await this.repliesChatModel.create({
@@ -96,11 +133,21 @@ export class RepliesChatService {
       console.log('=== RepliesChat findAll: Starting ===');
 
       const replies = await this.repliesChatModel.findAll({
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
         include: [
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
           {
             model: Chat,
@@ -150,11 +197,21 @@ export class RepliesChatService {
       console.log('Reply ID:', id);
 
       const reply = await this.repliesChatModel.findByPk(id, {
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
         include: [
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
           {
             model: Chat,
@@ -222,11 +279,21 @@ export class RepliesChatService {
           id_chat: chatId,
           status: RepliesChatStatus.ALIVE,
         },
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
         include: [
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'ASC']],
@@ -282,6 +349,16 @@ export class RepliesChatService {
           id_sender: senderId,
           status: RepliesChatStatus.ALIVE,
         },
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
         include: [
           {
             model: Chat,
@@ -317,6 +394,117 @@ export class RepliesChatService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while retrieving sender replies',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findByTransferChat(
+    transferChatId: string,
+    userId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log('=== RepliesChat findByTransferChat: Starting ===');
+      console.log('Transfer Chat ID:', transferChatId);
+      console.log('User ID:', userId);
+
+      // Verify transfer chat exists
+      const transferChat = await this.transferChatModel.findByPk(transferChatId);
+
+      if (!transferChat) {
+        console.log(
+          '=== RepliesChat findByTransferChat: Transfer chat not found ===',
+        );
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Transfer chat not found',
+        });
+      }
+
+      // Check if user is the sender (creator) or one of the receivers
+      const userIdString = String(userId);
+      const senderIdString = String(transferChat.sender);
+      const receiversArray = transferChat.receivers || [];
+
+      const isSender = userIdString === senderIdString;
+      const isReceiver = receiversArray.some(
+        (receiverId: string) => String(receiverId) === userIdString,
+      );
+
+      if (!isSender && !isReceiver) {
+        console.log(
+          '=== RepliesChat findByTransferChat: Access denied ===',
+        );
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            'You do not have access to replies for this transfer chat',
+        });
+      }
+
+      // Build where clause based on user role
+      const whereClause: any = {
+        id_transferechat: transferChatId,
+        status: RepliesChatStatus.ALIVE,
+      };
+
+      // If user is a receiver (not the sender), only show public replies
+      if (isReceiver && !isSender) {
+        whereClause.is_public = true;
+      }
+      // If user is the sender, show all replies (no is_public filter)
+
+      const replies = await this.repliesChatModel.findAll({
+        where: whereClause,
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'id_transferechat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            as: 'sender',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+        ],
+        order: [['createdAt', 'ASC']],
+      });
+
+      console.log('=== RepliesChat findByTransferChat: Success ===');
+      console.log('Found replies for transfer chat:', replies.length);
+      console.log(
+        `User is ${isSender ? 'sender' : 'receiver'}, showing ${
+          isSender ? 'all' : 'public'
+        } replies`,
+      );
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: replies.length,
+          rows: replies,
+        },
+        customMessage: 'Transfer chat replies retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== RepliesChat findByTransferChat: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message:
+            'Internal server error while retrieving transfer chat replies',
           errorType: error.name,
           errorMessage: error.message,
           timestamp: new Date().toISOString(),

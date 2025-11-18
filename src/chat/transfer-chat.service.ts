@@ -4,6 +4,8 @@ import { Op } from 'sequelize';
 import { TransferChat } from 'src/models/model.transferechat';
 import { Chat } from 'src/models/model.chat';
 import { Users } from 'src/models/model.users';
+import { RepliesChat } from 'src/models/model.replieschat';
+import { RepliesChatStatus } from 'src/models/model.replieschat';
 import { CreateTransferChatDto } from './dto/create-transfer-chat.dto';
 import { UpdateTransferChatDto } from './dto/update-transfer-chat.dto';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
@@ -19,6 +21,8 @@ export class TransferChatService {
     private readonly chatModel: typeof Chat,
     @InjectModel(Users)
     private readonly usersModel: typeof Users,
+    @InjectModel(RepliesChat)
+    private readonly repliesChatModel: typeof RepliesChat,
   ) {}
 
   /**
@@ -67,7 +71,9 @@ export class TransferChatService {
       );
 
       if (!canTransfer || !chat) {
-        console.log('=== TransferChat create: User cannot transfer this chat ===');
+        console.log(
+          '=== TransferChat create: User cannot transfer this chat ===',
+        );
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage:
@@ -195,19 +201,18 @@ export class TransferChatService {
           {
             model: Chat,
             as: 'chat',
-            attributes: ['id', 'subject', 'content', 'createdAt'],
             include: [
               {
                 model: Users,
                 as: 'sender',
-                attributes: ['id', 'firstName', 'lastName', 'email'],
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
               },
             ],
           },
           {
             model: Users,
             as: 'senderUser',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
       });
@@ -262,7 +267,38 @@ export class TransferChatService {
 
               // Update using the same method as markAsRead
               await transfer.update({ reader: updatedReaders });
-              await transfer.reload();
+              await transfer.reload({
+                include: [
+                  {
+                    model: Chat,
+                    as: 'chat',
+                    include: [
+                      {
+                        model: Users,
+                        as: 'sender',
+                        attributes: [
+                          'id',
+                          'firstName',
+                          'lastName',
+                          'email',
+                          'avatar',
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    model: Users,
+                    as: 'senderUser',
+                    attributes: [
+                      'id',
+                      'firstName',
+                      'lastName',
+                      'email',
+                      'avatar',
+                    ],
+                  },
+                ],
+              });
 
               console.log(
                 '=== TransferChat findOne: Reader array after update ===',
@@ -295,13 +331,126 @@ export class TransferChatService {
           )
         : false;
 
+      // Format the chat object to include only specific fields
+      const chatData = transferData.chat
+        ? transferData.chat.toJSON
+          ? transferData.chat.toJSON()
+          : transferData.chat
+        : null;
+      const formattedChat = chatData
+        ? {
+            subject: chatData.subject,
+            content: chatData.content,
+            piece_joint: chatData.piece_joint || [],
+            sender: chatData.sender
+              ? {
+                  id: chatData.sender.id,
+                  firstName: chatData.sender.firstName,
+                  lastName: chatData.sender.lastName,
+                  email: chatData.sender.email,
+                  avatar: chatData.sender.avatar,
+                }
+              : null,
+            createdAt: chatData.createdAt,
+            updatedAt: chatData.updatedAt,
+          }
+        : null;
+
+      // Format the senderUser object
+      const senderUserData = transferData.senderUser
+        ? transferData.senderUser.toJSON
+          ? transferData.senderUser.toJSON()
+          : transferData.senderUser
+        : null;
+      const formattedSenderUser = senderUserData
+        ? {
+            id: senderUserData.id,
+            firstName: senderUserData.firstName,
+            lastName: senderUserData.lastName,
+            email: senderUserData.email,
+            avatar: senderUserData.avatar,
+          }
+        : null;
+
+      // Get replies for this transfer chat
+      const whereClause: any = {
+        id_transferechat: id,
+        status: RepliesChatStatus.ALIVE,
+      };
+
+      // If user is a receiver (not the sender), only show public replies
+      if (userId) {
+        const userIdString = String(userId);
+        const senderIdString = String(transferData.sender);
+        const receiversArray = transferData.receivers || [];
+        const isSender = userIdString === senderIdString;
+        const isReceiver = receiversArray.some(
+          (receiverId: string) => String(receiverId) === userIdString,
+        );
+
+        if (isReceiver && !isSender) {
+          whereClause.is_public = true;
+        }
+      }
+
+      const replies = await this.repliesChatModel.findAll({
+        where: whereClause,
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'id_transferechat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            as: 'sender',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+        ],
+        order: [['createdAt', 'ASC']],
+      });
+
+      // Format replies to include sender with avatar
+      const formattedReplies = replies.map((reply) => {
+        const replyData = reply.toJSON ? reply.toJSON() : reply;
+        return {
+          ...replyData,
+          sender: replyData.sender
+            ? {
+                id: replyData.sender.id,
+                firstName: replyData.sender.firstName,
+                lastName: replyData.sender.lastName,
+                email: replyData.sender.email,
+                avatar: replyData.sender.avatar,
+              }
+            : null,
+        };
+      });
+
       console.log('=== TransferChat findOne: Success ===');
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          ...transferData,
+          id: transferData.id,
+          id_chat: transferData.id_chat,
+          sender: transferData.sender,
+          receivers: transferData.receivers || [],
+          reader: transferData.reader || [],
+          dontshowme: transferData.dontshowme || [],
           isOpened,
+          isTransferred: true,
+          chat: formattedChat,
+          senderUser: formattedSenderUser,
+          replies: formattedReplies,
+          createdAt: transferData.createdAt,
+          updatedAt: transferData.updatedAt,
         },
         customMessage: 'Chat transfer retrieved successfully',
       });
@@ -336,25 +485,11 @@ export class TransferChatService {
         });
       }
 
-      // Check if user is a receiver
-      const userIdString = String(userId);
-      const receiversArray = transfer.receivers || [];
-      const isReceiver = receiversArray.some(
-        (receiverId: string) => String(receiverId) === userIdString,
-      );
-
-      if (!isReceiver) {
-        console.log('=== TransferChat markAsRead: User is not a receiver ===');
-        return Responder({
-          status: HttpStatusCode.Forbidden,
-          customMessage: 'Only receivers can mark transferred chats as read',
-        });
-      }
-
-      const currentReaders = transfer.reader || [];
+      // Add user to reader array (same as regular chats - no receiver check)
+      const currentReaders = (transfer as any).reader || [];
       if (!currentReaders.includes(userId)) {
         const updatedReaders = [...currentReaders, userId];
-        await transfer.update({ reader: updatedReaders });
+        await transfer.update({ reader: updatedReaders } as any);
         await transfer.reload();
       }
 
@@ -373,6 +508,51 @@ export class TransferChatService {
         status: HttpStatusCode.InternalServerError,
         data: {
           message: 'Internal server error while marking chat transfer as read',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async hideMessage(id: string, userId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== TransferChat hideMessage: Starting ===');
+      console.log('Transfer ID:', id, 'User ID:', userId);
+
+      const transfer = await this.transferChatModel.findByPk(id);
+
+      if (!transfer) {
+        console.log('=== TransferChat hideMessage: Not found ===');
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Chat transfer not found',
+        });
+      }
+
+      const currentHidden = (transfer as any).dontshowme || [];
+      if (!currentHidden.includes(userId)) {
+        const updatedHidden = [...currentHidden, userId];
+        await transfer.update({ dontshowme: updatedHidden } as any);
+        await transfer.reload();
+      }
+
+      console.log('=== TransferChat hideMessage: Success ===');
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: transfer,
+        customMessage: 'Chat transfer hidden successfully',
+      });
+    } catch (error) {
+      console.error('=== TransferChat hideMessage: ERROR ===');
+      console.error('Error:', error);
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while hiding chat transfer',
           errorType: error.name,
           errorMessage: error.message,
           timestamp: new Date().toISOString(),
@@ -470,19 +650,51 @@ export class TransferChatService {
         });
       }
 
-      // Only the sender can delete the transfer
       const userIdString = String(userId);
       const senderIdString = String(transfer.sender);
+      const receiversArray = transfer.receivers || [];
 
-      if (userIdString !== senderIdString) {
-        console.log('=== TransferChat remove: Only sender can delete ===');
+      // Check if user is the sender
+      if (userIdString === senderIdString) {
+        // If user is the sender, delete the transfer (destroy)
+        await transfer.destroy();
+        console.log(
+          '=== TransferChat remove: Sender deleted, transfer destroyed ===',
+        );
+      } else if (
+        Array.isArray(receiversArray) &&
+        receiversArray.some(
+          (receiverId: string) => String(receiverId) === userIdString,
+        )
+      ) {
+        // If user is a receiver, add their ID to dontshowme array
+        const currentDontShowMe = Array.isArray((transfer as any).dontshowme)
+          ? (transfer as any).dontshowme
+          : [];
+
+        // Only add if not already in the array
+        if (!currentDontShowMe.includes(userId)) {
+          const updatedDontShowMe = [...currentDontShowMe, userId];
+          await transfer.update({ dontshowme: updatedDontShowMe } as any);
+          await transfer.reload();
+          console.log(
+            '=== TransferChat remove: Receiver deleted, added to dontshowme ===',
+          );
+        } else {
+          console.log(
+            '=== TransferChat remove: Receiver already in dontshowme ===',
+          );
+        }
+      } else {
+        console.log(
+          '=== TransferChat remove: User is neither sender nor receiver ===',
+        );
         return Responder({
           status: HttpStatusCode.Forbidden,
-          customMessage: 'Only the sender can delete this chat transfer',
+          customMessage:
+            'You do not have permission to delete this chat transfer',
         });
       }
-
-      await transfer.destroy();
 
       console.log('=== TransferChat remove: Success ===');
 
@@ -507,4 +719,3 @@ export class TransferChatService {
     }
   }
 }
-

@@ -245,7 +245,7 @@ export const ChatSwagger = {
     ApiOperation({
       summary: 'Get a chat message by ID',
       description:
-        'Retrieves a specific chat message by its UUID with sender information.',
+        'Retrieves a specific chat message by its UUID with sender information, receivers with avatars, and all replies with sender avatars. When an authenticated user opens this message, their ID is automatically added to the reader array.',
     }),
     ApiParam({
       name: 'id',
@@ -320,16 +320,143 @@ export const ChatSwagger = {
               sender: {
                 type: 'object',
                 properties: {
-                  id: { type: 'number', example: 1 },
-                  fs_name: { type: 'string', example: 'John' },
-                  ls_name: { type: 'string', example: 'Doe' },
-                  email: { type: 'string', example: 'john.doe@example.com' },
-                  uuid: {
+                  id: {
                     type: 'string',
                     format: 'uuid',
                     example: '550e8400-e29b-41d4-a716-446655440001',
                   },
+                  firstName: { type: 'string', example: 'John' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  email: { type: 'string', example: 'john.doe@example.com' },
+                  avatar: {
+                    type: 'string',
+                    nullable: true,
+                    example: 'https://example.com/avatar.jpg',
+                  },
                 },
+              },
+              receivers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '550e8400-e29b-41d4-a716-446655440002',
+                    },
+                    firstName: { type: 'string', example: 'Jane' },
+                    lastName: { type: 'string', example: 'Smith' },
+                    email: { type: 'string', example: 'jane.smith@example.com' },
+                    avatar: {
+                      type: 'string',
+                      nullable: true,
+                      example: 'https://example.com/avatar2.jpg',
+                    },
+                  },
+                },
+                example: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440002',
+                    firstName: 'Jane',
+                    lastName: 'Smith',
+                    email: 'jane.smith@example.com',
+                    avatar: 'https://example.com/avatar2.jpg',
+                  },
+                ],
+              },
+              isOpened: {
+                type: 'boolean',
+                description:
+                  'Indicates whether the current authenticated user has read this message',
+                example: true,
+              },
+              replies: {
+                type: 'array',
+                description: 'Array of replies to this chat message',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '550e8400-e29b-41d4-a716-446655440003',
+                    },
+                    content: {
+                      type: 'string',
+                      example: 'Thank you for your message. I will get back to you soon.',
+                    },
+                    id_sender: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '550e8400-e29b-41d4-a716-446655440001',
+                    },
+                    id_chat: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '550e8400-e29b-41d4-a716-446655440000',
+                    },
+                    status: {
+                      type: 'string',
+                      enum: ['alive', 'archive', 'deleted'],
+                      example: 'alive',
+                    },
+                    is_public: {
+                      type: 'boolean',
+                      example: true,
+                    },
+                    createdAt: {
+                      type: 'string',
+                      format: 'date-time',
+                      example: '2025-01-25T10:05:00.000Z',
+                    },
+                    updatedAt: {
+                      type: 'string',
+                      format: 'date-time',
+                      example: '2025-01-25T10:05:00.000Z',
+                    },
+                    sender: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440001',
+                        },
+                        firstName: { type: 'string', example: 'John' },
+                        lastName: { type: 'string', example: 'Doe' },
+                        email: {
+                          type: 'string',
+                          example: 'john.doe@example.com',
+                        },
+                        avatar: {
+                          type: 'string',
+                          nullable: true,
+                          example: 'https://example.com/avatar.jpg',
+                        },
+                      },
+                    },
+                  },
+                },
+                example: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440003',
+                    content: 'Thank you for your message.',
+                    id_sender: '550e8400-e29b-41d4-a716-446655440001',
+                    id_chat: '550e8400-e29b-41d4-a716-446655440000',
+                    status: 'alive',
+                    is_public: true,
+                    createdAt: '2025-01-25T10:05:00.000Z',
+                    updatedAt: '2025-01-25T10:05:00.000Z',
+                    sender: {
+                      id: '550e8400-e29b-41d4-a716-446655440001',
+                      firstName: 'John',
+                      lastName: 'Doe',
+                      email: 'john.doe@example.com',
+                      avatar: 'https://example.com/avatar.jpg',
+                    },
+                  },
+                ],
               },
             },
           },

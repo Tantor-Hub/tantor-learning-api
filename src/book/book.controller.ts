@@ -504,6 +504,96 @@ export class BookController {
     return this.bookService.findAll(query);
   }
 
+  @Get('secretary/all')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get all books (Secretary only)',
+    description: 'Retrieve every book without filters or public-only restrictions.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All books retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
+              title: { type: 'string', example: 'Introduction to Programming' },
+              description: { type: 'string', example: 'A comprehensive guide to programming fundamentals' },
+              session: {
+                type: 'array',
+                items: { type: 'string', format: 'uuid' },
+                example: ['1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b'],
+              },
+              author: { type: 'string', example: 'John Doe' },
+              createby: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+              status: { type: 'string', enum: ['premium', 'free'], example: 'free' },
+              category: {
+                type: 'array',
+                items: { type: 'string', format: 'uuid' },
+                example: ['e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f'],
+              },
+              icon: {
+                type: 'string',
+                example: 'https://res.cloudinary.com/example/image/upload/v1234567890/icon.jpg',
+              },
+              piece_joint: {
+                type: 'string',
+                example: 'https://res.cloudinary.com/example/image/upload/v1234567890/document.pdf',
+              },
+              views: { type: 'number', example: 150 },
+              download: { type: 'number', example: 45 },
+              public: { type: 'boolean', example: true },
+              downloadable: { type: 'boolean', example: false },
+              createdAt: { type: 'string', format: 'date-time', example: '2025-01-25T10:00:00.000Z' },
+              updatedAt: { type: 'string', format: 'date-time', example: '2025-01-25T10:00:00.000Z' },
+              creator: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+                  firstName: { type: 'string', example: 'Jane' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  email: { type: 'string', example: 'jane.doe@example.com' },
+                },
+              },
+            },
+            required: [
+              'id',
+              'title',
+              'author',
+              'status',
+              'category',
+              'icon',
+              'piece_joint',
+              'createby',
+            ],
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only secretaries can access this endpoint',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  findAllForSecretary() {
+    return this.bookService.findAllForSecretary();
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -533,10 +623,73 @@ export class BookController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuardAsSecretary)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'icon', maxCount: 1 },
+        { name: 'piece_joint', maxCount: 1 },
+      ],
+      { limits: { fileSize: 10 * 1024 * 1024 * 1024 } }, // 10GB limit (for piece_joint)
+    ),
+  )
   @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Update a book (Secretary only)',
-    description: 'Update a book. Only secretaries can update books.',
+    description: `
+      Update a book with optional file uploads. Only authenticated secretaries can modify book records.
+
+      **Features**
+      - Upload new media (optional) for \`icon\` (image) or \`piece_joint\` (document)
+      - Update book metadata (\`title\`, \`description\`, \`author\`)
+      - Maintain associations (\`session[]\`, \`category[]\`) using UUID arrays
+      - Toggle access flags (\`status\`, \`public\`, \`downloadable\`)
+      - Automatic upload to cloud storage with URL generation for files
+
+      **File Upload**
+      - \`icon\`: JPEG, PNG, GIF, WEBP | Max 100MB
+      - \`piece_joint\`: PDF, DOC, DOCX, TXT, PPT, PPTX, XLS, XLSX, JPEG, PNG, GIF, WEBP | Max 10GB
+      - Send files using multipart/form-data; the backend stores them and updates the URLs
+
+      **Example cURL**
+      \`\`\`bash
+      curl -X PATCH "https://api.example.com/api/book/550e8400-e29b-41d4-a716-446655440000" \
+        -H "Authorization: Bearer SECRETARY_JWT" \
+        -F "title=Updated Programming Handbook" \
+        -F "description=Expanded edition with new labs" \
+        -F "author=Jane Doe" \
+        -F "session=[\"1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b\"]" \
+        -F "category=[\"e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f\"]" \
+        -F "status=premium" \
+        -F "public=true" \
+        -F "downloadable=true" \
+        -F "icon=@/path/to/icon.png" \
+        -F "piece_joint=@/path/to/document.pdf"
+      \`\`\`
+
+      **Example JavaScript/TypeScript**
+      \`\`\`javascript
+      const formData = new FormData();
+      formData.append('title', 'Updated Programming Handbook');
+      formData.append('description', 'Expanded edition with new labs');
+      formData.append('author', 'Jane Doe');
+      formData.append('session', JSON.stringify(['1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b']));
+      formData.append('category', JSON.stringify(['e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f']));
+      formData.append('status', 'premium');
+      formData.append('public', 'true');
+      formData.append('downloadable', 'true');
+      formData.append('icon', iconFileInput.files[0]); // Optional
+      formData.append('piece_joint', pieceJointFileInput.files[0]); // Optional
+
+      const response = await fetch('/api/book/550e8400-e29b-41d4-a716-446655440000', {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer SECRETARY_JWT' },
+        body: formData,
+      });
+
+      const result = await response.json();
+      \`\`\`
+    `,
   })
   @ApiParam({
     name: 'id',
@@ -549,6 +702,10 @@ export class BookController {
   @ApiResponse({
     status: 200,
     description: 'Book updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid data or validation error',
   })
   @ApiResponse({
     status: 401,
@@ -566,16 +723,186 @@ export class BookController {
     status: 500,
     description: 'Internal server error',
   })
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateBookDto: UpdateBookDto,
+    @Body() updateBookDto: any,
     @Request() req: any,
+    @UploadedFiles()
+    files: {
+      icon?: Express.Multer.File[];
+      piece_joint?: Express.Multer.File[];
+    },
   ) {
-    console.log(
-      '[BOOK CONTROLLER] 🌐 Raw request body from frontend:',
-      JSON.stringify(req.body, null, 2),
-    );
-    return this.bookService.update(id, updateBookDto);
+    try {
+      // Check if body is empty or undefined
+      if (!updateBookDto || Object.keys(updateBookDto).length === 0) {
+        // Also check if files are provided
+        if (!files || (!files.icon && !files.piece_joint)) {
+          return {
+            status: 400,
+            data: 'Aucune donnée reçue. Veuillez préciser au moins un champ à mettre à jour.',
+          };
+        }
+      }
+
+      // Parse category array if it's a JSON string (common with multipart/form-data)
+      let category: string[] | undefined = undefined;
+      if (updateBookDto.category) {
+        if (typeof updateBookDto.category === 'string') {
+          try {
+            category = JSON.parse(updateBookDto.category);
+          } catch {
+            // If not JSON, treat as single value array
+            category = [updateBookDto.category];
+          }
+        } else if (Array.isArray(updateBookDto.category)) {
+          category = updateBookDto.category;
+        }
+      }
+
+      // Parse session array if it's a JSON string
+      let session: string[] | undefined = undefined;
+      if (updateBookDto.session) {
+        if (typeof updateBookDto.session === 'string') {
+          try {
+            session = JSON.parse(updateBookDto.session);
+          } catch {
+            session = [updateBookDto.session];
+          }
+        } else if (Array.isArray(updateBookDto.session)) {
+          session = updateBookDto.session;
+        }
+      }
+
+      // Prepare update data
+      const updateData: any = {};
+
+      if (updateBookDto.title !== undefined) updateData.title = updateBookDto.title;
+      if (updateBookDto.description !== undefined)
+        updateData.description = updateBookDto.description;
+      if (session !== undefined) updateData.session = session;
+      if (updateBookDto.author !== undefined)
+        updateData.author = updateBookDto.author;
+      if (updateBookDto.status !== undefined)
+        updateData.status = updateBookDto.status;
+      if (category !== undefined) updateData.category = category;
+      if (updateBookDto.public !== undefined)
+        updateData.public =
+          updateBookDto.public === 'true' || updateBookDto.public === true;
+      if (updateBookDto.downloadable !== undefined)
+        updateData.downloadable =
+          updateBookDto.downloadable === 'true' ||
+          updateBookDto.downloadable === true;
+
+      // Handle icon file upload
+      if (files.icon && files.icon.length > 0) {
+        const iconFile = files.icon[0];
+
+        // Validate icon file type (images only)
+        const allowedImageTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'image/svg+xml',
+          'image/bmp',
+          'image/tiff',
+        ];
+
+        if (!allowedImageTypes.includes(iconFile.mimetype)) {
+          return {
+            status: 400,
+            data: `Icon file type ${iconFile.mimetype} is not allowed. Allowed types: JPEG, PNG, GIF, WebP, SVG, BMP, TIFF`,
+          };
+        }
+
+        // Validate icon file size (100MB limit for images)
+        const maxIconSize = 100 * 1024 * 1024; // 100MB
+        if (iconFile.size > maxIconSize) {
+          return {
+            status: 400,
+            data: 'Icon file size exceeds 100MB limit',
+          };
+        }
+
+        // Upload icon to cloud storage
+        const iconUploadResult =
+          await this.googleDriveService.uploadBufferFile(iconFile);
+        if (!iconUploadResult) {
+          return {
+            status: 500,
+            data: 'Failed to upload icon to cloud storage',
+          };
+        }
+        updateData.icon = iconUploadResult.link;
+      }
+
+      // Handle piece_joint file upload
+      if (files.piece_joint && files.piece_joint.length > 0) {
+        const pieceJointFile = files.piece_joint[0];
+
+        // Validate piece_joint file type (documents)
+        const allowedDocumentTypes = [
+          // Documents
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          // Also allow images for piece_joint if needed
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+        ];
+
+        if (!allowedDocumentTypes.includes(pieceJointFile.mimetype)) {
+          return {
+            status: 400,
+            data: `Piece joint file type ${pieceJointFile.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, TXT, PPT, XLS, JPEG, PNG, GIF, WebP`,
+          };
+        }
+
+        // Validate piece_joint file size (10GB limit for documents)
+        const maxPieceJointSize = 10 * 1024 * 1024 * 1024; // 10GB
+        if (pieceJointFile.size > maxPieceJointSize) {
+          return {
+            status: 400,
+            data: 'Piece joint file size exceeds 10GB limit',
+          };
+        }
+
+        // Upload piece_joint to cloud storage
+        const pieceJointUploadResult =
+          await this.googleDriveService.uploadBufferFile(pieceJointFile);
+        if (!pieceJointUploadResult) {
+          return {
+            status: 500,
+            data: 'Failed to upload piece joint to cloud storage',
+          };
+        }
+        updateData.piece_joint = pieceJointUploadResult.link;
+      }
+
+      // Check if there's at least one field to update
+      if (Object.keys(updateData).length === 0) {
+        return {
+          status: 400,
+          data: 'Aucune donnée reçue. Veuillez préciser au moins un champ à mettre à jour.',
+        };
+      }
+
+      return this.bookService.update(id, updateData);
+    } catch (error) {
+      console.error('Error updating book:', error);
+      return {
+        status: 500,
+        data: 'Internal server error during book update',
+      };
+    }
   }
 
   @Delete(':id')

@@ -246,6 +246,28 @@ export class BookService {
     }
   }
 
+  async findAllForSecretary(): Promise<ResponseServer> {
+    try {
+      const books = await this.bookModel.findAll({
+        order: [['createdAt', 'DESC']],
+        include: ['creator'],
+      });
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: books.map((book) => book.toJSON()),
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors de la récupération des livres pour le secrétaire',
+          details: error.message,
+        },
+      });
+    }
+  }
+
   async findOne(id: string, userId?: string): Promise<ResponseServer> {
     try {
       const book = await this.bookModel.findByPk(id, {
@@ -316,6 +338,13 @@ export class BookService {
 
   async update(id: string, updateDto: UpdateBookDto): Promise<ResponseServer> {
     try {
+      if (!updateDto || Object.keys(updateDto).length === 0) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          data: 'Aucune donnée reçue. Veuillez préciser au moins un champ à mettre à jour.',
+        });
+      }
+
       const book = await this.bookModel.findByPk(id);
 
       if (!book) {

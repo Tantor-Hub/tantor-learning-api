@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsOptional,
   IsBoolean,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateRepliesChatDto {
@@ -17,12 +18,28 @@ export class CreateRepliesChatDto {
   content: string;
 
   @ApiProperty({
-    description: 'UUID of the chat message being replied to',
+    description:
+      'UUID of the chat message being replied to (required if id_transferechat is not provided)',
     example: '550e8400-e29b-41d4-a716-446655440001',
+    required: false,
   })
+  @IsOptional()
   @IsUUID()
+  @ValidateIf((o) => !o.id_transferechat)
   @IsNotEmpty()
-  id_chat: string;
+  id_chat?: string;
+
+  @ApiProperty({
+    description:
+      'UUID of the transfer chat being replied to (required if id_chat is not provided)',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  @ValidateIf((o) => !o.id_chat)
+  @IsNotEmpty()
+  id_transferechat?: string;
 
   @ApiProperty({
     description:

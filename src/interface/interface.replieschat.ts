@@ -4,7 +4,8 @@ export interface IRepliesChat {
   id?: string;
   content: string;
   id_sender: string;
-  id_chat: string;
+  id_chat?: string;
+  id_transferechat?: string;
   status: RepliesChatStatus;
   is_public: boolean;
   createdAt?: Date;
@@ -14,7 +15,8 @@ export interface IRepliesChat {
 export interface IRepliesChatCreate {
   content: string;
   id_sender: string;
-  id_chat: string;
+  id_chat?: string;
+  id_transferechat?: string;
   is_public?: boolean;
 }
 
@@ -29,7 +31,8 @@ export interface IRepliesChatResponse {
   id: string;
   content: string;
   id_sender: string;
-  id_chat: string;
+  id_chat?: string;
+  id_transferechat?: string;
   status: RepliesChatStatus;
   is_public: boolean;
   createdAt: Date;
@@ -46,5 +49,11 @@ export interface IRepliesChatResponse {
     content?: string;
     id_user_sender: string;
     id_user_receiver: string[];
+  };
+  transferChat?: {
+    id: string;
+    id_chat: string;
+    sender: string;
+    receivers: string[];
   };
 }

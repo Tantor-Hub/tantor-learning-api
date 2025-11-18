@@ -177,17 +177,21 @@ export const RepliesChatSwagger = {
                     sender: {
                       type: 'object',
                       properties: {
-                        id: { type: 'number', example: 1 },
-                        fs_name: { type: 'string', example: 'John' },
-                        ls_name: { type: 'string', example: 'Doe' },
+                        id: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440001',
+                        },
+                        firstName: { type: 'string', example: 'John' },
+                        lastName: { type: 'string', example: 'Doe' },
                         email: {
                           type: 'string',
                           example: 'john.doe@example.com',
                         },
-                        uuid: {
+                        avatar: {
                           type: 'string',
-                          format: 'uuid',
-                          example: '550e8400-e29b-41d4-a716-446655440001',
+                          nullable: true,
+                          example: 'https://example.com/avatar.jpg',
                         },
                       },
                     },
@@ -292,14 +296,18 @@ export const RepliesChatSwagger = {
               sender: {
                 type: 'object',
                 properties: {
-                  id: { type: 'number', example: 1 },
-                  fs_name: { type: 'string', example: 'John' },
-                  ls_name: { type: 'string', example: 'Doe' },
-                  email: { type: 'string', example: 'john.doe@example.com' },
-                  uuid: {
+                  id: {
                     type: 'string',
                     format: 'uuid',
                     example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
+                  firstName: { type: 'string', example: 'John' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  email: { type: 'string', example: 'john.doe@example.com' },
+                  avatar: {
+                    type: 'string',
+                    nullable: true,
+                    example: 'https://example.com/avatar.jpg',
                   },
                 },
               },
@@ -419,17 +427,21 @@ export const RepliesChatSwagger = {
                     sender: {
                       type: 'object',
                       properties: {
-                        id: { type: 'number', example: 1 },
-                        fs_name: { type: 'string', example: 'John' },
-                        ls_name: { type: 'string', example: 'Doe' },
+                        id: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440001',
+                        },
+                        firstName: { type: 'string', example: 'John' },
+                        lastName: { type: 'string', example: 'Doe' },
                         email: {
                           type: 'string',
                           example: 'john.doe@example.com',
                         },
-                        uuid: {
+                        avatar: {
                           type: 'string',
-                          format: 'uuid',
-                          example: '550e8400-e29b-41d4-a716-446655440001',
+                          nullable: true,
+                          example: 'https://example.com/avatar.jpg',
                         },
                       },
                     },

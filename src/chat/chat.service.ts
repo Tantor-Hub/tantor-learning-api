@@ -4,6 +4,8 @@ import { Op, literal, fn, col } from 'sequelize';
 import { Chat } from 'src/models/model.chat';
 import { Users } from 'src/models/model.users';
 import { TransferChat } from 'src/models/model.transferechat';
+import { RepliesChat } from 'src/models/model.replieschat';
+import { RepliesChatStatus } from 'src/models/model.replieschat';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { DeleteChatDto } from './dto/delete-chat.dto';
@@ -22,12 +24,14 @@ export class ChatService {
     private readonly usersModel: typeof Users,
     @InjectModel(TransferChat)
     private readonly transferChatModel: typeof TransferChat,
+    @InjectModel(RepliesChat)
+    private readonly repliesChatModel: typeof RepliesChat,
   ) {}
 
   /**
    * Format chat response to include only required fields
    */
-  private formatChatResponse(chat: any, userId?: string): any {
+  private async formatChatResponse(chat: any, userId?: string): Promise<any> {
     const chatData = chat.toJSON ? chat.toJSON() : chat;
     const readerArray = chatData.reader || [];
     const receiversArray = chatData.id_user_receiver || [];
@@ -74,19 +78,39 @@ export class ChatService {
       }
     }
 
+    // Get receiver users if receivers array exists
+    let receivers: any[] = [];
+    if (receiversArray && receiversArray.length > 0) {
+      const receiverUsers = await this.usersModel.findAll({
+        where: { id: receiversArray },
+        attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+      });
+      receivers = receiverUsers.map((user) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        avatar: user.avatar,
+      }));
+    }
+
     return {
       id: chatData.id,
       subject: chatData.subject,
       createdAt: chatData.createdAt,
       sender: chatData.sender
         ? {
+            id: chatData.sender.id,
             firstName: chatData.sender.firstName,
             lastName: chatData.sender.lastName,
             email: chatData.sender.email,
+            avatar: chatData.sender.avatar,
           }
         : null,
+      receivers,
       isOpened,
       role, // 'sender' or 'receiver' indicating the user's role in this message
+      isTransferred: false, // Flag to indicate this is a regular chat (not transferred)
     };
   }
 
@@ -162,29 +186,191 @@ export class ChatService {
       console.log('=== Chat findAll: Starting ===');
 
       const chats = await this.chatModel.findAll({
+        where: {
+          status: { [Op.ne]: ChatStatus.DELETED },
+        },
         include: [
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       // Format chats with simplified response
-      const chatsWithReadStatus = chats.map((chat) =>
-        this.formatChatResponse(chat, userId),
+      const chatsWithReadStatus = await Promise.all(
+        chats.map((chat) => this.formatChatResponse(chat, userId)),
       );
 
+      // Get all transfer chats if userId is provided
+      let transferChats: any[] = [];
+      if (userId) {
+        const transferredChats = await this.transferChatModel.findAll({
+          where: {
+            [Op.or]: [
+              { sender: userId },
+              { receivers: { [Op.contains]: [userId] } },
+            ],
+          },
+          include: [
+            {
+              model: this.chatModel,
+              as: 'chat',
+              where: {
+                status: { [Op.ne]: ChatStatus.DELETED },
+              },
+              include: [
+                {
+                  model: this.usersModel,
+                  as: 'sender',
+                  attributes: [
+                    'id',
+                    'firstName',
+                    'lastName',
+                    'email',
+                    'avatar',
+                  ],
+                },
+              ],
+              required: true,
+            },
+            {
+              model: this.usersModel,
+              as: 'senderUser',
+              attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+            },
+          ],
+          order: [['createdAt', 'DESC']],
+        });
+
+        // Format transferred chats
+        transferChats = await Promise.all(
+          transferredChats
+            .filter((transfer) => {
+              const transferData = transfer.toJSON
+                ? transfer.toJSON()
+                : transfer;
+              const dontshowme = transferData.dontshowme || [];
+              return !dontshowme.includes(userId);
+            })
+            .map(async (transfer) => {
+              const chat = transfer.chat;
+              if (!chat) return null;
+
+              const chatData = chat.toJSON ? chat.toJSON() : chat;
+              const transferData = transfer.toJSON
+                ? transfer.toJSON()
+                : transfer;
+              const readerArray = transferData.reader || [];
+              const userIdString = String(userId);
+
+              // Determine role and isOpened for transfer chats
+              let isOpened = false;
+              let role: 'sender' | 'receiver' | null = null;
+
+              if (String(transferData.sender) === userIdString) {
+                role = 'sender';
+                // For transfer sender: check if all receivers have read
+                const receiversArray = transferData.receivers || [];
+                if (receiversArray.length === 0) {
+                  isOpened = true;
+                } else {
+                  const allReceiversRead = receiversArray.every(
+                    (receiverId: string) => {
+                      const receiverIdString = String(receiverId);
+                      return readerArray.some(
+                        (readerId: string) =>
+                          String(readerId) === receiverIdString,
+                      );
+                    },
+                  );
+                  isOpened = allReceiversRead;
+                }
+              } else {
+                role = 'receiver';
+                isOpened = readerArray.some(
+                  (readerId: string) => String(readerId) === userIdString,
+                );
+              }
+
+              // Get receiver users for transfer chats
+              const receiversArray = transferData.receivers || [];
+              let receivers: any[] = [];
+              if (receiversArray.length > 0) {
+                const receiverUsers = await this.usersModel.findAll({
+                  where: { id: receiversArray },
+                  attributes: [
+                    'id',
+                    'firstName',
+                    'lastName',
+                    'email',
+                    'avatar',
+                  ],
+                });
+                receivers = receiverUsers.map((user) => ({
+                  id: user.id,
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  email: user.email,
+                  avatar: user.avatar,
+                }));
+              }
+
+              return {
+                id: chatData.id,
+                subject: chatData.subject,
+                createdAt: transfer.createdAt || chatData.createdAt,
+                sender: chatData.sender
+                  ? {
+                      id: chatData.sender.id,
+                      firstName: chatData.sender.firstName,
+                      lastName: chatData.sender.lastName,
+                      email: chatData.sender.email,
+                      avatar: chatData.sender.avatar,
+                    }
+                  : null,
+                transferSender: transfer.senderUser
+                  ? {
+                      id: transfer.senderUser.id,
+                      firstName: transfer.senderUser.firstName,
+                      lastName: transfer.senderUser.lastName,
+                      email: transfer.senderUser.email,
+                      avatar: transfer.senderUser.avatar,
+                    }
+                  : null,
+                receivers,
+                isOpened,
+                role,
+                isTransferred: true, // Flag to indicate this is a transferred chat
+                transferId: transferData.id, // Include transfer ID for reference
+              };
+            }),
+        );
+        transferChats = transferChats.filter((chat) => chat !== null);
+      }
+
+      // Combine regular chats and transfer chats
+      const allChats = [...chatsWithReadStatus, ...transferChats];
+
+      // Sort by createdAt descending (most recent first)
+      allChats.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
       console.log('=== Chat findAll: Success ===');
-      console.log('Found chats:', chats.length);
+      console.log('Found regular chats:', chatsWithReadStatus.length);
+      console.log('Found transfer chats:', transferChats.length);
+      console.log('Total chats:', allChats.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: chatsWithReadStatus.length,
-          rows: chatsWithReadStatus,
+          length: allChats.length,
+          rows: allChats,
         },
         customMessage: 'Chat messages retrieved successfully',
       });
@@ -214,7 +400,7 @@ export class ChatService {
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
       });
@@ -287,6 +473,66 @@ export class ChatService {
           )
         : false;
 
+      // Get receiver users if receivers array exists
+      let receivers: any[] = [];
+      const receiversArray = chatData.id_user_receiver || [];
+      if (receiversArray && receiversArray.length > 0) {
+        const receiverUsers = await this.usersModel.findAll({
+          where: { id: receiversArray },
+          attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+        });
+        receivers = receiverUsers.map((user) => ({
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          avatar: user.avatar,
+        }));
+      }
+
+      // Get replies for this chat
+      const replies = await this.repliesChatModel.findAll({
+        where: {
+          id_chat: id,
+          status: RepliesChatStatus.ALIVE,
+        },
+        attributes: [
+          'id',
+          'content',
+          'id_sender',
+          'id_chat',
+          'status',
+          'is_public',
+          'createdAt',
+          'updatedAt',
+        ],
+        include: [
+          {
+            model: Users,
+            as: 'sender',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+        ],
+        order: [['createdAt', 'ASC']],
+      });
+
+      // Format replies to include sender with avatar
+      const formattedReplies = replies.map((reply) => {
+        const replyData = reply.toJSON ? reply.toJSON() : reply;
+        return {
+          ...replyData,
+          sender: replyData.sender
+            ? {
+                id: replyData.sender.id,
+                firstName: replyData.sender.firstName,
+                lastName: replyData.sender.lastName,
+                email: replyData.sender.email,
+                avatar: replyData.sender.avatar,
+              }
+            : null,
+        };
+      });
+
       console.log('=== Chat findOne: Success ===');
 
       return Responder({
@@ -294,6 +540,8 @@ export class ChatService {
         data: {
           ...chatData,
           isOpened,
+          receivers,
+          replies: formattedReplies,
         },
         customMessage: 'Chat message retrieved successfully',
       });
@@ -330,25 +578,173 @@ export class ChatService {
           {
             model: Users,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       // Format chats with simplified response
-      const chatsWithReadStatus = chats.map((chat) =>
-        this.formatChatResponse(chat, userId),
+      const chatsWithReadStatus = await Promise.all(
+        chats.map((chat) => this.formatChatResponse(chat, userId)),
       );
 
+      // Get all transfer chats where user is sender or receiver
+      const transferredChats = await this.transferChatModel.findAll({
+        where: {
+          [Op.or]: [
+            { sender: userId },
+            { receivers: { [Op.contains]: [userId] } },
+          ],
+        },
+        attributes: {
+          exclude: ['reader'], // Exclude reader if column doesn't exist in DB
+        },
+        include: [
+          {
+            model: this.chatModel,
+            as: 'chat',
+            where: {
+              status: { [Op.ne]: ChatStatus.DELETED },
+            },
+            include: [
+              {
+                model: this.usersModel,
+                as: 'sender',
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+              },
+            ],
+            required: true,
+          },
+          {
+            model: this.usersModel,
+            as: 'senderUser',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Format transferred chats and filter out those where user is in dontshowme
+      const formattedTransferredChats = await Promise.all(
+        transferredChats
+          .filter((transfer) => {
+            const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+            const dontshowme = transferData.dontshowme || [];
+            return !dontshowme.includes(userId);
+          })
+          .map(async (transfer) => {
+            const chat = transfer.chat;
+            if (!chat) return null;
+
+            const chatData = chat.toJSON ? chat.toJSON() : chat;
+            const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+            const readerArray = transferData.reader || [];
+            const userIdString = String(userId);
+
+            // Determine role and isOpened for transfer chats
+            let isOpened = false;
+            let role: 'sender' | 'receiver' | null = null;
+
+            if (String(transferData.sender) === userIdString) {
+              role = 'sender';
+              // For transfer sender: check if all receivers have read
+              const receiversArray = transferData.receivers || [];
+              if (receiversArray.length === 0) {
+                isOpened = true;
+              } else {
+                const allReceiversRead = receiversArray.every(
+                  (receiverId: string) => {
+                    const receiverIdString = String(receiverId);
+                    return readerArray.some(
+                      (readerId: string) =>
+                        String(readerId) === receiverIdString,
+                    );
+                  },
+                );
+                isOpened = allReceiversRead;
+              }
+            } else {
+              role = 'receiver';
+              isOpened = readerArray.some(
+                (readerId: string) => String(readerId) === userIdString,
+              );
+            }
+
+            // Get receiver users for transfer chats
+            const receiversArray = transferData.receivers || [];
+            let receivers: any[] = [];
+            if (receiversArray.length > 0) {
+              const receiverUsers = await this.usersModel.findAll({
+                where: { id: receiversArray },
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+              });
+              receivers = receiverUsers.map((user) => ({
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                avatar: user.avatar,
+              }));
+            }
+
+            return {
+              id: chatData.id,
+              subject: chatData.subject,
+              createdAt: transfer.createdAt || chatData.createdAt,
+              sender: chatData.sender
+                ? {
+                    id: chatData.sender.id,
+                    firstName: chatData.sender.firstName,
+                    lastName: chatData.sender.lastName,
+                    email: chatData.sender.email,
+                    avatar: chatData.sender.avatar,
+                  }
+                : null,
+              transferSender: transfer.senderUser
+                ? {
+                    id: transfer.senderUser.id,
+                    firstName: transfer.senderUser.firstName,
+                    lastName: transfer.senderUser.lastName,
+                    email: transfer.senderUser.email,
+                    avatar: transfer.senderUser.avatar,
+                  }
+                : null,
+              receivers,
+              isOpened,
+              role,
+              isTransferred: true, // Flag to indicate this is a transferred chat
+              transferId: transferData.id, // Include transfer ID for reference
+            };
+          }),
+      );
+      const filteredTransferredChats = formattedTransferredChats.filter(
+        (chat) => chat !== null,
+      );
+
+      // Combine regular chats and transfer chats
+      const allChats = [...chatsWithReadStatus, ...filteredTransferredChats];
+
+      // Sort by createdAt descending (most recent first)
+      allChats.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
       console.log('=== Chat findByUser: Success ===');
-      console.log('Found chats for user:', chatsWithReadStatus.length);
+      console.log('Found regular chats for user:', chatsWithReadStatus.length);
+      console.log(
+        'Found transfer chats for user:',
+        formattedTransferredChats.length,
+      );
+      console.log('Total chats:', allChats.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: chatsWithReadStatus.length,
-          rows: chatsWithReadStatus,
+          length: allChats.length,
+          rows: allChats,
         },
         customMessage: 'User chat messages retrieved successfully',
       });
@@ -383,19 +779,21 @@ export class ChatService {
           {
             model: this.usersModel,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       // Filter out chats where user is in dontshowme array and format response
-      const filteredChats = allDeletedChats
-        .filter((chat) => {
-          const dontshowme = chat.dontshowme || [];
-          return !dontshowme.includes(userId);
-        })
-        .map((chat) => this.formatChatResponse(chat, userId));
+      const filteredChats = await Promise.all(
+        allDeletedChats
+          .filter((chat) => {
+            const dontshowme = chat.dontshowme || [];
+            return !dontshowme.includes(userId);
+          })
+          .map((chat) => this.formatChatResponse(chat, userId)),
+      );
 
       console.log('=== Chat findDeletedByUser: Success ===');
       console.log('Found deleted chats sent by user:', filteredChats.length);
@@ -440,19 +838,21 @@ export class ChatService {
           {
             model: this.usersModel,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       // Filter out chats where user is in dontshowme array and format response
-      const filteredChats = allSentChats
-        .filter((chat) => {
-          const dontshowme = chat.dontshowme || [];
-          return !dontshowme.includes(userId);
-        })
-        .map((chat) => this.formatChatResponse(chat, userId));
+      const filteredChats = await Promise.all(
+        allSentChats
+          .filter((chat) => {
+            const dontshowme = chat.dontshowme || [];
+            return !dontshowme.includes(userId);
+          })
+          .map((chat) => this.formatChatResponse(chat, userId)),
+      );
 
       console.log('=== Chat findSentByUser: Success ===');
       console.log('Found sent chats for user:', filteredChats.length);
@@ -496,19 +896,21 @@ export class ChatService {
           {
             model: this.usersModel,
             as: 'sender',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       // Filter out chats where user is in dontshowme array and format response
-      const filteredChats = allReceivedChats
-        .filter((chat) => {
-          const dontshowme = chat.dontshowme || [];
-          return !dontshowme.includes(userId);
-        })
-        .map((chat) => this.formatChatResponse(chat, userId));
+      const filteredChats = await Promise.all(
+        allReceivedChats
+          .filter((chat) => {
+            const dontshowme = chat.dontshowme || [];
+            return !dontshowme.includes(userId);
+          })
+          .map((chat) => this.formatChatResponse(chat, userId)),
+      );
 
       // Get all transferred chats where user is a receiver
       const transferredChats = await this.transferChatModel.findAll({
@@ -526,7 +928,7 @@ export class ChatService {
               {
                 model: this.usersModel,
                 as: 'sender',
-                attributes: ['id', 'firstName', 'lastName', 'email'],
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
               },
             ],
             required: true,
@@ -534,65 +936,91 @@ export class ChatService {
           {
             model: this.usersModel,
             as: 'senderUser',
-            attributes: ['id', 'firstName', 'lastName', 'email'],
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
           },
         ],
         order: [['createdAt', 'DESC']],
       });
 
       // Format transferred chats and filter out those where user is in dontshowme
-      const formattedTransferredChats = transferredChats
-        .filter((transfer) => {
-          const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
-          // Use transfer chat's dontshowme array instead of original chat's dontshowme
-          const dontshowme = transferData.dontshowme || [];
-          return !dontshowme.includes(userId);
-        })
-        .map((transfer) => {
-          const chat = transfer.chat;
-          if (!chat) return null;
-          
-          // Format the chat similar to regular received chats
-          const chatData = chat.toJSON ? chat.toJSON() : chat;
-          const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
-          
-          // Use transfer chat's reader array instead of original chat's reader array
-          const readerArray = transferData.reader || [];
-          const userIdString = String(userId);
-          
-          // For transferred chats, user is always a receiver
-          const isOpened = readerArray.some(
-            (readerId: string) => String(readerId) === userIdString,
-          );
+      const formattedTransferredChats = await Promise.all(
+        transferredChats
+          .filter((transfer) => {
+            const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+            // Use transfer chat's dontshowme array instead of original chat's dontshowme
+            const dontshowme = transferData.dontshowme || [];
+            return !dontshowme.includes(userId);
+          })
+          .map(async (transfer) => {
+            const chat = transfer.chat;
+            if (!chat) return null;
 
-          return {
-            id: chatData.id,
-            subject: chatData.subject,
-            createdAt: transfer.createdAt || chatData.createdAt, // Use transfer date
-            sender: chatData.sender
-              ? {
-                  firstName: chatData.sender.firstName,
-                  lastName: chatData.sender.lastName,
-                  email: chatData.sender.email,
-                }
-              : null,
-            transferSender: transfer.senderUser
-              ? {
-                  firstName: transfer.senderUser.firstName,
-                  lastName: transfer.senderUser.lastName,
-                  email: transfer.senderUser.email,
-                }
-              : null,
-            isOpened,
-            role: 'receiver' as const,
-            isTransferred: true, // Flag to indicate this is a transferred chat
-            transferId: transferData.id, // Include transfer ID for reference
-          };
-        })
-        .filter((chat) => chat !== null);
+            // Format the chat similar to regular received chats
+            const chatData = chat.toJSON ? chat.toJSON() : chat;
+            const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+
+            // Use transfer chat's reader array instead of original chat's reader array
+            const readerArray = transferData.reader || [];
+            const userIdString = String(userId);
+
+            // For transferred chats, user is always a receiver
+            const isOpened = readerArray.some(
+              (readerId: string) => String(readerId) === userIdString,
+            );
+
+            // Get receiver users for transfer chats
+            const receiversArray = transferData.receivers || [];
+            let receivers: any[] = [];
+            if (receiversArray.length > 0) {
+              const receiverUsers = await this.usersModel.findAll({
+                where: { id: receiversArray },
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+              });
+              receivers = receiverUsers.map((user) => ({
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                avatar: user.avatar,
+              }));
+            }
+
+            return {
+              id: chatData.id,
+              subject: chatData.subject,
+              createdAt: transfer.createdAt || chatData.createdAt, // Use transfer date
+              sender: chatData.sender
+                ? {
+                    id: chatData.sender.id,
+                    firstName: chatData.sender.firstName,
+                    lastName: chatData.sender.lastName,
+                    email: chatData.sender.email,
+                    avatar: chatData.sender.avatar,
+                  }
+                : null,
+              transferSender: transfer.senderUser
+                ? {
+                    id: transfer.senderUser.id,
+                    firstName: transfer.senderUser.firstName,
+                    lastName: transfer.senderUser.lastName,
+                    email: transfer.senderUser.email,
+                    avatar: transfer.senderUser.avatar,
+                  }
+                : null,
+              receivers,
+              isOpened,
+              role: 'receiver' as const,
+              isTransferred: true, // Flag to indicate this is a transferred chat
+              transferId: transferData.id, // Include transfer ID for reference
+            };
+          }),
+      );
+      const filteredTransferredChats = formattedTransferredChats.filter(
+        (chat) => chat !== null,
+      );
 
       // Combine regular received chats and transferred chats
-      const allChats = [...filteredChats, ...formattedTransferredChats];
+      const allChats = [...filteredChats, ...filteredTransferredChats];
 
       // Sort by createdAt descending (most recent first)
       allChats.sort((a, b) => {
@@ -603,7 +1031,10 @@ export class ChatService {
 
       console.log('=== Chat findReceivedByUser: Success ===');
       console.log('Found received chats for user:', filteredChats.length);
-      console.log('Found transferred chats for user:', formattedTransferredChats.length);
+      console.log(
+        'Found transferred chats for user:',
+        filteredTransferredChats.length,
+      );
       console.log('Total chats:', allChats.length);
 
       return Responder({
@@ -769,7 +1200,10 @@ export class ChatService {
     }
   }
 
-  async remove(deleteChatDto: DeleteChatDto, userId: string): Promise<ResponseServer> {
+  async remove(
+    deleteChatDto: DeleteChatDto,
+    userId: string,
+  ): Promise<ResponseServer> {
     try {
       console.log('=== Chat remove: Starting ===');
       console.log('Delete data:', deleteChatDto);
@@ -789,16 +1223,25 @@ export class ChatService {
       if (chat.id_user_sender === userId) {
         // If user is the sender, change status to DELETED
         await chat.update({ status: ChatStatus.DELETED });
-        console.log('=== Chat remove: Sender deleted, status set to DELETED ===');
-      } else if (Array.isArray(chat.id_user_receiver) && chat.id_user_receiver.includes(userId)) {
+        console.log(
+          '=== Chat remove: Sender deleted, status set to DELETED ===',
+        );
+      } else if (
+        Array.isArray(chat.id_user_receiver) &&
+        chat.id_user_receiver.includes(userId)
+      ) {
         // If user is a receiver, add their ID to dontshowme array
-        const currentDontShowMe = Array.isArray(chat.dontshowme) ? chat.dontshowme : [];
-        
+        const currentDontShowMe = Array.isArray(chat.dontshowme)
+          ? chat.dontshowme
+          : [];
+
         // Only add if not already in the array
         if (!currentDontShowMe.includes(userId)) {
           const updatedDontShowMe = [...currentDontShowMe, userId];
           await chat.update({ dontshowme: updatedDontShowMe });
-          console.log('=== Chat remove: Receiver deleted, added to dontshowme ===');
+          console.log(
+            '=== Chat remove: Receiver deleted, added to dontshowme ===',
+          );
         } else {
           console.log('=== Chat remove: Receiver already in dontshowme ===');
         }
@@ -806,7 +1249,8 @@ export class ChatService {
         console.log('=== Chat remove: User is neither sender nor receiver ===');
         return Responder({
           status: HttpStatusCode.Forbidden,
-          customMessage: 'You do not have permission to delete this chat message',
+          customMessage:
+            'You do not have permission to delete this chat message',
         });
       }
 

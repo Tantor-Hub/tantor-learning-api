@@ -7,12 +7,13 @@ import { RepliesChatController } from './replieschat.controller';
 import { RepliesChat } from 'src/models/model.replieschat';
 import { Users } from 'src/models/model.users';
 import { Chat } from 'src/models/model.chat';
+import { TransferChat } from 'src/models/model.transferechat';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([RepliesChat, Users, Chat]),
+    SequelizeModule.forFeature([RepliesChat, Users, Chat, TransferChat]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
