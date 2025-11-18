@@ -16,6 +16,7 @@ import { TrainingSession } from 'src/models/model.trainingssession';
 import { Training } from 'src/models/model.trainings';
 import { StudentAnswer } from 'src/models/model.studentanswer';
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
+import { Event } from 'src/models/model.event';
 import { AllSercices } from 'src/services/serices.all';
 import { JwtService } from 'src/services/service.jwt';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
@@ -36,6 +37,7 @@ import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
       Training,
       StudentAnswer,
       StudentAnswerOption,
+      Event,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

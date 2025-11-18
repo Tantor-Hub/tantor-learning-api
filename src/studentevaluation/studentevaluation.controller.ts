@@ -1677,8 +1677,17 @@ export class StudentevaluationController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get student evaluation statistics (Secretary only)',
-    description:
-      'Get average points and percentage for student evaluations. Filter by training, trainingsession, sessioncours, or lesson. Can get statistics for all students or a specific student.',
+    description: `Get average points and percentage for student evaluations. Filter by training, trainingsession, sessioncours, or lesson. Can get statistics for all students or a specific student.
+    
+    **When filtering by training (trainingId):**
+    - Returns the training period (start and end dates)
+    - Calculates total hours from all events related to sessions the student is enrolled in
+    - Includes all session titles the student was in
+    - Hours are calculated only from events in sessions where the student is enrolled
+    - Provides per-session statistics including:
+      - Student's points in each session
+      - Average points from all students in each session
+      - Total maximum points possible in each session`,
   })
   @ApiResponse({
     status: 200,
@@ -1711,6 +1720,71 @@ export class StudentevaluationController {
                   totalPointsEarned: { type: 'number', example: 855 },
                   totalPossiblePoints: { type: 'number', example: 1000 },
                   evaluationCount: { type: 'number', example: 10 },
+                        sessionTitles: {
+                          type: 'array',
+                          items: { type: 'string' },
+                          description:
+                            'Session titles the student was in (only when trainingId filter is provided)',
+                          example: ['Session 1', 'Session 2'],
+                        },
+                        totalHours: {
+                          type: 'number',
+                          description:
+                            'Total hours from all events in sessions the student is in (only when trainingId filter is provided)',
+                          example: 120.5,
+                        },
+                        sessionStats: {
+                          type: 'array',
+                          description:
+                            'Per-session statistics including student points, session average, and total max points (only when trainingId filter is provided)',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              sessionId: {
+                                type: 'string',
+                                format: 'uuid',
+                                example: '550e8400-e29b-41d4-a716-446655440001',
+                              },
+                              sessionTitle: {
+                                type: 'string',
+                                example: 'Session 1',
+                              },
+                              studentPoints: {
+                                type: 'number',
+                                description: 'Points earned by this student in this session',
+                                example: 85,
+                              },
+                              sessionAverage: {
+                                type: 'number',
+                                description:
+                                  'Average points from all students in this session',
+                                example: 82.5,
+                              },
+                              totalMaxPoints: {
+                                type: 'number',
+                                description:
+                                  'Total maximum points possible in this session',
+                                example: 100,
+                              },
+                            },
+                          },
+                          example: [
+                            {
+                              sessionId: '550e8400-e29b-41d4-a716-446655440001',
+                              sessionTitle: 'Session 1',
+                              studentPoints: 85,
+                              sessionAverage: 82.5,
+                              totalMaxPoints: 100,
+                            },
+                            {
+                              sessionId: '550e8400-e29b-41d4-a716-446655440002',
+                              sessionTitle: 'Session 2',
+                              studentPoints: 90,
+                              sessionAverage: 88.3,
+                              totalMaxPoints: 100,
+                            },
+                          ],
+                        },
                 },
               },
             },
@@ -1734,6 +1808,16 @@ export class StudentevaluationController {
             },
             totalEvaluations: { type: 'number', example: 10 },
             totalPossiblePoints: { type: 'number', example: 1000 },
+            trainingPeriod: {
+              type: 'object',
+              description:
+                'Training period (start and end dates) - only present when trainingId filter is provided',
+              properties: {
+                startDate: { type: 'string', format: 'date-time' },
+                endDate: { type: 'string', format: 'date-time' },
+              },
+              nullable: true,
+            },
           },
         },
       },

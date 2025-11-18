@@ -43,8 +43,10 @@ export class CreateLessondocumentDto {
     example: false,
     description:
       'Whether the lesson document is published and visible to students',
-    required: true,
+    required: false,
+    default: false,
   })
   @IsBoolean()
-  ispublish: boolean;
+  @IsOptional()
+  ispublish?: boolean;
 }

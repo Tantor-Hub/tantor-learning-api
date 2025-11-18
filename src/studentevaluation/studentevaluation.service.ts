@@ -17,6 +17,7 @@ import { StudentAnswerOption } from 'src/models/model.studentansweroption';
 import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { Training } from 'src/models/model.trainings';
+import { Event } from 'src/models/model.event';
 import { Op } from 'sequelize';
 import {
   MarkingStatus,
@@ -47,6 +48,8 @@ export class StudentevaluationService {
     private trainingSessionModel: typeof TrainingSession,
     @InjectModel(Training)
     private trainingModel: typeof Training,
+    @InjectModel(Event)
+    private eventModel: typeof Event,
   ) {}
 
   async create(
@@ -2121,10 +2124,10 @@ export class StudentevaluationService {
         ];
       }
 
-      // Get all evaluations matching the criteria
+      // Get all evaluations matching the criteria (include sessionCoursId to map to sessions)
       const evaluations = await this.studentevaluationModel.findAll({
         where: evaluationWhere,
-        attributes: ['id', 'points', 'type', 'submittiondate'],
+        attributes: ['id', 'points', 'type', 'submittiondate', 'sessionCoursId'],
       });
 
       if (evaluations.length === 0) {
@@ -2197,6 +2200,267 @@ export class StudentevaluationService {
         attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
       });
 
+      // Helper function to calculate hours from time strings (HH:MM format)
+      const calculateHoursFromTime = (
+        beginningHour: string,
+        endingHour: string,
+      ): number => {
+        try {
+          const [beginHour, beginMin] = beginningHour.split(':').map(Number);
+          const [endHour, endMin] = endingHour.split(':').map(Number);
+          const beginTotalMinutes = beginHour * 60 + beginMin;
+          const endTotalMinutes = endHour * 60 + endMin;
+          const diffMinutes = endTotalMinutes - beginTotalMinutes;
+          // Handle case where ending time is next day
+          const totalMinutes =
+            diffMinutes < 0 ? diffMinutes + 24 * 60 : diffMinutes;
+          return totalMinutes / 60; // Convert to hours
+        } catch (error) {
+          console.error('Error calculating hours from time:', error);
+          return 0;
+        }
+      };
+
+      // Calculate sessionStats from evaluations (always, not just when trainingId is provided)
+      // Get all sessionCours for the evaluations to map to sessions
+      const evaluationSessionCoursIds = evaluations
+        .map((e) => e.sessionCoursId)
+        .filter(Boolean) as string[];
+
+      const studentSessionStatsMap = new Map<
+        string,
+        Array<{
+          sessionId: string;
+          sessionTitle: string;
+          studentPoints: number;
+          sessionAverage: number;
+          totalMaxPoints: number;
+        }>
+      >();
+
+      if (evaluationSessionCoursIds.length > 0) {
+        // Get sessionCours with their session information
+        const sessionCoursList = await this.sessionCoursModel.findAll({
+          where: {
+            id: {
+              [Op.in]: evaluationSessionCoursIds,
+            },
+          },
+          attributes: ['id', 'id_session'],
+          include: [
+            {
+              model: TrainingSession,
+              attributes: ['id', 'title'],
+              required: false,
+            },
+          ],
+        });
+
+        // Create map: sessionCoursId -> sessionId
+        const sessionCoursToSessionMap = new Map<string, string>();
+        const sessionIdToTitleMap = new Map<string, string>();
+        sessionCoursList.forEach((sc) => {
+          if (sc.id_session && sc.trainingSession) {
+            sessionCoursToSessionMap.set(sc.id, sc.id_session);
+            sessionIdToTitleMap.set(sc.id_session, sc.trainingSession.title);
+          }
+        });
+
+        // Get evaluations with their sessionId
+        const evaluationsWithSession = evaluations.map((evaluation) => ({
+          ...evaluation.toJSON(),
+          sessionId: sessionCoursToSessionMap.get(evaluation.sessionCoursId),
+        }));
+
+        // Group evaluations by session
+        const evaluationsBySession = new Map<
+          string,
+          Array<typeof evaluationsWithSession[0]>
+        >();
+        evaluationsWithSession.forEach((evaluation) => {
+          if (evaluation.sessionId) {
+            if (!evaluationsBySession.has(evaluation.sessionId)) {
+              evaluationsBySession.set(evaluation.sessionId, []);
+            }
+            evaluationsBySession.get(evaluation.sessionId)!.push(evaluation);
+          }
+        });
+
+        // Calculate per-session statistics for all students
+        const sessionStatsMap = new Map<
+          string,
+          {
+            totalMaxPoints: number;
+            studentPointsMap: Map<string, number>;
+          }
+        >();
+
+        evaluationsBySession.forEach((sessionEvals, sessionId) => {
+          const totalMaxPoints = sessionEvals.reduce(
+            (sum, evaluation) => sum + (evaluation.points || 0),
+            0,
+          );
+
+          // Get all student answers for these evaluations
+          const sessionEvalIds = sessionEvals.map((e) => e.id);
+          const sessionStudentAnswers = studentAnswers.filter((answer) =>
+            sessionEvalIds.includes(answer.evaluationId),
+          );
+
+          // Calculate points per student for this session
+          const studentPointsMap = new Map<string, number>();
+          sessionStudentAnswers.forEach((answer) => {
+            const currentPoints = studentPointsMap.get(answer.studentId) || 0;
+            studentPointsMap.set(
+              answer.studentId,
+              currentPoints + (answer.points || 0),
+            );
+          });
+
+          sessionStatsMap.set(sessionId, {
+            totalMaxPoints,
+            studentPointsMap,
+          });
+        });
+
+        // For each student, calculate their session stats
+        studentIds.forEach((studentId) => {
+          const sessionStats: Array<{
+            sessionId: string;
+            sessionTitle: string;
+            studentPoints: number;
+            sessionAverage: number;
+            totalMaxPoints: number;
+          }> = [];
+
+          evaluationsBySession.forEach((sessionEvals, sessionId) => {
+            const sessionTitle = sessionIdToTitleMap.get(sessionId) || '';
+            const sessionStatsData = sessionStatsMap.get(sessionId);
+
+            if (sessionStatsData) {
+              const studentPoints = sessionStatsData.studentPointsMap.get(
+                studentId,
+              ) || 0;
+              const totalMaxPoints = sessionStatsData.totalMaxPoints;
+
+              // Calculate average points for all students in this session
+              const allStudentPoints = Array.from(
+                sessionStatsData.studentPointsMap.values(),
+              );
+              const sessionAverage =
+                allStudentPoints.length > 0
+                  ? allStudentPoints.reduce((sum, pts) => sum + pts, 0) /
+                    allStudentPoints.length
+                  : 0;
+
+              // Only include sessions where this student has evaluations
+              if (studentPoints > 0 || sessionEvals.some((e) => 
+                studentAnswers.some((sa) => 
+                  sa.evaluationId === e.id && sa.studentId === studentId
+                )
+              )) {
+                sessionStats.push({
+                  sessionId,
+                  sessionTitle,
+                  studentPoints,
+                  sessionAverage: Math.round(sessionAverage * 100) / 100,
+                  totalMaxPoints,
+                });
+              }
+            }
+          });
+
+          studentSessionStatsMap.set(studentId, sessionStats);
+        });
+      }
+
+      // If trainingId filter is provided, get additional training information
+      let trainingPeriod: { startDate?: Date; endDate?: Date } | null = null;
+      const studentSessionTitlesMap = new Map<string, string[]>();
+      const studentTotalHoursMap = new Map<string, number>();
+
+      if (filters.trainingId) {
+        // Get all sessions for this training
+        const trainingSessions = await this.trainingSessionModel.findAll({
+          where: {
+            id_trainings: filters.trainingId,
+          },
+          attributes: ['id', 'title', 'begining_date', 'ending_date'],
+        });
+
+        // Calculate training period (earliest start to latest end)
+        if (trainingSessions.length > 0) {
+          const dates = trainingSessions
+            .map((ts) => ({
+              start: ts.begining_date,
+              end: ts.ending_date,
+            }))
+            .filter((d) => d.start && d.end);
+          if (dates.length > 0) {
+            trainingPeriod = {
+              startDate: new Date(
+                Math.min(...dates.map((d) => new Date(d.start).getTime())),
+              ),
+              endDate: new Date(
+                Math.max(...dates.map((d) => new Date(d.end).getTime())),
+              ),
+            };
+          }
+        }
+
+        // For each student, get their sessions and calculate hours
+        const sessionIds = trainingSessions.map((ts) => ts.id);
+        const studentIds = Array.from(studentStatsMap.keys());
+        for (const studentId of studentIds) {
+          // Get sessions this student is in
+          const userSessions = await this.userInSessionModel.findAll({
+            where: {
+              id_user: studentId,
+              id_session: {
+                [Op.in]: sessionIds,
+              },
+            },
+            include: [
+              {
+                model: TrainingSession,
+                attributes: ['id', 'title'],
+              },
+            ],
+          });
+
+          // Get session titles
+          const sessionTitles = userSessions
+            .map((us) => us.trainingSession?.title)
+            .filter(Boolean) as string[];
+          studentSessionTitlesMap.set(studentId, sessionTitles);
+
+          // Get all events for these sessions
+          const userSessionIds = userSessions.map((us) => us.id_session);
+          if (userSessionIds.length > 0) {
+            const events = await this.eventModel.findAll({
+              where: {
+                id_cible_session: {
+                  [Op.in]: userSessionIds,
+                },
+              },
+              attributes: ['beginning_hour', 'ending_hour'],
+            });
+
+            // Calculate total hours from all events
+            let totalHours = 0;
+            events.forEach((event) => {
+              if (event.beginning_hour && event.ending_hour) {
+                totalHours += calculateHoursFromTime(
+                  event.beginning_hour,
+                  event.ending_hour,
+                );
+              }
+            });
+            studentTotalHoursMap.set(studentId, totalHours);
+          }
+        }
+      }
+
       // Build result array
       const result = students
         .map((student) => {
@@ -2214,7 +2478,7 @@ export class StudentevaluationService {
               ? (stats.totalPointsEarned / totalPossiblePoints) * 100
               : 0;
 
-          return {
+          const baseResult: any = {
             studentId: student.id,
             studentName:
               `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
@@ -2227,17 +2491,45 @@ export class StudentevaluationService {
             totalPossiblePoints: totalPossiblePoints,
             evaluationCount: stats.evaluationCount,
           };
+
+          // Add sessionStats (always calculated from evaluations)
+          baseResult.sessionStats =
+            studentSessionStatsMap.get(student.id) || [];
+
+          // Add training-specific fields (only when trainingId filter is provided)
+          if (filters.trainingId) {
+            baseResult.sessionTitles = studentSessionTitlesMap.get(student.id) || [];
+            baseResult.totalHours = Math.round(
+              (studentTotalHoursMap.get(student.id) || 0) * 100,
+            ) / 100;
+          } else {
+            // Always include these fields, even when trainingId is not provided
+            baseResult.sessionTitles = [];
+            baseResult.totalHours = 0;
+          }
+
+          return baseResult;
         })
         .filter(Boolean);
 
+      const responseData: any = {
+        students: result,
+        filters: filters,
+        totalEvaluations: evaluations.length,
+        totalPossiblePoints: totalPossiblePoints,
+      };
+
+      // Add training period if trainingId filter is provided
+      if (filters.trainingId && trainingPeriod) {
+        responseData.trainingPeriod = {
+          startDate: trainingPeriod.startDate,
+          endDate: trainingPeriod.endDate,
+        };
+      }
+
       return Responder({
         status: HttpStatusCode.Ok,
-        data: {
-          students: result,
-          filters: filters,
-          totalEvaluations: evaluations.length,
-          totalPossiblePoints: totalPossiblePoints,
-        },
+        data: responseData,
         customMessage: 'Student evaluation statistics retrieved successfully',
       });
     } catch (error) {

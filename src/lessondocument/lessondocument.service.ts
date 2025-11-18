@@ -494,6 +494,7 @@ export class LessondocumentService {
       id_lesson: string;
       title?: string;
       description?: string;
+      ispublish?: boolean;
     },
   ): Promise<ResponseServer> {
     try {
@@ -523,7 +524,7 @@ export class LessondocumentService {
         description: documentData.description,
         id_lesson: documentData.id_lesson,
         createdBy: user.id_user,
-        ispublish: false, // Set to false by default when creating
+        ispublish: documentData.ispublish ?? false, // Use provided value or default to false
       });
 
       // Fetch the created lesson document with its relationships

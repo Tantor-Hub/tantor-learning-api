@@ -61,7 +61,7 @@ export class LessondocumentController {
       **Request Format:**
       - Content-Type: multipart/form-data
       - Required fields: document (file), id_lesson (UUID)
-      - Optional fields: type (will be auto-detected if not provided)
+      - Optional fields: type (will be auto-detected if not provided), title, description, ispublish (defaults to false)
       
       **Supported File Types:**
       - Documents: PDF, DOC, DOCX, TXT
@@ -78,7 +78,8 @@ export class LessondocumentController {
         -F "id_lesson=550e8400-e29b-41d4-a716-446655440000" \\
         -F "title=Introduction to Programming Concepts" \\
         -F "description=This document covers the fundamental concepts of programming including variables, loops, and functions." \\
-        -F "type=PDF"
+        -F "type=PDF" \\
+        -F "ispublish=true"
       \`\`\`
       
       **Example JavaScript/TypeScript:**
@@ -89,6 +90,7 @@ export class LessondocumentController {
       formData.append('title', 'Introduction to Programming Concepts');
       formData.append('description', 'This document covers the fundamental concepts of programming including variables, loops, and functions.');
       formData.append('type', 'PDF'); // Optional
+      formData.append('ispublish', 'true'); // Optional, defaults to false
       
       const response = await fetch('/lessondocument/create', {
         method: 'POST',
@@ -137,6 +139,12 @@ export class LessondocumentController {
           example:
             'This document covers the fundamental concepts of programming including variables, loops, and functions.',
         },
+        ispublish: {
+          type: 'boolean',
+          description:
+            'Whether the lesson document is published and visible to students',
+          example: false,
+        },
       },
       required: ['document', 'id_lesson', 'title', 'description'],
     },
@@ -151,6 +159,7 @@ export class LessondocumentController {
           title: 'Introduction to Programming Concepts',
           description:
             'This document covers the fundamental concepts of programming including variables, loops, and functions.',
+          ispublish: true,
         },
       },
       wordDocument: {
@@ -163,6 +172,7 @@ export class LessondocumentController {
           title: 'Advanced Programming Techniques',
           description:
             'This document covers advanced programming concepts and best practices.',
+          ispublish: false,
         },
       },
       imageDocument: {
@@ -175,6 +185,7 @@ export class LessondocumentController {
           title: 'Programming Flowchart',
           description:
             'Visual representation of programming logic and flow control.',
+          ispublish: true,
         },
       },
       autoDetectType: {
@@ -186,6 +197,7 @@ export class LessondocumentController {
           id_lesson: '550e8400-e29b-41d4-a716-446655440000',
           title: 'General Learning Material',
           description: 'Educational content for the lesson.',
+          ispublish: false,
         },
       },
     },
@@ -446,6 +458,7 @@ export class LessondocumentController {
         title: createLessondocumentDto.title,
         description: createLessondocumentDto.description,
         id_lesson: createLessondocumentDto.id_lesson,
+        ispublish: createLessondocumentDto.ispublish ?? false,
       };
 
       return this.lessondocumentService.create(user, documentData);
@@ -1024,17 +1037,21 @@ export class LessondocumentController {
     return this.lessondocumentService.findOne(id);
   }
 
-  @Patch('update/:id')
-  @UseGuards(JwtAuthGuard)
+  @Patch('instructor/update/:id')
+  @UseGuards(JwtAuthGuardAsInstructor)
   @UseInterceptors(FileInterceptor('document'))
   @ApiOperation({
-    summary: 'Update lesson document with file upload',
+    summary: 'Update lesson document (Instructor only)',
     description: `
-      Update a lesson document with optional file upload. Only the creator of the document can modify it.
+      Update a lesson document with file upload. **Instructor access required.**
+      Instructors can update the title, description, file, and publish status of lesson documents.
       
       **Features:**
       - Upload a new document file (optional)
-      - Update document metadata (title, description, type)
+      - Update document title
+      - Update document description
+      - Update document publish status (ispublish)
+      - Update document metadata (type)
       - Automatic file type detection
       - Cloudinary integration for file storage
       
@@ -1045,13 +1062,14 @@ export class LessondocumentController {
       
       **Example cURL:**
       \`\`\`bash
-      curl -X PATCH "http://localhost:3000/lessondocument/update/document-id" \\
+      curl -X PATCH "http://localhost:3000/lessondocument/instructor/update/document-id" \\
         -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
         -F "document=@/path/to/your/updated-file.pdf" \\
         -F "id_lesson=550e8400-e29b-41d4-a716-446655440000" \\
         -F "title=Updated Programming Concepts" \\
         -F "description=Updated document covering advanced programming concepts and examples." \\
-        -F "type=PDF"
+        -F "type=PDF" \\
+        -F "ispublish=true"
       \`\`\`
       
       **Example JavaScript/TypeScript:**
@@ -1062,8 +1080,9 @@ export class LessondocumentController {
       formData.append('title', 'Updated Programming Concepts');
       formData.append('description', 'Updated document covering advanced programming concepts and examples.');
       formData.append('type', 'PDF'); // Optional
+      formData.append('ispublish', 'true'); // Optional
       
-      const response = await fetch('/lessondocument/update/document-id', {
+      const response = await fetch('/lessondocument/instructor/update/document-id', {
         method: 'PATCH',
         headers: {
           'Authorization': 'Bearer YOUR_JWT_TOKEN'
@@ -1077,7 +1096,7 @@ export class LessondocumentController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Update lesson document with optional file upload',
+    description: 'Update lesson document - Instructors can update title, description, and file',
     schema: {
       type: 'object',
       properties: {
@@ -1095,12 +1114,12 @@ export class LessondocumentController {
         },
         title: {
           type: 'string',
-          description: 'Updated title of the lesson document',
+          description: 'Updated title of the lesson document (optional)',
           example: 'Updated Programming Concepts',
         },
         description: {
           type: 'string',
-          description: 'Updated description of the lesson document content',
+          description: 'Updated description of the lesson document content (optional)',
           example:
             'Updated document covering advanced programming concepts and examples.',
         },
@@ -1110,8 +1129,14 @@ export class LessondocumentController {
             'Updated type of the document (optional - will be auto-detected from file if provided)',
           example: 'PDF',
         },
+        ispublish: {
+          type: 'boolean',
+          description:
+            'Whether the lesson document is published and visible to students',
+          example: false,
+        },
       },
-      required: ['id_lesson', 'title', 'description'],
+      required: [],
     },
   })
   @ApiResponse({
@@ -1161,11 +1186,11 @@ export class LessondocumentController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
+    description: 'Unauthorized - Invalid or missing JWT token, or user is not an instructor',
     schema: {
       example: {
         status: 401,
-        data: 'Unauthorized access',
+        data: 'Seuls les instructeurs peuvent accéder à cette ressource',
       },
     },
   })
@@ -1175,7 +1200,7 @@ export class LessondocumentController {
     schema: {
       example: {
         status: 403,
-        data: 'Access denied: You can only update your own lesson documents',
+        data: 'You can only modify lesson documents that you created',
       },
     },
   })
