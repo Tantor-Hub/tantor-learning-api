@@ -188,7 +188,7 @@ export class SessionCoursService {
       }
 
       const sessionCours = await this.sessionCoursModel.findAll({
-        where: { 
+        where: {
           id_session: sessionId,
         },
         attributes: [
@@ -245,6 +245,101 @@ export class SessionCoursService {
       });
     } catch (error) {
       console.error('=== SessionCours findBySessionId: ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          message: 'Internal server error while retrieving session courses',
+          errorType: error.name,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+  }
+
+  async findBySessionIdForStudent(sessionId: string): Promise<ResponseServer> {
+    try {
+      console.log('=== SessionCours findBySessionIdForStudent: Starting ===');
+      console.log('Session ID:', sessionId);
+
+      // First, validate that the session exists
+      const sessionExists = await this.trainingSessionModel.findByPk(sessionId);
+      if (!sessionExists) {
+        console.log(
+          '=== SessionCours findBySessionIdForStudent: Session not found ===',
+        );
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session not found',
+        });
+      }
+
+      const sessionCours = await this.sessionCoursModel.findAll({
+        where: {
+          id_session: sessionId,
+          is_published: true,
+        },
+        attributes: [
+          'id',
+          'title',
+          'description',
+          'is_published',
+          'id_formateur',
+          'ponderation',
+          'createdAt',
+          'updatedAt',
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Transform id_formateur array to include instructor details
+      const sessionCoursWithFormateurs = await Promise.all(
+        sessionCours.map(async (cours) => {
+          const coursData = cours.toJSON() as any;
+
+          if (coursData.id_formateur && coursData.id_formateur.length > 0) {
+            // Fetch instructor details for each formateur ID
+            const formateurs = await this.usersModel.findAll({
+              where: {
+                id: coursData.id_formateur,
+                role: 'instructor',
+              },
+              attributes: ['id', 'firstName', 'lastName'],
+            });
+
+            coursData.formateurs = formateurs.map((formateur) =>
+              formateur.toJSON(),
+            );
+          } else {
+            coursData.formateurs = [];
+          }
+
+          // Remove the raw id_formateur array since we now have formateurs objects
+          delete coursData.id_formateur;
+
+          return coursData;
+        }),
+      );
+
+      console.log('=== SessionCours findBySessionIdForStudent: Success ===');
+      console.log('Session cours found:', sessionCoursWithFormateurs.length);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          length: sessionCoursWithFormateurs.length,
+          rows: sessionCoursWithFormateurs,
+        },
+        customMessage: 'Courses retrieved successfully',
+      });
+    } catch (error) {
+      console.error('=== SessionCours findBySessionIdForStudent: ERROR ===');
       console.error('Error type:', typeof error);
       console.error('Error name:', error.name);
       console.error('Error message:', error.message);

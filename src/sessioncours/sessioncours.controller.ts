@@ -423,7 +423,7 @@ export class SessionCoursController {
     description: 'Internal server error',
   })
   async findBySessionIdForStudent(@Param('sessionId') sessionId: string) {
-    return this.sessionCoursService.findBySessionId(sessionId);
+    return this.sessionCoursService.findBySessionIdForStudent(sessionId);
   }
 
   @Get('instructor/mycourses')
