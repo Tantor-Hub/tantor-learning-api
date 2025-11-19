@@ -18,7 +18,7 @@ import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { Training } from 'src/models/model.trainings';
 import { Event } from 'src/models/model.event';
-import { Op } from 'sequelize';
+import { Op, literal } from 'sequelize';
 import {
   MarkingStatus,
   StudentevaluationType,
@@ -443,9 +443,7 @@ export class StudentevaluationService {
 
       const evaluations = await this.studentevaluationModel.findAll({
         where: {
-          lessonId: {
-            [Op.contains]: [lessonId],
-          },
+          lessonId: literal(`"lessonId"::jsonb @> '["${lessonId}"]'::jsonb`),
         },
         include: [
           {
@@ -2119,7 +2117,7 @@ export class StudentevaluationService {
       // If lessonId filter is provided, also filter by lessonId in the evaluation
       if (filters.lessonId) {
         evaluationWhere[Op.or] = [
-          { lessonId: { [Op.contains]: [filters.lessonId] } },
+          literal(`"lessonId"::jsonb @> '["${filters.lessonId}"]'::jsonb`),
           { lessonId: null },
         ];
       }
