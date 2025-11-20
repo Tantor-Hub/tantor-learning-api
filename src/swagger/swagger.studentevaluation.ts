@@ -6,6 +6,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { StudentevaluationType } from 'src/interface/interface.studentevaluation';
+import { TrainingType } from 'src/interface/interface.trainings';
 
 // Student Evaluation Swagger Documentation
 export const StudentevaluationSwagger = {
@@ -1430,6 +1431,14 @@ export const StudentevaluationSwagger = {
         summary: 'Get student evaluation statistics (Secretary only)',
         description: `Get average points and percentage for student evaluations. Filter by training, trainingsession, sessioncours, or lesson. Can get statistics for all students or a specific student.
         
+        **Matiere Statistics (grouped by sessionCours):**
+        - Each matiere (sessionCours) shows the student's performance
+        - Points are converted to a scale over 20
+        - Comments are assigned based on score over 20:
+          - 0-6: Ajournée
+          - 7-10: Admissible
+          - 11-20: Admis
+        
         **When filtering by training (trainingId):**
         - Returns the training period (start and end dates)
         - Calculates total hours from all events related to sessions the student is enrolled in
@@ -1535,6 +1544,98 @@ export const StudentevaluationSwagger = {
                         evaluationCount: {
                           type: 'number',
                           example: 10,
+                        },
+                        matiereStats: {
+                          type: 'array',
+                          description:
+                            'Statistics grouped by matiere (sessionCours) with scores over 20 and comments',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              matiereTitle: {
+                                type: 'string',
+                                example: 'React Fundamentals',
+                              },
+                              pointsEarned: {
+                                type: 'number',
+                                description:
+                                  'Points earned converted to a scale over 20 for this matiere',
+                                example: 17.5,
+                              },
+                              totalPossiblePoints: {
+                                type: 'number',
+                                description: 'Total possible points in this matiere',
+                                example: 100,
+                              },
+                              scoreOver20: {
+                                type: 'number',
+                                description: 'Score converted to scale over 20',
+                                example: 17.0,
+                              },
+                              comment: {
+                                type: 'string',
+                                enum: ['Ajournée', 'Admissible', 'Admis'],
+                                description:
+                                  'Comment based on score: 0-6 = Ajournée, 7-10 = Admissible, 11-20 = Admis',
+                                example: 'Admis',
+                              },
+                            evaluationTypes: {
+                              type: 'array',
+                              description:
+                                'Unique evaluation types contributing to this matiere',
+                              items: {
+                                type: 'string',
+                                enum: Object.values(StudentevaluationType),
+                              },
+                              example: [StudentevaluationType.QUIZ],
+                            },
+                            modality: {
+                              type: 'string',
+                              nullable: true,
+                              enum: Object.values(TrainingType),
+                              description:
+                                'Modalité (training type) inherited from the training linked to this matiere',
+                              example: TrainingType.EN_LIGNE,
+                            },
+                            coefficient: {
+                              type: 'number',
+                              nullable: true,
+                              description:
+                                'Coefficient (ponderation) configured for the matiere/session cours',
+                              example: 2,
+                            },
+                            percentage: {
+                              type: 'number',
+                              description:
+                                'Share of this matiere’s total possible points relative to all evaluations (%)',
+                              example: 25.5,
+                            },
+                            },
+                          },
+                          example: [
+                            {
+                              matiereTitle: 'React Fundamentals',
+                            pointsEarned: 17.5,
+                              totalPossiblePoints: 100,
+                              scoreOver20: 17.0,
+                            comment: 'Admis',
+                            evaluationTypes: [StudentevaluationType.QUIZ],
+                            modality: TrainingType.EN_LIGNE,
+                            coefficient: 2,
+                            percentage: 40,
+                            },
+                            {
+                              matiereTitle: 'Node.js Basics',
+                            pointsEarned: 7,
+                              totalPossiblePoints: 100,
+                              scoreOver20: 7.0,
+                            comment: 'Admissible',
+                            evaluationTypes: [StudentevaluationType.TEST],
+                            modality: TrainingType.PRESENTIEL,
+                            coefficient: 1,
+                            percentage: 20,
+                            },
+                          ],
                         },
                         sessionTitles: {
                           type: 'array',

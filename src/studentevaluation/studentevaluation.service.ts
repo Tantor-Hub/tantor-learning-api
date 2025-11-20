@@ -18,12 +18,13 @@ import { UserInSession } from 'src/models/model.userinsession';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { Training } from 'src/models/model.trainings';
 import { Event } from 'src/models/model.event';
-import { Op, literal } from 'sequelize';
+import { Op, literal, QueryTypes } from 'sequelize';
 import {
   MarkingStatus,
   StudentevaluationType,
 } from 'src/models/model.studentevaluation';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { TrainingType } from 'src/interface/interface.trainings';
 
 @Injectable()
 export class StudentevaluationService {
@@ -38,6 +39,8 @@ export class StudentevaluationService {
     private usersModel: typeof Users,
     @InjectModel(EvaluationQuestionOption)
     private evaluationQuestionOptionModel: typeof EvaluationQuestionOption,
+    @InjectModel(EvaluationQuestion)
+    private evaluationQuestionModel: typeof EvaluationQuestion,
     @InjectModel(StudentAnswer)
     private studentAnswerModel: typeof StudentAnswer,
     @InjectModel(StudentAnswerOption)
@@ -602,13 +605,19 @@ export class StudentevaluationService {
         });
       }
 
+      const studentIdJson = JSON.stringify([studentId]);
+      const studentIdCondition = literal(
+        `"Studentevaluation"."studentId"::jsonb @> '${studentIdJson}'::jsonb`,
+      );
+
       const evaluations = await this.studentevaluationModel.findAll({
         where: {
           sessionCoursId: sessionCoursId,
-          studentId: {
-            [Op.contains]: [studentId],
-          },
           ispublish: true,
+          markingStatus: {
+            [Op.ne]: MarkingStatus.PUBLISHED,
+          },
+          [Op.and]: [studentIdCondition],
         },
         include: [
           {
@@ -625,8 +634,12 @@ export class StudentevaluationService {
         order: [['createdAt', 'DESC']],
       });
 
+      const activeEvaluations = evaluations.filter(
+        (evaluation) => evaluation.markingStatus !== MarkingStatus.PUBLISHED,
+      );
+
       // Get all unique lesson IDs from evaluations and fetch lessons
-      const allLessonIds = evaluations.reduce((acc, evaluation) => {
+      const allLessonIds = activeEvaluations.reduce((acc, evaluation) => {
         if (evaluation.lessonId && Array.isArray(evaluation.lessonId)) {
           acc.push(...evaluation.lessonId);
         }
@@ -644,7 +657,7 @@ export class StudentevaluationService {
       });
 
       // Add lessons to each evaluation
-      const evaluationsWithLessons = evaluations.map((evaluation) => {
+      const evaluationsWithLessons = activeEvaluations.map((evaluation) => {
         const evaluationLessons = lessons.filter(
           (lesson) =>
             evaluation.lessonId && evaluation.lessonId.includes(lesson.id),
@@ -659,7 +672,7 @@ export class StudentevaluationService {
         status: HttpStatusCode.Ok,
         data: {
           evaluations: evaluationsWithLessons,
-          total: evaluations.length,
+          total: evaluationsWithLessons.length,
         },
         customMessage: 'Student evaluations retrieved successfully',
       });
@@ -985,12 +998,11 @@ export class StudentevaluationService {
 
       // Validate marking status
       const validStatuses = [
-        'pending',
-        'in_progress',
-        'completed',
-        'published',
+        MarkingStatus.PENDING,
+        MarkingStatus.IN_PROGRESS,
+        MarkingStatus.PUBLISHED,
       ];
-      if (!validStatuses.includes(markingStatus)) {
+      if (!validStatuses.includes(markingStatus as MarkingStatus)) {
         return Responder({
           status: HttpStatusCode.BadRequest,
           customMessage: `Invalid marking status. Must be one of: ${validStatuses.join(', ')}`,
@@ -1034,6 +1046,93 @@ export class StudentevaluationService {
           details: error.details || null,
         },
         customMessage: errorMessage,
+      });
+    }
+  }
+
+  async getMarkingStatus(
+    evaluationId: string,
+    instructorId: string,
+  ): Promise<ResponseServer> {
+    try {
+      console.log('=== getMarkingStatus: Starting ===');
+      console.log('Evaluation ID:', evaluationId);
+      console.log('Instructor ID:', instructorId);
+
+      // First get the evaluation with its sessioncours
+      const evaluation = await this.studentevaluationModel.findByPk(
+        evaluationId,
+        {
+          include: [
+            {
+              model: SessionCours,
+              as: 'sessionCours',
+              attributes: ['id', 'title', 'description', 'id_formateur'],
+            },
+          ],
+          attributes: [
+            'id',
+            'title',
+            'description',
+            'type',
+            'points',
+            'markingStatus',
+            'sessionCoursId',
+            'createdAt',
+            'updatedAt',
+          ],
+        },
+      );
+
+      if (!evaluation) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Evaluation not found',
+        });
+      }
+
+      // Verify instructor is assigned to this sessioncours
+      const sessionCours = evaluation.sessionCours as any;
+      if (!sessionCours) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Session course not found for this evaluation',
+        });
+      }
+
+      const isInstructorAssigned =
+        sessionCours.id_formateur &&
+        Array.isArray(sessionCours.id_formateur) &&
+        sessionCours.id_formateur.includes(instructorId);
+
+      if (!isInstructorAssigned) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            "You are not assigned as an instructor for this evaluation's session course",
+        });
+      }
+
+      console.log('✅ getMarkingStatus: Success');
+      console.log('Marking Status:', evaluation.markingStatus);
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: {
+          markingStatus: evaluation.markingStatus,
+        },
+        customMessage: 'Marking status retrieved successfully',
+      });
+    } catch (error) {
+      console.error('❌ Error getting marking status:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: error.name,
+          message: error.message,
+          details: error.details || null,
+        },
+        customMessage: 'Error retrieving marking status',
       });
     }
   }
@@ -1527,32 +1626,135 @@ export class StudentevaluationService {
       }
 
       // Get all student answers for this evaluation with points information
-      const studentAnswers = await this.studentAnswerModel.findAll({
-        where: {
-          evaluationId: evaluationId,
-        },
-        attributes: ['studentId', 'points'],
-        raw: true,
-      });
-
-      // Extract unique student IDs and calculate marked answers percentage
-      const studentAnswerStats = new Map<
+      let studentAnswers: any[] = [];
+      let studentAnswerStats = new Map<
         string,
         { total: number; marked: number }
       >();
 
-      studentAnswers.forEach((answer: any) => {
-        const studentId = answer.studentId;
-        if (!studentAnswerStats.has(studentId)) {
-          studentAnswerStats.set(studentId, { total: 0, marked: 0 });
+      if (evaluation.isImmediateResult) {
+        // For isImmediateResult evaluations, query StudentAnswerOption directly
+        // First, get all questions for this evaluation
+        const questions = await this.evaluationQuestionModel.findAll({
+          where: {
+            evaluationId: evaluationId,
+          },
+          attributes: ['id'],
+        });
+
+        const questionIds = questions.map((q) => q.id);
+
+        if (questionIds.length > 0) {
+          // Query StudentAnswerOption directly for these questions
+          // Now we can filter by studentId directly since it's in the model
+          const studentAnswerOptions =
+            await this.studentAnswerOptionModel.findAll({
+              where: {
+                questionId: {
+                  [Op.in]: questionIds,
+                },
+              },
+              attributes: ['id', 'questionId', 'points', 'studentId'],
+              include: [
+                {
+                  model: EvaluationQuestion,
+                  as: 'question',
+                  attributes: ['id', 'evaluationId'],
+                  where: {
+                    evaluationId: evaluationId,
+                  },
+                  required: true,
+                },
+              ],
+            });
+
+          console.log(
+            `Evaluation: "${evaluation.title}" - Found ${studentAnswerOptions.length} StudentAnswerOption records`,
+          );
+
+          // Group StudentAnswerOptions by studentId and questionId
+          // Now we can use studentId directly from StudentAnswerOption
+          const studentQuestionOptionsMap = new Map<
+            string,
+            Map<string, any[]>
+          >();
+          studentAnswerOptions.forEach((option: any) => {
+            const studentId = option.studentId;
+            const questionId = option.questionId;
+
+            if (!studentQuestionOptionsMap.has(studentId)) {
+              studentQuestionOptionsMap.set(studentId, new Map());
+            }
+            const questionMap = studentQuestionOptionsMap.get(studentId)!;
+
+            if (!questionMap.has(questionId)) {
+              questionMap.set(questionId, []);
+            }
+            questionMap.get(questionId)!.push({
+              id: option.id,
+              questionId: option.questionId,
+              points: option.points,
+            });
+          });
+
+          // Create answer entries for each student-question combination
+          studentQuestionOptionsMap.forEach((questionMap, studentId) => {
+            questionMap.forEach((options, questionId) => {
+              const totalPoints = options.reduce(
+                (sum, opt) => sum + (opt.points || 0),
+                0,
+              );
+
+              studentAnswers.push({
+                studentId: studentId,
+                questionId: questionId,
+                points: totalPoints,
+                selectedOptions: options,
+              });
+
+              // Update stats
+              if (!studentAnswerStats.has(studentId)) {
+                studentAnswerStats.set(studentId, { total: 0, marked: 0 });
+              }
+              const stats = studentAnswerStats.get(studentId)!;
+              stats.total++;
+              if (totalPoints > 0) {
+                stats.marked++;
+              }
+            });
+          });
+
+          console.log(
+            `Evaluation: "${evaluation.title}" - Created ${studentAnswers.length} student answer entries from StudentAnswerOption`,
+          );
         }
-        const stats = studentAnswerStats.get(studentId)!;
-        stats.total++;
-        // An answer is considered marked if it has points assigned (points is not null)
-        if (answer.points !== null && answer.points !== undefined) {
-          stats.marked++;
-        }
-      });
+      } else {
+        // For non-immediate result evaluations, use StudentAnswer model
+        const studentAnswersQuery: any = {
+          where: {
+            evaluationId: evaluationId,
+          },
+          attributes: ['studentId', 'points', 'questionId'],
+          raw: true,
+        };
+
+        studentAnswers =
+          await this.studentAnswerModel.findAll(studentAnswersQuery);
+
+        // Extract unique student IDs and calculate marked answers percentage
+        studentAnswers.forEach((answer: any) => {
+          const studentId = answer.studentId;
+          if (!studentAnswerStats.has(studentId)) {
+            studentAnswerStats.set(studentId, { total: 0, marked: 0 });
+          }
+          const stats = studentAnswerStats.get(studentId)!;
+          stats.total++;
+          // An answer is considered marked if it has points assigned (points is not null)
+          if (answer.points !== null && answer.points !== undefined) {
+            stats.marked++;
+          }
+        });
+      }
 
       const uniqueStudentIds = Array.from(studentAnswerStats.keys());
 
@@ -1600,9 +1802,39 @@ export class StudentevaluationService {
             })
           : [];
 
+      // Calculate results for each student
+      // Get all questions for this evaluation to calculate total possible points
+      const questions = await this.evaluationQuestionModel.findAll({
+        where: {
+          evaluationId: evaluationId,
+        },
+        attributes: ['id', 'points', 'type'],
+      });
+
+      const questionIds = questions.map((q) => q.id);
+
+      // Calculate total possible points
+      const totalPossiblePoints = questions.reduce(
+        (sum, question) => sum + (question.points || 0),
+        0,
+      );
+
+      // Calculate total points earned by each student
+      const studentPointsMap = new Map<string, number>();
+
+      studentAnswers.forEach((answer: any) => {
+        const studentId = answer.studentId;
+        // Points are already calculated from selectedOptions for isImmediateResult evaluations
+        // or from StudentAnswer.points for regular evaluations
+        const points = answer.points || 0;
+
+        const currentTotal = studentPointsMap.get(studentId) || 0;
+        studentPointsMap.set(studentId, currentTotal + points);
+      });
+
       console.log(`=== getStudentsWhoAnsweredEvaluation: Success ===`);
       console.log(
-        `Found ${students.length} unique students who answered questions`,
+        `Evaluation: "${evaluation.title}" - Found ${students.length} unique students who answered questions`,
       );
 
       return Responder({
@@ -1649,6 +1881,14 @@ export class StudentevaluationService {
                 ? Math.round((stats.marked / stats.total) * 100 * 100) / 100
                 : 0;
 
+            const totalPointsEarned = studentPointsMap.get(student.id) || 0;
+            const percentage =
+              totalPossiblePoints > 0
+                ? Math.round(
+                    (totalPointsEarned / totalPossiblePoints) * 100 * 100,
+                  ) / 100
+                : 0;
+
             return {
               id: student.id,
               firstName: student.firstName,
@@ -1658,6 +1898,9 @@ export class StudentevaluationService {
               totalAnswers: stats.total,
               markedAnswers: stats.marked,
               markedPercentage: markedPercentage,
+              totalPointsEarned: totalPointsEarned,
+              totalPossiblePoints: totalPossiblePoints,
+              percentage: percentage,
             };
           }),
           totalStudents: students.length,
@@ -2125,7 +2368,14 @@ export class StudentevaluationService {
       // Get all evaluations matching the criteria (include sessionCoursId to map to sessions)
       const evaluations = await this.studentevaluationModel.findAll({
         where: evaluationWhere,
-        attributes: ['id', 'points', 'type', 'submittiondate', 'sessionCoursId'],
+        attributes: [
+          'id',
+          'points',
+          'type',
+          'submittiondate',
+          'sessionCoursId',
+          'isImmediateResult',
+        ],
       });
 
       if (evaluations.length === 0) {
@@ -2141,50 +2391,189 @@ export class StudentevaluationService {
       }
 
       const evaluationIds = evaluations.map((e) => e.id);
-      const totalPossiblePoints = evaluations.reduce(
+      const overallTotalPossiblePoints = evaluations.reduce(
         (sum, evaluation) => sum + (evaluation.points || 0),
         0,
       );
 
-      // Get all student answers for these evaluations
-      const studentAnswersWhere: any = {
-        evaluationId: {
-          [Op.in]: evaluationIds,
-        },
-      };
+      // Separate evaluations by isImmediateResult
+      const immediateResultEvaluations = evaluations.filter(
+        (e) => e.isImmediateResult === true,
+      );
+      const regularEvaluations = evaluations.filter(
+        (e) => !e.isImmediateResult,
+      );
 
-      // If studentId is provided, filter for that student only
-      if (filters.studentId) {
-        studentAnswersWhere.studentId = filters.studentId;
+      // Get all student answers for these evaluations
+      // For regular evaluations, use StudentAnswer
+      const studentAnswers: Array<{
+        studentId: string;
+        evaluationId: string;
+        points: number;
+      }> = [];
+
+      if (regularEvaluations.length > 0) {
+        const regularEvaluationIds = regularEvaluations.map((e) => e.id);
+        const studentAnswersWhere: any = {
+          evaluationId: {
+            [Op.in]: regularEvaluationIds,
+          },
+        };
+
+        // If studentId is provided, filter for that student only
+        if (filters.studentId) {
+          studentAnswersWhere.studentId = filters.studentId;
+        }
+
+        const regularStudentAnswers = await this.studentAnswerModel.findAll({
+          where: studentAnswersWhere,
+          attributes: ['studentId', 'evaluationId', 'points'],
+        });
+
+        regularStudentAnswers.forEach((answer) => {
+          studentAnswers.push({
+            studentId: answer.studentId,
+            evaluationId: answer.evaluationId,
+            points: answer.points || 0,
+          });
+        });
       }
 
-      const studentAnswers = await this.studentAnswerModel.findAll({
-        where: studentAnswersWhere,
-        attributes: ['studentId', 'evaluationId', 'points'],
+      // For isImmediateResult evaluations, use StudentAnswerOption
+      if (immediateResultEvaluations.length > 0) {
+        const immediateEvaluationIds = immediateResultEvaluations.map(
+          (e) => e.id,
+        );
+
+        // Get all questions for these evaluations
+        const questions = await this.evaluationQuestionModel.findAll({
+          where: {
+            evaluationId: {
+              [Op.in]: immediateEvaluationIds,
+            },
+          },
+          attributes: ['id', 'evaluationId'],
+        });
+
+        const questionIds = questions.map((q) => q.id);
+
+        if (questionIds.length > 0) {
+          // Query StudentAnswerOption for these questions
+          const studentAnswerOptionsWhere: any = {
+            questionId: {
+              [Op.in]: questionIds,
+            },
+          };
+
+          // If studentId is provided, filter for that student only
+          if (filters.studentId) {
+            studentAnswerOptionsWhere.studentId = filters.studentId;
+          }
+
+          const studentAnswerOptions =
+            await this.studentAnswerOptionModel.findAll({
+              where: studentAnswerOptionsWhere,
+              attributes: ['id', 'questionId', 'points', 'studentId'],
+              include: [
+                {
+                  model: EvaluationQuestion,
+                  as: 'question',
+                  attributes: ['id', 'evaluationId'],
+                  required: true,
+                },
+              ],
+            });
+
+          // Group StudentAnswerOptions by studentId and evaluationId
+          const studentEvaluationPointsMap = new Map<
+            string,
+            Map<string, number>
+          >();
+
+          studentAnswerOptions.forEach((option: any) => {
+            const studentId = option.studentId;
+            const evaluationId = option.question?.evaluationId;
+
+            if (!evaluationId) return;
+
+            if (!studentEvaluationPointsMap.has(studentId)) {
+              studentEvaluationPointsMap.set(studentId, new Map());
+            }
+            const evaluationMap = studentEvaluationPointsMap.get(studentId)!;
+
+            const currentPoints = evaluationMap.get(evaluationId) || 0;
+            evaluationMap.set(
+              evaluationId,
+              currentPoints + (option.points || 0),
+            );
+          });
+
+          // Convert to studentAnswers format
+          studentEvaluationPointsMap.forEach((evaluationMap, studentId) => {
+            evaluationMap.forEach((totalPoints, evaluationId) => {
+              studentAnswers.push({
+                studentId: studentId,
+                evaluationId: evaluationId,
+                points: totalPoints,
+              });
+            });
+          });
+        }
+      }
+
+      // Create a map of evaluationId -> evaluation points (total possible points)
+      const evaluationPointsMap = new Map<string, number>();
+      evaluations.forEach((evaluation) => {
+        evaluationPointsMap.set(evaluation.id, evaluation.points || 0);
       });
 
-      // Group answers by student
+      // Group answers by student and evaluation, then calculate scores normalized to /20 per evaluation
+      // First, aggregate points per student per evaluation
+      const studentEvaluationPointsMap = new Map<string, Map<string, number>>();
+
+      studentAnswers.forEach((answer) => {
+        const studentId = answer.studentId;
+        const evaluationId = answer.evaluationId;
+
+        if (!studentEvaluationPointsMap.has(studentId)) {
+          studentEvaluationPointsMap.set(studentId, new Map());
+        }
+        const evaluationMap = studentEvaluationPointsMap.get(studentId)!;
+
+        const currentPoints = evaluationMap.get(evaluationId) || 0;
+        evaluationMap.set(evaluationId, currentPoints + (answer.points || 0));
+      });
+
+      // Now calculate stats with scores normalized to /20 per evaluation
       const studentStatsMap = new Map<
         string,
         {
           studentId: string;
-          totalPointsEarned: number;
+          totalPointsEarned: number; // Sum of scores converted to /20
           evaluationCount: number;
         }
       >();
 
-      studentAnswers.forEach((answer) => {
-        const studentId = answer.studentId;
-        if (!studentStatsMap.has(studentId)) {
-          studentStatsMap.set(studentId, {
-            studentId,
-            totalPointsEarned: 0,
-            evaluationCount: 0,
-          });
-        }
-        const stats = studentStatsMap.get(studentId)!;
-        stats.totalPointsEarned += answer.points || 0;
-        stats.evaluationCount += 1;
+      studentEvaluationPointsMap.forEach((evaluationMap, studentId) => {
+        let totalPointsEarnedNormalized = 0;
+        let evaluationCount = 0;
+
+        evaluationMap.forEach((pointsEarned, evaluationId) => {
+          const evaluationPoints = evaluationPointsMap.get(evaluationId) || 0;
+
+          if (evaluationPoints > 0) {
+            // Convert points earned to scale over 20 for this evaluation
+            const scoreOver20 = (pointsEarned / evaluationPoints) * 20;
+            totalPointsEarnedNormalized += scoreOver20;
+            evaluationCount += 1;
+          }
+        });
+
+        studentStatsMap.set(studentId, {
+          studentId,
+          totalPointsEarned: totalPointsEarnedNormalized,
+          evaluationCount,
+        });
       });
 
       // Get student details
@@ -2273,7 +2662,7 @@ export class StudentevaluationService {
         // Group evaluations by session
         const evaluationsBySession = new Map<
           string,
-          Array<typeof evaluationsWithSession[0]>
+          Array<(typeof evaluationsWithSession)[0]>
         >();
         evaluationsWithSession.forEach((evaluation) => {
           if (evaluation.sessionId) {
@@ -2336,9 +2725,8 @@ export class StudentevaluationService {
             const sessionStatsData = sessionStatsMap.get(sessionId);
 
             if (sessionStatsData) {
-              const studentPoints = sessionStatsData.studentPointsMap.get(
-                studentId,
-              ) || 0;
+              const studentPoints =
+                sessionStatsData.studentPointsMap.get(studentId) || 0;
               const totalMaxPoints = sessionStatsData.totalMaxPoints;
 
               // Calculate average points for all students in this session
@@ -2352,11 +2740,15 @@ export class StudentevaluationService {
                   : 0;
 
               // Only include sessions where this student has evaluations
-              if (studentPoints > 0 || sessionEvals.some((e) => 
-                studentAnswers.some((sa) => 
-                  sa.evaluationId === e.id && sa.studentId === studentId
+              if (
+                studentPoints > 0 ||
+                sessionEvals.some((e) =>
+                  studentAnswers.some(
+                    (sa) =>
+                      sa.evaluationId === e.id && sa.studentId === studentId,
+                  ),
                 )
-              )) {
+              ) {
                 sessionStats.push({
                   sessionId,
                   sessionTitle,
@@ -2459,6 +2851,195 @@ export class StudentevaluationService {
         }
       }
 
+      // Calculate matiere-based statistics (grouped by sessionCoursId)
+      // Get all sessionCours details for matiere information
+      const allSessionCoursIds = Array.from(
+        new Set(evaluations.map((e) => e.sessionCoursId).filter(Boolean)),
+      );
+      const sessionCoursDetails = await this.sessionCoursModel.findAll({
+        where: {
+          id: {
+            [Op.in]: allSessionCoursIds,
+          },
+        },
+        attributes: ['id', 'title', 'ponderation'],
+        include: [
+          {
+            model: TrainingSession,
+            attributes: ['id', 'id_trainings'],
+            required: false,
+            include: [
+              {
+                model: Training,
+                attributes: ['id', 'trainingtype'],
+                required: false,
+              },
+            ],
+          },
+        ],
+      });
+      const sessionCoursMap = new Map<
+        string,
+        {
+          id: string;
+          title: string;
+          modality: TrainingType | null;
+          coefficient: number | null;
+        }
+      >();
+      sessionCoursDetails.forEach((sc) => {
+        // Get modality from training type via the relationship chain
+        // SessionCours -> TrainingSession -> Training -> trainingtype
+        // The Training relationship in TrainingSession is named 'trainings' (plural)
+        const training = (sc.trainingSession as any)?.trainings;
+        const modality: TrainingType | null = training?.trainingtype || null;
+
+        sessionCoursMap.set(sc.id, {
+          id: sc.id,
+          title: sc.title || '',
+          modality,
+          coefficient:
+            typeof sc.ponderation === 'number' ? sc.ponderation : null,
+        });
+      });
+
+      // Helper function to get comment based on score over 20
+      const getComment = (scoreOver20: number): string => {
+        if (scoreOver20 >= 0 && scoreOver20 <= 6) {
+          return 'Ajournée';
+        } else if (scoreOver20 >= 7 && scoreOver20 <= 10) {
+          return 'Admissible';
+        } else if (scoreOver20 >= 11 && scoreOver20 <= 20) {
+          return 'Admis';
+        }
+        return 'Ajournée'; // Default for scores outside expected range
+      };
+
+      // Group evaluations by sessionCoursId (matiere) for each student
+      const studentMatiereStatsMap = new Map<
+        string,
+        Array<{
+          matiereTitle: string;
+          pointsEarned: number;
+          totalPossiblePoints: number;
+          scoreOver20: number;
+          comment: string;
+          evaluationTypes: string;
+          modality: TrainingType | null;
+          percentage: number;
+        }>
+      >();
+
+      studentIds.forEach((studentId) => {
+        const matiereStats: Array<{
+          matiereTitle: string;
+          pointsEarned: number;
+          totalPossiblePoints: number;
+          scoreOver20: number;
+          comment: string;
+          evaluationTypes: string;
+          modality: TrainingType | null;
+          percentage: number;
+        }> = [];
+
+        // Group evaluations by sessionCoursId first
+        const evaluationsByMatiere = new Map<
+          string,
+          Array<(typeof evaluations)[0]>
+        >();
+        evaluations.forEach((evaluation) => {
+          if (evaluation.sessionCoursId) {
+            if (!evaluationsByMatiere.has(evaluation.sessionCoursId)) {
+              evaluationsByMatiere.set(evaluation.sessionCoursId, []);
+            }
+            evaluationsByMatiere
+              .get(evaluation.sessionCoursId)!
+              .push(evaluation);
+          }
+        });
+
+        // For each matiere, create a separate entry for each evaluation type
+        evaluationsByMatiere.forEach((matiereEvals, matiereId) => {
+          const matiereInfo = sessionCoursMap.get(matiereId);
+          if (!matiereInfo) return;
+
+          // Get all unique evaluation types for this matiere
+          const uniqueEvaluationTypes = Array.from(
+            new Set(
+              matiereEvals
+                .map((evaluation) => evaluation.type)
+                .filter(
+                  (type): type is StudentevaluationType =>
+                    typeof type === 'string',
+                ),
+            ),
+          );
+
+          // Create a separate entry for each evaluation type
+          uniqueEvaluationTypes.forEach((evaluationType) => {
+            // Filter evaluations for this specific type
+            const evaluationsOfType = matiereEvals.filter(
+              (e) => e.type === evaluationType,
+            );
+
+            // Get student answers for evaluations of this type in this matiere
+            const matiereEvalIds = evaluationsOfType.map((e) => e.id);
+            const matiereStudentAnswers = studentAnswers.filter(
+              (answer) =>
+                answer.studentId === studentId &&
+                matiereEvalIds.includes(answer.evaluationId),
+            );
+
+            // Aggregate points per evaluation to avoid double-counting
+            const evaluationPointsMap = new Map<string, number>();
+            matiereStudentAnswers.forEach((answer) => {
+              const currentPoints =
+                evaluationPointsMap.get(answer.evaluationId) || 0;
+              evaluationPointsMap.set(
+                answer.evaluationId,
+                currentPoints + (answer.points || 0),
+              );
+            });
+
+            // Calculate total points earned (sum of aggregated points per evaluation)
+            const pointsEarned = Array.from(
+              evaluationPointsMap.values(),
+            ).reduce((sum, points) => sum + points, 0);
+            const totalPossiblePoints = evaluationsOfType.reduce(
+              (sum, evaluation) => sum + (evaluation.points || 0),
+              0,
+            );
+
+            // Convert to score over 20
+            const scoreOver20 =
+              totalPossiblePoints > 0
+                ? (pointsEarned / totalPossiblePoints) * 20
+                : 0;
+            const scoreOver20Rounded = Math.round(scoreOver20 * 100) / 100;
+
+            // Get comment based on score
+            const comment = getComment(scoreOver20);
+
+            // Calculate percentage: pointsEarned over 20 (since pointsEarned is already on scale over 20)
+            const percentage = (scoreOver20Rounded / 20) * 100;
+
+            // Create entry for this evaluation type
+            matiereStats.push({
+              matiereTitle: matiereInfo.title,
+              pointsEarned: scoreOver20Rounded,
+              totalPossiblePoints,
+              scoreOver20: scoreOver20Rounded,
+              comment,
+              evaluationTypes: String(evaluationType), // Single evaluation type as string
+              modality: matiereInfo.modality,
+              percentage: Math.round(percentage * 100) / 100,
+            });
+          });
+        });
+
+        studentMatiereStatsMap.set(studentId, matiereStats);
+      });
+
       // Build result array
       const result = students
         .map((student) => {
@@ -2467,13 +3048,29 @@ export class StudentevaluationService {
             return null;
           }
 
+          // Convert totalPointsEarned to scale over 20
+          // totalPointsEarned is the sum of scores over 20 for each evaluation
+          // To normalize so totalPossiblePoints = 20:
+          // If student has X points out of Y total (where Y = 20 * evaluationCount),
+          // convert to: (X / Y) * 20
+          const totalPossiblePointsNormalized = 20;
+          const totalPointsEarnedNormalized =
+            stats.evaluationCount > 0
+              ? (stats.totalPointsEarned / (20 * stats.evaluationCount)) * 20
+              : 0;
+
+          // Calculate average points (knowing max per evaluation is 20)
+          // This is the average of scores over 20 per evaluation
           const averagePoints =
             stats.evaluationCount > 0
               ? stats.totalPointsEarned / stats.evaluationCount
               : 0;
+
+          // Calculate percentage based on normalized values (out of 20)
           const percentage =
-            totalPossiblePoints > 0
-              ? (stats.totalPointsEarned / totalPossiblePoints) * 100
+            totalPossiblePointsNormalized > 0
+              ? (totalPointsEarnedNormalized / totalPossiblePointsNormalized) *
+                100
               : 0;
 
           const baseResult: any = {
@@ -2485,10 +3082,18 @@ export class StudentevaluationService {
             studentAvatar: student.avatar || null,
             averagePoints: Math.round(averagePoints * 100) / 100,
             percentage: Math.round(percentage * 100) / 100,
-            totalPointsEarned: stats.totalPointsEarned,
-            totalPossiblePoints: totalPossiblePoints,
+            totalPointsEarned:
+              Math.round(totalPointsEarnedNormalized * 100) / 100,
+            totalPossiblePoints: totalPossiblePointsNormalized,
             evaluationCount: stats.evaluationCount,
           };
+
+          // Add matiere statistics (grouped by sessionCours)
+          const matiereStats = studentMatiereStatsMap.get(student.id) || [];
+          baseResult.matiereStats = matiereStats;
+
+          // Generate releve table from matiereStats for the first table
+          baseResult.releveTable = this.generateReleveTable(matiereStats);
 
           // Add sessionStats (always calculated from evaluations)
           baseResult.sessionStats =
@@ -2496,10 +3101,11 @@ export class StudentevaluationService {
 
           // Add training-specific fields (only when trainingId filter is provided)
           if (filters.trainingId) {
-            baseResult.sessionTitles = studentSessionTitlesMap.get(student.id) || [];
-            baseResult.totalHours = Math.round(
-              (studentTotalHoursMap.get(student.id) || 0) * 100,
-            ) / 100;
+            baseResult.sessionTitles =
+              studentSessionTitlesMap.get(student.id) || [];
+            baseResult.totalHours =
+              Math.round((studentTotalHoursMap.get(student.id) || 0) * 100) /
+              100;
           } else {
             // Always include these fields, even when trainingId is not provided
             baseResult.sessionTitles = [];
@@ -2514,7 +3120,7 @@ export class StudentevaluationService {
         students: result,
         filters: filters,
         totalEvaluations: evaluations.length,
-        totalPossiblePoints: totalPossiblePoints,
+        totalPossiblePoints: overallTotalPossiblePoints,
       };
 
       // Add training period if trainingId filter is provided
@@ -2540,5 +3146,42 @@ export class StudentevaluationService {
         },
       });
     }
+  }
+
+  /**
+   * Generate releve table from matiereStats
+   * Formats matiereStats into a table structure for transcript/report
+   */
+  generateReleveTable(
+    matiereStats: Array<{
+      matiereTitle: string;
+      pointsEarned: number;
+      totalPossiblePoints: number;
+      scoreOver20: number;
+      comment: string;
+      evaluationTypes: string;
+      modality: TrainingType | null;
+      percentage: number;
+    }>,
+  ): Array<{
+    matiereTitle: string;
+    evaluationType: string;
+    pointsEarned: number;
+    totalPossiblePoints: number;
+    scoreOver20: number;
+    comment: string;
+    modality: string | null;
+    percentage: number;
+  }> {
+    return matiereStats.map((matiere) => ({
+      matiereTitle: matiere.matiereTitle,
+      evaluationType: matiere.evaluationTypes, // evaluationTypes is now a string
+      pointsEarned: matiere.pointsEarned,
+      totalPossiblePoints: matiere.totalPossiblePoints,
+      scoreOver20: matiere.scoreOver20,
+      comment: matiere.comment,
+      modality: matiere.modality ? String(matiere.modality) : null,
+      percentage: matiere.percentage,
+    }));
   }
 }

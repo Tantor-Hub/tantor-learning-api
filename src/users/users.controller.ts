@@ -117,6 +117,85 @@ export class UsersController {
   }
 
   @Post('user/passwordless/verify')
+  @ApiBody({ type: VerifyOtpDto })
+  @ApiOperation({ summary: 'Verify OTP code', description: 'Verify the OTP code sent to user email for passwordless authentication' })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP verified successfully. User authenticated.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'integer', example: 200 },
+        message: { type: 'string', example: 'Succès' },
+        data: {
+          type: 'object',
+          properties: {
+            auth_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+            refresh_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+                email: { type: 'string', example: 'john.doe@example.com' },
+                firstName: { type: 'string', example: 'John' },
+                lastName: { type: 'string', example: 'Doe' },
+                avatar: { type: 'string', example: 'https://example.com/avatar.jpg', nullable: true },
+                role: { type: 'string', example: 'STUDENT' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired OTP code',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'integer', example: 400 },
+        message: { type: 'string', example: 'Requête invalide' },
+        data: { type: 'string', example: 'OTP invalide' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'User account is not verified',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'integer', example: 403 },
+        message: { type: 'string', example: 'Accès interdit' },
+        data: { type: 'string', example: "Votre compte n'est pas vérifié. Veuillez contacter un administrateur." },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'integer', example: 404 },
+        message: { type: 'string', example: 'Ressource introuvable' },
+        data: { type: 'string', example: 'Utilisateur non trouvé' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'integer', example: 500 },
+        message: { type: 'string', example: 'Erreur interne du serveur' },
+        data: { type: 'object' },
+      },
+    },
+  })
   async verifyOtp(@Body() verifyDto: VerifyOtpDto) {
     return this.userService.verifyOtp(verifyDto);
   }
@@ -330,6 +409,128 @@ export class UsersController {
   async googleAuth(@Req() req: any) {}
   @Get('/auth/google/callback')
   @UseGuards(AuthGuard('google'))
+  @ApiOperation({
+    summary: 'Google OAuth Callback',
+    description: `
+# Google OAuth Authentication Callback
+
+This endpoint is automatically called by Google OAuth after the user completes authentication on Google's servers. **This endpoint should NOT be called directly by the frontend.**
+
+## How It Works
+
+1. User initiates login by visiting: \`GET /api/users/user/authwithgoogle\`
+2. User is redirected to Google for authentication
+3. After Google authentication, Google redirects back to this callback endpoint
+4. This endpoint processes the authentication and redirects to the frontend
+
+## Frontend Integration
+
+### Success Response
+On successful authentication, the user is redirected to:
+\`\`\`
+{APPBASEURLFRONT}/signin?success={base64_encoded_json}
+\`\`\`
+
+The \`success\` query parameter contains a base64-encoded JSON object:
+\`\`\`json
+{
+  "status": 200,
+  "message": "Succès",
+  "data": {
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "email": "john.doe@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "avatar": "https://example.com/avatar.jpg",
+      "role": "STUDENT"
+    }
+  }
+}
+\`\`\`
+
+### Error Response
+On authentication failure, the user is redirected to:
+\`\`\`
+{APPBASEURLFRONT}/signin?error={base64_encoded_json}
+\`\`\`
+
+The \`error\` query parameter contains a base64-encoded JSON object:
+\`\`\`json
+{
+  "code": 500,
+  "message": "Error message",
+  "data": "Error details"
+}
+\`\`\`
+
+## Frontend Implementation Example
+
+\`\`\`typescript
+// In your signin page component
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const success = urlParams.get('success');
+  const error = urlParams.get('error');
+
+  if (success) {
+    try {
+      const decoded = JSON.parse(atob(success));
+      if (decoded.status === 200 && decoded.data) {
+        // Store tokens
+        localStorage.setItem('auth_token', decoded.data.auth_token);
+        localStorage.setItem('refresh_token', decoded.data.refresh_token);
+        
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(decoded.data.user));
+        
+        // Redirect to dashboard or home
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      console.error('Failed to parse success response:', err);
+    }
+  }
+
+  if (error) {
+    try {
+      const decoded = JSON.parse(atob(error));
+      // Display error message to user
+      showErrorToast(decoded.message || 'Authentication failed');
+    } catch (err) {
+      console.error('Failed to parse error response:', err);
+    }
+  }
+}, []);
+\`\`\`
+
+## Notes
+
+- The redirect URL is configured in the Google OAuth strategy
+- New users are automatically created with the STUDENT role
+- Existing users are logged in directly
+- All user data comes from the Google profile (email, name, avatar)
+    `,
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to frontend signin page with success or error query parameters',
+    headers: {
+      Location: {
+        description: 'Redirect URL to frontend signin page',
+        schema: {
+          type: 'string',
+          example: 'http://localhost:3000/signin?success=eyJzdGF0dXMiOjIwMCwibWVzc2FnZSI6IlN1Y2PDqHMiLCJkYXRhIjp7ImF1dGhfdG9rZW4iOiIuLi4iLCJyZWZyZXNoX3Rva2VuIjoiLi4uIiwidXNlciI6eyJpZCI6Ii4uLiIsImVtYWlsIjoiLi4uIn19fQ==',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error during authentication',
+  })
   async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
     log(' ===== >>>> ', req?.url);
     await this.userService.authWithGoogle(req.user, res);

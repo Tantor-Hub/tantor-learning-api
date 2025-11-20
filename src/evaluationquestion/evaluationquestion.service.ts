@@ -7,7 +7,10 @@ import { UpdateEvaluationQuestionDto } from './dto/update-evaluationquestion.dto
 import { ResponseServer } from 'src/interface/interface.response';
 import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
-import { Studentevaluation } from 'src/models/model.studentevaluation';
+import {
+  MarkingStatus,
+  Studentevaluation,
+} from 'src/models/model.studentevaluation';
 import { EvaluationQuestionOption } from 'src/models/model.evaluationquestionoption';
 import { StudentAnswer } from 'src/models/model.studentanswer';
 
@@ -375,6 +378,14 @@ export class EvaluationQuestionService {
         return Responder({
           status: HttpStatusCode.NotFound,
           customMessage: 'Student evaluation not found',
+        });
+      }
+
+      if (evaluation.markingStatus === MarkingStatus.PUBLISHED) {
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage:
+            "Cette évaluation a été corrigée et soumise au secrétariat.",
         });
       }
 

@@ -1546,9 +1546,8 @@ export class UsersService {
         });
         const dateParts = formatter.formatToParts(now);
         const year = parseInt(dateParts.find((p) => p.type === 'year')!.value);
-        const month = parseInt(
-          dateParts.find((p) => p.type === 'month')!.value,
-        ) - 1; // Month is 0-indexed
+        const month =
+          parseInt(dateParts.find((p) => p.type === 'month')!.value) - 1; // Month is 0-indexed
         const day = parseInt(dateParts.find((p) => p.type === 'day')!.value);
         // Create a date object with the French timezone date at midnight
         return new Date(Date.UTC(year, month, day));
@@ -1608,9 +1607,14 @@ export class UsersService {
         day: '2-digit',
       });
       const todayParts = todayFormatter.formatToParts(new Date());
-      const todayYear = parseInt(todayParts.find((p) => p.type === 'year')!.value);
-      const todayMonth = parseInt(todayParts.find((p) => p.type === 'month')!.value) - 1;
-      const todayDay = parseInt(todayParts.find((p) => p.type === 'day')!.value);
+      const todayYear = parseInt(
+        todayParts.find((p) => p.type === 'year')!.value,
+      );
+      const todayMonth =
+        parseInt(todayParts.find((p) => p.type === 'month')!.value) - 1;
+      const todayDay = parseInt(
+        todayParts.find((p) => p.type === 'day')!.value,
+      );
 
       // Initialize all 7 days with count 0, starting from today (i=0) going back 6 days
       // This ensures today is definitely included as the first/latest date
@@ -1620,7 +1624,7 @@ export class UsersService {
         const baseDate = new Date(Date.UTC(todayYear, todayMonth, todayDay));
         const date = new Date(baseDate);
         date.setUTCDate(date.getUTCDate() - i);
-        
+
         // Use French timezone for date string
         const dateString = formatDateInFrenchTZ(date);
 
@@ -1740,8 +1744,26 @@ export class UsersService {
                     delete (newInstance as any).updatedAt;
                     const { hashed, refresh, cleared } = data;
                     // if (is_verified) this.onWelcomeNewStudent({ to: email, nom: firstName, postnom: lastName, otp: verif_code, all: false })
+                    const userData = {
+                      id: student.id,
+                      email: student.email,
+                      firstName: student.firstName || '',
+                      lastName: student.lastName || '',
+                      avatar: student.avatar || null,
+                      role: student.role,
+                    };
                     return res.redirect(
-                      `${base}/signin?success=${base64encode(JSON.stringify({ status: 200, user: student, auth_token: hashed, refresh_token: refresh }))}`,
+                      `${base}/signin?success=${base64encode(
+                        JSON.stringify({
+                          status: 200,
+                          message: 'Succès',
+                          data: {
+                            auth_token: hashed,
+                            refresh_token: refresh,
+                            user: userData,
+                          },
+                        }),
+                      )}`,
                     );
                   })
                   .catch((err) =>

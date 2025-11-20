@@ -109,6 +109,7 @@ export class StudentAnswerOptionService {
       const answerOption = await this.studentAnswerOptionModel.create({
         optionId: createStudentAnswerOptionDto.optionId,
         questionId: createStudentAnswerOptionDto.questionId,
+        studentId: studentId,
         isCorrect: isCorrect,
         points: points,
       } as any);

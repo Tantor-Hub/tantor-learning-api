@@ -44,7 +44,7 @@ export class StudentAnswerOptionController {
       selectOption: {
         summary: 'Select Option (Auto-scoring)',
         description:
-          'Select an option for a multiple choice answer. isCorrect and points are automatically set based on the evaluation question option.',
+          'Select an option for a multiple choice answer. isCorrect and points are automatically set based on the evaluation question option. The studentId is automatically extracted from the authentication token.',
         value: {
           questionId: 'question-uuid-1',
           optionId: 'option-uuid-1',
@@ -53,7 +53,7 @@ export class StudentAnswerOptionController {
       selectOptionWithCustomPoints: {
         summary: 'Select Option with Custom Points',
         description:
-          'Select an option with custom points (must not exceed question maximum points)',
+          'Select an option with custom points (must not exceed question maximum points). The studentId is automatically extracted from the authentication token.',
         value: {
           questionId: 'question-uuid-1',
           optionId: 'option-uuid-1',

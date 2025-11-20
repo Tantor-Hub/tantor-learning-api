@@ -11,6 +11,7 @@ import {
 } from 'sequelize-typescript';
 import { EvaluationQuestionOption } from './model.evaluationquestionoption';
 import { EvaluationQuestion } from './model.evaluationquestion';
+import { Users } from './model.users';
 
 @Table({
   tableName: '___tbl_tantor_student_answer_options',
@@ -31,6 +32,10 @@ export class StudentAnswerOption extends Model<StudentAnswerOption> {
   @AllowNull(false)
   @Column(DataType.UUID)
   questionId: string;
+
+  @AllowNull(false)
+  @Column(DataType.UUID)
+  studentId: string;
 
   @Default(false)
   @Column(DataType.BOOLEAN)
@@ -58,4 +63,10 @@ export class StudentAnswerOption extends Model<StudentAnswerOption> {
     targetKey: 'id',
   })
   question?: EvaluationQuestion;
+
+  @BelongsTo(() => Users, {
+    foreignKey: 'studentId',
+    targetKey: 'id',
+  })
+  student?: Users;
 }

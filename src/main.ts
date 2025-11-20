@@ -26,8 +26,8 @@ async function tantorAPP() {
   const allowedOrigins = [
     'https://tantorlearning.com',
     'https://www.tantorlearning.com',
-    'https://medications-hottest-located-currencies.trycloudflare.com',
-    'https://www.medications-hottest-located-currencies.trycloudflare.com',
+
+    'https://rick-legacy-warming-ontario.trycloudflare.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',

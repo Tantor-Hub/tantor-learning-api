@@ -28,13 +28,19 @@ export class BookService {
     userId: string,
   ): Promise<ResponseServer> {
     try {
+      // If sessions are selected, automatically set status to premium
+      // Otherwise, use the status provided by the frontend
+      const sessions = createDto.session || [];
+      const hasSessions = Array.isArray(sessions) && sessions.length > 0;
+      const finalStatus = hasSessions ? BookStatus.PREMIUM : createDto.status;
+
       const book = await this.bookModel.create({
         title: createDto.title,
         description: createDto.description,
-        session: createDto.session || [],
+        session: sessions,
         author: createDto.author,
         createby: userId,
-        status: createDto.status,
+        status: finalStatus,
         category: createDto.category || [],
         icon: createDto.icon,
         piece_joint: createDto.piece_joint,
@@ -362,7 +368,22 @@ export class BookService {
       if (updateDto.session !== undefined)
         updateData.session = updateDto.session;
       if (updateDto.author !== undefined) updateData.author = updateDto.author;
-      if (updateDto.status !== undefined) updateData.status = updateDto.status;
+
+      // Determine final sessions (either from update or existing book)
+      const finalSessions =
+        updateData.session !== undefined
+          ? updateData.session
+          : book.session || [];
+      const hasSessions =
+        Array.isArray(finalSessions) && finalSessions.length > 0;
+
+      // If sessions are present (after update), automatically set status to premium
+      // Otherwise, use the status provided by the frontend (if provided)
+      if (hasSessions) {
+        updateData.status = BookStatus.PREMIUM;
+      } else if (updateDto.status !== undefined) {
+        updateData.status = updateDto.status;
+      }
       if (updateDto.category !== undefined)
         updateData.category = updateDto.category;
       if (updateDto.icon !== undefined) updateData.icon = updateDto.icon;

@@ -124,7 +124,7 @@ export class SessionCoursService {
                 id: coursData.id_formateur,
                 role: 'instructor',
               },
-              attributes: ['id', 'firstName', 'lastName'],
+              attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
             });
 
             coursData.formateurs = formateurs.map((formateur) =>
@@ -216,7 +216,7 @@ export class SessionCoursService {
                 id: coursData.id_formateur,
                 role: 'instructor',
               },
-              attributes: ['id', 'firstName', 'lastName'],
+              attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
             });
 
             coursData.formateurs = formateurs.map((formateur) =>
@@ -310,7 +310,7 @@ export class SessionCoursService {
                 id: coursData.id_formateur,
                 role: 'instructor',
               },
-              attributes: ['id', 'firstName', 'lastName'],
+              attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
             });
 
             coursData.formateurs = formateurs.map((formateur) =>
@@ -412,7 +412,7 @@ export class SessionCoursService {
                 id: coursData.id_formateur,
                 role: 'instructor',
               },
-              attributes: ['id', 'firstName', 'lastName'],
+              attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
             });
 
             coursData.formateurs = formateurs.map((formateur) =>

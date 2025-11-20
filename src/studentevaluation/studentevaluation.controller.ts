@@ -28,6 +28,8 @@ import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsessi
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
+import { StudentevaluationType } from 'src/interface/interface.studentevaluation';
+import { TrainingType } from 'src/interface/interface.trainings';
 
 @ApiTags('Student Evaluations')
 @Controller('studentevaluation')
@@ -545,6 +547,71 @@ export class StudentevaluationController {
     );
   }
 
+  @Get('instructor/evaluation/:evaluationId/marking-status')
+  @UseGuards(JwtAuthGuardAsInstructor)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get marking status for an evaluation (Instructor)',
+    description:
+      "Retrieve the marking status of a specific evaluation. Only instructors assigned to the evaluation's session course can access this endpoint.",
+  })
+  @ApiParam({
+    name: 'evaluationId',
+    description:
+      'Evaluation UUID - The unique identifier of the student evaluation',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Marking status retrieved successfully',
+    example: {
+      status: 200,
+      message: 'Marking status retrieved successfully',
+      data: {
+        markingStatus: 'published',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token required',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      "Forbidden - You are not assigned as an instructor for this evaluation's session course",
+    example: {
+      status: 403,
+      message:
+        "You are not assigned as an instructor for this evaluation's session course",
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Evaluation not found',
+    example: {
+      status: 404,
+      message: 'Evaluation not found',
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+    example: {
+      status: 500,
+      message: 'Error retrieving marking status',
+    },
+  })
+  getMarkingStatus(
+    @Param('evaluationId') evaluationId: string,
+    @User() user: IJwtSignin,
+  ) {
+    return this.studentevaluationService.getMarkingStatus(
+      evaluationId,
+      user.id_user,
+    );
+  }
+
   @Get('instructor/evaluation/:evaluationId/students')
   @UseGuards(JwtAuthGuardAsInstructor)
   @ApiBearerAuth()
@@ -575,7 +642,7 @@ export class StudentevaluationController {
           type: 'quiz',
           points: 100,
           ispublish: true,
-          markingStatus: 'completed',
+          markingStatus: 'published',
           sessionCoursId: 'sessioncours-uuid',
           sessionCours: {
             id: 'sessioncours-uuid',
@@ -697,7 +764,7 @@ export class StudentevaluationController {
           type: 'quiz',
           points: 100,
           ispublish: true,
-          markingStatus: 'completed',
+          markingStatus: 'published',
           sessionCours: {
             id: 'sessioncours-uuid',
             title: 'React Course',
@@ -1447,7 +1514,7 @@ export class StudentevaluationController {
   @ApiOperation({
     summary: 'Update marking status for student evaluation',
     description:
-      'Update the marking status of a student evaluation. Only instructors can update marking status. Status progression: pending -> in_progress -> completed -> published',
+      'Update the marking status of a student evaluation. Only instructors can update marking status. Status progression: pending -> published',
   })
   @ApiParam({
     name: 'evaluationId',
@@ -1462,33 +1529,26 @@ export class StudentevaluationController {
       properties: {
         markingStatus: {
           type: 'string',
-          enum: ['pending', 'in_progress', 'completed', 'published'],
+          enum: ['pending', 'published'],
           description: 'New marking status for the evaluation',
-          example: 'completed',
+          example: 'published',
         },
       },
       required: ['markingStatus'],
     },
     examples: {
-      markInProgress: {
-        summary: 'Mark as In Progress',
-        description: 'Set evaluation marking status to in_progress',
-        value: {
-          markingStatus: 'in_progress',
-        },
-      },
-      markCompleted: {
-        summary: 'Mark as Completed',
-        description: 'Set evaluation marking status to completed',
-        value: {
-          markingStatus: 'completed',
-        },
-      },
       publishResults: {
         summary: 'Publish Results',
         description: 'Set evaluation marking status to published',
         value: {
           markingStatus: 'published',
+        },
+      },
+      resetToPending: {
+        summary: 'Reset to Pending',
+        description: 'Revert evaluation marking status to pending',
+        value: {
+          markingStatus: 'pending',
         },
       },
     },
@@ -1503,14 +1563,14 @@ export class StudentevaluationController {
         evaluation: {
           id: 'eval-uuid-1',
           title: 'React Fundamentals Assessment',
-          markingStatus: 'completed',
+          markingStatus: 'published',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
         message: 'Marking status updated successfully',
         details: {
           id: 'eval-uuid-1',
           title: 'React Fundamentals Assessment',
-          markingStatus: 'completed',
+          markingStatus: 'published',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
       },
@@ -1573,7 +1633,7 @@ export class StudentevaluationController {
         description:
           'Mark the evaluation as completed and ready for publishing',
         value: {
-          markingStatus: 'completed',
+          markingStatus: 'published',
         },
       },
       fullStatusUpdate: {
@@ -1599,7 +1659,7 @@ export class StudentevaluationController {
           title: 'React Fundamentals Assessment',
           ispublish: true,
           isImmediateResult: false,
-          markingStatus: 'completed',
+          markingStatus: 'published',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
         message: 'Evaluation status updated successfully',
@@ -1608,7 +1668,7 @@ export class StudentevaluationController {
           title: 'React Fundamentals Assessment',
           ispublish: true,
           isImmediateResult: false,
-          markingStatus: 'completed',
+          markingStatus: 'published',
           updatedAt: '2025-01-15T10:30:00.000Z',
         },
       },
@@ -1679,6 +1739,14 @@ export class StudentevaluationController {
     summary: 'Get student evaluation statistics (Secretary only)',
     description: `Get average points and percentage for student evaluations. Filter by training, trainingsession, sessioncours, or lesson. Can get statistics for all students or a specific student.
     
+    **Matiere Statistics (grouped by sessionCours):**
+    - Each matiere (sessionCours) shows the student's performance
+    - Points are converted to a scale over 20
+    - Comments are assigned based on score over 20:
+      - 0-6: Ajournée
+      - 7-10: Admissible
+      - 11-20: Admis
+    
     **When filtering by training (trainingId):**
     - Returns the training period (start and end dates)
     - Calculates total hours from all events related to sessions the student is enrolled in
@@ -1720,71 +1788,213 @@ export class StudentevaluationController {
                   totalPointsEarned: { type: 'number', example: 855 },
                   totalPossiblePoints: { type: 'number', example: 1000 },
                   evaluationCount: { type: 'number', example: 10 },
-                        sessionTitles: {
-                          type: 'array',
-                          items: { type: 'string' },
-                          description:
-                            'Session titles the student was in (only when trainingId filter is provided)',
-                          example: ['Session 1', 'Session 2'],
+                  matiereStats: {
+                    type: 'array',
+                    description:
+                      'Statistics grouped by matiere (sessionCours) with scores over 20 and comments',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        matiereTitle: {
+                          type: 'string',
+                          example: 'React Fundamentals',
                         },
-                        totalHours: {
+                        pointsEarned: {
                           type: 'number',
                           description:
-                            'Total hours from all events in sessions the student is in (only when trainingId filter is provided)',
-                          example: 120.5,
+                            'Points earned converted to a scale over 20 for this matiere',
+                          example: 17.5,
                         },
-                        sessionStats: {
-                          type: 'array',
+                        totalPossiblePoints: {
+                          type: 'number',
+                          description: 'Total possible points in this matiere',
+                          example: 100,
+                        },
+                        scoreOver20: {
+                          type: 'number',
+                          description: 'Score converted to scale over 20',
+                          example: 17.0,
+                        },
+                        comment: {
+                          type: 'string',
+                          enum: ['Ajournée', 'Admissible', 'Admis'],
                           description:
-                            'Per-session statistics including student points, session average, and total max points (only when trainingId filter is provided)',
-                          items: {
-                            type: 'object',
-                            properties: {
-                              sessionId: {
-                                type: 'string',
-                                format: 'uuid',
-                                example: '550e8400-e29b-41d4-a716-446655440001',
-                              },
-                              sessionTitle: {
-                                type: 'string',
-                                example: 'Session 1',
-                              },
-                              studentPoints: {
-                                type: 'number',
-                                description: 'Points earned by this student in this session',
-                                example: 85,
-                              },
-                              sessionAverage: {
-                                type: 'number',
-                                description:
-                                  'Average points from all students in this session',
-                                example: 82.5,
-                              },
-                              totalMaxPoints: {
-                                type: 'number',
-                                description:
-                                  'Total maximum points possible in this session',
-                                example: 100,
-                              },
-                            },
-                          },
-                          example: [
-                            {
-                              sessionId: '550e8400-e29b-41d4-a716-446655440001',
-                              sessionTitle: 'Session 1',
-                              studentPoints: 85,
-                              sessionAverage: 82.5,
-                              totalMaxPoints: 100,
-                            },
-                            {
-                              sessionId: '550e8400-e29b-41d4-a716-446655440002',
-                              sessionTitle: 'Session 2',
-                              studentPoints: 90,
-                              sessionAverage: 88.3,
-                              totalMaxPoints: 100,
-                            },
-                          ],
+                            'Comment based on score: 0-6 = Ajournée, 7-10 = Admissible, 11-20 = Admis',
+                          example: 'Admis',
                         },
+                        evaluationTypes: {
+                          type: 'string',
+                          enum: Object.values(StudentevaluationType),
+                          description: 'Evaluation type for this matiere entry',
+                          example: StudentevaluationType.QUIZ,
+                        },
+                        modality: {
+                          type: 'string',
+                          nullable: true,
+                          enum: Object.values(TrainingType),
+                          description:
+                            'Modalité (training type) inherited from the training linked to this matiere',
+                          example: TrainingType.EN_LIGNE,
+                        },
+                        percentage: {
+                          type: 'number',
+                          description: 'Percentage of pointsEarned over 20',
+                          example: 56.65,
+                        },
+                      },
+                    },
+                    example: [
+                      {
+                        matiereTitle: 'React Fundamentals',
+                        pointsEarned: 17.5,
+                        totalPossiblePoints: 100,
+                        scoreOver20: 17.0,
+                        comment: 'Admis',
+                        evaluationTypes: StudentevaluationType.QUIZ,
+                        modality: TrainingType.EN_LIGNE,
+                        percentage: 87.5,
+                      },
+                      {
+                        matiereTitle: 'Node.js Basics',
+                        pointsEarned: 7,
+                        totalPossiblePoints: 100,
+                        scoreOver20: 7.0,
+                        comment: 'Admissible',
+                        evaluationTypes: StudentevaluationType.TEST,
+                        modality: TrainingType.PRESENTIEL,
+                        percentage: 35,
+                      },
+                    ],
+                  },
+                  sessionTitles: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description:
+                      'Session titles the student was in (only when trainingId filter is provided)',
+                    example: ['Session 1', 'Session 2'],
+                  },
+                  totalHours: {
+                    type: 'number',
+                    description:
+                      'Total hours from all events in sessions the student is in (only when trainingId filter is provided)',
+                    example: 120.5,
+                  },
+                  sessionStats: {
+                    type: 'array',
+                    description:
+                      'Per-session statistics including student points, session average, and total max points (only when trainingId filter is provided)',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        sessionId: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '550e8400-e29b-41d4-a716-446655440001',
+                        },
+                        sessionTitle: {
+                          type: 'string',
+                          example: 'Session 1',
+                        },
+                        studentPoints: {
+                          type: 'number',
+                          description:
+                            'Points earned by this student in this session',
+                          example: 85,
+                        },
+                        sessionAverage: {
+                          type: 'number',
+                          description:
+                            'Average points from all students in this session',
+                          example: 82.5,
+                        },
+                        totalMaxPoints: {
+                          type: 'number',
+                          description:
+                            'Total maximum points possible in this session',
+                          example: 100,
+                        },
+                      },
+                    },
+                    example: [
+                      {
+                        sessionId: '550e8400-e29b-41d4-a716-446655440001',
+                        sessionTitle: 'Session 1',
+                        studentPoints: 85,
+                        sessionAverage: 82.5,
+                        totalMaxPoints: 100,
+                      },
+                      {
+                        sessionId: '550e8400-e29b-41d4-a716-446655440002',
+                        sessionTitle: 'Session 2',
+                        studentPoints: 90,
+                        sessionAverage: 88.3,
+                        totalMaxPoints: 100,
+                      },
+                    ],
+                  },
+                  releveTable: {
+                    type: 'array',
+                    description:
+                      'Releve table formatted from matiereStats for transcript/report generation',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        matiereTitle: {
+                          type: 'string',
+                          example: 'Cours de Math',
+                        },
+                        evaluationType: {
+                          type: 'string',
+                          enum: Object.values(StudentevaluationType),
+                          example: 'test',
+                        },
+                        pointsEarned: {
+                          type: 'number',
+                          description:
+                            'Points earned converted to scale over 20',
+                          example: 11.33,
+                        },
+                        totalPossiblePoints: {
+                          type: 'number',
+                          description:
+                            'Total possible points for this evaluation type',
+                          example: 30,
+                        },
+                        scoreOver20: {
+                          type: 'number',
+                          description: 'Score converted to scale over 20',
+                          example: 11.33,
+                        },
+                        comment: {
+                          type: 'string',
+                          enum: ['Ajournée', 'Admissible', 'Admis'],
+                          example: 'Admis',
+                        },
+                        modality: {
+                          type: 'string',
+                          nullable: true,
+                          enum: Object.values(TrainingType),
+                          example: 'Hybride',
+                        },
+                        percentage: {
+                          type: 'number',
+                          example: 56.65,
+                        },
+                      },
+                    },
+                    example: [
+                      {
+                        matiereTitle: 'Cours de Math',
+                        evaluationType: 'test',
+                        pointsEarned: 11.33,
+                        totalPossiblePoints: 30,
+                        scoreOver20: 11.33,
+                        comment: 'Admis',
+                        modality: 'Hybride',
+                        percentage: 56.65,
+                      },
+                    ],
+                  },
                 },
               },
             },

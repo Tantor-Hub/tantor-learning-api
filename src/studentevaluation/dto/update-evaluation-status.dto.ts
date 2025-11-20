@@ -24,7 +24,7 @@ export class UpdateEvaluationStatusDto {
   @ApiProperty({
     description: 'Status of the marking process',
     enum: MarkingStatus,
-    example: MarkingStatus.COMPLETED,
+    example: MarkingStatus.PUBLISHED,
     required: false,
   })
   @IsOptional()

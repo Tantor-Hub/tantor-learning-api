@@ -24,7 +24,6 @@ export enum StudentevaluationType {
 export enum MarkingStatus {
   PENDING = 'pending',
   IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
   PUBLISHED = 'published',
 }
 

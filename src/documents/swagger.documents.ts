@@ -166,6 +166,12 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 example:
                   'https://res.cloudinary.com/example/image/upload/v1234567890/template-image.jpg',
               },
+              signature: {
+                type: 'boolean',
+                description:
+                  'Whether the document template requires a signature (optional, default: false)',
+                example: false,
+              },
             },
             required: ['title', 'content', 'sessionId', 'type'],
             example: {
@@ -193,6 +199,7 @@ Variables are placeholder names that can be used in the TipTap content. They sho
               },
               sessionId: '123e4567-e89b-12d3-a456-426614174000',
               type: 'before',
+              signature: false,
             },
           },
           examples: {
@@ -421,6 +428,7 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 sessionId: { type: 'string', format: 'uuid' },
                 type: { type: 'string', enum: ['before', 'during', 'after'] },
                 imageUrl: { type: 'string' },
+                signature: { type: 'boolean' },
                 createdAt: { type: 'string', format: 'date-time' },
                 updatedAt: { type: 'string', format: 'date-time' },
               },
@@ -500,6 +508,12 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                 example:
                   'https://res.cloudinary.com/your-cloud/documents/updated-image.jpg',
               },
+              signature: {
+                type: 'boolean',
+                description:
+                  'Whether the document template requires a signature (optional)',
+                example: true,
+              },
             },
           },
           examples: {
@@ -554,6 +568,7 @@ Variables are placeholder names that can be used in the TipTap content. They sho
                     },
                     variables: { type: 'array', items: { type: 'string' } },
                     imageUrl: { type: 'string' },
+                    signature: { type: 'boolean' },
                     createdAt: { type: 'string', format: 'date-time' },
                     updatedAt: { type: 'string', format: 'date-time' },
                     createdBy: {

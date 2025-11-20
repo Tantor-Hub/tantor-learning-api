@@ -343,11 +343,16 @@ export class BookController {
       }
 
       // Create book with uploaded file URLs
+      // If sessions are selected, automatically set status to premium
+      // Otherwise, use the status provided by the frontend
+      const hasSessions = Array.isArray(session) && session.length > 0;
+      const finalStatus = hasSessions ? 'premium' : createBookDto.status;
+
       const bookData: CreateBookDto & { icon: string; piece_joint: string } = {
         title: createBookDto.title,
         description: createBookDto.description,
         author: createBookDto.author,
-        status: createBookDto.status,
+        status: finalStatus as any,
         category: category,
         session: session,
         public:
@@ -509,7 +514,8 @@ export class BookController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get all books (Secretary only)',
-    description: 'Retrieve every book without filters or public-only restrictions.',
+    description:
+      'Retrieve every book without filters or public-only restrictions.',
   })
   @ApiResponse({
     status: 200,
@@ -523,17 +529,32 @@ export class BookController {
           items: {
             type: 'object',
             properties: {
-              id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: '550e8400-e29b-41d4-a716-446655440000',
+              },
               title: { type: 'string', example: 'Introduction to Programming' },
-              description: { type: 'string', example: 'A comprehensive guide to programming fundamentals' },
+              description: {
+                type: 'string',
+                example: 'A comprehensive guide to programming fundamentals',
+              },
               session: {
                 type: 'array',
                 items: { type: 'string', format: 'uuid' },
                 example: ['1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b'],
               },
               author: { type: 'string', example: 'John Doe' },
-              createby: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
-              status: { type: 'string', enum: ['premium', 'free'], example: 'free' },
+              createby: {
+                type: 'string',
+                format: 'uuid',
+                example: '550e8400-e29b-41d4-a716-446655440001',
+              },
+              status: {
+                type: 'string',
+                enum: ['premium', 'free'],
+                example: 'free',
+              },
               category: {
                 type: 'array',
                 items: { type: 'string', format: 'uuid' },
@@ -541,22 +562,36 @@ export class BookController {
               },
               icon: {
                 type: 'string',
-                example: 'https://res.cloudinary.com/example/image/upload/v1234567890/icon.jpg',
+                example:
+                  'https://res.cloudinary.com/example/image/upload/v1234567890/icon.jpg',
               },
               piece_joint: {
                 type: 'string',
-                example: 'https://res.cloudinary.com/example/image/upload/v1234567890/document.pdf',
+                example:
+                  'https://res.cloudinary.com/example/image/upload/v1234567890/document.pdf',
               },
               views: { type: 'number', example: 150 },
               download: { type: 'number', example: 45 },
               public: { type: 'boolean', example: true },
               downloadable: { type: 'boolean', example: false },
-              createdAt: { type: 'string', format: 'date-time', example: '2025-01-25T10:00:00.000Z' },
-              updatedAt: { type: 'string', format: 'date-time', example: '2025-01-25T10:00:00.000Z' },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                example: '2025-01-25T10:00:00.000Z',
+              },
+              updatedAt: {
+                type: 'string',
+                format: 'date-time',
+                example: '2025-01-25T10:00:00.000Z',
+              },
               creator: {
                 type: 'object',
                 properties: {
-                  id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440001' },
+                  id: {
+                    type: 'string',
+                    format: 'uuid',
+                    example: '550e8400-e29b-41d4-a716-446655440001',
+                  },
                   firstName: { type: 'string', example: 'Jane' },
                   lastName: { type: 'string', example: 'Doe' },
                   email: { type: 'string', example: 'jane.doe@example.com' },
@@ -775,9 +810,11 @@ export class BookController {
       }
 
       // Prepare update data
+      // The service will handle determining the final status based on sessions
       const updateData: any = {};
 
-      if (updateBookDto.title !== undefined) updateData.title = updateBookDto.title;
+      if (updateBookDto.title !== undefined)
+        updateData.title = updateBookDto.title;
       if (updateBookDto.description !== undefined)
         updateData.description = updateBookDto.description;
       if (session !== undefined) updateData.session = session;
