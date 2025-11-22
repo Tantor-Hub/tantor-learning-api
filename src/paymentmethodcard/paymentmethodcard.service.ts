@@ -942,7 +942,7 @@ export class PaymentMethodCardService {
         );
       }
 
-      // Calculate Stripe fees (1.4% + €0.25 per transaction for European cards)
+      // Get base price from training session
       const basePrice = Number(trainingSession.trainings.prix);
 
       if (isNaN(basePrice) || basePrice <= 0) {
@@ -952,24 +952,13 @@ export class PaymentMethodCardService {
         );
       }
 
-      const stripeFeePercentage = 0.014; // 1.4%
-      const stripeFixedFee = 0.25; // €0.25
-      const stripeFee = Number(
-        (basePrice * stripeFeePercentage + stripeFixedFee).toFixed(2),
-      );
-      const totalAmount = Number((basePrice + stripeFee).toFixed(2));
+      const totalAmount = Number(basePrice.toFixed(2));
 
       // Convert total amount to cents for Stripe
       const amountInCents = Math.round(totalAmount * 100);
 
       console.log(
         '💰 [STRIPE PAYMENT INTENT] Price breakdown:',
-        'Base price:',
-        basePrice,
-        'EUR',
-        'Stripe fee:',
-        stripeFee.toFixed(2),
-        'EUR',
         'Total amount:',
         totalAmount.toFixed(2),
         'EUR (',
@@ -1026,7 +1015,7 @@ export class PaymentMethodCardService {
         data: {
           clientSecret: paymentIntent.client_secret || '',
           basePrice: basePrice,
-          stripeFee: stripeFee,
+          stripeFee: 0,
           totalAmount: totalAmount,
           amountInCents: amountInCents,
         },
@@ -1608,7 +1597,7 @@ export class PaymentMethodCardService {
       const trainingPrice = trainingSession.trainings?.prix || 0;
       console.log('🔍 [PAYMENT VALIDATION] Training price:', trainingPrice);
 
-      // Step 5: Calculate expected amount (including Stripe fees)
+      // Step 5: Calculate expected amount (base price only, no fees)
       const basePrice = Number(trainingPrice);
       if (isNaN(basePrice) || basePrice <= 0) {
         console.log(
@@ -1621,17 +1610,11 @@ export class PaymentMethodCardService {
         };
       }
 
-      const stripeFeePercentage = 0.014; // 1.4%
-      const stripeFixedFee = 0.25; // €0.25
-      const stripeFee = Number(
-        (basePrice * stripeFeePercentage + stripeFixedFee).toFixed(2),
-      );
-      const expectedTotalAmount = Number((basePrice + stripeFee).toFixed(2));
+      const expectedTotalAmount = Number(basePrice.toFixed(2));
       const expectedAmountInCents = Math.round(expectedTotalAmount * 100);
 
       console.log('🔍 [PAYMENT VALIDATION] Amount verification:', {
         basePrice,
-        stripeFee,
         expectedTotalAmount,
         expectedAmountInCents,
         actualAmount: paymentIntent.amount,

@@ -268,7 +268,7 @@ export class SessionDocumentService {
     }
   }
 
-  async remove(id: string): Promise<ResponseServer> {
+  async remove(id: string, user: IJwtSignin): Promise<ResponseServer> {
     try {
       const sessionDocument = await this.sessionDocumentModel.findByPk(id);
       if (!sessionDocument) {
@@ -278,7 +278,22 @@ export class SessionDocumentService {
         });
       }
 
+      // Check ownership - only the creator can delete the document
+      if (sessionDocument.id_student !== user.id_user) {
+        console.log(
+          `Access denied: User ${user.id_user} attempted to delete session document ${id} created by ${sessionDocument.id_student}`,
+        );
+        return Responder({
+          status: HttpStatusCode.Forbidden,
+          customMessage: 'You can only delete session documents that you created',
+        });
+      }
+
       await sessionDocument.destroy();
+
+      console.log(
+        `Session document ${id} deleted successfully by user ${user.id_user}`,
+      );
 
       return Responder({
         status: HttpStatusCode.Ok,

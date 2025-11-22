@@ -1140,8 +1140,12 @@ export class SessionDocumentController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuardAsSecretary)
-  @ApiOperation({ summary: 'Delete session document by ID' })
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Delete session document by ID',
+    description:
+      'Delete a session document. Users can only delete documents they created.',
+  })
   @ApiParam({
     name: 'id',
     description: 'Session document UUID',
@@ -1154,6 +1158,17 @@ export class SessionDocumentController {
       example: {
         status: 200,
         message: 'Session document deleted successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - You can only delete session documents that you created',
+    schema: {
+      example: {
+        status: 403,
+        message: 'You can only delete session documents that you created',
       },
     },
   })
@@ -1177,7 +1192,10 @@ export class SessionDocumentController {
       },
     },
   })
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.sessionDocumentService.remove(id);
+  async remove(
+    @User() user: IJwtSignin,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.sessionDocumentService.remove(id, user);
   }
 }
