@@ -505,8 +505,9 @@ export class BookController {
       },
     },
   })
-  findAll(@Query() query: FindBookQueryDto) {
-    return this.bookService.findAll(query);
+  findAll(@Query() query: FindBookQueryDto, @Request() req?: any) {
+    const userId = req?.user?.id_user;
+    return this.bookService.findAll(query, userId);
   }
 
   @Get('secretary/all')
