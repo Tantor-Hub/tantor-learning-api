@@ -89,9 +89,17 @@ export class BookService {
       if (!books.length) {
         return Responder({
           status: HttpStatusCode.Ok,
-          data: [],
+          data: {
+            items: [],
+            pagination: {
+              total: 0,
+              page: 1,
+              limit: limit > 0 ? limit : 10,
+              totalPages: 0,
+            },
+          },
           customMessage:
-            'Aucun livre public avec session en cours pour le moment.',
+            'Aucun livre public disponible pour le moment.',
         });
       }
 
@@ -124,6 +132,16 @@ export class BookService {
       type SerializedBook = Record<string, any>;
 
       const serializedBooks = books.map((book) => {
+        // Free books don't have sessions and are always available
+        if (book.status === BookStatus.FREE) {
+          const bookJson = book.toJSON();
+          return {
+            ...bookJson,
+            sessions: [], // Free books don't have sessions
+          };
+        }
+
+        // For premium books, check for active sessions
         const bookSessionIds = Array.isArray(book.session)
           ? book.session.filter((id) => !!id)
           : [];
@@ -142,6 +160,7 @@ export class BookService {
           return beginingDate <= now && now <= endingDate;
         });
 
+        // Premium books require at least one active session
         if (!activeSessions.length) {
           return null;
         }
@@ -239,7 +258,7 @@ export class BookService {
           },
         },
         customMessage:
-          'Livres publics avec des sessions en cours récupérés avec succès',
+          'Livres publics récupérés avec succès',
       });
     } catch (error) {
       return Responder({

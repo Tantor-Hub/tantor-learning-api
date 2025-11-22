@@ -378,7 +378,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Get all books',
     description:
-      'Retrieve public books that have an active session. Supports filtering by session, category, author, status (free/premium), minimum views/downloads, text search, and pagination.\n\n' +
+      'Retrieve public books. Free books are always included and available at all times (accessible to all users, logged in or not). Free books do not have sessions. Premium books require an active session. Supports filtering by session, category, author, status (free/premium), minimum views/downloads, text search, and pagination.\n\n' +
       'Example URL with all parameters:\n' +
       '/api/book?session=1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b,9e2d7f4c-3c1b-4f4c-b9c7-2f5f7a6b3c9d&category=e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f&author=John%20Doe&status=free&search=leadership%20fundamentals&minViews=100&minDownload=50&page=1&limit=20',
   })
@@ -450,7 +450,7 @@ export class BookController {
   @ApiResponse({
     status: 200,
     description:
-      'Books retrieved successfully. Returns paginated results with active sessions.',
+      'Books retrieved successfully. Returns paginated results. Free books are always included; premium books require active sessions.',
     schema: {
       type: 'object',
       properties: {
