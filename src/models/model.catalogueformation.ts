@@ -21,8 +21,8 @@ import { Users } from './model.users';
   indexes: [
     {
       unique: true,
-      fields: ['type'],
-      name: 'unique_catalogue_type',
+      fields: ['type', 'id_training'],
+      name: 'unique_catalogue_type_training',
     },
   ],
 })
@@ -35,7 +35,6 @@ export class CatalogueFormation extends Model<ICatalogueFormation> {
   })
   id: string;
 
-  @Unique('unique_catalogue_type')
   @Column({
     type: DataType.ENUM('user', 'student', 'instructor', 'secretary', 'admin'),
     allowNull: false,

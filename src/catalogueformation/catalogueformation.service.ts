@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { CatalogueFormation } from 'src/models/model.catalogueformation';
 import { Users } from 'src/models/model.users';
 import { CreateCatalogueFormationDto } from './dto/create-catalogueformation.dto';
@@ -28,14 +29,19 @@ export class CatalogueFormationService {
     createDto: CreateCatalogueFormationDto,
     userId: string,
   ): Promise<CatalogueFormation> {
-    // Check if a catalogue with this type already exists
+    // Check if a catalogue with this type and id_training already exists
+    // Note: CreateCatalogueFormationDto doesn't include id_training, so it will be NULL
+    const whereClause: any = { type: createDto.type };
+    // Since CreateCatalogueFormationDto doesn't have id_training, check for NULL
+    whereClause.id_training = null;
+
     const existingCatalogue = await this.catalogueFormationModel.findOne({
-      where: { type: createDto.type },
+      where: whereClause,
     });
 
     if (existingCatalogue) {
       throw new ConflictException(
-        `Un catalogue de formation de type "${createDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+        `Un catalogue de formation de type "${createDto.type}" sans id_training existe déjà.`,
       );
     }
 
@@ -48,10 +54,10 @@ export class CatalogueFormationService {
       // Handle unique constraint violation at database level (safety check)
       if (
         error.name === 'SequelizeUniqueConstraintError' ||
-        error.message?.includes('unique_catalogue_type')
+        error.message?.includes('unique_catalogue_type_training')
       ) {
         throw new ConflictException(
-          `Un catalogue de formation de type "${createDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+          `Un catalogue de formation de type "${createDto.type}" existe déjà avec cette combinaison de type et id_training.`,
         );
       }
       throw error;
@@ -205,15 +211,22 @@ export class CatalogueFormationService {
       return null;
     }
 
-    // If type is being updated, check if another catalogue with that type exists
+    // If type is being updated, check if another catalogue with that type and same id_training exists
     if (updateDto.type && updateDto.type !== catalogue.type) {
+      const whereClause: any = { 
+        type: updateDto.type,
+        id: { [Op.ne]: id }, // Exclude current catalogue
+      };
+      // Use the existing id_training from the catalogue (since updateDto doesn't have it)
+      whereClause.id_training = catalogue.id_training || null;
+
       const existingCatalogue = await this.catalogueFormationModel.findOne({
-        where: { type: updateDto.type },
+        where: whereClause,
       });
 
-      if (existingCatalogue && existingCatalogue.id !== id) {
+      if (existingCatalogue) {
         throw new ConflictException(
-          `Un catalogue de formation de type "${updateDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+          `Un catalogue de formation de type "${updateDto.type}" existe déjà avec cette combinaison de type et id_training.`,
         );
       }
     }
@@ -225,10 +238,10 @@ export class CatalogueFormationService {
       // Handle unique constraint violation at database level
       if (
         error.name === 'SequelizeUniqueConstraintError' ||
-        error.message?.includes('unique_catalogue_type')
+        error.message?.includes('unique_catalogue_type_training')
       ) {
         throw new ConflictException(
-          `Un catalogue de formation de type "${updateDto.type}" existe déjà. Chaque type de catalogue ne peut exister qu'une seule fois.`,
+          `Un catalogue de formation de type "${updateDto.type || catalogue.type}" existe déjà avec cette combinaison de type et id_training.`,
         );
       }
       throw error;
@@ -246,14 +259,24 @@ export class CatalogueFormationService {
     createDto: CreateStudentCatalogueDto,
     userId: string,
   ): Promise<CatalogueFormation> {
-    // Check if a student catalogue already exists
+    // Check if a student catalogue with the same id_training already exists
+    const whereClause: any = { type: CatalogueType.STUDENT };
+    if (createDto.id_training) {
+      whereClause.id_training = createDto.id_training;
+    } else {
+      // If id_training is not provided, check for NULL id_training
+      whereClause.id_training = null;
+    }
+
     const existingCatalogue = await this.catalogueFormationModel.findOne({
-      where: { type: CatalogueType.STUDENT },
+      where: whereClause,
     });
 
     if (existingCatalogue) {
       throw new ConflictException(
-        'Un catalogue de formation de type "student" existe déjà. Chaque type de catalogue ne peut exister qu\'une seule fois.',
+        createDto.id_training
+          ? `Un catalogue de formation de type "student" avec l'id_training "${createDto.id_training}" existe déjà.`
+          : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
       );
     }
 
@@ -270,10 +293,12 @@ export class CatalogueFormationService {
       // Handle unique constraint violation at database level (safety check)
       if (
         error.name === 'SequelizeUniqueConstraintError' ||
-        error.message?.includes('unique_catalogue_type')
+        error.message?.includes('unique_catalogue_type_training')
       ) {
         throw new ConflictException(
-          'Un catalogue de formation de type "student" existe déjà. Chaque type de catalogue ne peut exister qu\'une seule fois.',
+          createDto.id_training
+            ? `Un catalogue de formation de type "student" avec l'id_training "${createDto.id_training}" existe déjà.`
+            : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
         );
       }
       throw error;
@@ -300,6 +325,33 @@ export class CatalogueFormationService {
       );
     }
 
+    // If id_training is being updated, check for conflicts
+    if (updateDto.id_training !== undefined) {
+      const newIdTraining = updateDto.id_training;
+      const whereClause: any = { 
+        type: CatalogueType.STUDENT,
+        id: { [Op.ne]: id }, // Exclude current catalogue
+      };
+      
+      if (newIdTraining) {
+        whereClause.id_training = newIdTraining;
+      } else {
+        whereClause.id_training = null;
+      }
+
+      const existingCatalogue = await this.catalogueFormationModel.findOne({
+        where: whereClause,
+      });
+
+      if (existingCatalogue) {
+        throw new ConflictException(
+          newIdTraining
+            ? `Un catalogue de formation de type "student" avec l'id_training "${newIdTraining}" existe déjà.`
+            : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
+        );
+      }
+    }
+
     try {
       // Update only provided fields
       const updateData: any = {};
@@ -314,6 +366,17 @@ export class CatalogueFormationService {
       await catalogue.update(updateData);
       return catalogue.reload();
     } catch (error: any) {
+      // Handle unique constraint violation at database level
+      if (
+        error.name === 'SequelizeUniqueConstraintError' ||
+        error.message?.includes('unique_catalogue_type_training')
+      ) {
+        throw new ConflictException(
+          updateDto.id_training
+            ? `Un catalogue de formation de type "student" avec l'id_training "${updateDto.id_training}" existe déjà.`
+            : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
+        );
+      }
       throw error;
     }
   }
