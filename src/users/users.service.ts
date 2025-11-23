@@ -1740,7 +1740,7 @@ export class UsersService {
                     await this.otpModel.create({
                       userId: as_id_user,
                       otp: otpCode,
-                      connected: false,
+                      connected: true,
                       type: OtpType.GMAIL,
                     });
 
@@ -1803,7 +1803,7 @@ export class UsersService {
                 await this.otpModel.create({
                   userId: as_id_user,
                   otp: otpCode,
-                  connected: false,
+                  connected: true,
                   type: OtpType.GMAIL,
                 });
 
