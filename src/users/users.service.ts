@@ -23,6 +23,7 @@ import { ConfigService } from '@nestjs/config';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { IHomeWorks } from 'src/interface/interface.homework';
 import { Otp } from 'src/models/model.otp';
+import { OtpType } from 'src/interface/interface.otp';
 import { Sequelize } from 'sequelize-typescript';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { RegisterPasswordlessDto } from './dto/register-passwordless.dto';
@@ -1556,24 +1557,21 @@ export class UsersService {
       // Get today's date in French timezone
       const frenchToday = getFrenchDate();
 
-      // Calculate date 6 days ago (start of day) in French timezone - to include today in the 7-day range
+      // Start date = 6 days ago
       const sixDaysAgo = new Date(frenchToday);
       sixDaysAgo.setUTCDate(sixDaysAgo.getUTCDate() - 6);
       sixDaysAgo.setUTCHours(0, 0, 0, 0);
 
-      // Calculate end of today in French timezone (23:59:59.999 Paris time) as UTC
-      // Use a simple approach: get tomorrow 02:00:00 UTC to ensure we cover all of today in Paris timezone
-      // (Paris is UTC+1 or UTC+2, so 23:59:59 Paris = 21:59:59 or 22:59:59 UTC)
-      const endOfTodayUTC = new Date();
-      endOfTodayUTC.setUTCDate(endOfTodayUTC.getUTCDate() + 1);
-      endOfTodayUTC.setUTCHours(2, 0, 0, 0);
+      // End date = tomorrow (Paris time)
+      const frenchTomorrow = getFrenchDate();
+      frenchTomorrow.setUTCDate(frenchTomorrow.getUTCDate() + 1);
+      frenchTomorrow.setUTCHours(0, 0, 0, 0);
 
-      // Get all successful logins (connected = true) from all users in the past 7 days (including today)
       const logins = await this.otpModel.findAll({
         where: {
           connected: true,
           createdAt: {
-            [Op.between]: [sixDaysAgo, endOfTodayUTC],
+            [Op.between]: [sixDaysAgo, frenchTomorrow],
           },
         },
         attributes: ['createdAt'],
@@ -1734,7 +1732,18 @@ export class UsersService {
                 });
                 return student
                   .update({ verification_code: verif_code })
-                  .then((_) => {
+                  .then(async (_) => {
+                    // Create OTP record in the OTP table after successful login
+                    const otpCode = this.allService.randomLongNumber({
+                      length: 6,
+                    });
+                    await this.otpModel.create({
+                      userId: as_id_user,
+                      otp: otpCode,
+                      connected: false,
+                      type: OtpType.GMAIL,
+                    });
+
                     const newInstance = student.toJSON();
 
                     delete (newInstance as any).verification_code;
@@ -1787,6 +1796,17 @@ export class UsersService {
                 level_indicator: 90,
               })
               .then(async ({ code, data, message }) => {
+                // Create OTP record in the OTP table after successful login
+                const otpCode = this.allService.randomLongNumber({
+                  length: 6,
+                });
+                await this.otpModel.create({
+                  userId: as_id_user,
+                  otp: otpCode,
+                  connected: false,
+                  type: OtpType.GMAIL,
+                });
+
                 this.onWelcomeNewStudent({
                   to: email,
                   otp: verif_code,

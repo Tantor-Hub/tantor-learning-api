@@ -10,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { tables } from 'src/config/config.tablesname';
 import { Users } from './model.users';
-import { IOtp } from 'src/interface/interface.otp';
+import { IOtp, OtpType } from 'src/interface/interface.otp';
 
 @Table({
   tableName: tables['otps'],
@@ -45,6 +45,14 @@ export class Otp extends Model<IOtp> {
     defaultValue: false,
   })
   connected: boolean;
+
+  @Column({
+    type: DataType.ENUM,
+    values: [OtpType.NORMAL, OtpType.GMAIL],
+    allowNull: false,
+    defaultValue: OtpType.NORMAL,
+  })
+  type: OtpType;
 
   @BelongsTo(() => Users, { foreignKey: 'userId', targetKey: 'id' })
   user: Users;

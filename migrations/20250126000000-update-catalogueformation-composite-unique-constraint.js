@@ -75,16 +75,36 @@ module.exports = {
     }
 
     // Add composite unique constraint on (type, id_training)
-    await queryInterface.addIndex(
-      '___tbl_tantor_catalogueformation',
-      ['type', 'id_training'],
-      {
-        unique: true,
-        name: 'unique_catalogue_type_training',
-      },
-    );
-    
-    console.log('Composite unique constraint added successfully on (type, id_training) columns');
+    // Check if the index already exists
+    try {
+      const [indexes] = await queryInterface.sequelize.query(`
+        SELECT indexname 
+        FROM pg_indexes 
+        WHERE tablename = '___tbl_tantor_catalogueformation' 
+        AND indexname = 'unique_catalogue_type_training'
+      `);
+      
+      if (indexes.length === 0) {
+        await queryInterface.addIndex(
+          '___tbl_tantor_catalogueformation',
+          ['type', 'id_training'],
+          {
+            unique: true,
+            name: 'unique_catalogue_type_training',
+          },
+        );
+        console.log('Composite unique constraint added successfully on (type, id_training) columns');
+      } else {
+        console.log('Composite unique constraint already exists, skipping...');
+      }
+    } catch (error) {
+      console.log('Error checking/adding composite constraint:', error.message);
+      // If it's not a "already exists" error, rethrow
+      if (!error.message.includes('already exists')) {
+        throw error;
+      }
+      console.log('Index already exists, continuing...');
+    }
   },
 
   async down(queryInterface, Sequelize) {
