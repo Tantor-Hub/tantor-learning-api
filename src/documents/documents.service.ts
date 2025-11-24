@@ -359,6 +359,9 @@ export class DocumentsService {
       if (dto.is_published !== undefined) {
         existingInstance.is_published = dto.is_published;
       }
+      if (dto.signature !== undefined) {
+        existingInstance.signature = dto.signature;
+      }
       await existingInstance.save();
       instance = existingInstance;
     } else {
@@ -370,6 +373,7 @@ export class DocumentsService {
           filledContent,
           variableValues,
           is_published: dto.is_published ?? false,
+          signature: dto.signature ?? false,
         });
       } catch (error: any) {
         // Handle unique constraint violation (race condition)
@@ -439,6 +443,7 @@ export class DocumentsService {
     filledContent: object,
     variableValues?: object,
     is_published?: boolean,
+    signature?: boolean,
   ) {
     const instance = await this.instanceModel.findOne({
       where: { id, userId },
@@ -476,6 +481,9 @@ export class DocumentsService {
     }
     if (is_published !== undefined) {
       instance.is_published = is_published;
+    }
+    if (signature !== undefined) {
+      instance.signature = signature;
     }
     await instance.save();
     return instance;
@@ -600,6 +608,7 @@ export class DocumentsService {
     secretaryId: string,
     status?: 'pending' | 'validated' | 'rejected',
     comment?: string,
+    signature?: boolean,
   ) {
     const instance = await this.instanceModel.findByPk(id, {
       include: [
@@ -635,6 +644,11 @@ export class DocumentsService {
     // Update comment if provided (can be null to clear it)
     if (comment !== undefined) {
       updateData.comment = comment;
+    }
+
+    // Update signature if provided
+    if (signature !== undefined) {
+      updateData.signature = signature;
     }
 
     // Update the instance - updatedBy will always be set to the current secretary's ID

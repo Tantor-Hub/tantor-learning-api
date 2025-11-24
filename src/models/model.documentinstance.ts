@@ -63,6 +63,9 @@ export class DocumentInstance extends Model {
   @Column({ type: DataType.TEXT, allowNull: true })
   comment: string;
 
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  signature: boolean;
+
   @ForeignKey(() => Users)
   @Column({ type: DataType.UUID, allowNull: true })
   updatedBy: string;

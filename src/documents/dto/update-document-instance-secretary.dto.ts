@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateDocumentInstanceSecretaryDto {
@@ -32,5 +32,15 @@ export class UpdateDocumentInstanceSecretaryDto {
   @IsOptional()
   @IsString()
   comment?: string;
+
+  @ApiProperty({
+    description: 'Whether the document instance has been signed',
+    example: false,
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  signature?: boolean;
 }
 

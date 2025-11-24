@@ -110,7 +110,7 @@ export class DocumentsController {
   @Put('instances/:id')
   updateDocumentInstance(
     @Param('id') id: string,
-    @Body() body: { filledContent: object; variableValues?: object; is_published?: boolean },
+    @Body() body: { filledContent: object; variableValues?: object; is_published?: boolean; signature?: boolean },
     @Req() req,
   ) {
     return this.documentsService.updateDocumentInstance(
@@ -119,6 +119,7 @@ export class DocumentsController {
       body.filledContent,
       body.variableValues,
       body.is_published,
+      body.signature,
     );
   }
 
@@ -140,7 +141,7 @@ export class DocumentsController {
   @Patch('instances/:id')
   updateMyDocumentInstance(
     @Param('id') id: string,
-    @Body() body: { filledContent?: object; variableValues?: object; is_published?: boolean },
+    @Body() body: { filledContent?: object; variableValues?: object; is_published?: boolean; signature?: boolean },
     @Req() req,
   ) {
     return this.documentsService.updateDocumentInstance(
@@ -149,6 +150,7 @@ export class DocumentsController {
       body.filledContent ?? {},
       body.variableValues,
       body.is_published,
+      body.signature,
     );
   }
 
@@ -230,6 +232,7 @@ export class DocumentsController {
       req.user.id_user,
       dto.status,
       dto.comment,
+      dto.signature,
     );
   }
 }

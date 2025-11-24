@@ -40,4 +40,14 @@ export class FillDocumentDto {
   @IsBoolean()
   @IsOptional()
   is_published?: boolean;
+
+  @ApiProperty({
+    description: 'Whether the document instance has been signed',
+    example: false,
+    required: false,
+    default: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  signature?: boolean;
 }
