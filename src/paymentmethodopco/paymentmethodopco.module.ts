@@ -9,11 +9,13 @@ import { PaymentMethodCpf } from '../models/model.paymentmethodcpf';
 import { PaymentMethodCard } from '../models/model.paymentmethodcard';
 import { TrainingSession } from '../models/model.trainingssession';
 import { Users } from '../models/model.users';
+import { UserRoles } from '../models/model.userroles';
 import { UserInSession } from '../models/model.userinsession';
 import { AllSercices } from '../services/serices.all';
 import { JwtService } from '../services/service.jwt';
 import { MailService } from '../services/service.mail';
-import { GoogleDriveService } from '../services/service.googledrive';
+import { CloudinaryService } from '../services/service.cloudinary';
+import { JwtAuthGuardAdminOrSecretary } from '../guard/guard.multi-role';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { GoogleDriveService } from '../services/service.googledrive';
       PaymentMethodCard,
       TrainingSession,
       Users,
+      UserRoles,
       UserInSession,
     ]),
     ConfigModule,
@@ -43,7 +46,8 @@ import { GoogleDriveService } from '../services/service.googledrive';
     AllSercices,
     JwtService,
     MailService,
-    GoogleDriveService,
+    CloudinaryService,
+    JwtAuthGuardAdminOrSecretary,
   ],
   exports: [PaymentMethodOpcoService],
 })

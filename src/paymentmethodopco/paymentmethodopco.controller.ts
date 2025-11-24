@@ -25,6 +25,7 @@ import { DeletePaymentMethodOpcoDto } from './dto/delete-paymentmethodopco.dto';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
 import { JwtAuthGuardAsManagerSystem } from '../guard/guard.asadmin';
 import { JwtAuthGuardAsSecretary } from '../guard/guard.assecretary';
+import { JwtAuthGuardAdminOrSecretary } from '../guard/guard.multi-role';
 import { PaymentMethodOpcoStatus } from '../enums/payment-method-opco-status.enum';
 
 @ApiTags('Payment Method OPCO')
@@ -295,7 +296,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 500,
@@ -360,7 +361,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 500,
@@ -390,7 +391,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 500,
@@ -419,7 +420,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 500,
@@ -450,7 +451,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 500,
@@ -481,6 +482,74 @@ export class PaymentMethodOpcoController {
   id_user?: string;                     // Optional
 }
 \`\`\`
+
+**Note:** This endpoint is accessible to administrators only.
+    `,
+  })
+  @ApiBody({
+    type: UpdatePaymentMethodOpcoDto,
+    examples: {
+      example1: {
+        summary: 'Update payment status',
+        value: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'validated',
+        },
+      },
+      example2: {
+        summary: 'Update company information',
+        value: {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          nom_entreprise: 'Nouvelle Entreprise',
+          siren: '987654321',
+          status: 'validated',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment method OPCO updated successfully.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Admin role required.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Payment method OPCO, training session, or user not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  update(@Body() updatePaymentMethodOpcoDto: UpdatePaymentMethodOpcoDto) {
+    return this.paymentMethodOpcoService.update(updatePaymentMethodOpcoDto);
+  }
+
+  @Patch('secretary/update')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update a payment method OPCO (Secretary access)',
+    description: `
+**UpdatePaymentMethodOpcoDto Structure:**
+\`\`\`typescript
+{
+  id: string;                           // Required (to identify which payment method)
+  id_session?: string;                  // Optional
+  nom_opco?: string;                    // Optional
+  nom_entreprise?: string;              // Optional
+  siren?: string;                       // Optional
+  nom_responsable?: string;             // Optional
+  telephone_responsable?: string;       // Optional
+  email_responsable?: string;           // Optional
+  status?: PaymentMethodOpcoStatus;     // Optional
+  id_user?: string;                     // Optional
+}
+\`\`\`
+
+**Note:** This endpoint allows secretaries to modify payment methods OPCO created by students.
     `,
   })
   @ApiBody({
@@ -520,7 +589,7 @@ export class PaymentMethodOpcoController {
     status: 500,
     description: 'Internal server error.',
   })
-  update(@Body() updatePaymentMethodOpcoDto: UpdatePaymentMethodOpcoDto) {
+  updateSecretary(@Body() updatePaymentMethodOpcoDto: UpdatePaymentMethodOpcoDto) {
     return this.paymentMethodOpcoService.update(updatePaymentMethodOpcoDto);
   }
 
@@ -545,7 +614,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 404,
@@ -569,7 +638,7 @@ export class PaymentMethodOpcoController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Secretary role required.',
+    description: 'Unauthorized - Admin or Secretary role required.',
   })
   @ApiResponse({
     status: 500,
