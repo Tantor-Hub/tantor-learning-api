@@ -12,7 +12,7 @@ import { CreateCatalogueFormationDto } from './dto/create-catalogueformation.dto
 import { CreateStudentCatalogueDto } from './dto/create-student-catalogue.dto';
 import { UpdateStudentCatalogueDto } from './dto/update-student-catalogue.dto';
 import { CatalogueType } from 'src/interface/interface.catalogueformation';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { Responder } from 'src/strategy/strategy.responder';
 import { ResponseServer } from 'src/interface/interface.response';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
@@ -22,7 +22,7 @@ export class CatalogueFormationService {
   constructor(
     @InjectModel(CatalogueFormation)
     private readonly catalogueFormationModel: typeof CatalogueFormation,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async create(

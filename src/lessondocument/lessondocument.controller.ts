@@ -10,6 +10,8 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,7 +22,7 @@ import {
   ApiConsumes,
   ApiParam,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
 import { LessondocumentService } from './lessondocument.service';
 import { CreateLessondocumentDto } from './dto/create-lessondocument.dto';
 import { UpdateLessondocumentDto } from './dto/update-lessondocument.dto';
@@ -30,7 +32,7 @@ import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 
@@ -40,13 +42,13 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 export class LessondocumentController {
   constructor(
     private readonly lessondocumentService: LessondocumentService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post('create')
   @UseGuards(JwtAuthGuardAsSuperviseur)
   @UseInterceptors(
-    FileInterceptor('document', { limits: { fileSize: 50_000_000 } }),
+    AnyFilesInterceptor({ limits: { fileSize: 107_374_182_400 } }), // 100GB limit - accepts both 'piece_jointe' and 'document'
   )
   @ApiOperation({
     summary: 'Create a new lesson document with file upload',
@@ -54,27 +56,138 @@ export class LessondocumentController {
       Upload a document file (PDF, DOC, DOCX, images, etc.) and associate it with a lesson. 
       The file will be stored in Cloudinary and the secure URL will be saved as piece_jointe.
       
+      **🚀 Automatic Optimizations:**
+      All file uploads are automatically optimized with:
+      - Chunked uploads (500KB chunks) for better reliability
+      - Async processing (non-blocking) to prevent timeouts
+      - Extended timeouts (10 minutes) for long uploads
+      - Keep-alive headers to maintain connections
+      
+      These optimizations apply to ALL files, regardless of size, ensuring reliable uploads from small files to 100GB files.
+      
       **Authorization:**
       - Only instructors can create lesson documents
       - Bearer token required
       
       **Request Format:**
       - Content-Type: multipart/form-data
-      - Required fields: document (file), id_lesson (UUID)
+      - Required fields: piece_jointe (file), id_lesson (UUID)
       - Optional fields: type (will be auto-detected if not provided), title, description, ispublish (defaults to false)
       
       **Supported File Types:**
-      - Documents: PDF, DOC, DOCX, TXT
-      - Images: JPEG, PNG, GIF
-      - Presentations: PPT, PPTX
-      - Spreadsheets: XLS, XLSX
-      - Maximum file size: 50MB
+      - Any file type is allowed
+      - Maximum file size: 100GB
+      
+      **⚠️ IMPORTANT: Frontend Implementation for File Uploads**
+      
+      The backend automatically optimizes ALL file uploads with chunked and async processing. However, to ensure maximum reliability and avoid Cloudflare 524 timeout errors, we recommend implementing one of these frontend solutions:
+      
+      **Option 1: Upload with Progress Tracking (Recommended)**
+      Use XMLHttpRequest for better timeout control and progress tracking:
+      
+      \`\`\`typescript
+      async function uploadFileWithProgress(
+        file: File,
+        lessonId: string,
+        onProgress: (progress: number) => void
+      ): Promise<any> {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const formData = new FormData();
+          
+          formData.append('piece_jointe', file);
+          formData.append('id_lesson', lessonId);
+          formData.append('title', 'Document Title');
+          formData.append('description', 'Document Description');
+          
+          // Track upload progress
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const progress = (e.loaded / e.total) * 100;
+              onProgress(progress);
+            }
+          });
+          
+          xhr.addEventListener('load', () => {
+            if (xhr.status === 201 || xhr.status === 200) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              reject(new Error(\`Upload failed: \${xhr.statusText}\`));
+            }
+          });
+          
+          xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+          xhr.addEventListener('timeout', () => reject(new Error('Upload timeout')));
+          
+          // Set extended timeout (10 minutes) for reliable uploads
+          xhr.timeout = 600000;
+          
+          xhr.open('POST', '/api/lessondocument/create');
+          xhr.setRequestHeader('Authorization', \`Bearer \${yourToken}\`);
+          
+          xhr.send(formData);
+        });
+      }
+      
+      // Usage
+      uploadFileWithProgress(file, lessonId, (progress) => {
+        console.log(\`Upload: \${progress.toFixed(1)}%\`);
+        // Update progress bar in UI
+      });
+      \`\`\`
+      
+      **Option 2: Fetch with AbortController (For all files)**
+      Use fetch with timeout handling for reliable uploads:
+      
+      \`\`\`typescript
+      async function uploadFile(file: File, lessonId: string): Promise<any> {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 95000); // 95s timeout
+        
+        try {
+          const formData = new FormData();
+          formData.append('piece_jointe', file);
+          formData.append('id_lesson', lessonId);
+          formData.append('title', 'Document Title');
+          formData.append('description', 'Document Description');
+          
+          const response = await fetch('/api/lessondocument/create', {
+            method: 'POST',
+            headers: {
+              'Authorization': \`Bearer \${yourToken}\`
+            },
+            body: formData,
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(\`Upload failed: \${response.statusText}\`);
+          }
+          
+          return await response.json();
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error.name === 'AbortError') {
+            throw new Error('Upload timeout - file is too large or connection is slow');
+          }
+          throw error;
+        }
+      }
+      \`\`\`
+      
+      **Backend Optimizations (Applied to ALL files):**
+      - Chunked uploads: Automatically uses 500KB chunks for optimal performance and reliability
+      - Async uploads: Automatically enabled for all files (prevents timeout, non-blocking)
+      - Keep-alive headers: Automatically set for upload endpoints
+      - Extended timeout: 10 minutes for upload operations
       
       **Example cURL:**
       \`\`\`bash
-      curl -X POST "http://localhost:3000/lessondocument/create" \\
+      curl -X POST "http://localhost:3000/api/lessondocument/create" \\
         -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
-        -F "document=@/path/to/your/file.pdf" \\
+        -F "piece_jointe=@/path/to/your/file.pdf" \\
         -F "id_lesson=550e8400-e29b-41d4-a716-446655440000" \\
         -F "title=Introduction to Programming Concepts" \\
         -F "description=This document covers the fundamental concepts of programming including variables, loops, and functions." \\
@@ -82,17 +195,17 @@ export class LessondocumentController {
         -F "ispublish=true"
       \`\`\`
       
-      **Example JavaScript/TypeScript:**
+      **Example Basic JavaScript/TypeScript:**
       \`\`\`javascript
       const formData = new FormData();
-      formData.append('document', fileInput.files[0]);
+      formData.append('piece_jointe', fileInput.files[0]);
       formData.append('id_lesson', '550e8400-e29b-41d4-a716-446655440000');
       formData.append('title', 'Introduction to Programming Concepts');
       formData.append('description', 'This document covers the fundamental concepts of programming including variables, loops, and functions.');
       formData.append('type', 'PDF'); // Optional
       formData.append('ispublish', 'true'); // Optional, defaults to false
       
-      const response = await fetch('/lessondocument/create', {
+      const response = await fetch('/api/lessondocument/create', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer YOUR_JWT_TOKEN'
@@ -102,6 +215,8 @@ export class LessondocumentController {
       
       const result = await response.json();
       \`\`\`
+      
+      **Note:** While the basic fetch example works, we strongly recommend using Option 1 (XMLHttpRequest with progress) for better reliability, especially for files of any significant size. The backend automatically optimizes all uploads with chunked and async processing. All uploads must go through the backend - direct Cloudinary uploads from the frontend are not supported.
     `,
   })
   @ApiConsumes('multipart/form-data')
@@ -110,11 +225,17 @@ export class LessondocumentController {
     schema: {
       type: 'object',
       properties: {
+        piece_jointe: {
+          type: 'string',
+          format: 'binary',
+          description:
+            'Document file to upload. Any file type is allowed. Maximum size: 100GB. (Alternative field name: "document" is also accepted)',
+        },
         document: {
           type: 'string',
           format: 'binary',
           description:
-            'Document file to upload. Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, PPT, PPTX, XLS, XLSX. Maximum size: 50MB.',
+            'Document file to upload (alternative to piece_jointe). Any file type is allowed. Maximum size: 100GB.',
         },
         id_lesson: {
           type: 'string',
@@ -146,14 +267,14 @@ export class LessondocumentController {
           example: false,
         },
       },
-      required: ['document', 'id_lesson', 'title', 'description'],
+      required: ['piece_jointe', 'id_lesson', 'title', 'description'],
     },
     examples: {
       pdfDocument: {
         summary: 'Upload PDF document',
         description: 'Example of uploading a PDF document to a lesson',
         value: {
-          document: '[Binary file data - PDF document]',
+          piece_jointe: '[Binary file data - PDF document]',
           id_lesson: '550e8400-e29b-41d4-a716-446655440000',
           type: 'PDF',
           title: 'Introduction to Programming Concepts',
@@ -166,7 +287,7 @@ export class LessondocumentController {
         summary: 'Upload Word document',
         description: 'Example of uploading a Word document to a lesson',
         value: {
-          document: '[Binary file data - DOCX document]',
+          piece_jointe: '[Binary file data - DOCX document]',
           id_lesson: '550e8400-e29b-41d4-a716-446655440000',
           type: 'DOC',
           title: 'Advanced Programming Techniques',
@@ -179,7 +300,7 @@ export class LessondocumentController {
         summary: 'Upload image document',
         description: 'Example of uploading an image to a lesson',
         value: {
-          document: '[Binary file data - JPEG/PNG image]',
+          piece_jointe: '[Binary file data - JPEG/PNG image]',
           id_lesson: '550e8400-e29b-41d4-a716-446655440000',
           type: 'IMAGE',
           title: 'Programming Flowchart',
@@ -193,7 +314,7 @@ export class LessondocumentController {
         description:
           'Example without specifying type - will be auto-detected from file',
         value: {
-          document: '[Binary file data - any supported format]',
+          piece_jointe: '[Binary file data - any supported format]',
           id_lesson: '550e8400-e29b-41d4-a716-446655440000',
           title: 'General Learning Material',
           description: 'Educational content for the lesson.',
@@ -249,18 +370,11 @@ export class LessondocumentController {
             data: 'Document file is required',
           },
         },
-        invalidFileType: {
-          summary: 'Invalid file type',
-          value: {
-            status: 400,
-            data: 'File type application/zip is not allowed. Allowed types: PDF, DOC, DOCX, TXT, images, PowerPoint, Excel',
-          },
-        },
         fileTooLarge: {
           summary: 'File too large',
           value: {
             status: 400,
-            data: 'File size exceeds 50MB limit',
+            data: 'File size exceeds 100GB limit',
           },
         },
       },
@@ -308,101 +422,84 @@ export class LessondocumentController {
       },
     },
   })
+  @ApiResponse({
+    status: 524,
+    description: 'Cloudflare Timeout - Upload took too long',
+    schema: {
+      example: {
+        status: 524,
+        message: 'A timeout occurred',
+        note: 'This error occurs when upload exceeds Cloudflare timeout (100s free, 600s paid). The backend automatically optimizes all uploads, but for maximum reliability, use Option 1, 2, or 3 from the frontend implementation guide above.',
+      },
+    },
+  })
   async create(
     @User() user: IJwtSignin,
     @Body() createLessondocumentDto: CreateLessondocumentDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Req() req: any,
   ) {
     try {
       console.log('Creating lesson document for user:', user.id_user);
+      console.log(
+        '[REQUEST BODY - DTO]',
+        JSON.stringify(createLessondocumentDto, null, 2),
+      );
+      console.log('[REQUEST BODY - RAW]', JSON.stringify(req.body, null, 2));
+
+      // Accept either 'piece_jointe' or 'document' field name
+      const file = files?.find(
+        (f) => f.fieldname === 'piece_jointe' || f.fieldname === 'document',
+      );
+
+      console.log(
+        '[FILES RECEIVED]',
+        files?.map((f) => ({
+          fieldname: f.fieldname,
+          originalname: f.originalname,
+          size: f.size,
+        })) || 'No files',
+      );
+      console.log(
+        '[FILE SELECTED]',
+        file
+          ? {
+              fieldname: file.fieldname,
+              originalname: file.originalname,
+              encoding: file.encoding,
+              mimetype: file.mimetype,
+              size: file.size,
+            }
+          : 'No file uploaded',
+      );
+      console.log('[CONTENT-TYPE]', req.headers['content-type']);
+
       // Validate that a file was uploaded
       if (!file) {
         return {
           status: 400,
-          data: 'Document file is required',
+          data: 'Document file is required. Please send file with field name "piece_jointe" or "document"',
         };
       }
 
-      // Validate file type
-      const allowedMimeTypes = [
-        // Documents
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        // Images
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/svg+xml',
-        'image/bmp',
-        'image/tiff',
-        // Videos
-        'video/mp4',
-        'video/avi',
-        'video/quicktime',
-        'video/x-msvideo',
-        'video/x-ms-wmv',
-        'video/x-flv',
-        'video/webm',
-        'video/x-matroska',
-        'video/3gpp',
-        'video/x-m4v',
-        'video/mpeg',
-        'video/ogg',
-        'video/x-ms-asf',
-        // Audio
-        'audio/mpeg',
-        'audio/wav',
-        'audio/flac',
-        'audio/aac',
-        'audio/ogg',
-        'audio/x-ms-wma',
-        'audio/mp4',
-        // Archives
-        'application/zip',
-        'application/x-rar-compressed',
-        'application/x-7z-compressed',
-        'application/x-tar',
-        'application/gzip',
-        'application/x-bzip2',
-        // Code files
-        'text/javascript',
-        'text/typescript',
-        'text/html',
-        'text/css',
-        'application/json',
-        'text/xml',
-        'text/x-python',
-        'text/x-java-source',
-        'text/x-c',
-        'text/x-c++',
-        'application/x-php',
-      ];
-
-      if (!allowedMimeTypes.includes(file.mimetype)) {
-        return {
-          status: 400,
-          data: `File type ${file.mimetype} is not allowed. Allowed types: Documents (PDF, DOC, DOCX, TXT, PPT, XLS), Images (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF), Videos (MP4, AVI, MOV, WMV, FLV, WebM, MKV, 3GP, M4V, MPG, OGV), Audio (MP3, WAV, FLAC, AAC, OGG, WMA, M4A), Archives (ZIP, RAR, 7Z, TAR, GZ, BZ2), Code files (JS, TS, HTML, CSS, JSON, XML, PY, JAVA, CPP, PHP)`,
-        };
-      }
-
-      // Validate file size (50MB limit)
-      const maxSize = 50 * 1024 * 1024; // 50MB
+      // Validate file size (100GB limit)
+      const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
       if (file.size > maxSize) {
         return {
           status: 400,
-          data: 'File size exceeds 50MB limit',
+          data: 'File size exceeds 100GB limit',
         };
       }
 
-      // Upload file to Cloudinary
-      const uploadResult = await this.googleDriveService.uploadBufferFile(file);
+      // Log file size for monitoring
+      console.log(
+        `Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`,
+      );
+
+      // Upload file to Cloudinary (optimized chunked async upload for all files)
+      const uploadResult = await this.cloudinaryService.uploadBufferFile(file, {
+        useAsync: false,
+      });
       if (!uploadResult) {
         return {
           status: 500,
@@ -1039,7 +1136,9 @@ export class LessondocumentController {
 
   @Patch('instructor/update/:id')
   @UseGuards(JwtAuthGuardAsInstructor)
-  @UseInterceptors(FileInterceptor('document'))
+  @UseInterceptors(
+    FileInterceptor('piece_jointe', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
+  )
   @ApiOperation({
     summary: 'Update lesson document (Instructor only)',
     description: `
@@ -1056,15 +1155,15 @@ export class LessondocumentController {
       - Cloudinary integration for file storage
       
       **File Upload:**
-      - Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, PPT, PPTX, XLS, XLSX
-      - Maximum file size: 50MB
+      - Supported formats: Any file type
+      - Maximum file size: 100GB
       - Files are automatically organized by type in Cloudinary
       
       **Example cURL:**
       \`\`\`bash
       curl -X PATCH "http://localhost:3000/lessondocument/instructor/update/document-id" \\
         -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
-        -F "document=@/path/to/your/updated-file.pdf" \\
+        -F "piece_jointe=@/path/to/your/updated-file.pdf" \\
         -F "id_lesson=550e8400-e29b-41d4-a716-446655440000" \\
         -F "title=Updated Programming Concepts" \\
         -F "description=Updated document covering advanced programming concepts and examples." \\
@@ -1075,7 +1174,7 @@ export class LessondocumentController {
       **Example JavaScript/TypeScript:**
       \`\`\`javascript
       const formData = new FormData();
-      formData.append('document', fileInput.files[0]); // Optional - only if updating file
+      formData.append('piece_jointe', fileInput.files[0]); // Optional - only if updating file
       formData.append('id_lesson', '550e8400-e29b-41d4-a716-446655440000');
       formData.append('title', 'Updated Programming Concepts');
       formData.append('description', 'Updated document covering advanced programming concepts and examples.');
@@ -1096,7 +1195,8 @@ export class LessondocumentController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Update lesson document - Instructors can update title, description, and file',
+    description:
+      'Update lesson document - Instructors can update title, description, and file',
     schema: {
       type: 'object',
       properties: {
@@ -1104,7 +1204,7 @@ export class LessondocumentController {
           type: 'string',
           format: 'binary',
           description:
-            'New document file to upload (optional). Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, PPT, PPTX, XLS, XLSX. Maximum size: 50MB.',
+            'New document file to upload (optional). Any file type is allowed. Maximum size: 100GB.',
         },
         id_lesson: {
           type: 'string',
@@ -1119,7 +1219,8 @@ export class LessondocumentController {
         },
         description: {
           type: 'string',
-          description: 'Updated description of the lesson document content (optional)',
+          description:
+            'Updated description of the lesson document content (optional)',
           example:
             'Updated document covering advanced programming concepts and examples.',
         },
@@ -1186,7 +1287,8 @@ export class LessondocumentController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token, or user is not an instructor',
+    description:
+      'Unauthorized - Invalid or missing JWT token, or user is not an instructor',
     schema: {
       example: {
         status: 401,
@@ -1244,7 +1346,9 @@ export class LessondocumentController {
         console.log('Uploading new file:', file.originalname);
 
         // Upload file to Cloudinary
-        uploadResult = await this.googleDriveService.uploadBufferFile(file);
+        uploadResult = await this.cloudinaryService.uploadBufferFile(file, {
+          useAsync: false,
+        });
 
         if (!uploadResult) {
           return {

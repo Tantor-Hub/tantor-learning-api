@@ -31,7 +31,7 @@ export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
   @Post('image')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 107_374_182_400 } })) // 100GB limit
   @ApiOperation(UploadSwagger.uploadImage)
   @ApiConsumes(UploadSwagger.uploadImageConsumes)
   @ApiBody(UploadSwagger.uploadImageBody)

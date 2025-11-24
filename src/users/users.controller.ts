@@ -31,7 +31,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { CreateUserMagicLinkDto } from './dto/create-user-withmagiclink.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
 import { AssignMultipleRolesDto } from './dto/assign-multiple-roles.dto';
@@ -69,7 +69,7 @@ import {
 export class UsersController {
   constructor(
     private readonly userService: UsersService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
     @InjectModel(Users)
     private readonly usersModel: typeof Users,
   ) {}
@@ -118,7 +118,11 @@ export class UsersController {
 
   @Post('user/passwordless/verify')
   @ApiBody({ type: VerifyOtpDto })
-  @ApiOperation({ summary: 'Verify OTP code', description: 'Verify the OTP code sent to user email for passwordless authentication' })
+  @ApiOperation({
+    summary: 'Verify OTP code',
+    description:
+      'Verify the OTP code sent to user email for passwordless authentication',
+  })
   @ApiResponse({
     status: 200,
     description: 'OTP verified successfully. User authenticated.',
@@ -130,16 +134,29 @@ export class UsersController {
         data: {
           type: 'object',
           properties: {
-            auth_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
-            refresh_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+            auth_token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
+            refresh_token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
             user: {
               type: 'object',
               properties: {
-                id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+                id: {
+                  type: 'string',
+                  example: '123e4567-e89b-12d3-a456-426614174000',
+                },
                 email: { type: 'string', example: 'john.doe@example.com' },
                 firstName: { type: 'string', example: 'John' },
                 lastName: { type: 'string', example: 'Doe' },
-                avatar: { type: 'string', example: 'https://example.com/avatar.jpg', nullable: true },
+                avatar: {
+                  type: 'string',
+                  example: 'https://example.com/avatar.jpg',
+                  nullable: true,
+                },
                 role: { type: 'string', example: 'STUDENT' },
               },
             },
@@ -168,7 +185,11 @@ export class UsersController {
       properties: {
         status: { type: 'integer', example: 403 },
         message: { type: 'string', example: 'Accès interdit' },
-        data: { type: 'string', example: "Votre compte n'est pas vérifié. Veuillez contacter un administrateur." },
+        data: {
+          type: 'string',
+          example:
+            "Votre compte n'est pas vérifié. Veuillez contacter un administrateur.",
+        },
       },
     },
   })
@@ -276,7 +297,7 @@ export class UsersController {
   @Patch('user/update')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FileInterceptor('avatar', { limits: { fileSize: 10_000_000 } }),
+    FileInterceptor('avatar', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
   )
   @ApiOperation({
     summary: 'Update user profile',
@@ -392,9 +413,25 @@ export class UsersController {
   ) {
     let avatar: any = null;
     if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
+      console.log(
+        `Uploading avatar: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`,
+      );
+
+      // Validate file size (100GB limit)
+      const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
+      if (file.size > maxSize) {
+        return {
+          status: 400,
+          data: 'File size exceeds 100GB limit',
+        };
+      }
+
+      const result = await this.cloudinaryService.uploadBufferFile(file, {
+        useAsync: false, // avatars are small; use sync upload to get URL immediately
+      });
       if (result) {
         const { id, name, link } = result;
+        console.log('[AVATAR UPLOAD] New Cloudinary link:', link);
         avatar = link;
       }
     }
@@ -516,13 +553,15 @@ useEffect(() => {
   })
   @ApiResponse({
     status: 302,
-    description: 'Redirects to frontend signin page with success or error query parameters',
+    description:
+      'Redirects to frontend signin page with success or error query parameters',
     headers: {
       Location: {
         description: 'Redirect URL to frontend signin page',
         schema: {
           type: 'string',
-          example: 'http://localhost:3000/signin?success=eyJzdGF0dXMiOjIwMCwibWVzc2FnZSI6IlN1Y2PDqHMiLCJkYXRhIjp7ImF1dGhfdG9rZW4iOiIuLi4iLCJyZWZyZXNoX3Rva2VuIjoiLi4uIiwidXNlciI6eyJpZCI6Ii4uLiIsImVtYWlsIjoiLi4uIn19fQ==',
+          example:
+            'http://localhost:3000/signin?success=eyJzdGF0dXMiOjIwMCwibWVzc2FnZSI6IlN1Y2PDqHMiLCJkYXRhIjp7ImF1dGhfdG9rZW4iOiIuLi4iLCJyZWZyZXNoX3Rva2VuIjoiLi4uIiwidXNlciI6eyJpZCI6Ii4uLiIsImVtYWlsIjoiLi4uIn19fQ==',
         },
       },
     },

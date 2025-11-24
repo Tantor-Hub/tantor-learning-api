@@ -8,7 +8,7 @@ import { JwtAuthGuardAsManagerSystem } from 'src/guard/guard.asadmin';
 import { JwtService } from 'src/services/service.jwt';
 import { ConfigService } from '@nestjs/config';
 import { AllSercices } from 'src/services/serices.all';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @Module({
   imports: [SequelizeModule.forFeature([CatalogueFormation, Users])],
@@ -19,7 +19,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
     JwtService,
     ConfigService,
     AllSercices,
-    GoogleDriveService,
+    CloudinaryService,
   ],
   exports: [CatalogueFormationService],
 })

@@ -15,7 +15,7 @@ import { RepliesChatService } from '../replieschat/replieschat.service';
 import { Users } from 'src/models/model.users';
 import { Chat } from 'src/models/model.chat';
 import { RepliesChat } from 'src/models/model.replieschat';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { Readable } from 'stream';
 
 interface AuthenticatedSocket extends Socket {
@@ -46,7 +46,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly chatService: ChatService,
     private readonly repliesChatService: RepliesChatService,
     private readonly jwtService: JwtService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -295,14 +295,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return;
           }
 
-          // Validate file size (50MB limit)
-          const maxSize = 50 * 1024 * 1024; // 50MB
+          // Validate file size (100GB limit)
+          const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
           if (fileData.size > maxSize) {
             client.emit('error', {
-              message: `File ${fileData.name} size exceeds 50MB limit`,
+              message: `File ${fileData.name} size exceeds 100GB limit`,
             });
             return;
           }
+
+          // Log file size for monitoring
+          console.log(`Uploading file via WebSocket: ${fileData.name} (${(fileData.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
 
           // Convert base64 to buffer
           const buffer = Buffer.from(fileData.data, 'base64');
@@ -320,8 +323,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           };
 
           // Upload to Cloudinary
-          const uploadResult =
-            await this.googleDriveService.uploadBufferFile(file);
+          const uploadResult = await this.cloudinaryService.uploadBufferFile(
+            file,
+            { useAsync: false },
+          );
           if (uploadResult) {
             uploadedFiles.push(uploadResult.link);
           } else {

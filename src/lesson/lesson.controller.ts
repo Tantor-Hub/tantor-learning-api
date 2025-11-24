@@ -34,7 +34,7 @@ import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { DeleteLessonDto } from './dto/delete-lesson.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 
 @ApiTags('Lessons')
@@ -42,7 +42,7 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 export class LessonController {
   constructor(
     private readonly lessonService: LessonService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Get('getall')

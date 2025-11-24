@@ -30,14 +30,14 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { FindBookQueryDto } from './dto/find-book.query.dto';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @ApiTags('Books')
 @Controller('book')
 export class BookController {
   constructor(
     private readonly bookService: BookService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post()
@@ -48,7 +48,7 @@ export class BookController {
         { name: 'icon', maxCount: 1 },
         { name: 'piece_joint', maxCount: 1 },
       ],
-      { limits: { fileSize: 10 * 1024 * 1024 * 1024 } }, // 10GB limit (for piece_joint)
+      { limits: { fileSize: 107_374_182_400 } }, // 100GB limit (for piece_joint)
     ),
   )
   @ApiBearerAuth()
@@ -56,7 +56,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Create a new book (Secretary only)',
     description:
-      'Create a new book with icon (image) and piece_joint (document) file uploads. Only secretaries can create books.',
+      'Create a new book with icon (image) and piece_joint (document) file uploads. Only secretaries can create books. The book status (premium/free) is automatically determined based on whether sessions are selected: if sessions are provided, status is set to premium; otherwise, status is set to free.',
   })
   @ApiBody({
     schema: {
@@ -64,7 +64,6 @@ export class BookController {
       required: [
         'title',
         'author',
-        'status',
         'category',
         'icon',
         'piece_joint',
@@ -76,7 +75,6 @@ export class BookController {
           example: 'A comprehensive guide to programming fundamentals',
         },
         author: { type: 'string', example: 'John Doe' },
-        status: { type: 'string', enum: ['premium', 'free'], example: 'free' },
         category: {
           type: 'array',
           items: { type: 'string', format: 'uuid' },
@@ -159,7 +157,7 @@ export class BookController {
   @ApiResponse({
     status: 400,
     description:
-      'Bad Request - Validation error. Required fields: title, author, status, category, icon (file), piece_joint (file)',
+      'Bad Request - Validation error. Required fields: title, author, category, icon (file), piece_joint (file). Status is automatically determined based on whether sessions are selected.',
   })
   @ApiResponse({
     status: 401,
@@ -229,13 +227,6 @@ export class BookController {
         };
       }
 
-      if (!createBookDto.status) {
-        return {
-          status: 400,
-          data: 'Status is required',
-        };
-      }
-
       if (!category || category.length === 0) {
         return {
           status: 400,
@@ -279,30 +270,7 @@ export class BookController {
         };
       }
 
-      // Validate piece_joint file type (documents)
-      const allowedDocumentTypes = [
-        // Documents
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        // Also allow images for piece_joint if needed
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-      ];
-
-      if (!allowedDocumentTypes.includes(pieceJointFile.mimetype)) {
-        return {
-          status: 400,
-          data: `Piece joint file type ${pieceJointFile.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, TXT, PPT, XLS, JPEG, PNG, GIF, WebP`,
-        };
-      }
+      // piece_joint can be any file type (no restrictions)
 
       // Validate icon file size (100MB limit for images)
       const maxIconSize = 100 * 1024 * 1024; // 100MB
@@ -313,18 +281,24 @@ export class BookController {
         };
       }
 
-      // Validate piece_joint file size (10GB limit for documents)
-      const maxPieceJointSize = 10 * 1024 * 1024 * 1024; // 10GB
+      // Validate piece_joint file size (100GB limit for documents)
+      const maxPieceJointSize = 100 * 1024 * 1024 * 1024; // 100GB
       if (pieceJointFile.size > maxPieceJointSize) {
         return {
           status: 400,
-          data: 'Piece joint file size exceeds 10GB limit',
+          data: 'Piece joint file size exceeds 100GB limit',
         };
       }
 
+      // Log file sizes for monitoring
+      console.log(`Uploading icon: ${iconFile.originalname} (${(iconFile.size / 1024 / 1024).toFixed(2)}MB)`);
+      console.log(`Uploading piece_joint: ${pieceJointFile.originalname} (${(pieceJointFile.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
+
       // Upload icon to Cloudinary
       const iconUploadResult =
-        await this.googleDriveService.uploadBufferFile(iconFile);
+        await this.cloudinaryService.uploadBufferFile(iconFile, {
+          useAsync: false,
+        });
       if (!iconUploadResult) {
         return {
           status: 500,
@@ -334,7 +308,9 @@ export class BookController {
 
       // Upload piece_joint to Cloudinary
       const pieceJointUploadResult =
-        await this.googleDriveService.uploadBufferFile(pieceJointFile);
+        await this.cloudinaryService.uploadBufferFile(pieceJointFile, {
+          useAsync: false,
+        });
       if (!pieceJointUploadResult) {
         return {
           status: 500,
@@ -343,16 +319,11 @@ export class BookController {
       }
 
       // Create book with uploaded file URLs
-      // If sessions are selected, automatically set status to premium
-      // Otherwise, use the status provided by the frontend
-      const hasSessions = Array.isArray(session) && session.length > 0;
-      const finalStatus = hasSessions ? 'premium' : createBookDto.status;
-
+      // Status will be automatically determined by the service based on sessions
       const bookData: CreateBookDto & { icon: string; piece_joint: string } = {
         title: createBookDto.title,
         description: createBookDto.description,
         author: createBookDto.author,
-        status: finalStatus as any,
         category: category,
         session: session,
         public:
@@ -378,7 +349,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Get all books',
     description:
-      'Retrieve public books. Free books are always included and available at all times (accessible to all users, logged in or not). Free books do not have sessions. Premium books require an active session. Supports filtering by session, category, author, status (free/premium), minimum views/downloads, text search, and pagination.\n\n' +
+      'Retrieve all published books (both free and premium). All published books are visible to all users, regardless of login status. Free books do not have sessions. Premium books may have associated sessions. Supports filtering by session, category, author, status (free/premium), minimum views/downloads, text search, and pagination.\n\n' +
       'Example URL with all parameters:\n' +
       '/api/book?session=1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b,9e2d7f4c-3c1b-4f4c-b9c7-2f5f7a6b3c9d&category=e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f&author=John%20Doe&status=free&search=leadership%20fundamentals&minViews=100&minDownload=50&page=1&limit=20',
   })
@@ -450,7 +421,7 @@ export class BookController {
   @ApiResponse({
     status: 200,
     description:
-      'Books retrieved successfully. Returns paginated results. Free books are always included; premium books require active sessions.',
+      'Books retrieved successfully. Returns paginated results. All published books (free and premium) are included regardless of login status.',
     schema: {
       type: 'object',
       properties: {
@@ -630,6 +601,84 @@ export class BookController {
     return this.bookService.findAllForSecretary();
   }
 
+  @Get('secretary/:id')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get a book by ID (Secretary only)',
+    description:
+      'Retrieve a specific book by its ID. Secretaries can access any book (free or premium) without payment restrictions.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Book UUID',
+    type: String,
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Book retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            title: { type: 'string' },
+            description: { type: 'string' },
+            session: { type: 'array', items: { type: 'string' } },
+            author: { type: 'string' },
+            createby: { type: 'string', format: 'uuid' },
+            status: { type: 'string', enum: ['premium', 'free'] },
+            category: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+            },
+            icon: { type: 'string' },
+            piece_joint: { type: 'string' },
+            views: { type: 'number' },
+            download: { type: 'number' },
+            public: { type: 'boolean' },
+            downloadable: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            creator: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                firstName: { type: 'string' },
+                lastName: { type: 'string' },
+                email: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Secretary access required',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only secretaries can access this endpoint',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Book not found',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  findOneForSecretary(@Param('id', ParseUUIDPipe) id: string) {
+    return this.bookService.findOneForSecretary(id);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -665,7 +714,7 @@ export class BookController {
         { name: 'icon', maxCount: 1 },
         { name: 'piece_joint', maxCount: 1 },
       ],
-      { limits: { fileSize: 10 * 1024 * 1024 * 1024 } }, // 10GB limit (for piece_joint)
+      { limits: { fileSize: 107_374_182_400 } }, // 100GB limit (for piece_joint)
     ),
   )
   @ApiBearerAuth()
@@ -679,12 +728,13 @@ export class BookController {
       - Upload new media (optional) for \`icon\` (image) or \`piece_joint\` (document)
       - Update book metadata (\`title\`, \`description\`, \`author\`)
       - Maintain associations (\`session[]\`, \`category[]\`) using UUID arrays
-      - Toggle access flags (\`status\`, \`public\`, \`downloadable\`)
+      - Toggle access flags (\`public\`, \`downloadable\`)
+      - Book status (premium/free) is automatically determined based on sessions: if sessions are provided, status becomes premium; if sessions are removed (empty array), status becomes free
       - Automatic upload to cloud storage with URL generation for files
 
       **File Upload**
       - \`icon\`: JPEG, PNG, GIF, WEBP | Max 100MB
-      - \`piece_joint\`: PDF, DOC, DOCX, TXT, PPT, PPTX, XLS, XLSX, JPEG, PNG, GIF, WEBP | Max 10GB
+      - \`piece_joint\`: Any file type | Max 100GB (automatically optimized)
       - Send files using multipart/form-data; the backend stores them and updates the URLs
 
       **Example cURL**
@@ -696,7 +746,6 @@ export class BookController {
         -F "author=Jane Doe" \
         -F "session=[\"1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b\"]" \
         -F "category=[\"e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f\"]" \
-        -F "status=premium" \
         -F "public=true" \
         -F "downloadable=true" \
         -F "icon=@/path/to/icon.png" \
@@ -711,7 +760,6 @@ export class BookController {
       formData.append('author', 'Jane Doe');
       formData.append('session', JSON.stringify(['1f3c2b9d-1f60-4f3f-9f2e-0a7f6c8e1a9b']));
       formData.append('category', JSON.stringify(['e2c7a9f4-2a6d-4b7e-8c9d-1a2b3c4d5e6f']));
-      formData.append('status', 'premium');
       formData.append('public', 'true');
       formData.append('downloadable', 'true');
       formData.append('icon', iconFileInput.files[0]); // Optional
@@ -821,8 +869,6 @@ export class BookController {
       if (session !== undefined) updateData.session = session;
       if (updateBookDto.author !== undefined)
         updateData.author = updateBookDto.author;
-      if (updateBookDto.status !== undefined)
-        updateData.status = updateBookDto.status;
       if (category !== undefined) updateData.category = category;
       if (updateBookDto.public !== undefined)
         updateData.public =
@@ -865,7 +911,9 @@ export class BookController {
 
         // Upload icon to cloud storage
         const iconUploadResult =
-          await this.googleDriveService.uploadBufferFile(iconFile);
+          await this.cloudinaryService.uploadBufferFile(iconFile, {
+            useAsync: false,
+          });
         if (!iconUploadResult) {
           return {
             status: 500,
@@ -879,43 +927,24 @@ export class BookController {
       if (files.piece_joint && files.piece_joint.length > 0) {
         const pieceJointFile = files.piece_joint[0];
 
-        // Validate piece_joint file type (documents)
-        const allowedDocumentTypes = [
-          // Documents
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'text/plain',
-          'application/vnd.ms-powerpoint',
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          // Also allow images for piece_joint if needed
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-        ];
-
-        if (!allowedDocumentTypes.includes(pieceJointFile.mimetype)) {
-          return {
-            status: 400,
-            data: `Piece joint file type ${pieceJointFile.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, TXT, PPT, XLS, JPEG, PNG, GIF, WebP`,
-          };
-        }
-
-        // Validate piece_joint file size (10GB limit for documents)
-        const maxPieceJointSize = 10 * 1024 * 1024 * 1024; // 10GB
+        // piece_joint can be any file type (no restrictions)
+        // Validate piece_joint file size (100GB limit)
+        const maxPieceJointSize = 100 * 1024 * 1024 * 1024; // 100GB
         if (pieceJointFile.size > maxPieceJointSize) {
           return {
             status: 400,
-            data: 'Piece joint file size exceeds 10GB limit',
+            data: 'Piece joint file size exceeds 100GB limit',
           };
         }
 
+        // Log file size for monitoring
+        console.log(`Uploading piece_joint: ${pieceJointFile.originalname} (${(pieceJointFile.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
+
         // Upload piece_joint to cloud storage
         const pieceJointUploadResult =
-          await this.googleDriveService.uploadBufferFile(pieceJointFile);
+          await this.cloudinaryService.uploadBufferFile(pieceJointFile, {
+            useAsync: false,
+          });
         if (!pieceJointUploadResult) {
           return {
             status: 500,

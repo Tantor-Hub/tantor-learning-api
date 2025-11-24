@@ -791,7 +791,7 @@ export class UsersService {
           } = student?.toJSON();
           if (1) {
             if (as_code?.toString() === verication_code.toString()) {
-              student.update({
+              await student.update({
                 verification_code: '000000',
               });
               return Responder({
@@ -858,9 +858,10 @@ export class UsersService {
                 })
                 .then(async ({ code, data, message }) => {
                   const { cleared, hashed, refresh } = data;
-                  student.update({
+                  await student.update({
                     is_verified: true,
                   });
+                  await student.reload(); // Reload to get the updated data
                   return Responder({
                     status: HttpStatusCode.Ok,
                     data: {
@@ -1004,13 +1005,20 @@ export class UsersService {
       .then(async (student) => {
         if (student instanceof Users) {
           const updateData = { ...profile };
+          // Remove as_avatar from updateData (it's not a database column)
+          delete updateData.as_avatar;
+          
           if (
             profile['as_avatar'] !== undefined &&
             profile['as_avatar'] !== null
           ) {
+            console.log('[AVATAR UPDATE] Setting avatar to:', profile['as_avatar']);
             updateData.avatar = profile['as_avatar'];
           }
-          student.update(updateData);
+          console.log('[AVATAR UPDATE] Update data:', JSON.stringify(updateData, null, 2));
+          await student.update(updateData);
+          await student.reload(); // Reload to get the updated data from database
+          console.log('[AVATAR UPDATE] Avatar after reload:', student.avatar);
           const record = this.allService.filterUserFields(student.toJSON());
           return Responder({ status: HttpStatusCode.Ok, data: record });
         } else {

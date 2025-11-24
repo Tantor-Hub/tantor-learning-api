@@ -14,7 +14,7 @@ import { TransferChat } from 'src/models/model.transferechat';
 import { RepliesChatService } from '../replieschat/replieschat.service';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { ChatCleanupService } from 'src/services/service.chatcleanup';
 
 @Module({
@@ -41,7 +41,7 @@ import { ChatCleanupService } from 'src/services/service.chatcleanup';
     TransferChatService,
     JwtService,
     AllSercices,
-    GoogleDriveService,
+    CloudinaryService,
     ChatCleanupService,
   ],
   exports: [ChatService, ChatGateway, ChatCleanupService],

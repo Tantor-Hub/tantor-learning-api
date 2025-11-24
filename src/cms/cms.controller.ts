@@ -31,7 +31,7 @@ import { UsersService } from '../users/users.service';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { CreateContactDto } from './dto/contact-form.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { GoogleDriveService } from '../services/service.googledrive';
+import { CloudinaryService } from '../services/service.cloudinary';
 import { JwtAuthGuardAsFormateur } from 'src/guard/guard.assecretaireandformateur';
 import { CreateNewsLetterDto } from './dto/newsletter-sub.dto';
 
@@ -41,12 +41,12 @@ export class CmsController {
   constructor(
     private readonly cmsService: CmsService,
     private readonly usersService: UsersService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post('contactus')
   @UseInterceptors(
-    FileInterceptor('piece_jointe', { limits: { fileSize: 10_000_000 } }),
+    FileInterceptor('piece_jointe', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
   )
   @ApiOperation({
     summary: 'Submit contact form with optional file attachment',
@@ -221,7 +221,7 @@ const result = await response.json();
           summary: 'File too large',
           value: {
             status: 400,
-            data: 'File size exceeds 10MB limit',
+            data: 'File size exceeds 100GB limit',
           },
         },
       },
@@ -244,7 +244,20 @@ const result = await response.json();
   ) {
     let piece_jointe: string | undefined = undefined;
     if (file) {
-      const result = await this.googleDriveService.uploadBufferFile(file);
+      console.log(`Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
+      
+      // Validate file size (100GB limit)
+      const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
+      if (file.size > maxSize) {
+        return {
+          status: 400,
+          data: 'File size exceeds 100GB limit',
+        };
+      }
+
+      const result = await this.cloudinaryService.uploadBufferFile(file, {
+        useAsync: false,
+      });
       if (result) {
         piece_jointe = result.link;
       }

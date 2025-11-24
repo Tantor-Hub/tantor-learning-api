@@ -41,24 +41,14 @@ export class UploadsService {
       throw new BadRequestException('No file provided');
     }
 
-    // Validate file type
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.',
-      );
-    }
+    // Log file size for monitoring
+    console.log(`Uploading image: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Validate file size (100GB limit)
+    const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
     if (file.size > maxSize) {
       throw new BadRequestException(
-        'File size too large. Maximum size is 10MB.',
+        'File size too large. Maximum size is 100GB.',
       );
     }
 

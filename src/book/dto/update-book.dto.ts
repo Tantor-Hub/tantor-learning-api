@@ -1,13 +1,11 @@
 import {
   IsOptional,
   IsString,
-  IsEnum,
   IsArray,
   IsUUID,
   IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { BookStatus } from 'src/models/model.book';
 
 export class UpdateBookDto {
   @ApiProperty({
@@ -53,16 +51,6 @@ export class UpdateBookDto {
   @IsOptional()
   @IsString()
   author?: string;
-
-  @ApiProperty({
-    enum: BookStatus,
-    description: 'Status of the book (premium or free)',
-    example: BookStatus.FREE,
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(BookStatus)
-  status?: BookStatus;
 
   @ApiProperty({
     description: 'Array of BookCategory UUIDs associated with this book',

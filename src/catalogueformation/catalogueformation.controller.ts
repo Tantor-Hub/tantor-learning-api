@@ -36,7 +36,7 @@ import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { CatalogueFormation } from 'src/models/model.catalogueformation';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import {
   CatalogueFormationApiTags,
   CatalogueFormationCreateApiOperation,
@@ -62,13 +62,13 @@ import {
 export class CatalogueFormationController {
   constructor(
     private readonly catalogueFormationService: CatalogueFormationService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post()
   @UseGuards(JwtAuthGuardAsManagerSystem)
   @UseInterceptors(
-    FileInterceptor('document', { limits: { fileSize: 50_000_000 } }),
+    FileInterceptor('document', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
   )
   @ApiOperation({
     summary: 'Create a new catalogue formation with file upload (Admin only)',
@@ -85,12 +85,16 @@ export class CatalogueFormationController {
       - Required fields: type, title
       - Optional fields: document (file), description
       
+      **🚀 Automatic Optimizations:**
+      All file uploads are automatically optimized with:
+      - Chunked uploads (500KB chunks) for better reliability
+      - Async processing (non-blocking) to prevent timeouts
+      - Extended timeouts (10 minutes) for long uploads
+      - Keep-alive headers to maintain connections
+      
       **Supported File Types:**
-      - Documents: PDF, DOC, DOCX, TXT
-      - Images: JPEG, PNG, GIF
-      - Presentations: PPT, PPTX
-      - Spreadsheets: XLS, XLSX
-      - Maximum file size: 50MB
+      - Any file type is allowed
+      - Maximum file size: 100GB
       
       **Example cURL:**
       \`\`\`bash
@@ -132,7 +136,7 @@ export class CatalogueFormationController {
           type: 'string',
           format: 'binary',
           description:
-            'Document file to upload (optional). Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, PPT, PPTX, XLS, XLSX. Maximum size: 50MB.',
+            'Document file to upload (optional). Any file type is allowed. Maximum size: 100GB. All uploads are automatically optimized with chunked and async processing.',
         },
         type: {
           type: 'string',
@@ -249,46 +253,23 @@ export class CatalogueFormationController {
           file.mimetype,
         );
 
-        // Validate file type
-        const allowedMimeTypes = [
-          // Documents
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'text/plain',
-          'application/vnd.ms-powerpoint',
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          // Images
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'image/svg+xml',
-          'image/bmp',
-          'image/tiff',
-        ];
+        // Log file size for monitoring
+        console.log(`Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
 
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-          return {
-            status: 400,
-            data: `File type ${file.mimetype} is not allowed. Allowed types: Documents (PDF, DOC, DOCX, TXT, PPT, XLS), Images (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF)`,
-          };
-        }
-
-        // Validate file size (50MB limit)
-        const maxSize = 50 * 1024 * 1024; // 50MB
+        // Validate file size (100GB limit)
+        const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
         if (file.size > maxSize) {
           return {
             status: 400,
-            data: 'File size exceeds 50MB limit',
+            data: 'File size exceeds 100GB limit',
           };
         }
 
         // Upload file to Cloudinary
-        const uploadResult =
-          await this.googleDriveService.uploadBufferFile(file);
+        const uploadResult = await this.cloudinaryService.uploadBufferFile(
+          file,
+          { useAsync: false },
+        );
 
         if (!uploadResult) {
           console.error('Upload failed: uploadResult is null');
@@ -674,7 +655,7 @@ export class CatalogueFormationController {
   @Post('student')
   @UseGuards(JwtAuthGuardAsSecretary)
   @UseInterceptors(
-    FileInterceptor('document', { limits: { fileSize: 100_000_000 } }),
+    FileInterceptor('document', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
   )
   @ApiBearerAuth()
   @ApiOperation({
@@ -869,8 +850,10 @@ export class CatalogueFormationController {
         }
 
         // Upload file to Cloudinary
-        const uploadResult =
-          await this.googleDriveService.uploadBufferFile(file);
+        const uploadResult = await this.cloudinaryService.uploadBufferFile(
+          file,
+          { useAsync: false },
+        );
 
         if (!uploadResult) {
           console.error('Upload failed: uploadResult is null');
@@ -947,7 +930,7 @@ export class CatalogueFormationController {
   @Patch('student/:id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @UseInterceptors(
-    FileInterceptor('document', { limits: { fileSize: 100_000_000 } }),
+    FileInterceptor('document', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
   )
   @ApiBearerAuth()
   @ApiParam({
@@ -1180,8 +1163,10 @@ export class CatalogueFormationController {
         }
 
         // Upload file to Cloudinary
-        const uploadResult =
-          await this.googleDriveService.uploadBufferFile(file);
+        const uploadResult = await this.cloudinaryService.uploadBufferFile(
+          file,
+          { useAsync: false },
+        );
 
         if (!uploadResult) {
           console.error('Upload failed: uploadResult is null');

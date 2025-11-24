@@ -11,7 +11,7 @@ import { JwtService } from 'src/services/service.jwt';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from 'src/strategy/startegy.googleauth';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { Otp } from 'src/models/model.otp';
 import { OtpCleanupService } from 'src/services/service.otpcleanup';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -46,7 +46,7 @@ import {
     CryptoService,
     JwtService,
     GoogleStrategy,
-    GoogleDriveService,
+    CloudinaryService,
     OtpCleanupService,
     JwtAuthGuardAsSuperviseur,
     JwtAuthGuardAdminOrSecretary,

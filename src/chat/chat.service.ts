@@ -1088,6 +1088,7 @@ export class ChatService {
 
       const { id, ...updateData } = updateChatDto;
       await chat.update(updateData);
+      await chat.reload(); // Reload to get the updated data from database
 
       console.log('=== Chat update: Success ===');
 

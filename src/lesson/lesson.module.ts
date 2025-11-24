@@ -4,7 +4,7 @@ import { LessonController } from './lesson.controller';
 import { MailService } from 'src/services/service.mail';
 import { CryptoService } from 'src/services/service.crypto';
 import { JwtModule } from '@nestjs/jwt';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { UsersService } from 'src/users/users.service';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -56,7 +56,7 @@ import { Studentevaluation } from 'src/models/model.studentevaluation';
     MailService,
     CryptoService,
     JwtService,
-    GoogleDriveService,
+    CloudinaryService,
     UsersService,
     LessonService,
     JwtAuthGuardAsStudentInSession,

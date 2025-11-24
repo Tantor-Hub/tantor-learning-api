@@ -384,6 +384,7 @@ export class EventService {
       // are already handled by the spread operator above
 
       await event.update(updateData);
+      await event.reload(); // Reload to get the updated data from database
 
       return Responder({
         status: HttpStatusCode.Ok,

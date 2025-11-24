@@ -11,7 +11,7 @@ import { Users } from '../models/model.users';
 import { AllSercices } from '../services/serices.all';
 import { JwtService } from '../services/service.jwt';
 import { MailService } from '../services/service.mail';
-import { GoogleDriveService } from '../services/service.googledrive';
+import { CloudinaryService } from '../services/service.cloudinary';
 
 @Module({
   imports: [
@@ -39,7 +39,7 @@ import { GoogleDriveService } from '../services/service.googledrive';
     AllSercices,
     JwtService,
     MailService,
-    GoogleDriveService,
+    CloudinaryService,
   ],
   exports: [UserInSessionService],
 })

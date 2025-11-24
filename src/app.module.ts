@@ -13,7 +13,7 @@ import { UsersModule } from './users/users.module';
 import { TrainingCategory } from './models/model.trainingcategory';
 import { WebrtcGatewayService } from './services/service.webrtc';
 import { MediasoupService } from './services/service.mediasoup';
-import { GoogleDriveService } from './services/service.googledrive';
+import { CloudinaryService } from './services/service.cloudinary';
 import { DocsService } from './services/service.docs';
 import { AllSercices } from './services/serices.all';
 import { CmsService } from './cms/cms.service';
@@ -194,7 +194,7 @@ import { BookCategoryModule } from './bookcategory/bookcategory.module';
     AppService,
     MediasoupService,
     WebrtcGatewayService,
-    GoogleDriveService,
+    CloudinaryService,
     DocsService,
     AllSercices,
     JwtService,

@@ -29,10 +29,10 @@ export class BookService {
   ): Promise<ResponseServer> {
     try {
       // If sessions are selected, automatically set status to premium
-      // Otherwise, use the status provided by the frontend
+      // Otherwise, automatically set status to free
       const sessions = createDto.session || [];
       const hasSessions = Array.isArray(sessions) && sessions.length > 0;
-      const finalStatus = hasSessions ? BookStatus.PREMIUM : createDto.status;
+      const finalStatus = hasSessions ? BookStatus.PREMIUM : BookStatus.FREE;
 
       const book = await this.bookModel.create({
         title: createDto.title,
@@ -127,52 +127,21 @@ export class BookService {
         sessions.map((session) => [session.id, session]),
       );
 
-      const now = new Date();
-
       type SerializedBook = Record<string, any>;
 
-      // If user is logged in, get their paid sessions for all books
-      let userPaidSessionIds: Set<string> = new Set();
-      if (userId) {
-        const allBookSessionIds = Array.from(
-          new Set(
-            books
-              .flatMap((book) =>
-                Array.isArray(book.session) ? book.session : [],
-              )
-              .filter((sessionId): sessionId is string => !!sessionId),
-          ),
-        );
-
-        if (allBookSessionIds.length > 0) {
-          const paidSessions = await this.userInSessionModel.findAll({
-            where: {
-              id_user: userId,
-              status: UserInSessionStatus.IN,
-              id_session: {
-                [Op.in]: allBookSessionIds,
-              },
-            },
-          });
-
-          // Store session IDs that user has paid for
-          paidSessions.forEach((userSession) => {
-            userPaidSessionIds.add(userSession.id_session);
-          });
-        }
-      }
-
+      // Serialize all published books - show all free and premium books regardless of login status
       const serializedBooks = books.map((book) => {
-        // Free books don't have sessions and are always available
+        const bookJson = book.toJSON();
+
+        // Free books don't have sessions
         if (book.status === BookStatus.FREE) {
-          const bookJson = book.toJSON();
           return {
             ...bookJson,
             sessions: [], // Free books don't have sessions
           };
         }
 
-        // For premium books, check for active sessions
+        // For premium books, include all related sessions (if any)
         const bookSessionIds = Array.isArray(book.session)
           ? book.session.filter((id) => !!id)
           : [];
@@ -183,70 +152,14 @@ export class BookService {
             (session): session is TrainingSession => session !== undefined,
           );
 
-        // If user is logged in, check if they have paid for at least one session
-        if (userId && bookSessionIds.length > 0) {
-          // Check if user has paid for at least one of the book's sessions
-          const userHasPaidSession = bookSessionIds.some((sessionId) =>
-            userPaidSessionIds.has(sessionId),
-          );
-
-          if (userHasPaidSession) {
-            // Get the paid sessions that are also active
-            // Session activeness is checked using begining_date and ending_date from TrainingSession model
-            const paidAndActiveSessions = relatedSessions.filter((session) => {
-              // Check if user has paid for this session
-              if (!userPaidSessionIds.has(session.id)) {
-                return false;
-              }
-
-              // Check if session is still active using begining_date and ending_date from model.trainingssession.ts
-              const beginingDate = new Date(session.begining_date);
-              const endingDate = new Date(session.ending_date);
-              endingDate.setHours(23, 59, 59, 999);
-              return beginingDate <= now && now <= endingDate;
-            });
-
-            // If at least one paid session is still active, show the book
-            if (paidAndActiveSessions.length > 0) {
-              const bookJson = book.toJSON();
-              return {
-                ...bookJson,
-                sessions: paidAndActiveSessions.map((session) =>
-                  session.toJSON(),
-                ),
-              };
-            }
-          }
-
-          // If user is logged in but doesn't have paid active sessions, don't show the book
-          return null;
-        }
-
-        // For non-logged-in users, check for active sessions (existing logic)
-        // Session activeness is checked using begining_date and ending_date from TrainingSession model
-        const activeSessions = relatedSessions.filter((session) => {
-          // Check if session is still active using begining_date and ending_date from model.trainingssession.ts
-          const beginingDate = new Date(session.begining_date);
-          const endingDate = new Date(session.ending_date);
-          // Set ending date to end of day to include sessions that end today
-          endingDate.setHours(23, 59, 59, 999);
-          return beginingDate <= now && now <= endingDate;
-        });
-
-        // Premium books require at least one active session
-        if (!activeSessions.length) {
-          return null;
-        }
-
-        const bookJson = book.toJSON();
-
+        // Return premium books with their sessions (all published books are visible)
         return {
           ...bookJson,
-          sessions: activeSessions.map((session) => session.toJSON()),
+          sessions: relatedSessions.map((session) => session.toJSON()),
         };
       });
 
-      let filteredBooks = serializedBooks.filter(Boolean) as SerializedBook[];
+      let filteredBooks = serializedBooks as SerializedBook[];
 
       if (sessionFilter?.length) {
         filteredBooks = filteredBooks.filter((book) => {
@@ -366,6 +279,34 @@ export class BookService {
     }
   }
 
+  async findOneForSecretary(id: string): Promise<ResponseServer> {
+    try {
+      const book = await this.bookModel.findByPk(id, {
+        include: ['creator'],
+      });
+
+      if (!book) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          data: 'Livre non trouvé',
+        });
+      }
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: book.toJSON(),
+      });
+    } catch (error) {
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        data: {
+          error: 'Erreur lors de la récupération du livre',
+          details: error.message,
+        },
+      });
+    }
+  }
+
   async findOne(id: string, userId?: string): Promise<ResponseServer> {
     try {
       const book = await this.bookModel.findByPk(id, {
@@ -470,11 +411,11 @@ export class BookService {
         Array.isArray(finalSessions) && finalSessions.length > 0;
 
       // If sessions are present (after update), automatically set status to premium
-      // Otherwise, use the status provided by the frontend (if provided)
+      // Otherwise, automatically set status to free
       if (hasSessions) {
         updateData.status = BookStatus.PREMIUM;
-      } else if (updateDto.status !== undefined) {
-        updateData.status = updateDto.status;
+      } else {
+        updateData.status = BookStatus.FREE;
       }
       if (updateDto.category !== undefined)
         updateData.category = updateDto.category;

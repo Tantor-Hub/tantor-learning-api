@@ -534,6 +534,7 @@ export class RepliesChatService {
 
       const { id, ...updateData } = updateRepliesChatDto;
       await reply.update(updateData);
+      await reply.reload(); // Reload to get the updated data from database
 
       console.log('=== RepliesChat update: Success ===');
 

@@ -32,7 +32,7 @@ import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { User } from 'src/strategy/strategy.globaluser';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @ApiTags('Session Documents')
 @ApiBearerAuth()
@@ -41,13 +41,13 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
 export class SessionDocumentController {
   constructor(
     private readonly sessionDocumentService: SessionDocumentService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post('create')
   @UseGuards(JwtAuthGuardAsStudent)
   @UseInterceptors(
-    FileInterceptor('document', { limits: { fileSize: 50_000_000 } }),
+    FileInterceptor('document', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
   )
   @ApiOperation({
     summary: 'Create a new session document with file upload (Student only)',
@@ -62,10 +62,16 @@ export class SessionDocumentController {
       - Content-Type: multipart/form-data
       - Required fields: document (file), type, id_session, categories
       
+      **🚀 Automatic Optimizations:**
+      All file uploads are automatically optimized with:
+      - Chunked uploads (500KB chunks) for better reliability
+      - Async processing (non-blocking) to prevent timeouts
+      - Extended timeouts (10 minutes) for long uploads
+      - Keep-alive headers to maintain connections
+      
       **Supported File Types:**
-      - Documents: PDF, DOC, DOCX, TXT
-      - Images: JPEG, PNG, GIF, WebP
-      - Maximum file size: 50MB
+      - Any file type is allowed
+      - Maximum file size: 100GB
       
       **Important Notes:**
       - Student ID is automatically extracted from the JWT token
@@ -144,7 +150,7 @@ export class SessionDocumentController {
           type: 'string',
           format: 'binary',
           description:
-            'Document file to upload. Supported formats: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, WebP. Maximum size: 50MB.',
+            'Document file to upload. Any file type is allowed. Maximum size: 100GB. All uploads are automatically optimized with chunked and async processing.',
         },
         type: {
           type: 'string',
@@ -221,8 +227,7 @@ export class SessionDocumentController {
 1. **Validation Errors:**
    - Missing required fields (document file, type, id_session, categories)
    - Missing or invalid file upload
-   - Invalid file type (must be PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, or WebP)
-   - File size exceeds 50MB limit
+   - File size exceeds 100GB limit
    - Invalid UUID format for id_session
    - Invalid enum value for categories (must be 'before', 'during', or 'after')
 
@@ -284,10 +289,10 @@ export class SessionDocumentController {
         },
         fileTooLarge: {
           summary: 'File too large',
-          description: 'The uploaded file exceeds the 50MB size limit',
+          description: 'The uploaded file exceeds the 100GB size limit',
           value: {
             status: 400,
-            data: 'File size exceeds 50MB limit',
+            data: 'File size exceeds 100GB limit',
           },
         },
         uploadFailed: {
@@ -353,38 +358,22 @@ export class SessionDocumentController {
         };
       }
 
-      // Validate file type
-      const allowedMimeTypes = [
-        // Documents
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        // Images
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-      ];
+      // Log file size for monitoring
+      console.log(`Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
 
-      if (!allowedMimeTypes.includes(file.mimetype)) {
-        return {
-          status: 400,
-          data: `File type ${file.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, TXT, JPEG, PNG, GIF, WebP`,
-        };
-      }
-
-      // Validate file size (50MB limit)
-      const maxSize = 50 * 1024 * 1024; // 50MB
+      // Validate file size (100GB limit)
+      const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
       if (file.size > maxSize) {
         return {
           status: 400,
-          data: 'File size exceeds 50MB limit',
+          data: 'File size exceeds 100GB limit',
         };
       }
 
       // Upload file to Cloudinary
-      const uploadResult = await this.googleDriveService.uploadBufferFile(file);
+      const uploadResult = await this.cloudinaryService.uploadBufferFile(file, {
+        useAsync: false,
+      });
       if (!uploadResult) {
         return {
           status: 500,

@@ -12,7 +12,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { Studentevaluation } from 'src/models/model.studentevaluation';
@@ -45,7 +45,7 @@ import { Studentevaluation } from 'src/models/model.studentevaluation';
     LessondocumentService,
     JwtService,
     AllSercices,
-    GoogleDriveService,
+    CloudinaryService,
     JwtAuthGuardAsInstructor,
     JwtAuthGuardAsStudentInSession,
   ],

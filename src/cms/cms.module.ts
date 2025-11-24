@@ -7,7 +7,7 @@ import { CmsService } from './cms.service';
 import { AllSercices } from 'src/services/serices.all';
 import { AppInfos } from 'src/models/model.appinfos';
 import { JwtService } from 'src/services/service.jwt';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 import { CryptoService } from 'src/services/service.crypto';
 import { MailService } from 'src/services/service.mail';
 import { UsersService } from 'src/users/users.service';
@@ -45,7 +45,7 @@ import { Otp } from 'src/models/model.otp';
     MailService,
     CryptoService,
     JwtService,
-    GoogleDriveService,
+    CloudinaryService,
     UsersService,
     MailService,
   ],

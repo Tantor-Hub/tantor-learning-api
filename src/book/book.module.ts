@@ -9,7 +9,7 @@ import { Users } from 'src/models/model.users';
 import { TrainingSession } from 'src/models/model.trainingssession';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { GoogleDriveService } from 'src/services/service.googledrive';
     ]),
   ],
   controllers: [BookController],
-  providers: [BookService, JwtService, AllSercices, GoogleDriveService],
+  providers: [BookService, JwtService, AllSercices, CloudinaryService],
   exports: [BookService],
 })
 export class BookModule {}

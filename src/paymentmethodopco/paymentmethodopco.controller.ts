@@ -444,10 +444,112 @@ export class PaymentMethodOpcoController {
   @ApiResponse({
     status: 200,
     description: 'Payment method OPCO retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: {
+          type: 'string',
+          example: 'Payment method OPCO retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '123e4567-e89b-12d3-a456-426614174000',
+            },
+            id_session: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440000',
+            },
+            nom_opco: {
+              type: 'string',
+              nullable: true,
+              example: 'OPCO Mobilités',
+            },
+            nom_entreprise: {
+              type: 'string',
+              example: 'Entreprise ABC',
+            },
+            siren: {
+              type: 'string',
+              example: '123456789',
+            },
+            nom_responsable: {
+              type: 'string',
+              example: 'Jean Dupont',
+            },
+            telephone_responsable: {
+              type: 'string',
+              example: '0123456789',
+            },
+            email_responsable: {
+              type: 'string',
+              example: 'jean.dupont@entreprise.com',
+            },
+            status: {
+              type: 'string',
+              enum: ['pending', 'rejected', 'validated'],
+              example: 'pending',
+            },
+            id_user: {
+              type: 'string',
+              format: 'uuid',
+              example: '550e8400-e29b-41d4-a716-446655440001',
+            },
+            updatedBy: {
+              type: 'string',
+              format: 'uuid',
+              nullable: true,
+              example: '550e8400-e29b-41d4-a716-446655440002',
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            trainingSession: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                title: { type: 'string', example: 'JavaScript Fundamentals' },
+                nb_places: { type: 'number', example: 20 },
+                available_places: { type: 'number', example: 15 },
+                begining_date: { type: 'string', format: 'date-time' },
+                ending_date: { type: 'string', format: 'date-time' },
+              },
+            },
+            user: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                firstName: { type: 'string', example: 'John' },
+                lastName: { type: 'string', example: 'Doe' },
+                email: { type: 'string', example: 'john.doe@example.com' },
+                phone: { type: 'string', example: '0123456789' },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
     description: 'Payment method OPCO not found.',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 404 },
+        message: {
+          type: 'string',
+          example: 'Payment method OPCO not found',
+        },
+        data: { type: 'null', example: null },
+      },
+    },
   })
   @ApiResponse({
     status: 401,

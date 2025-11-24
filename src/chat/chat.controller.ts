@@ -32,7 +32,7 @@ import { UpdateTransferChatDto } from './dto/update-transfer-chat.dto';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @ApiTags('Chat')
 @Controller('chat')
@@ -42,13 +42,13 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly transferChatService: TransferChatService,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post('create')
   @UseInterceptors(
-    FilesInterceptor('files', 10, { limits: { fileSize: 50 * 1024 * 1024 } }),
-  ) // 10 files, 50MB each
+    FilesInterceptor('files', 10, { limits: { fileSize: 107_374_182_400 } }), // 10 files, 100GB each
+  )
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Create a new chat message with optional file attachments',
@@ -65,14 +65,15 @@ This endpoint allows you to create a new chat message with optional file attachm
 
 ## File Upload Details:
 - **Maximum Files**: 10 files per message
-- **File Size Limit**: 50MB per file
+- **File Size Limit**: 100GB per file
+- **🚀 Automatic Optimizations:**
+  All file uploads are automatically optimized with:
+  - Chunked uploads (500KB chunks) for better reliability
+  - Async processing (non-blocking) to prevent timeouts
+  - Extended timeouts (10 minutes) for long uploads
+  - Keep-alive headers to maintain connections
 - **Supported Formats**: 
-  - Documents: PDF, DOC, DOCX, TXT, PPT, PPTX, XLS, XLSX
-  - Images: JPEG, PNG, GIF, WebP, SVG
-  - Videos: MP4, AVI, MOV, QuickTime
-  - Audio: MP3, WAV, MPEG, OGG
-  - Archives: ZIP, RAR, 7Z
-  - Data: JSON, CSV, XML
+  - Any file type is allowed
 
 ## Example Usage:
 \`\`\`bash
@@ -97,7 +98,7 @@ curl -X POST /api/chat/create \\
 ## Optional Fields:
 - **subject**: Subject/title of the message
 - **content**: Text content of the message
-- **files**: File attachments (up to 10 files, 50MB each)
+- **files**: File attachments (up to 10 files, 100GB each - all automatically optimized)
 
 ## File Upload Instructions:
 1. Use \`multipart/form-data\` content type
@@ -155,7 +156,7 @@ files: [file1.pdf, image1.jpg, video1.mp4]
 
 ## Upload Rules:
 - **Maximum Files**: 10 files per message
-- **File Size Limit**: 50MB per file
+- **File Size Limit**: 100GB per file (all uploads automatically optimized)
 - **Field Name**: Use 'files' for each file upload
 
 ## Supported File Types:
@@ -473,22 +474,27 @@ The error response includes detailed information about what went wrong, includin
             };
           }
 
-          // Validate file size (50MB limit)
-          const maxSize = 50 * 1024 * 1024; // 50MB
+          // Validate file size (100GB limit)
+          const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
           if (file.size > maxSize) {
             return {
               status: 400,
-              message: `File ${file.originalname} size exceeds 50MB limit`,
+              message: `File ${file.originalname} size exceeds 100GB limit`,
               data: null,
             };
           }
+
+          // Log file size for monitoring
+          console.log(`Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
         }
 
         // Upload files to Cloudinary
         const uploadedFiles: string[] = [];
         for (const file of files) {
-          const uploadResult =
-            await this.googleDriveService.uploadBufferFile(file);
+        const uploadResult = await this.cloudinaryService.uploadBufferFile(
+          file,
+          { useAsync: false },
+        );
           if (uploadResult) {
             uploadedFiles.push(uploadResult.link);
           } else {

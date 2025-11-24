@@ -7,7 +7,7 @@ import { IInternalResponse } from 'src/interface/interface.internalresponse';
 import * as puppeteer from 'puppeteer';
 import * as Handlebars from 'handlebars';
 import { Buffer } from 'buffer';
-import { GoogleDriveService } from './service.googledrive';
+import { CloudinaryService } from './service.cloudinary';
 import * as fs from 'fs';
 import { join } from 'path';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
@@ -20,7 +20,7 @@ export class MailService {
   constructor(
     private configService: ConfigService,
     private readonly allSercices: AllSercices,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {
     const host = this.configService.get<string>('APPSMTP_HOST');
     const port = this.configService.get<number>('APPSMTP_PORT');

@@ -9,7 +9,7 @@ import { Responder } from 'src/strategy/strategy.responder';
 import { HttpStatusCode } from 'src/config/config.statuscodes';
 import { ResponseServer } from 'src/interface/interface.response';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
-import { GoogleDriveService } from 'src/services/service.googledrive';
+import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @Injectable()
 export class LessondocumentService {
@@ -20,7 +20,7 @@ export class LessondocumentService {
     private userModel: typeof Users,
     @InjectModel(Lesson)
     private lessonModel: typeof Lesson,
-    private readonly googleDriveService: GoogleDriveService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // Helper method to generate download URL for a document
@@ -100,7 +100,7 @@ export class LessondocumentService {
 
       if (videoExtensions.includes(fileExtension)) {
         // For videos, return multiple format URLs
-        const videoUrls = this.googleDriveService.generateVideoUrls(
+        const videoUrls = this.cloudinaryService.generateVideoUrls(
           publicId,
           doc.file_name,
         );
@@ -111,7 +111,7 @@ export class LessondocumentService {
         };
       } else {
         // For other files, generate standard download URL
-        downloadUrl = this.googleDriveService.generateDownloadUrl(
+        downloadUrl = this.cloudinaryService.generateDownloadUrl(
           publicId,
           fileExtension,
           doc.file_name,

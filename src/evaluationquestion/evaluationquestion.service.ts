@@ -56,14 +56,12 @@ export class EvaluationQuestionService {
       const totalPointsAfterAddition = existingPointsSum + newQuestionPoints;
 
       // Check if total points exceed the evaluation's points
-      // Allow first question to have more points than evaluation
-      if (
-        existingQuestions.length > 0 &&
-        totalPointsAfterAddition > evaluation.points
-      ) {
+      // Validate for both first question and subsequent questions
+      if (totalPointsAfterAddition > evaluation.points) {
+        const availablePoints = evaluation.points - existingPointsSum;
         return Responder({
           status: HttpStatusCode.BadRequest,
-          customMessage: `Le total des points des questions (${totalPointsAfterAddition}) dépasse les points de l'évaluation (${evaluation.points}). Veuillez réduire les points de cette question.`,
+          customMessage: `Vous avez dépassé les points de l'évaluation. Le total des points des questions (${totalPointsAfterAddition}) dépasse les points de l'évaluation (${evaluation.points}). Points disponibles: ${availablePoints}. Veuillez réduire les points de cette question.`,
         });
       }
 
@@ -239,14 +237,12 @@ export class EvaluationQuestionService {
         const totalPointsAfterUpdate = otherQuestionsPointsSum + updatedPoints;
 
         // Check if total points exceed the evaluation's points
-        // Allow first question to have more points than evaluation
-        if (
-          existingQuestions.length > 0 &&
-          totalPointsAfterUpdate > evaluation.points
-        ) {
+        // Validate for all questions including when updating the first question
+        if (totalPointsAfterUpdate > evaluation.points) {
+          const availablePoints = evaluation.points - otherQuestionsPointsSum;
           return Responder({
             status: HttpStatusCode.BadRequest,
-            customMessage: `Le total des points des questions (${totalPointsAfterUpdate}) dépasse les points de l'évaluation (${evaluation.points}). Veuillez réduire les points de cette question.`,
+            customMessage: `Vous avez dépassé les points de l'évaluation. Le total des points des questions (${totalPointsAfterUpdate}) dépasse les points de l'évaluation (${evaluation.points}). Points disponibles: ${availablePoints}. Veuillez réduire les points de cette question.`,
           });
         }
       }

@@ -129,8 +129,21 @@ async function tantorAPP() {
     next();
   });
 
+
   app.use(bodyParser.json({ limit: '500mb' }));
   app.use(bodyParser.urlencoded({ limit: '500mb', extended: true }));
+
+  // Add keep-alive headers to prevent Cloudflare 524 timeout
+  app.use((req, res, next) => {
+    // Set keep-alive headers for long-running requests (file uploads)
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Keep-Alive', 'timeout=600, max=1000');
+    // Increase timeout for file upload endpoints
+    if (req.path.includes('/create') || req.path.includes('/update')) {
+      res.setTimeout(600000); // 10 minutes for upload endpoints
+    }
+    next();
+  });
   app.use(
     '/webhook/stripe/onpayment',
     bodyParser.raw({ type: 'application/json' }),
@@ -142,7 +155,16 @@ async function tantorAPP() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transformOptions: { enableImplicitConversion: true },
-      exceptionFactory: (errors) => {
+      exceptionFactory: (errors, metatype?) => {
+        // Log validation errors
+        console.log('=== [VALIDATION ERROR] ===');
+        console.log('[URL]', errors[0]?.target?.constructor?.name || 'Unknown');
+        console.log('[ERRORS]', JSON.stringify(errors, null, 2));
+        // Try to log the target object (the DTO that failed validation)
+        if (errors[0]?.target) {
+          console.log('[FAILED DTO]', JSON.stringify(errors[0].target, null, 2));
+        }
+        console.log('==========================');
         const formatErrors = (errs: any[], parentPath = '') => {
           return errs.flatMap((err) => {
             const fieldPath = parentPath
