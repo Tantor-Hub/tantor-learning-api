@@ -21,6 +21,7 @@ import {
 import { PaymentMethodOpcoService } from './paymentmethodopco.service';
 import { CreatePaymentMethodOpcoDto } from './dto/create-paymentmethodopco.dto';
 import { UpdatePaymentMethodOpcoDto } from './dto/update-paymentmethodopco.dto';
+import { UpdatePaymentMethodOpcoSecretaryDto } from './dto/update-paymentmethodopco-secretary.dto';
 import { DeletePaymentMethodOpcoDto } from './dto/delete-paymentmethodopco.dto';
 import { JwtAuthGuardAsStudent } from '../guard/guard.asstudent';
 import { JwtAuthGuardAsManagerSystem } from '../guard/guard.asadmin';
@@ -629,16 +630,15 @@ export class PaymentMethodOpcoController {
     return this.paymentMethodOpcoService.update(updatePaymentMethodOpcoDto);
   }
 
-  @Patch('secretary/update')
+  @Patch('secretary/update/:id')
   @UseGuards(JwtAuthGuardAsSecretary)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update a payment method OPCO (Secretary access)',
     description: `
-**UpdatePaymentMethodOpcoDto Structure:**
+**UpdatePaymentMethodOpcoSecretaryDto Structure:**
 \`\`\`typescript
 {
-  id: string;                           // Required (to identify which payment method)
   id_session?: string;                  // Optional
   nom_opco?: string;                    // Optional
   nom_entreprise?: string;              // Optional
@@ -648,26 +648,32 @@ export class PaymentMethodOpcoController {
   email_responsable?: string;           // Optional
   status?: PaymentMethodOpcoStatus;     // Optional
   id_user?: string;                     // Optional
+  updatedBy?: string;                   // Optional - ID of the secretary who updated
 }
 \`\`\`
 
-**Note:** This endpoint allows secretaries to modify payment methods OPCO created by students.
+**Note:** The payment method ID is provided in the URL path parameter, not in the request body. This endpoint allows secretaries to modify payment methods OPCO created by students.
     `,
   })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID of the payment method OPCO to update',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   @ApiBody({
-    type: UpdatePaymentMethodOpcoDto,
+    type: UpdatePaymentMethodOpcoSecretaryDto,
     examples: {
       example1: {
         summary: 'Update payment status',
         value: {
-          id: '550e8400-e29b-41d4-a716-446655440000',
           status: 'validated',
         },
       },
       example2: {
         summary: 'Update company information',
         value: {
-          id: '550e8400-e29b-41d4-a716-446655440000',
           nom_entreprise: 'Nouvelle Entreprise',
           siren: '987654321',
           status: 'validated',
@@ -691,8 +697,19 @@ export class PaymentMethodOpcoController {
     status: 500,
     description: 'Internal server error.',
   })
-  updateSecretary(@Body() updatePaymentMethodOpcoDto: UpdatePaymentMethodOpcoDto) {
-    return this.paymentMethodOpcoService.update(updatePaymentMethodOpcoDto);
+  updateSecretary(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updatePaymentMethodOpcoDto: UpdatePaymentMethodOpcoSecretaryDto,
+    @Request() req,
+  ) {
+    // Merge the id from path parameter into the DTO
+    const updateDto: UpdatePaymentMethodOpcoDto = {
+      ...updatePaymentMethodOpcoDto,
+      id,
+      // Optionally set updatedBy from the authenticated secretary
+      updatedBy: req.user?.id_user || updatePaymentMethodOpcoDto.updatedBy,
+    };
+    return this.paymentMethodOpcoService.update(updateDto);
   }
 
   @Delete()
@@ -774,6 +791,11 @@ export class PaymentMethodOpcoController {
           items: {
             type: 'object',
             properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: '123e4567-e89b-12d3-a456-426614174000',
+              },
               userId: {
                 type: 'string',
                 format: 'uuid',

@@ -832,6 +832,7 @@ export class PaymentMethodOpcoService {
           });
 
           return {
+            id: payment.id,
             userId: payment.user?.id,
             userEmail: payment.user?.email,
             sessionId: payment.trainingSession?.id,
