@@ -30,6 +30,7 @@ import { UpdateBookDto } from './dto/update-book.dto';
 import { FindBookQueryDto } from './dto/find-book.query.dto';
 import { JwtAuthGuardAsSecretary } from 'src/guard/guard.assecretary';
 import { JwtAuthGuard } from 'src/guard/guard.asglobal';
+import { JwtOptionalAuthGuard } from 'src/guard/guard.asoptional';
 import { CloudinaryService } from 'src/services/service.cloudinary';
 
 @ApiTags('Books')
@@ -680,12 +681,12 @@ export class BookController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtOptionalAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get a book by ID',
     description:
-      'Retrieve a specific book by its ID. Premium books require an active session payment.',
+      'Retrieve a specific book by its ID. Premium books require authentication and an active session payment, while free books remain accessible to guests.',
   })
   @ApiParam({
     name: 'id',
@@ -703,7 +704,8 @@ export class BookController {
     description: 'Book not found',
   })
   findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
-    return this.bookService.findOne(id, req.user.id_user);
+    const userId = req?.user?.id_user;
+    return this.bookService.findOne(id, userId);
   }
 
   @Patch(':id')
@@ -1011,12 +1013,12 @@ export class BookController {
   }
 
   @Patch(':id/increment-views')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtOptionalAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Increment book views',
     description:
-      'Increment the view count for a book. Requires authentication.',
+      'Increment the view count for a book. Authenticated requests are validated, but the endpoint also works for guests so free books can be read without logging in.',
   })
   @ApiParam({
     name: 'id',

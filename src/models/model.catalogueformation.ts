@@ -6,8 +6,8 @@ import {
   PrimaryKey,
   ForeignKey,
   BelongsTo,
-  Unique,
 } from 'sequelize-typescript';
+import { Op } from 'sequelize';
 import { tables } from 'src/config/config.tablesname';
 import {
   ICatalogueFormation,
@@ -23,6 +23,11 @@ import { Users } from './model.users';
       unique: true,
       fields: ['type', 'id_training'],
       name: 'unique_catalogue_type_training',
+      where: {
+        type: {
+          [Op.ne]: CatalogueType.STUDENT,
+        },
+      },
     },
   ],
 })

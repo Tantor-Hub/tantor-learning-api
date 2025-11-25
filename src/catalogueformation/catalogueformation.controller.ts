@@ -56,6 +56,7 @@ import {
   CatalogueFormationOnlyAdminDeleteApiResponse,
   CreateCatalogueFormationDto as SwaggerCreateCatalogueFormationDto,
 } from 'src/swagger/swagger.catalogueformation';
+import { HttpStatusCode } from 'src/config/config.statuscodes';
 
 @ApiTags('Catalogue Formation')
 @Controller('catalogueformation')
@@ -323,7 +324,13 @@ export class CatalogueFormationController {
         piece_jointe: catalogueData.piece_jointe || '(not set)',
       });
 
-      const userId = req.user.id_user;
+      const userId = req?.user?.id_user;
+      if (!userId) {
+        return {
+          status: HttpStatusCode.Unauthorized,
+          data: 'Authentification requise pour créer un catalogue formation.',
+        };
+      }
       return this.catalogueFormationService.create(catalogueData, userId);
     } catch (error) {
       console.error('Error in catalogue formation creation:', error);

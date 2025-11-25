@@ -29,20 +29,20 @@ export class CatalogueFormationService {
     createDto: CreateCatalogueFormationDto,
     userId: string,
   ): Promise<CatalogueFormation> {
-    // Check if a catalogue with this type and id_training already exists
-    // Note: CreateCatalogueFormationDto doesn't include id_training, so it will be NULL
-    const whereClause: any = { type: createDto.type };
-    // Since CreateCatalogueFormationDto doesn't have id_training, check for NULL
-    whereClause.id_training = null;
+    if (createDto.type !== CatalogueType.STUDENT) {
+      // Check uniqueness only for non-student catalogues
+      const whereClause: any = { type: createDto.type };
+      whereClause.id_training = null;
 
-    const existingCatalogue = await this.catalogueFormationModel.findOne({
-      where: whereClause,
-    });
+      const existingCatalogue = await this.catalogueFormationModel.findOne({
+        where: whereClause,
+      });
 
-    if (existingCatalogue) {
-      throw new ConflictException(
-        `Un catalogue de formation de type "${createDto.type}" sans id_training existe déjà.`,
-      );
+      if (existingCatalogue) {
+        throw new ConflictException(
+          `Un catalogue de formation de type "${createDto.type}" sans id_training existe déjà.`,
+        );
+      }
     }
 
     try {
@@ -259,27 +259,6 @@ export class CatalogueFormationService {
     createDto: CreateStudentCatalogueDto,
     userId: string,
   ): Promise<CatalogueFormation> {
-    // Check if a student catalogue with the same id_training already exists
-    const whereClause: any = { type: CatalogueType.STUDENT };
-    if (createDto.id_training) {
-      whereClause.id_training = createDto.id_training;
-    } else {
-      // If id_training is not provided, check for NULL id_training
-      whereClause.id_training = null;
-    }
-
-    const existingCatalogue = await this.catalogueFormationModel.findOne({
-      where: whereClause,
-    });
-
-    if (existingCatalogue) {
-      throw new ConflictException(
-        createDto.id_training
-          ? `Un catalogue de formation de type "student" avec l'id_training "${createDto.id_training}" existe déjà.`
-          : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
-      );
-    }
-
     try {
       return await this.catalogueFormationModel.create({
         type: CatalogueType.STUDENT,
@@ -323,33 +302,6 @@ export class CatalogueFormationService {
       throw new ForbiddenException(
         'Ce catalogue n\'est pas de type "student".',
       );
-    }
-
-    // If id_training is being updated, check for conflicts
-    if (updateDto.id_training !== undefined) {
-      const newIdTraining = updateDto.id_training;
-      const whereClause: any = { 
-        type: CatalogueType.STUDENT,
-        id: { [Op.ne]: id }, // Exclude current catalogue
-      };
-      
-      if (newIdTraining) {
-        whereClause.id_training = newIdTraining;
-      } else {
-        whereClause.id_training = null;
-      }
-
-      const existingCatalogue = await this.catalogueFormationModel.findOne({
-        where: whereClause,
-      });
-
-      if (existingCatalogue) {
-        throw new ConflictException(
-          newIdTraining
-            ? `Un catalogue de formation de type "student" avec l'id_training "${newIdTraining}" existe déjà.`
-            : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
-        );
-      }
     }
 
     try {

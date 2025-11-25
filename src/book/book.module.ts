@@ -10,6 +10,7 @@ import { TrainingSession } from 'src/models/model.trainingssession';
 import { JwtService } from 'src/services/service.jwt';
 import { AllSercices } from 'src/services/serices.all';
 import { CloudinaryService } from 'src/services/service.cloudinary';
+import { JwtOptionalAuthGuard } from 'src/guard/guard.asoptional';
 
 @Module({
   imports: [
@@ -22,7 +23,13 @@ import { CloudinaryService } from 'src/services/service.cloudinary';
     ]),
   ],
   controllers: [BookController],
-  providers: [BookService, JwtService, AllSercices, CloudinaryService],
+  providers: [
+    BookService,
+    JwtService,
+    AllSercices,
+    CloudinaryService,
+    JwtOptionalAuthGuard,
+  ],
   exports: [BookService],
 })
 export class BookModule {}
