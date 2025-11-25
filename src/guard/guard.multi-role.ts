@@ -52,7 +52,10 @@ export class JwtAuthGuardMultiRole implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const authHeader = request.headers[this.keyname] as string;
+    // Prioritize x-connexion-tantor first, then fall back to configured keyname
+    const authHeader =
+      (request.headers['x-connexion-tantor'] as string) ||
+      (request.headers[this.keyname] as string);
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log(

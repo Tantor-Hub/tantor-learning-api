@@ -27,7 +27,7 @@ async function tantorAPP() {
     'https://tantorlearning.com',
     'https://www.tantorlearning.com',
 
-    'https://rick-legacy-warming-ontario.trycloudflare.com',
+    'https://canyon-develop-suitable-pickup.trycloudflare.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
@@ -99,21 +99,9 @@ async function tantorAPP() {
   // Add request logging middleware
   app.use((req, res, next) => {
     console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
-    console.log(`[REQUEST] Headers:`, {
-      authorization: req.headers.authorization ? 'Bearer [PRESENT]' : 'Missing',
-      'content-type': req.headers['content-type'],
-      origin: req.headers.origin,
-    });
     if (req.body && Object.keys(req.body).length > 0) {
       console.log(`[REQUEST] Body:`, JSON.stringify(req.body, null, 2));
     }
-    console.log(
-      `[REQUEST] User:`,
-      req.user
-        ? { id: req.user.id_user || req.user.id, role: req.user.role }
-        : 'Not authenticated',
-    );
-
     // Log response
     const originalSend = res.send;
     res.send = function (body) {
@@ -128,7 +116,6 @@ async function tantorAPP() {
 
     next();
   });
-
 
   app.use(bodyParser.json({ limit: '500mb' }));
   app.use(bodyParser.urlencoded({ limit: '500mb', extended: true }));
@@ -162,7 +149,10 @@ async function tantorAPP() {
         console.log('[ERRORS]', JSON.stringify(errors, null, 2));
         // Try to log the target object (the DTO that failed validation)
         if (errors[0]?.target) {
-          console.log('[FAILED DTO]', JSON.stringify(errors[0].target, null, 2));
+          console.log(
+            '[FAILED DTO]',
+            JSON.stringify(errors[0].target, null, 2),
+          );
         }
         console.log('==========================');
         const formatErrors = (errs: any[], parentPath = '') => {

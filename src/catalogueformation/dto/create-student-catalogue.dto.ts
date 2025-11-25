@@ -23,11 +23,11 @@ export class CreateStudentCatalogueDto {
     description: 'ID of the training associated with this catalogue',
     example: '550e8400-e29b-41d4-a716-446655440001',
     format: 'uuid',
-    required: true,
+    required: false,
   })
   @IsUUID()
-  @IsNotEmpty()
-  id_training: string;
+  @IsOptional()
+  id_training?: string;
 
   @ApiProperty({
     description:

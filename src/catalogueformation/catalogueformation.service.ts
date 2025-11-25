@@ -39,8 +39,14 @@ export class CatalogueFormationService {
       });
 
       if (existingCatalogue) {
+        const typeLabels: Record<string, string> = {
+          admin: 'administrateur',
+          secretary: 'secrétaire',
+          instructor: 'formateur',
+        };
+        const typeLabel = typeLabels[createDto.type] || createDto.type;
         throw new ConflictException(
-          `Un catalogue de formation de type "${createDto.type}" sans id_training existe déjà.`,
+          `Un catalogue de formation de type "${typeLabel}" existe déjà.`,
         );
       }
     }
@@ -56,8 +62,17 @@ export class CatalogueFormationService {
         error.name === 'SequelizeUniqueConstraintError' ||
         error.message?.includes('unique_catalogue_type_training')
       ) {
+        const typeLabels: Record<string, string> = {
+          admin: 'administrateur',
+          secretary: 'secrétaire',
+          instructor: 'formateur',
+        };
+        const typeLabel = typeLabels[createDto.type] || createDto.type;
+
+        // Note: This method is for non-student types only
+        // Student catalogues should use createStudentCatalogue() method
         throw new ConflictException(
-          `Un catalogue de formation de type "${createDto.type}" existe déjà avec cette combinaison de type et id_training.`,
+          `Un catalogue de formation de type "${typeLabel}" existe déjà. `,
         );
       }
       throw error;
@@ -213,7 +228,7 @@ export class CatalogueFormationService {
 
     // If type is being updated, check if another catalogue with that type and same id_training exists
     if (updateDto.type && updateDto.type !== catalogue.type) {
-      const whereClause: any = { 
+      const whereClause: any = {
         type: updateDto.type,
         id: { [Op.ne]: id }, // Exclude current catalogue
       };
@@ -225,8 +240,16 @@ export class CatalogueFormationService {
       });
 
       if (existingCatalogue) {
+        const typeLabels: Record<string, string> = {
+          student: 'étudiant',
+          admin: 'administrateur',
+          secretary: 'secrétaire',
+          instructor: 'formateur',
+        };
+        const typeLabel = typeLabels[updateDto.type] || updateDto.type;
+
         throw new ConflictException(
-          `Un catalogue de formation de type "${updateDto.type}" existe déjà avec cette combinaison de type et id_training.`,
+          `Un catalogue de formation de type "${typeLabel}" existe déjà.`,
         );
       }
     }
@@ -240,8 +263,17 @@ export class CatalogueFormationService {
         error.name === 'SequelizeUniqueConstraintError' ||
         error.message?.includes('unique_catalogue_type_training')
       ) {
+        const typeLabels: Record<string, string> = {
+          student: 'étudiant',
+          admin: 'administrateur',
+          secretary: 'secrétaire',
+          instructor: 'formateur',
+        };
+        const targetType = updateDto.type || catalogue.type;
+        const typeLabel = typeLabels[targetType] || targetType;
+
         throw new ConflictException(
-          `Un catalogue de formation de type "${updateDto.type || catalogue.type}" existe déjà avec cette combinaison de type et id_training.`,
+          `Un catalogue de formation de type "${typeLabel}" existe déjà.`,
         );
       }
       throw error;
@@ -259,6 +291,22 @@ export class CatalogueFormationService {
     createDto: CreateStudentCatalogueDto,
     userId: string,
   ): Promise<CatalogueFormation> {
+    // If id_training is not provided, check if a student catalogue without id_training already exists
+    if (!createDto.id_training) {
+      const existingCatalogue = await this.catalogueFormationModel.findOne({
+        where: {
+          type: CatalogueType.STUDENT,
+          id_training: null,
+        } as any,
+      });
+
+      if (existingCatalogue) {
+        throw new ConflictException(
+          'Un catalogue de formation de type "étudiant" existe déjà.',
+        );
+      }
+    }
+
     try {
       return await this.catalogueFormationModel.create({
         type: CatalogueType.STUDENT,
@@ -275,9 +323,7 @@ export class CatalogueFormationService {
         error.message?.includes('unique_catalogue_type_training')
       ) {
         throw new ConflictException(
-          createDto.id_training
-            ? `Un catalogue de formation de type "student" avec l'id_training "${createDto.id_training}" existe déjà.`
-            : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
+          'Un catalogue de formation de type "étudiant" existe déjà.',
         );
       }
       throw error;
@@ -292,9 +338,7 @@ export class CatalogueFormationService {
     const catalogue = await this.catalogueFormationModel.findByPk(id);
 
     if (!catalogue) {
-      throw new NotFoundException(
-        'Catalogue de formation non trouvé.',
-      );
+      throw new NotFoundException('Catalogue de formation non trouvé.');
     }
 
     // Verify it's a student type catalogue
@@ -324,9 +368,7 @@ export class CatalogueFormationService {
         error.message?.includes('unique_catalogue_type_training')
       ) {
         throw new ConflictException(
-          updateDto.id_training
-            ? `Un catalogue de formation de type "student" avec l'id_training "${updateDto.id_training}" existe déjà.`
-            : 'Un catalogue de formation de type "student" sans id_training existe déjà.',
+          'Un catalogue de formation de type "étudiant" existe déjà.',
         );
       }
       throw error;

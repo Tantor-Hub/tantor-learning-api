@@ -854,14 +854,140 @@ export class ChatService {
           .map((chat) => this.formatChatResponse(chat, userId)),
       );
 
+      // Get transferred chats initiated by this user (user is the transfer sender)
+      const transferChats = await this.transferChatModel.findAll({
+        where: {
+          sender: userId,
+        },
+        attributes: {
+          exclude: ['reader'], // handled manually as JSON field
+        },
+        include: [
+          {
+            model: this.chatModel,
+            as: 'chat',
+            where: {
+              status: { [Op.ne]: ChatStatus.DELETED },
+            },
+            include: [
+              {
+                model: this.usersModel,
+                as: 'sender',
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+              },
+            ],
+            required: true,
+          },
+          {
+            model: this.usersModel,
+            as: 'senderUser',
+            attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+
+      const formattedTransferChats = await Promise.all(
+        transferChats
+          .filter((transfer) => {
+            const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+            const dontshowme = transferData.dontshowme || [];
+            return !dontshowme.includes(userId);
+          })
+          .map(async (transfer) => {
+            const chat = transfer.chat;
+            if (!chat) return null;
+
+            const chatData = chat.toJSON ? chat.toJSON() : chat;
+            const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
+            const readerArray = transferData.reader || [];
+
+            // For sender, isOpened = true if every receiver has opened the transfer
+            const receiversArray = transferData.receivers || [];
+            let isOpened = false;
+            if (receiversArray.length === 0) {
+              isOpened = true;
+            } else {
+              isOpened = receiversArray.every((receiverId: string) =>
+                readerArray.some(
+                  (readerId: string) => String(readerId) === String(receiverId),
+                ),
+              );
+            }
+
+            // Build receiver user objects (useful for UI display)
+            let receivers: any[] = [];
+            if (receiversArray.length > 0) {
+              const receiverUsers = await this.usersModel.findAll({
+                where: { id: receiversArray },
+                attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
+              });
+              receivers = receiverUsers.map((user) => ({
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                avatar: user.avatar,
+              }));
+            }
+
+            return {
+              id: chatData.id,
+              subject: chatData.subject,
+              createdAt: transfer.createdAt || chatData.createdAt,
+              sender: chatData.sender
+                ? {
+                    id: chatData.sender.id,
+                    firstName: chatData.sender.firstName,
+                    lastName: chatData.sender.lastName,
+                    email: chatData.sender.email,
+                    avatar: chatData.sender.avatar,
+                  }
+                : null,
+              transferSender: transfer.senderUser
+                ? {
+                    id: transfer.senderUser.id,
+                    firstName: transfer.senderUser.firstName,
+                    lastName: transfer.senderUser.lastName,
+                    email: transfer.senderUser.email,
+                    avatar: transfer.senderUser.avatar,
+                  }
+                : null,
+              receivers,
+              isOpened,
+              role: 'sender' as const,
+              isTransferred: true,
+              transferId: transferData.id,
+            };
+          }),
+      );
+      const filteredTransferChats = formattedTransferChats.filter(
+        (chat) => chat !== null,
+      );
+
+      // Merge original chats with transfers
+      const allChats = [...filteredChats, ...filteredTransferChats];
+
+      // Sort descending by creation time (transfers use transfer timestamp)
+      allChats.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
       console.log('=== Chat findSentByUser: Success ===');
       console.log('Found sent chats for user:', filteredChats.length);
+      console.log(
+        'Found sent transfer chats for user:',
+        filteredTransferChats.length,
+      );
+      console.log('Total chats:', allChats.length);
 
       return Responder({
         status: HttpStatusCode.Ok,
         data: {
-          length: filteredChats.length,
-          rows: filteredChats,
+          length: allChats.length,
+          rows: allChats,
         },
         customMessage: 'Sent messages retrieved successfully',
       });

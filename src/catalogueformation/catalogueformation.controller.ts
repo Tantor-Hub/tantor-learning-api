@@ -223,6 +223,22 @@ export class CatalogueFormationController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({
+    status: 409,
+    description:
+      'Conflict - A catalogue of this type already exists (non-student types can only have one catalogue).',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 409 },
+        message: {
+          type: 'string',
+          example:
+            'Un catalogue de formation de type "administrateur" existe déjà.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
     status: 500,
     description: 'Internal server error',
     schema: {
@@ -242,6 +258,31 @@ export class CatalogueFormationController {
     @Request() req: any,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    // SECURITY CHECK: Ensure req.user is set by the guard
+    // This should never happen if the guard is working correctly
+    if (!req || !req.user || !req.user.id_user) {
+      console.error(
+        '🚨 SECURITY ERROR: Request reached create() without authentication!',
+      );
+      console.error('  - req exists:', !!req);
+      console.error('  - req.user exists:', !!req?.user);
+      console.error('  - req.user.id_user exists:', !!req?.user?.id_user);
+      console.error(
+        '  - Request URL:',
+        req?.url || req?.originalUrl || 'unknown',
+      );
+      console.error('  - Request headers:', {
+        'x-connexion-tantor': req?.headers?.['x-connexion-tantor']
+          ? 'present'
+          : 'missing',
+        authorization: req?.headers?.authorization ? 'present' : 'missing',
+      });
+      // Throw an exception to prevent the request from continuing
+      throw new ForbiddenException(
+        "Authentification requise pour créer un catalogue formation. Le guard d'authentification a échoué.",
+      );
+    }
+
     try {
       let pieceJointe: string | undefined = undefined;
 
@@ -255,7 +296,9 @@ export class CatalogueFormationController {
         );
 
         // Log file size for monitoring
-        console.log(`Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`);
+        console.log(
+          `Uploading file: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB), using optimized chunked async upload`,
+        );
 
         // Validate file size (100GB limit)
         const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
@@ -324,8 +367,55 @@ export class CatalogueFormationController {
         piece_jointe: catalogueData.piece_jointe || '(not set)',
       });
 
+      // req.user is set by JwtAuthGuardAsManagerSystem from x-connexion-tantor token
       const userId = req?.user?.id_user;
+
+      if (userId) {
+        console.log(
+          '✅ req.user.id_user found from x-connexion-tantor token:',
+          userId,
+        );
+      }
       if (!userId) {
+        console.log(
+          '❌ [401 UNAUTHORIZED] Catalogue formation creation failed',
+        );
+        if (!req) {
+          console.log(
+            '  - Reason: request object is undefined (should never happen)',
+          );
+        } else {
+          const headerFromXConnexion = req.headers?.['x-connexion-tantor'];
+          const headerFromAuthorization = req.headers?.authorization;
+          console.log(
+            '  - x-connexion-tantor header:',
+            headerFromXConnexion
+              ? `present (length ${String(headerFromXConnexion).length})`
+              : 'missing',
+          );
+          console.log(
+            '  - Authorization header:',
+            headerFromAuthorization
+              ? `present (length ${String(headerFromAuthorization).length})`
+              : 'missing',
+          );
+          if (!req.user) {
+            console.log(
+              '  - Reason: req.user is undefined (guard did not attach a user)',
+            );
+            console.log('  - Request headers snapshot:', {
+              'x-connexion-tantor': headerFromXConnexion || '(missing)',
+              authorization: req.headers?.authorization || '(missing)',
+            });
+          } else {
+            console.log('  - Reason: req.user.id_user is undefined');
+            console.log('  - req.user keys:', Object.keys(req.user));
+            console.log(
+              '  - req.user payload:',
+              JSON.stringify(req.user, null, 2),
+            );
+          }
+        }
         return {
           status: HttpStatusCode.Unauthorized,
           data: 'Authentification requise pour créer un catalogue formation.',
@@ -677,8 +767,8 @@ export class CatalogueFormationController {
       
       **Request Format:**
       - Content-Type: multipart/form-data
-      - Required fields: title, id_training
-      - Optional fields: document (file), description
+      - Required fields: title
+      - Optional fields: document (file), description, id_training
       
       **Supported File Types:**
       - Documents: PDF, DOC, DOCX, TXT
@@ -708,7 +798,8 @@ export class CatalogueFormationController {
         id_training: {
           type: 'string',
           format: 'uuid',
-          description: 'ID of the training associated with this catalogue',
+          description:
+            'ID of the training associated with this catalogue (optional)',
           example: '550e8400-e29b-41d4-a716-446655440001',
         },
         description: {
@@ -717,7 +808,7 @@ export class CatalogueFormationController {
           example: 'Comprehensive training program for students',
         },
       },
-      required: ['title', 'id_training'],
+      required: ['title'],
     },
   })
   @ApiResponse({
@@ -783,15 +874,15 @@ export class CatalogueFormationController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Conflict - A student catalogue already exists.',
+    description:
+      'Conflict - A student catalogue already exists for this training.',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 409 },
         message: {
           type: 'string',
-          example:
-            'Un catalogue de formation de type "student" existe déjà. Chaque type de catalogue ne peut exister qu\'une seule fois.',
+          example: 'Un catalogue de formation de type "étudiant" existe déjà.',
         },
       },
     },
@@ -913,10 +1004,11 @@ export class CatalogueFormationController {
       });
 
       const userId = req.user.id_user;
-      const catalogue = await this.catalogueFormationService.createStudentCatalogue(
-        catalogueData,
-        userId,
-      );
+      const catalogue =
+        await this.catalogueFormationService.createStudentCatalogue(
+          catalogueData,
+          userId,
+        );
       return {
         status: 201,
         message: 'Student catalogue formation created successfully',
@@ -1001,7 +1093,8 @@ export class CatalogueFormationController {
         id_training: {
           type: 'string',
           format: 'uuid',
-          description: 'ID of the training associated with this catalogue',
+          description:
+            'ID of the training associated with this catalogue (optional)',
           example: '550e8400-e29b-41d4-a716-446655440001',
         },
         description: {
@@ -1222,10 +1315,11 @@ export class CatalogueFormationController {
         piece_jointe: updateData.piece_jointe || '(not set)',
       });
 
-      const catalogue = await this.catalogueFormationService.updateStudentCatalogue(
-        id,
-        updateData,
-      );
+      const catalogue =
+        await this.catalogueFormationService.updateStudentCatalogue(
+          id,
+          updateData,
+        );
       return {
         status: 200,
         message: 'Student catalogue formation updated successfully',
@@ -1388,11 +1482,14 @@ export class CatalogueFormationController {
     status: 500,
     description: 'Internal server error.',
   })
-  async findByTrainingId(@Param('trainingId', ParseUUIDPipe) trainingId: string) {
-    const catalogues = await this.catalogueFormationService.findByTrainingIdAndType(
-      trainingId,
-      CatalogueType.STUDENT,
-    );
+  async findByTrainingId(
+    @Param('trainingId', ParseUUIDPipe) trainingId: string,
+  ) {
+    const catalogues =
+      await this.catalogueFormationService.findByTrainingIdAndType(
+        trainingId,
+        CatalogueType.STUDENT,
+      );
     return {
       status: 200,
       message: 'Catalogue formations retrieved successfully',
@@ -1470,9 +1567,8 @@ export class CatalogueFormationController {
     description: 'Internal server error.',
   })
   async findByTrainingIdForSecretary(@Param('trainingId') trainingId: string) {
-    const catalogues = await this.catalogueFormationService.findByTrainingId(
-      trainingId,
-    );
+    const catalogues =
+      await this.catalogueFormationService.findByTrainingId(trainingId);
     return {
       status: 200,
       message: 'Catalogue formations retrieved successfully',
@@ -1583,8 +1679,7 @@ export class CatalogueFormationController {
         statusCode: { type: 'number', example: 404 },
         message: {
           type: 'string',
-          example:
-            'Catalogue de formation de type "student" non trouvé.',
+          example: 'Catalogue de formation de type "student" non trouvé.',
         },
       },
     },
@@ -1599,17 +1694,17 @@ export class CatalogueFormationController {
       const catalogues = await this.catalogueFormationService.findByType(
         CatalogueType.STUDENT,
       );
-      
+
       if (!catalogues || catalogues.length === 0) {
         throw new NotFoundException(
           'Catalogue de formation de type "student" non trouvé.',
         );
       }
-      
+
       // Get the first student catalogue (there should only be one)
       const catalogue = catalogues[0];
       await this.catalogueFormationService.remove(catalogue.id);
-      
+
       return {
         status: 200,
         message: 'Student catalogue formation deleted successfully',
@@ -1649,6 +1744,272 @@ export class CatalogueFormationController {
       return catalogue;
     } else {
       throw new Error('Access denied');
+    }
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuardAsManagerSystem)
+  @UseInterceptors(
+    FileInterceptor('document', { limits: { fileSize: 107_374_182_400 } }), // 100GB limit
+  )
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Update a catalogue formation with optional file upload (Admin only)',
+    description: `
+      Update an existing catalogue formation by ID with optional file upload.
+      Only admins can update catalogue formations.
+      
+      **Authorization:**
+      - Only admins can update catalogue formations
+      - Bearer token required
+      
+      **Request Format:**
+      - Content-Type: multipart/form-data
+      - All fields are optional (partial update)
+      
+      **URL Parameters:**
+      - id (required): UUID of the catalogue formation to update
+      
+      **Request Body:**
+      All fields are optional. Only provided fields will be updated.
+      - document (optional): File to upload (up to 100GB). If provided, will update piece_jointe with the uploaded file URL.
+      - type (optional): Type of the catalogue formation
+      - title (optional): Title of the catalogue formation
+      - description (optional): Description of the catalogue formation
+      - piece_jointe (optional): Cloudinary URL for an attached document (if no file is uploaded)
+    `,
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'UUID of the catalogue formation to update',
+    example: '40b93d76-bc09-4f4a-95cf-9651c074a586',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Update catalogue formation with optional file upload',
+    schema: {
+      type: 'object',
+      properties: {
+        document: {
+          type: 'string',
+          format: 'binary',
+          description:
+            'Document file to upload (optional). Any file type is allowed. Maximum size: 100GB. If provided, will update piece_jointe.',
+        },
+        type: {
+          type: 'string',
+          enum: ['user', 'student', 'instructor', 'secretary', 'admin'],
+          description: 'Type of the catalogue formation',
+          example: 'admin',
+        },
+        title: {
+          type: 'string',
+          description: 'Title of the catalogue formation',
+          example: 'Advanced JavaScript Training',
+        },
+        description: {
+          type: 'string',
+          description: 'Description of the catalogue formation',
+          example: 'Comprehensive training on advanced JavaScript concepts',
+        },
+        piece_jointe: {
+          type: 'string',
+          description:
+            'Cloudinary URL for an attached document (optional, only used if no file is uploaded)',
+          example:
+            'https://res.cloudinary.com/your-cloud/raw/upload/v1234567890/__tantorLearning/documents/document.pdf',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Catalogue formation updated successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          example: '40b93d76-bc09-4f4a-95cf-9651c074a586',
+          description: 'Unique identifier of the catalogue formation',
+        },
+        type: {
+          type: 'string',
+          enum: ['user', 'student', 'instructor', 'secretary', 'admin'],
+          example: 'admin',
+          description: 'Type of the catalogue formation',
+        },
+        title: {
+          type: 'string',
+          example: 'Advanced JavaScript Training',
+          description: 'Title of the catalogue formation',
+        },
+        description: {
+          type: 'string',
+          example: 'Comprehensive training on advanced JavaScript concepts',
+          description: 'Description of the catalogue formation',
+        },
+        piece_jointe: {
+          type: 'string',
+          example:
+            'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+          description: 'Cloudinary URL of the attached document',
+        },
+        id_training: {
+          type: 'string',
+          format: 'uuid',
+          nullable: true,
+          example: null,
+          description:
+            'ID of the training associated with this catalogue (optional, mainly for student type)',
+        },
+        createdBy: {
+          type: 'string',
+          format: 'uuid',
+          example: '550e8400-e29b-41d4-a716-446655440002',
+          description: 'ID of the user who created this catalogue',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-01-25T10:00:00.000Z',
+          description: 'Date and time when the catalogue was created',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-01-25T15:30:00.000Z',
+          description: 'Date and time when the catalogue was last updated',
+        },
+      },
+      example: {
+        id: '40b93d76-bc09-4f4a-95cf-9651c074a586',
+        type: 'admin',
+        title: 'Advanced JavaScript Training',
+        description: 'Comprehensive training on advanced JavaScript concepts',
+        piece_jointe:
+          'https://res.cloudinary.com/dfjs9os9x/__tantorLearning/abc123def456',
+        id_training: null,
+        createdBy: '550e8400-e29b-41d4-a716-446655440002',
+        createdAt: '2025-01-25T10:00:00.000Z',
+        updatedAt: '2025-01-25T15:30:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Only admin can update.' })
+  @ApiResponse({ status: 404, description: 'Catalogue formation not found.' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - A catalogue of this type already exists.',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 409 },
+        message: {
+          type: 'string',
+          example:
+            'Un catalogue de formation de type "administrateur" existe déjà.',
+        },
+      },
+    },
+  })
+  async patch(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: Partial<CreateCatalogueFormationDto>,
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    // SECURITY CHECK: Ensure req.user is set by the guard
+    if (!req || !req.user || !req.user.id_user) {
+      throw new ForbiddenException(
+        "Authentification requise pour mettre à jour un catalogue formation. Le guard d'authentification a échoué.",
+      );
+    }
+
+    const userRole = req.user.roles_user[0];
+
+    // Only admin can update
+    if (userRole !== 'admin') {
+      throw new ForbiddenException(
+        'Seuls les administrateurs peuvent mettre à jour les catalogues de formation.',
+      );
+    }
+
+    // Check if catalogue exists
+    const catalogue = await this.catalogueFormationService.findOne(id);
+    if (!catalogue) {
+      throw new NotFoundException('Catalogue de formation non trouvé.');
+    }
+
+    try {
+      let pieceJointe: string | undefined = undefined;
+
+      // Handle file upload if provided
+      if (file) {
+        console.log(
+          'File uploaded:',
+          file.originalname,
+          'Type:',
+          file.mimetype,
+          'Size:',
+          file.size,
+        );
+
+        // Validate file size (100GB limit)
+        const maxSize = 100 * 1024 * 1024 * 1024; // 100GB
+        if (file.size > maxSize) {
+          throw new ForbiddenException('File size exceeds 100GB limit');
+        }
+
+        // Upload file to Cloudinary
+        const uploadResult = await this.cloudinaryService.uploadBufferFile(
+          file,
+          { useAsync: false },
+        );
+
+        if (!uploadResult || !uploadResult.link) {
+          throw new ForbiddenException(
+            'Failed to upload document to cloud storage',
+          );
+        }
+
+        pieceJointe = uploadResult.link;
+        console.log('File uploaded successfully, piece_jointe:', pieceJointe);
+      }
+
+      // Prepare update data
+      const updateData: Partial<CreateCatalogueFormationDto> = {};
+
+      if (updateDto.type !== undefined) updateData.type = updateDto.type;
+      if (updateDto.title !== undefined) updateData.title = updateDto.title;
+      if (updateDto.description !== undefined)
+        updateData.description = updateDto.description;
+
+      // Use uploaded file link if available, otherwise use DTO value
+      if (pieceJointe) {
+        updateData.piece_jointe = pieceJointe;
+      } else if (updateDto.piece_jointe !== undefined) {
+        updateData.piece_jointe = updateDto.piece_jointe;
+      }
+
+      return await this.catalogueFormationService.update(id, updateData);
+    } catch (error) {
+      console.error('Error updating catalogue formation:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new ForbiddenException(
+        'Internal server error during catalogue formation update',
+      );
     }
   }
 

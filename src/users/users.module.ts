@@ -5,6 +5,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { MailService } from 'src/services/service.mail';
 import { Users } from 'src/models/model.users';
 import { UserRoles } from 'src/models/model.userroles';
+import { DocumentInstance } from 'src/models/model.documentinstance';
 import { AllSercices } from 'src/services/serices.all';
 import { CryptoService } from 'src/services/service.crypto';
 import { JwtService } from 'src/services/service.jwt';
@@ -24,7 +25,7 @@ import {
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Users, UserRoles, Otp]),
+    SequelizeModule.forFeature([Users, UserRoles, Otp, DocumentInstance]),
     ScheduleModule.forRoot(),
     ConfigModule,
     JwtModule.registerAsync({

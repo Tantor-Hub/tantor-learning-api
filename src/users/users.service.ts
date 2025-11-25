@@ -32,6 +32,9 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Response } from 'express';
 import { base64decode, base64encode } from 'nodejs-base64';
 import { UserRole } from 'src/interface/interface.users';
+import { DocumentInstance } from 'src/models/model.documentinstance';
+import { ForbiddenException } from '@nestjs/common';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -40,6 +43,9 @@ export class UsersService {
 
     @InjectModel(Otp)
     private readonly otpModel: typeof Otp,
+
+    @InjectModel(DocumentInstance)
+    private readonly documentInstanceModel: typeof DocumentInstance,
 
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
@@ -1008,6 +1014,28 @@ export class UsersService {
           // Remove as_avatar from updateData (it's not a database column)
           delete updateData.as_avatar;
           
+          // Check if firstName or lastName are being updated
+          const isUpdatingFirstName = updateData.firstName !== undefined;
+          const isUpdatingLastName = updateData.lastName !== undefined;
+          
+          if (isUpdatingFirstName || isUpdatingLastName) {
+            // Check if user has any validated document instance with signature
+            const validatedDocumentWithSignature =
+              await this.documentInstanceModel.findOne({
+                where: {
+                  userId: id_user,
+                  status: 'validated',
+                  signature: true,
+                },
+              });
+
+            if (validatedDocumentWithSignature) {
+              throw new ForbiddenException(
+                'Vous ne pouvez pas modifier votre prénom ou nom car vous avez un document validé avec signature.',
+              );
+            }
+          }
+          
           if (
             profile['as_avatar'] !== undefined &&
             profile['as_avatar'] !== null
@@ -1025,9 +1053,16 @@ export class UsersService {
           return Responder({ status: HttpStatusCode.NotFound, data: null });
         }
       })
-      .catch((err) =>
-        Responder({ status: HttpStatusCode.InternalServerError, data: err }),
-      );
+      .catch((err) => {
+        // If it's a ForbiddenException, re-throw it so NestJS can handle it properly
+        if (err instanceof ForbiddenException) {
+          throw err;
+        }
+        return Responder({
+          status: HttpStatusCode.InternalServerError,
+          data: err,
+        });
+      });
   }
   async profileAsStudent(user: IJwtSignin): Promise<ResponseServer> {
     const { id_user, uuid_user, level_indicator } = user;

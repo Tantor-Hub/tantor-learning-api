@@ -16,6 +16,7 @@ import { Users } from 'src/models/model.users';
 import { Contacts } from 'src/models/model.contactform';
 import { Newsletter } from 'src/models/model.newsletter';
 import { Otp } from 'src/models/model.otp';
+import { DocumentInstance } from 'src/models/model.documentinstance';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Otp } from 'src/models/model.otp';
       Users,
       Contacts,
       Otp,
+      DocumentInstance,
     ]),
     ConfigModule,
     JwtModule.registerAsync({

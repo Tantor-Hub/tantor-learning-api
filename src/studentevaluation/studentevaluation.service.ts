@@ -605,19 +605,11 @@ export class StudentevaluationService {
         });
       }
 
-      const studentIdJson = JSON.stringify([studentId]);
-      const studentIdCondition = literal(
-        `"Studentevaluation"."studentId"::jsonb @> '${studentIdJson}'::jsonb`,
-      );
-
       const evaluations = await this.studentevaluationModel.findAll({
         where: {
           sessionCoursId: sessionCoursId,
           ispublish: true,
-          markingStatus: {
-            [Op.ne]: MarkingStatus.PUBLISHED,
-          },
-          [Op.and]: [studentIdCondition],
+          markingStatus: MarkingStatus.PENDING,
         },
         include: [
           {
@@ -634,12 +626,8 @@ export class StudentevaluationService {
         order: [['createdAt', 'DESC']],
       });
 
-      const activeEvaluations = evaluations.filter(
-        (evaluation) => evaluation.markingStatus !== MarkingStatus.PUBLISHED,
-      );
-
       // Get all unique lesson IDs from evaluations and fetch lessons
-      const allLessonIds = activeEvaluations.reduce((acc, evaluation) => {
+      const allLessonIds = evaluations.reduce((acc, evaluation) => {
         if (evaluation.lessonId && Array.isArray(evaluation.lessonId)) {
           acc.push(...evaluation.lessonId);
         }
@@ -657,7 +645,7 @@ export class StudentevaluationService {
       });
 
       // Add lessons to each evaluation
-      const evaluationsWithLessons = activeEvaluations.map((evaluation) => {
+      const evaluationsWithLessons = evaluations.map((evaluation) => {
         const evaluationLessons = lessons.filter(
           (lesson) =>
             evaluation.lessonId && evaluation.lessonId.includes(lesson.id),

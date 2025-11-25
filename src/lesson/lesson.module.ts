@@ -22,6 +22,7 @@ import { TrainingSession } from 'src/models/model.trainingssession';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
 import { Otp } from 'src/models/model.otp';
 import { Studentevaluation } from 'src/models/model.studentevaluation';
+import { DocumentInstance } from 'src/models/model.documentinstance';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { Studentevaluation } from 'src/models/model.studentevaluation';
       TrainingSession,
       Studentevaluation,
       Otp,
+      DocumentInstance,
     ]),
     ConfigModule,
     JwtModule.registerAsync({
