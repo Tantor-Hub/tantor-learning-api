@@ -244,7 +244,8 @@ export class TransferChatService {
           });
         }
 
-        // If user is a receiver, add them to the reader array if not already present
+        // If user is in the receivers array, add them to the reader array if not already present
+        // This is similar to how regular chat works - when a user opens the transfer chat, mark them as having read it
         if (isReceiver) {
           try {
             const currentReaders = transfer.reader || [];
@@ -252,6 +253,7 @@ export class TransferChatService {
               '=== TransferChat findOne: Current readers before update ===',
               JSON.stringify(currentReaders),
             );
+            console.log('=== TransferChat findOne: User ID to add ===', userId);
 
             // Check if user is already in the reader array (handle both string and UUID comparisons)
             const isUserInReaders = currentReaders.some(
@@ -259,6 +261,7 @@ export class TransferChatService {
             );
 
             if (!isUserInReaders) {
+              // Create a new array instead of mutating the existing one
               const updatedReaders = [...currentReaders, userId];
               console.log(
                 '=== TransferChat findOne: Updated readers array ===',
@@ -300,6 +303,7 @@ export class TransferChatService {
                 ],
               });
 
+              console.log('=== TransferChat findOne: Transfer updated and reloaded ===');
               console.log(
                 '=== TransferChat findOne: Reader array after update ===',
                 JSON.stringify(transfer.reader),
@@ -314,17 +318,24 @@ export class TransferChatService {
               '=== TransferChat findOne: Error updating reader array ===',
               readerUpdateError,
             );
-            // Don't fail the request if reader update fails
+            console.error('=== TransferChat findOne: Error details ===', {
+              message: readerUpdateError.message,
+              stack: readerUpdateError.stack,
+            });
+            // Continue even if update fails - don't break the response
           }
         }
       }
 
       // Add isOpened field to response
+      // Get the updated transfer data after potential reader update
       const transferData = transfer.toJSON ? transfer.toJSON() : transfer;
       const readerArray = transferData.reader || [];
       const receiversArray = transferData.receivers || [];
       const userIdString = userId ? String(userId) : null;
 
+      // Use same string comparison logic as when checking/updating
+      // isOpened is true if the user is in the reader array
       const isOpened = userIdString
         ? readerArray.some(
             (readerId: string) => String(readerId) === String(userIdString),
