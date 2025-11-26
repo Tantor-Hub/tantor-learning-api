@@ -385,7 +385,7 @@ export class StudentAnswerController {
   @ApiOperation({
     summary: 'Update student answer points (Instructor)',
     description:
-      "Update the points awarded for a specific student answer. Only instructors assigned to the evaluation's session course can update points. Points cannot exceed the question's maximum points or be negative.",
+      "Update the points awarded for a specific student answer. Only instructors assigned to the evaluation's session course can update points. Points cannot exceed the question's maximum points or be negative. Instructors can update the points multiple times for the same answer, but only as long as the evaluation's marking status is 'pending' or 'in_progress'.",
   })
   @ApiParam({
     name: 'answerId',
@@ -400,7 +400,7 @@ export class StudentAnswerController {
           type: 'number',
           example: 8,
           description:
-            'Points to award for this answer (0 or greater, cannot exceed question maximum)',
+            'Points to award for this answer (0 or greater, cannot exceed question maximum). This can be updated multiple times by the instructor.',
           minimum: 0,
         },
       },
@@ -412,7 +412,7 @@ export class StudentAnswerController {
     description: 'Student answer points updated successfully',
     example: {
       status: 200,
-      message: 'Student answer points updated successfully',
+      message: 'Points de la réponse étudiante mis à jour avec succès',
       data: {
         id: 'answer-uuid-1',
         questionId: 'question-uuid-1',
@@ -441,10 +441,23 @@ export class StudentAnswerController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Invalid points value',
-    example: {
-      status: 400,
-      message: "Points (15) cannot exceed the question's maximum points (10)",
+    description: 'Bad Request - Invalid points value or evaluation marking status is not pending',
+    examples: {
+      invalidPoints: {
+        summary: 'Points dépassent le maximum',
+        value: {
+          status: 400,
+          message: "Les points (15) ne peuvent pas dépasser le maximum de points de la question (10)",
+        },
+      },
+      markingStatusNotAllowed: {
+        summary: 'Statut de correction non autorisé',
+        value: {
+          status: 400,
+          message:
+            "Impossible de mettre à jour les points. Le statut de correction de l'évaluation doit être 'en attente' ou 'en cours'. Statut actuel : 'publié'",
+        },
+      },
     },
   })
   @ApiResponse({
@@ -458,7 +471,7 @@ export class StudentAnswerController {
     example: {
       status: 403,
       message:
-        "You are not assigned as an instructor for this evaluation's session course",
+        "Vous n'êtes pas assigné comme formateur pour la session de cours de cette évaluation",
     },
   })
   @ApiResponse({
@@ -466,7 +479,7 @@ export class StudentAnswerController {
     description: 'Student answer not found',
     example: {
       status: 404,
-      message: 'Student answer not found',
+      message: 'Réponse étudiante non trouvée',
     },
   })
   @ApiResponse({
@@ -474,7 +487,7 @@ export class StudentAnswerController {
     description: 'Internal server error',
     example: {
       status: 500,
-      message: 'Error updating student answer points',
+      message: 'Erreur lors de la mise à jour des points de la réponse étudiante',
     },
   })
   updateStudentAnswerPoints(

@@ -12,6 +12,7 @@ import { Studentevaluation } from 'src/models/model.studentevaluation';
 import { SessionCours } from 'src/models/model.sessioncours';
 import { Users } from 'src/models/model.users';
 import { StudentAnswerOption } from 'src/models/model.studentansweroption';
+import { MarkingStatus } from 'src/interface/interface.studentevaluation';
 
 @Injectable()
 export class StudentAnswerService {
@@ -23,6 +24,16 @@ export class StudentAnswerService {
     @InjectModel(SessionCours)
     private sessionCoursModel: typeof SessionCours,
   ) {}
+
+  // Helper function to translate marking status to French
+  private getMarkingStatusInFrench(status: string): string {
+    const statusMap: Record<string, string> = {
+      [MarkingStatus.PENDING]: 'en attente',
+      [MarkingStatus.IN_PROGRESS]: 'en cours',
+      [MarkingStatus.PUBLISHED]: 'publié',
+    };
+    return statusMap[status] || status;
+  }
 
   async create(
     createStudentAnswerDto: CreateStudentAnswerDto,
@@ -457,14 +468,15 @@ export class StudentAnswerService {
       if (!studentAnswer) {
         return Responder({
           status: HttpStatusCode.NotFound,
-          customMessage: 'Student answer not found',
+          customMessage: 'Réponse étudiante non trouvée',
         });
       }
 
-      // Get the evaluation to verify instructor access
+      // Get the evaluation to verify instructor access and check marking status
       const evaluation = await this.studentevaluationModel.findByPk(
         studentAnswer.evaluationId,
         {
+          attributes: ['id', 'title', 'markingStatus', 'sessionCoursId'],
           include: [
             {
               model: SessionCours,
@@ -478,7 +490,7 @@ export class StudentAnswerService {
       if (!evaluation || !evaluation.sessionCours) {
         return Responder({
           status: HttpStatusCode.NotFound,
-          customMessage: 'Evaluation or session course not found',
+          customMessage: 'Évaluation ou session de cours non trouvée',
         });
       }
 
@@ -492,7 +504,21 @@ export class StudentAnswerService {
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage:
-            'You are not assigned as an instructor for this evaluation\'s session course',
+            "Vous n'êtes pas assigné comme formateur pour la session de cours de cette évaluation",
+        });
+      }
+
+      // Check if evaluation marking status is pending or in_progress
+      if (
+        evaluation.markingStatus !== MarkingStatus.PENDING &&
+        evaluation.markingStatus !== MarkingStatus.IN_PROGRESS
+      ) {
+        const currentStatusFr = this.getMarkingStatusInFrench(
+          evaluation.markingStatus,
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage: `Impossible de mettre à jour les points. Le statut de correction de l'évaluation doit être 'en attente' ou 'en cours'. Statut actuel : '${currentStatusFr}'`,
         });
       }
 
@@ -501,14 +527,14 @@ export class StudentAnswerService {
       if (question && points > question.points) {
         return Responder({
           status: HttpStatusCode.BadRequest,
-          customMessage: `Points (${points}) cannot exceed the question's maximum points (${question.points})`,
+          customMessage: `Les points (${points}) ne peuvent pas dépasser le maximum de points de la question (${question.points})`,
         });
       }
 
       if (points < 0) {
         return Responder({
           status: HttpStatusCode.BadRequest,
-          customMessage: 'Points cannot be negative',
+          customMessage: 'Les points ne peuvent pas être négatifs',
         });
       }
 
@@ -543,13 +569,14 @@ export class StudentAnswerService {
       return Responder({
         status: HttpStatusCode.Ok,
         data: updatedAnswer,
-        customMessage: 'Student answer points updated successfully',
+        customMessage: 'Points de la réponse étudiante mis à jour avec succès',
       });
     } catch (error) {
       console.error('Error updating student answer points:', error);
       return Responder({
         status: HttpStatusCode.InternalServerError,
-        customMessage: 'Error updating student answer points',
+        customMessage:
+          'Erreur lors de la mise à jour des points de la réponse étudiante',
       });
     }
   }
