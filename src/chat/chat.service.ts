@@ -491,11 +491,13 @@ export class ChatService {
       }
 
       // Get replies for this chat
+      // Ensure we only get replies where id_chat matches and id_transferechat is null
       const replies = await this.repliesChatModel.findAll({
         where: {
           id_chat: id,
+          id_transferechat: null, // Explicitly ensure id_transferechat is null for regular chat replies
           status: RepliesChatStatus.ALIVE,
-        },
+        } as any,
         attributes: [
           'id',
           'content',

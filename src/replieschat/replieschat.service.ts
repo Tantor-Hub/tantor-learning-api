@@ -50,7 +50,7 @@ export class RepliesChatService {
         });
       }
 
-      // Validate that at least one of id_chat or id_transferechat is provided
+      // Validate that exactly one of id_chat or id_transferechat is provided
       if (
         !createRepliesChatDto.id_chat &&
         !createRepliesChatDto.id_transferechat
@@ -62,6 +62,21 @@ export class RepliesChatService {
           status: HttpStatusCode.BadRequest,
           customMessage:
             'Either id_chat or id_transferechat must be provided',
+        });
+      }
+
+      // Validate that both are not provided at the same time
+      if (
+        createRepliesChatDto.id_chat &&
+        createRepliesChatDto.id_transferechat
+      ) {
+        console.log(
+          '=== RepliesChat create: Only one of id_chat or id_transferechat can be provided ===',
+        );
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage:
+            'Only one of id_chat or id_transferechat can be provided, not both',
         });
       }
 
@@ -95,14 +110,26 @@ export class RepliesChatService {
         }
       }
 
-      const repliesChat = await this.repliesChatModel.create({
+      // Ensure one field is null when the other is provided
+      const createData: any = {
         ...createRepliesChatDto,
         status: RepliesChatStatus.ALIVE,
         is_public:
           createRepliesChatDto.is_public !== undefined
             ? createRepliesChatDto.is_public
             : true,
-      } as any);
+      };
+
+      // Explicitly set the other field to null
+      if (createRepliesChatDto.id_chat) {
+        createData.id_chat = createRepliesChatDto.id_chat;
+        createData.id_transferechat = null;
+      } else if (createRepliesChatDto.id_transferechat) {
+        createData.id_transferechat = createRepliesChatDto.id_transferechat;
+        createData.id_chat = null;
+      }
+
+      const repliesChat = await this.repliesChatModel.create(createData);
 
       console.log('=== RepliesChat create: Success ===');
       console.log('Created reply ID:', repliesChat.id);
@@ -274,11 +301,13 @@ export class RepliesChatService {
         });
       }
 
+      // For chat endpoint, we only filter by id_chat (no need to check id_transferechat)
+      // Return all replies (both public and private) for this endpoint
       const replies = await this.repliesChatModel.findAll({
         where: {
-          id_chat: chatId,
+          id_chat: chatId, // Filter by the id from the route parameter
           status: RepliesChatStatus.ALIVE,
-        },
+        } as any,
         attributes: [
           'id',
           'content',
@@ -301,6 +330,7 @@ export class RepliesChatService {
 
       console.log('=== RepliesChat findByChat: Success ===');
       console.log('Found replies for chat:', replies.length);
+      console.log('Returning all replies (both public and private)');
 
       return Responder({
         status: HttpStatusCode.Ok,
@@ -445,17 +475,29 @@ export class RepliesChatService {
         });
       }
 
-      // Build where clause based on user role
+      // First, check what records exist in the database (without filters) for debugging
+      const allRepliesForTransfer = await this.repliesChatModel.findAll({
+        where: {
+          id_transferechat: transferChatId,
+        },
+        attributes: ['id', 'id_chat', 'id_transferechat', 'status', 'is_public', 'content', 'id_sender'],
+        raw: true,
+      });
+      console.log('=== RepliesChat findByTransferChat: Debug - ALL replies with this id_transferechat ===');
+      console.log('Total records found (no filters):', allRepliesForTransfer.length);
+      console.log('Records:', JSON.stringify(allRepliesForTransfer, null, 2));
+
+      // Build where clause to get replies where id_transferechat matches the route parameter
+      // For transfer chat endpoint, we only filter by id_transferechat (no need to check id_chat)
+      // Return all replies (both public and private) for this endpoint
       const whereClause: any = {
-        id_transferechat: transferChatId,
+        id_transferechat: transferChatId, // Filter by the id from the route parameter
         status: RepliesChatStatus.ALIVE,
       };
 
-      // If user is a receiver (not the sender), only show public replies
-      if (isReceiver && !isSender) {
-        whereClause.is_public = true;
-      }
-      // If user is the sender, show all replies (no is_public filter)
+      console.log('=== RepliesChat findByTransferChat: Final where clause ===');
+      console.log('Where clause:', JSON.stringify(whereClause, null, 2));
+      console.log('User role:', isSender ? 'sender' : 'receiver');
 
       const replies = await this.repliesChatModel.findAll({
         where: whereClause,
@@ -482,11 +524,7 @@ export class RepliesChatService {
 
       console.log('=== RepliesChat findByTransferChat: Success ===');
       console.log('Found replies for transfer chat:', replies.length);
-      console.log(
-        `User is ${isSender ? 'sender' : 'receiver'}, showing ${
-          isSender ? 'all' : 'public'
-        } replies`,
-      );
+      console.log('Returning all replies (both public and private)');
 
       return Responder({
         status: HttpStatusCode.Ok,

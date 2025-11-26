@@ -373,8 +373,10 @@ export class TransferChatService {
         : null;
 
       // Get replies for this transfer chat
+      // Ensure we only get replies where id_transferechat matches and id_chat is null
       const whereClause: any = {
         id_transferechat: id,
+        id_chat: null, // Explicitly ensure id_chat is null for transfer chat replies
         status: RepliesChatStatus.ALIVE,
       };
 
