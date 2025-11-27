@@ -3077,11 +3077,14 @@ export class StudentevaluationService {
           // Calculate percentage
           const percentage = (scoreOver20Rounded / 20) * 100;
 
+          // Round actual points earned for consistency (not converted to /20)
+          const pointsEarnedRounded = Math.round(pointsEarned * 100) / 100;
+
           releveTable.push({
             matiereTitle: matiereInfo.title,
             evaluationTitle: evaluation.title || '',
             evaluationType: String(evaluation.type),
-            pointsEarned: didEvaluation ? scoreOver20Rounded : 0,
+            pointsEarned: didEvaluation ? pointsEarnedRounded : 0,
             totalPossiblePoints,
             scoreOver20: didEvaluation ? scoreOver20Rounded : 0,
             comment,
