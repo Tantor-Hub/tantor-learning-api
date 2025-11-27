@@ -3211,33 +3211,45 @@ export class StudentevaluationService {
         // This is the count of ALL evaluations, not just the ones the student did
         const totalEvaluationsAvailable = totalEvaluationsCount;
 
-        // Convert totalPointsEarned to scale over 20
-        // totalPointsEarned is the sum of scores over 20 for each evaluation the student did
-        // To normalize so totalPossiblePoints = 20:
-        // If there are N total evaluations, and student has X points (sum of scores over 20),
-        // convert to: (X / (20 * N)) * 20 = X / N
+        // Get releveTable for this student
+        const releveTable = studentReleveTableMap.get(student.id) || [];
+
+        // Calculate totalPointsEarned from releveTable
+        // For each evaluation in releveTable, convert pointsEarned to /20 scale using totalPossiblePoints
+        // Then sum all converted scores and normalize to get totalPointsEarned over 20
+        let totalPointsEarnedSumOver20 = 0;
+        let completedEvaluationsCount = 0;
+
+        releveTable.forEach((entry) => {
+          if (entry.didEvaluation && entry.totalPossiblePoints > 0) {
+            // Convert pointsEarned to /20 scale for this evaluation
+            const scoreOver20 =
+              (entry.pointsEarned / entry.totalPossiblePoints) * 20;
+            totalPointsEarnedSumOver20 += scoreOver20;
+            completedEvaluationsCount += 1;
+          }
+        });
+
+        // Normalize totalPointsEarned to be over 20 (average across all evaluations)
+        // If there are N total evaluations, divide the sum by N to get average over 20
         const totalPossiblePointsNormalized = 20;
         const totalPointsEarnedNormalized =
           totalEvaluationsAvailable > 0
-            ? (stats?.totalPointsEarned || 0) / totalEvaluationsAvailable
+            ? totalPointsEarnedSumOver20 / totalEvaluationsAvailable
             : 0;
 
         // Calculate average points over ALL evaluations (not just the ones student did)
         // If student did 2 out of 10 evaluations, average is calculated over all 10
-        // averagePoints = totalPointsEarned (sum of scores over 20) / totalEvaluationsAvailable
-        const averagePoints =
-          totalEvaluationsAvailable > 0
-            ? (stats?.totalPointsEarned || 0) / totalEvaluationsAvailable
-            : 0;
+        // averagePoints = totalPointsEarnedNormalized (already normalized to /20)
+        const averagePoints = totalPointsEarnedNormalized;
 
         // Calculate average points over ONLY evaluations the student completed
         // If student did 2 out of 10 evaluations, averageDid is calculated over only those 2
-        // averageDid = totalPointsEarned (sum of scores over 20) / evaluationCount
-        const averageDid = hasEvaluations
-          ? stats.evaluationCount > 0
-            ? stats.totalPointsEarned / stats.evaluationCount
-            : 0
-          : 0;
+        // averageDid = totalPointsEarnedSumOver20 / completedEvaluationsCount
+        const averageDid =
+          completedEvaluationsCount > 0
+            ? totalPointsEarnedSumOver20 / completedEvaluationsCount
+            : 0;
 
         // Calculate percentage based on normalized values (out of 20)
         const percentage =
@@ -3259,12 +3271,12 @@ export class StudentevaluationService {
           totalPointsEarned:
             Math.round(totalPointsEarnedNormalized * 100) / 100,
           totalPossiblePoints: totalPossiblePointsNormalized,
-          evaluationCount: hasEvaluations ? stats.evaluationCount : 0,
+          evaluationCount: completedEvaluationsCount,
         };
 
         // Add releveTable with all evaluations (includes didEvaluation flag)
         // If student has no evaluations, releveTable will still contain all evaluations with didEvaluation: false
-        baseResult.releveTable = studentReleveTableMap.get(student.id) || [];
+        baseResult.releveTable = releveTable;
 
         // Add training-specific fields (always included for consistent structure)
         baseResult.sessionTitles = filters.trainingId
