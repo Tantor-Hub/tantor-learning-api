@@ -626,8 +626,22 @@ export class StudentevaluationService {
         order: [['createdAt', 'DESC']],
       });
 
+      const now = new Date();
+      const activeEvaluations = evaluations.filter((evaluation) => {
+        if (!evaluation.submittiondate) {
+          return true;
+        }
+
+        const submissionDate = new Date(evaluation.submittiondate);
+        if (Number.isNaN(submissionDate.getTime())) {
+          return true;
+        }
+
+        return now <= submissionDate;
+      });
+
       // Get all unique lesson IDs from evaluations and fetch lessons
-      const allLessonIds = evaluations.reduce((acc, evaluation) => {
+      const allLessonIds = activeEvaluations.reduce((acc, evaluation) => {
         if (evaluation.lessonId && Array.isArray(evaluation.lessonId)) {
           acc.push(...evaluation.lessonId);
         }
@@ -645,7 +659,7 @@ export class StudentevaluationService {
       });
 
       // Add lessons to each evaluation
-      const evaluationsWithLessons = evaluations.map((evaluation) => {
+      const evaluationsWithLessons = activeEvaluations.map((evaluation) => {
         const evaluationLessons = lessons.filter(
           (lesson) =>
             evaluation.lessonId && evaluation.lessonId.includes(lesson.id),
@@ -1864,10 +1878,16 @@ export class StudentevaluationService {
               total: 0,
               marked: 0,
             };
-            const markedPercentage =
+            let markedPercentage =
               stats.total > 0
                 ? Math.round((stats.marked / stats.total) * 100 * 100) / 100
                 : 0;
+            let markedAnswers = stats.marked;
+
+            if (evaluation.isImmediateResult && stats.total > 0) {
+              markedPercentage = 100;
+              markedAnswers = stats.total;
+            }
 
             const totalPointsEarned = studentPointsMap.get(student.id) || 0;
             const percentage =
@@ -1884,7 +1904,7 @@ export class StudentevaluationService {
               email: student.email,
               avatar: student.avatar || null,
               totalAnswers: stats.total,
-              markedAnswers: stats.marked,
+              markedAnswers: markedAnswers,
               markedPercentage: markedPercentage,
               totalPointsEarned: totalPointsEarned,
               totalPossiblePoints: totalPossiblePoints,
@@ -2330,6 +2350,7 @@ export class StudentevaluationService {
       }
 
       // Build evaluation query
+      // Include only quiz, test, and examen types (all published evaluations)
       const evaluationWhere: any = {
         sessionCoursId: {
           [Op.in]: sessionCoursIds,
@@ -2338,8 +2359,8 @@ export class StudentevaluationService {
         markingStatus: MarkingStatus.PUBLISHED,
         type: {
           [Op.in]: [
-            StudentevaluationType.TEST,
             StudentevaluationType.QUIZ,
+            StudentevaluationType.TEST,
             StudentevaluationType.EXAMEN,
           ],
         },
@@ -2354,10 +2375,12 @@ export class StudentevaluationService {
       }
 
       // Get all evaluations matching the criteria (include sessionCoursId to map to sessions)
+      // Note: evaluations can be empty, but we still want to return all students
       const evaluations = await this.studentevaluationModel.findAll({
         where: evaluationWhere,
         attributes: [
           'id',
+          'title',
           'points',
           'type',
           'submittiondate',
@@ -2366,45 +2389,23 @@ export class StudentevaluationService {
         ],
       });
 
-      if (evaluations.length === 0) {
-        return Responder({
-          status: HttpStatusCode.Ok,
-          data: {
-            students: [],
-            filters: filters,
-            totalEvaluations: 0,
-          },
-          customMessage: 'No evaluations found for the given filters',
-        });
-      }
-
       const evaluationIds = evaluations.map((e) => e.id);
-      const overallTotalPossiblePoints = evaluations.reduce(
-        (sum, evaluation) => sum + (evaluation.points || 0),
-        0,
-      );
+      const overallTotalPossiblePoints = 20;
 
-      // Separate evaluations by isImmediateResult
-      const immediateResultEvaluations = evaluations.filter(
-        (e) => e.isImmediateResult === true,
-      );
-      const regularEvaluations = evaluations.filter(
-        (e) => !e.isImmediateResult,
-      );
-
-      // Get all student answers for these evaluations
-      // For regular evaluations, use StudentAnswer
+      // Get all student answers for all evaluations
+      // Include answers from both StudentAnswer and StudentAnswerOption tables
+      // regardless of isImmediateResult value
       const studentAnswers: Array<{
         studentId: string;
         evaluationId: string;
         points: number;
       }> = [];
 
-      if (regularEvaluations.length > 0) {
-        const regularEvaluationIds = regularEvaluations.map((e) => e.id);
+      // Get answers from StudentAnswer table for all evaluations
+      if (evaluationIds.length > 0) {
         const studentAnswersWhere: any = {
           evaluationId: {
-            [Op.in]: regularEvaluationIds,
+            [Op.in]: evaluationIds,
           },
         };
 
@@ -2413,12 +2414,12 @@ export class StudentevaluationService {
           studentAnswersWhere.studentId = filters.studentId;
         }
 
-        const regularStudentAnswers = await this.studentAnswerModel.findAll({
+        const studentAnswersFromTable = await this.studentAnswerModel.findAll({
           where: studentAnswersWhere,
           attributes: ['studentId', 'evaluationId', 'points'],
         });
 
-        regularStudentAnswers.forEach((answer) => {
+        studentAnswersFromTable.forEach((answer) => {
           studentAnswers.push({
             studentId: answer.studentId,
             evaluationId: answer.evaluationId,
@@ -2427,17 +2428,13 @@ export class StudentevaluationService {
         });
       }
 
-      // For isImmediateResult evaluations, use StudentAnswerOption
-      if (immediateResultEvaluations.length > 0) {
-        const immediateEvaluationIds = immediateResultEvaluations.map(
-          (e) => e.id,
-        );
-
-        // Get all questions for these evaluations
+      // Get answers from StudentAnswerOption table for all evaluations
+      if (evaluationIds.length > 0) {
+        // Get all questions for all evaluations
         const questions = await this.evaluationQuestionModel.findAll({
           where: {
             evaluationId: {
-              [Op.in]: immediateEvaluationIds,
+              [Op.in]: evaluationIds,
             },
           },
           attributes: ['id', 'evaluationId'],
@@ -2564,14 +2561,104 @@ export class StudentevaluationService {
         });
       });
 
+      // Get all students based on filters
+      let allEnrolledStudentIds: string[] = [];
+
+      // If studentId filter is provided, use only that student
+      if (filters.studentId) {
+        allEnrolledStudentIds = [filters.studentId];
+      } else {
+        // Determine which sessions to get students from based on filters
+        let sessionIdsForStudents: string[] = [];
+
+        if (filters.trainingId) {
+          // Get all sessions for this training
+          const trainingSessions = await this.trainingSessionModel.findAll({
+            where: {
+              id_trainings: filters.trainingId,
+            },
+            attributes: ['id'],
+          });
+          sessionIdsForStudents = trainingSessions.map((ts) => ts.id);
+        } else if (filters.trainingsessionId) {
+          // Use the specific session
+          sessionIdsForStudents = [filters.trainingsessionId];
+        } else if (filters.sessioncoursId) {
+          // Get session from sessioncours
+          const sessionCoursList = await this.sessionCoursModel.findAll({
+            where: {
+              id: filters.sessioncoursId,
+            },
+            attributes: ['id_session'],
+          });
+          sessionIdsForStudents = sessionCoursList
+            .map((sc) => sc.id_session)
+            .filter(Boolean) as string[];
+        } else if (filters.lessonId) {
+          // Get session from lesson's sessioncours
+          const lessons = await this.lessonModel.findAll({
+            where: {
+              id: filters.lessonId,
+            },
+            attributes: ['id_cours'],
+          });
+          const lessonSessionCoursIds = lessons
+            .map((l) => l.id_cours)
+            .filter(Boolean) as string[];
+
+          if (lessonSessionCoursIds.length > 0) {
+            const sessionCoursList = await this.sessionCoursModel.findAll({
+              where: {
+                id: {
+                  [Op.in]: lessonSessionCoursIds,
+                },
+              },
+              attributes: ['id_session'],
+            });
+            sessionIdsForStudents = sessionCoursList
+              .map((sc) => sc.id_session)
+              .filter(Boolean) as string[];
+          }
+        }
+        // If no filter is provided, sessionIdsForStudents will be empty
+        // and we'll get all students in the system
+
+        // Get all students enrolled in these sessions (if any sessions found)
+        if (sessionIdsForStudents.length > 0) {
+          const userInSessions = await this.userInSessionModel.findAll({
+            where: {
+              id_session: {
+                [Op.in]: sessionIdsForStudents,
+              },
+              status: 'in', // Only active enrollments
+            },
+            attributes: ['id_user'],
+          });
+          allEnrolledStudentIds = Array.from(
+            new Set(userInSessions.map((uis) => uis.id_user)),
+          );
+        }
+        // If no sessions found (no filter), allEnrolledStudentIds will remain empty
+        // and we'll get all students below
+      }
+
       // Get student details
-      const studentIds = Array.from(studentStatsMap.keys());
+      // If no filter or no enrolled students found, get ALL students in the system
+      const studentsWhere: any = {
+        role: 'student', // Only get students
+      };
+
+      if (allEnrolledStudentIds.length > 0) {
+        // If we have specific enrolled students, use them
+        studentsWhere.id = {
+          [Op.in]: allEnrolledStudentIds,
+        };
+      }
+      // If allEnrolledStudentIds is empty and no filter, studentsWhere will only have role='student'
+      // which will return ALL students in the system
+
       const students = await this.usersModel.findAll({
-        where: {
-          id: {
-            [Op.in]: studentIds,
-          },
-        },
+        where: studentsWhere,
         attributes: ['id', 'firstName', 'lastName', 'email', 'avatar'],
       });
 
@@ -2699,7 +2786,10 @@ export class StudentevaluationService {
         });
 
         // For each student, calculate their session stats
-        studentIds.forEach((studentId) => {
+        // Use students from studentStatsMap (those with evaluations) for sessionStats calculation
+        // Students without evaluations will have empty sessionStats arrays
+        const studentIdsForSessionStats = Array.from(studentStatsMap.keys());
+        studentIdsForSessionStats.forEach((studentId) => {
           const sessionStats: Array<{
             sessionId: string;
             sessionTitle: string;
@@ -2788,8 +2878,12 @@ export class StudentevaluationService {
 
         // For each student, get their sessions and calculate hours
         const sessionIds = trainingSessions.map((ts) => ts.id);
-        const studentIds = Array.from(studentStatsMap.keys());
-        for (const studentId of studentIds) {
+        // Use all enrolled students, not just those with evaluations
+        const studentIdsForTraining =
+          allEnrolledStudentIds.length > 0
+            ? allEnrolledStudentIds
+            : Array.from(studentStatsMap.keys());
+        for (const studentId of studentIdsForTraining) {
           // Get sessions this student is in
           const userSessions = await this.userInSessionModel.findAll({
             where: {
@@ -2844,28 +2938,31 @@ export class StudentevaluationService {
       const allSessionCoursIds = Array.from(
         new Set(evaluations.map((e) => e.sessionCoursId).filter(Boolean)),
       );
-      const sessionCoursDetails = await this.sessionCoursModel.findAll({
-        where: {
-          id: {
-            [Op.in]: allSessionCoursIds,
-          },
-        },
-        attributes: ['id', 'title', 'ponderation'],
-        include: [
-          {
-            model: TrainingSession,
-            attributes: ['id', 'id_trainings'],
-            required: false,
-            include: [
-              {
-                model: Training,
-                attributes: ['id', 'trainingtype'],
-                required: false,
+      const sessionCoursDetails =
+        allSessionCoursIds.length > 0
+          ? await this.sessionCoursModel.findAll({
+              where: {
+                id: {
+                  [Op.in]: allSessionCoursIds,
+                },
               },
-            ],
-          },
-        ],
-      });
+              attributes: ['id', 'title', 'ponderation'],
+              include: [
+                {
+                  model: TrainingSession,
+                  attributes: ['id', 'id_trainings'],
+                  required: false,
+                  include: [
+                    {
+                      model: Training,
+                      attributes: ['id', 'trainingtype'],
+                      required: false,
+                    },
+                  ],
+                },
+              ],
+            })
+          : [];
       const sessionCoursMap = new Map<
         string,
         {
@@ -2903,211 +3000,284 @@ export class StudentevaluationService {
         return 'Ajournée'; // Default for scores outside expected range
       };
 
-      // Group evaluations by sessionCoursId (matiere) for each student
-      const studentMatiereStatsMap = new Map<
+      // Generate releveTable for each student with ALL evaluations
+      // This includes all evaluations, not grouped by matiere
+      const studentReleveTableMap = new Map<
         string,
         Array<{
           matiereTitle: string;
+          evaluationTitle: string;
+          evaluationType: string;
           pointsEarned: number;
           totalPossiblePoints: number;
           scoreOver20: number;
           comment: string;
-          evaluationTypes: string;
-          modality: TrainingType | null;
+          modality: string | null;
           percentage: number;
+          didEvaluation: boolean;
         }>
       >();
 
-      studentIds.forEach((studentId) => {
-        const matiereStats: Array<{
+      // Use all students we fetched for releveTable calculation
+      // This ensures all students get a releveTable entry, even if they have no evaluations
+      const studentIdsForReleve = students.map((s) => s.id);
+
+      studentIdsForReleve.forEach((studentId) => {
+        const releveTable: Array<{
           matiereTitle: string;
+          evaluationTitle: string;
+          evaluationType: string;
           pointsEarned: number;
           totalPossiblePoints: number;
           scoreOver20: number;
           comment: string;
-          evaluationTypes: string;
-          modality: TrainingType | null;
+          modality: string | null;
           percentage: number;
+          didEvaluation: boolean;
         }> = [];
 
-        // Group evaluations by sessionCoursId first
-        const evaluationsByMatiere = new Map<
-          string,
-          Array<(typeof evaluations)[0]>
-        >();
-        evaluations.forEach((evaluation) => {
-          if (evaluation.sessionCoursId) {
-            if (!evaluationsByMatiere.has(evaluation.sessionCoursId)) {
-              evaluationsByMatiere.set(evaluation.sessionCoursId, []);
-            }
-            evaluationsByMatiere
-              .get(evaluation.sessionCoursId)!
-              .push(evaluation);
-          }
+        // Get student answers for this student
+        const studentAnswersForStudent = studentAnswers.filter(
+          (answer) => answer.studentId === studentId,
+        );
+
+        // Create a map of evaluationId -> total points earned
+        const studentEvaluationPointsMap = new Map<string, number>();
+        studentAnswersForStudent.forEach((answer) => {
+          const currentPoints =
+            studentEvaluationPointsMap.get(answer.evaluationId) || 0;
+          studentEvaluationPointsMap.set(
+            answer.evaluationId,
+            currentPoints + (answer.points || 0),
+          );
         });
 
-        // For each matiere, create a separate entry for each evaluation type
-        evaluationsByMatiere.forEach((matiereEvals, matiereId) => {
-          const matiereInfo = sessionCoursMap.get(matiereId);
+        // For each evaluation, create an entry in releveTable
+        // Note: Only evaluations with markingStatus='published' are included
+        // (evaluations array is already filtered by markingStatus: MarkingStatus.PUBLISHED)
+        evaluations.forEach((evaluation) => {
+          const matiereInfo = sessionCoursMap.get(evaluation.sessionCoursId);
           if (!matiereInfo) return;
 
-          // Get all unique evaluation types for this matiere
-          const uniqueEvaluationTypes = Array.from(
-            new Set(
-              matiereEvals
-                .map((evaluation) => evaluation.type)
-                .filter(
-                  (type): type is StudentevaluationType =>
-                    typeof type === 'string',
-                ),
-            ),
-          );
+          const pointsEarned =
+            studentEvaluationPointsMap.get(evaluation.id) || 0;
+          const totalPossiblePoints = evaluation.points || 0;
+          const didEvaluation = studentEvaluationPointsMap.has(evaluation.id);
 
-          // Create a separate entry for each evaluation type
-          uniqueEvaluationTypes.forEach((evaluationType) => {
-            // Filter evaluations for this specific type
-            const evaluationsOfType = matiereEvals.filter(
-              (e) => e.type === evaluationType,
-            );
+          // Convert to score over 20
+          const scoreOver20 =
+            totalPossiblePoints > 0
+              ? (pointsEarned / totalPossiblePoints) * 20
+              : 0;
+          const scoreOver20Rounded = Math.round(scoreOver20 * 100) / 100;
 
-            // Get student answers for evaluations of this type in this matiere
-            const matiereEvalIds = evaluationsOfType.map((e) => e.id);
-            const matiereStudentAnswers = studentAnswers.filter(
-              (answer) =>
-                answer.studentId === studentId &&
-                matiereEvalIds.includes(answer.evaluationId),
-            );
+          // Get comment based on score (only if student did the evaluation)
+          const comment = didEvaluation ? getComment(scoreOver20) : 'Ajournée';
 
-            // Aggregate points per evaluation to avoid double-counting
-            const evaluationPointsMap = new Map<string, number>();
-            matiereStudentAnswers.forEach((answer) => {
-              const currentPoints =
-                evaluationPointsMap.get(answer.evaluationId) || 0;
-              evaluationPointsMap.set(
-                answer.evaluationId,
-                currentPoints + (answer.points || 0),
-              );
-            });
+          // Calculate percentage
+          const percentage = (scoreOver20Rounded / 20) * 100;
 
-            // Calculate total points earned (sum of aggregated points per evaluation)
-            const pointsEarned = Array.from(
-              evaluationPointsMap.values(),
-            ).reduce((sum, points) => sum + points, 0);
-            const totalPossiblePoints = evaluationsOfType.reduce(
-              (sum, evaluation) => sum + (evaluation.points || 0),
-              0,
-            );
-
-            // Convert to score over 20
-            const scoreOver20 =
-              totalPossiblePoints > 0
-                ? (pointsEarned / totalPossiblePoints) * 20
-                : 0;
-            const scoreOver20Rounded = Math.round(scoreOver20 * 100) / 100;
-
-            // Get comment based on score
-            const comment = getComment(scoreOver20);
-
-            // Calculate percentage: pointsEarned over 20 (since pointsEarned is already on scale over 20)
-            const percentage = (scoreOver20Rounded / 20) * 100;
-
-            // Create entry for this evaluation type
-            matiereStats.push({
-              matiereTitle: matiereInfo.title,
-              pointsEarned: scoreOver20Rounded,
-              totalPossiblePoints,
-              scoreOver20: scoreOver20Rounded,
-              comment,
-              evaluationTypes: String(evaluationType), // Single evaluation type as string
-              modality: matiereInfo.modality,
-              percentage: Math.round(percentage * 100) / 100,
-            });
+          releveTable.push({
+            matiereTitle: matiereInfo.title,
+            evaluationTitle: evaluation.title || '',
+            evaluationType: String(evaluation.type),
+            pointsEarned: didEvaluation ? scoreOver20Rounded : 0,
+            totalPossiblePoints,
+            scoreOver20: didEvaluation ? scoreOver20Rounded : 0,
+            comment,
+            modality: matiereInfo.modality
+              ? String(matiereInfo.modality)
+              : null,
+            percentage: didEvaluation ? Math.round(percentage * 100) / 100 : 0,
+            didEvaluation,
           });
         });
 
-        studentMatiereStatsMap.set(studentId, matiereStats);
+        studentReleveTableMap.set(studentId, releveTable);
       });
 
-      // Build result array
-      const result = students
-        .map((student) => {
-          const stats = studentStatsMap.get(student.id);
-          if (!stats) {
-            return null;
-          }
+      // Count all published evaluations based on the most specific filter
+      // This needs to be calculated before building the result array for average calculation
+      // Filter priority: lessonId > sessioncoursId > trainingsessionId > trainingId > no filter (all)
+      // Include only quiz, test, and examen types
+      const totalEvaluationsWhere: any = {
+        ispublish: true,
+        markingStatus: MarkingStatus.PUBLISHED,
+        type: {
+          [Op.in]: [
+            StudentevaluationType.QUIZ,
+            StudentevaluationType.TEST,
+            StudentevaluationType.EXAMEN,
+          ],
+        },
+      };
 
-          // Convert totalPointsEarned to scale over 20
-          // totalPointsEarned is the sum of scores over 20 for each evaluation
-          // To normalize so totalPossiblePoints = 20:
-          // If student has X points out of Y total (where Y = 20 * evaluationCount),
-          // convert to: (X / Y) * 20
-          const totalPossiblePointsNormalized = 20;
-          const totalPointsEarnedNormalized =
-            stats.evaluationCount > 0
-              ? (stats.totalPointsEarned / (20 * stats.evaluationCount)) * 20
-              : 0;
+      if (filters.lessonId) {
+        // Most specific: filter by lessonId
+        // Get sessioncours for this lesson
+        const lessons = await this.lessonModel.findAll({
+          where: {
+            id: filters.lessonId,
+          },
+          attributes: ['id_cours'],
+        });
+        const lessonSessionCoursIds = lessons
+          .map((l) => l.id_cours)
+          .filter(Boolean) as string[];
 
-          // Calculate average points (knowing max per evaluation is 20)
-          // This is the average of scores over 20 per evaluation
-          const averagePoints =
-            stats.evaluationCount > 0
-              ? stats.totalPointsEarned / stats.evaluationCount
-              : 0;
-
-          // Calculate percentage based on normalized values (out of 20)
-          const percentage =
-            totalPossiblePointsNormalized > 0
-              ? (totalPointsEarnedNormalized / totalPossiblePointsNormalized) *
-                100
-              : 0;
-
-          const baseResult: any = {
-            studentId: student.id,
-            studentName:
-              `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
-              'Unknown',
-            studentEmail: student.email,
-            studentAvatar: student.avatar || null,
-            averagePoints: Math.round(averagePoints * 100) / 100,
-            percentage: Math.round(percentage * 100) / 100,
-            totalPointsEarned:
-              Math.round(totalPointsEarnedNormalized * 100) / 100,
-            totalPossiblePoints: totalPossiblePointsNormalized,
-            evaluationCount: stats.evaluationCount,
+        if (lessonSessionCoursIds.length > 0) {
+          totalEvaluationsWhere.sessionCoursId = {
+            [Op.in]: lessonSessionCoursIds,
           };
-
-          // Add matiere statistics (grouped by sessionCours)
-          const matiereStats = studentMatiereStatsMap.get(student.id) || [];
-          baseResult.matiereStats = matiereStats;
-
-          // Generate releve table from matiereStats for the first table
-          baseResult.releveTable = this.generateReleveTable(matiereStats);
-
-          // Add sessionStats (always calculated from evaluations)
-          baseResult.sessionStats =
-            studentSessionStatsMap.get(student.id) || [];
-
-          // Add training-specific fields (only when trainingId filter is provided)
-          if (filters.trainingId) {
-            baseResult.sessionTitles =
-              studentSessionTitlesMap.get(student.id) || [];
-            baseResult.totalHours =
-              Math.round((studentTotalHoursMap.get(student.id) || 0) * 100) /
-              100;
+          totalEvaluationsWhere[Op.or] = [
+            literal(`"lessonId"::jsonb @> '["${filters.lessonId}"]'::jsonb`),
+            { lessonId: null },
+          ];
+        } else {
+          // No sessioncours found for this lesson, return 0
+          totalEvaluationsWhere.sessionCoursId = { [Op.in]: [] };
+        }
+      } else if (filters.sessioncoursId) {
+        // Filter by sessioncoursId
+        totalEvaluationsWhere.sessionCoursId = filters.sessioncoursId;
+      } else if (filters.trainingsessionId) {
+        // Filter by trainingsessionId - get all sessioncours for this session
+        const sessionCoursList = await this.sessionCoursModel.findAll({
+          where: {
+            id_session: filters.trainingsessionId,
+          },
+          attributes: ['id'],
+        });
+        const sessionCoursIdsForCount = sessionCoursList.map((sc) => sc.id);
+        if (sessionCoursIdsForCount.length > 0) {
+          totalEvaluationsWhere.sessionCoursId = {
+            [Op.in]: sessionCoursIdsForCount,
+          };
+        } else {
+          // No sessioncours found for this session, return 0
+          totalEvaluationsWhere.sessionCoursId = { [Op.in]: [] };
+        }
+      } else if (filters.trainingId) {
+        // Filter by trainingId - get all sessioncours for all sessions in this training
+        const trainingSessions = await this.trainingSessionModel.findAll({
+          where: {
+            id_trainings: filters.trainingId,
+          },
+          attributes: ['id'],
+        });
+        const sessionIds = trainingSessions.map((ts) => ts.id);
+        if (sessionIds.length > 0) {
+          const sessionCoursList = await this.sessionCoursModel.findAll({
+            where: {
+              id_session: {
+                [Op.in]: sessionIds,
+              },
+            },
+            attributes: ['id'],
+          });
+          const sessionCoursIdsForCount = sessionCoursList.map((sc) => sc.id);
+          if (sessionCoursIdsForCount.length > 0) {
+            totalEvaluationsWhere.sessionCoursId = {
+              [Op.in]: sessionCoursIdsForCount,
+            };
           } else {
-            // Always include these fields, even when trainingId is not provided
-            baseResult.sessionTitles = [];
-            baseResult.totalHours = 0;
+            // No sessioncours found for this training, return 0
+            totalEvaluationsWhere.sessionCoursId = { [Op.in]: [] };
           }
+        } else {
+          // No sessions found for this training, return 0
+          totalEvaluationsWhere.sessionCoursId = { [Op.in]: [] };
+        }
+      }
+      // If no filter, totalEvaluationsWhere will only have the base conditions
+      // which will count ALL published evaluations in the system
 
-          return baseResult;
-        })
-        .filter(Boolean);
+      const totalEvaluationsCount = await this.studentevaluationModel.count({
+        where: totalEvaluationsWhere,
+      });
+
+      // Build result array - include ALL enrolled students, even if they have no evaluations
+      // totalEvaluationsCount is the total number of evaluations available based on filters
+      const result = students.map((student) => {
+        const stats = studentStatsMap.get(student.id);
+
+        // If student has no evaluations, use default values (zeros)
+        const hasEvaluations = stats && stats.evaluationCount > 0;
+
+        // Total number of evaluations available (based on filters)
+        // This is the count of ALL evaluations, not just the ones the student did
+        const totalEvaluationsAvailable = totalEvaluationsCount;
+
+        // Convert totalPointsEarned to scale over 20
+        // totalPointsEarned is the sum of scores over 20 for each evaluation the student did
+        // To normalize so totalPossiblePoints = 20:
+        // If there are N total evaluations, and student has X points (sum of scores over 20),
+        // convert to: (X / (20 * N)) * 20 = X / N
+        const totalPossiblePointsNormalized = 20;
+        const totalPointsEarnedNormalized =
+          totalEvaluationsAvailable > 0
+            ? (stats?.totalPointsEarned || 0) / totalEvaluationsAvailable
+            : 0;
+
+        // Calculate average points over ALL evaluations (not just the ones student did)
+        // If student did 2 out of 10 evaluations, average is calculated over all 10
+        // averagePoints = totalPointsEarned (sum of scores over 20) / totalEvaluationsAvailable
+        const averagePoints =
+          totalEvaluationsAvailable > 0
+            ? (stats?.totalPointsEarned || 0) / totalEvaluationsAvailable
+            : 0;
+
+        // Calculate average points over ONLY evaluations the student completed
+        // If student did 2 out of 10 evaluations, averageDid is calculated over only those 2
+        // averageDid = totalPointsEarned (sum of scores over 20) / evaluationCount
+        const averageDid = hasEvaluations
+          ? stats.evaluationCount > 0
+            ? stats.totalPointsEarned / stats.evaluationCount
+            : 0
+          : 0;
+
+        // Calculate percentage based on normalized values (out of 20)
+        const percentage =
+          totalPossiblePointsNormalized > 0
+            ? (totalPointsEarnedNormalized / totalPossiblePointsNormalized) *
+              100
+            : 0;
+
+        const baseResult: any = {
+          studentId: student.id,
+          studentName:
+            `${student.firstName || ''} ${student.lastName || ''}`.trim() ||
+            'Unknown',
+          studentEmail: student.email,
+          studentAvatar: student.avatar || null,
+          averagePoints: Math.round(averagePoints * 100) / 100,
+          averageDid: Math.round(averageDid * 100) / 100,
+          percentage: Math.round(percentage * 100) / 100,
+          totalPointsEarned:
+            Math.round(totalPointsEarnedNormalized * 100) / 100,
+          totalPossiblePoints: totalPossiblePointsNormalized,
+          evaluationCount: hasEvaluations ? stats.evaluationCount : 0,
+        };
+
+        // Add releveTable with all evaluations (includes didEvaluation flag)
+        // If student has no evaluations, releveTable will still contain all evaluations with didEvaluation: false
+        baseResult.releveTable = studentReleveTableMap.get(student.id) || [];
+
+        // Add training-specific fields (always included for consistent structure)
+        baseResult.sessionTitles = filters.trainingId
+          ? studentSessionTitlesMap.get(student.id) || []
+          : [];
+        baseResult.totalHours = filters.trainingId
+          ? Math.round((studentTotalHoursMap.get(student.id) || 0) * 100) / 100
+          : 0;
+
+        return baseResult;
+      });
 
       const responseData: any = {
         students: result,
         filters: filters,
-        totalEvaluations: evaluations.length,
+        totalEvaluations: totalEvaluationsCount,
         totalPossiblePoints: overallTotalPossiblePoints,
       };
 

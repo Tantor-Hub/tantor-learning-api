@@ -47,22 +47,8 @@ export class ChatService {
       // Determine if user is sender or receiver
       if (userIdString === senderIdString) {
         role = 'sender';
-        // If current user is the sender: isOpened = true if ALL receivers are in reader array
-        if (receiversArray.length === 0) {
-          // No receivers, consider it as opened
-          isOpened = true;
-        } else {
-          // Check if all receivers are in the reader array
-          const allReceiversRead = receiversArray.every(
-            (receiverId: string) => {
-              const receiverIdString = String(receiverId);
-              return readerArray.some(
-                (readerId: string) => String(readerId) === receiverIdString,
-              );
-            },
-          );
-          isOpened = allReceiversRead;
-        }
+        // If current user is the sender: isOpened is always true (sender has seen their own message)
+        isOpened = true;
       } else {
         // Check if user is in receivers array
         const isReceiver = receiversArray.some(
@@ -71,6 +57,7 @@ export class ChatService {
         if (isReceiver) {
           role = 'receiver';
           // If current user is a receiver: isOpened = true if current user is in reader array
+          // This indicates whether the receiver has opened/read this chat
           isOpened = readerArray.some(
             (readerId: string) => String(readerId) === userIdString,
           );
@@ -599,9 +586,6 @@ export class ChatService {
             { receivers: { [Op.contains]: [userId] } },
           ],
         },
-        attributes: {
-          exclude: ['reader'], // Exclude reader if column doesn't exist in DB
-        },
         include: [
           {
             model: this.chatModel,
@@ -650,24 +634,12 @@ export class ChatService {
 
             if (String(transferData.sender) === userIdString) {
               role = 'sender';
-              // For transfer sender: check if all receivers have read
-              const receiversArray = transferData.receivers || [];
-              if (receiversArray.length === 0) {
-                isOpened = true;
-              } else {
-                const allReceiversRead = receiversArray.every(
-                  (receiverId: string) => {
-                    const receiverIdString = String(receiverId);
-                    return readerArray.some(
-                      (readerId: string) =>
-                        String(readerId) === receiverIdString,
-                    );
-                  },
-                );
-                isOpened = allReceiversRead;
-              }
+              // If current user is the transfer sender: isOpened is always true (sender has seen their own transfer)
+              isOpened = true;
             } else {
               role = 'receiver';
+              // If current user is a receiver: isOpened = true if current user is in reader array
+              // This indicates whether the receiver has opened/read this transfer chat
               isOpened = readerArray.some(
                 (readerId: string) => String(readerId) === userIdString,
               );

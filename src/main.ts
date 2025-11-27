@@ -27,7 +27,7 @@ async function tantorAPP() {
     'https://tantorlearning.com',
     'https://www.tantorlearning.com',
 
-    'https://boom-striking-beer-corners.trycloudflare.com',
+    'https://century-beta-attacks-maintains.trycloudflare.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',

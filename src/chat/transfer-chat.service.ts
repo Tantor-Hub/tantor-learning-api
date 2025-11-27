@@ -244,9 +244,78 @@ export class TransferChatService {
           });
         }
 
+        // Add user's ID to receivers array if not already present
+        try {
+          const currentReceivers = transfer.receivers || [];
+          const isUserInReceivers = currentReceivers.some(
+            (receiverId: string) => String(receiverId) === String(userId),
+          );
+
+          if (!isUserInReceivers) {
+            const updatedReceivers = [...currentReceivers, userId];
+            console.log(
+              '=== TransferChat findOne: Adding user to receivers array ===',
+              JSON.stringify(updatedReceivers),
+            );
+            await transfer.update({ receivers: updatedReceivers });
+            await transfer.reload({
+              include: [
+                {
+                  model: Chat,
+                  as: 'chat',
+                  include: [
+                    {
+                      model: Users,
+                      as: 'sender',
+                      attributes: [
+                        'id',
+                        'firstName',
+                        'lastName',
+                        'email',
+                        'avatar',
+                      ],
+                    },
+                  ],
+                },
+                {
+                  model: Users,
+                  as: 'senderUser',
+                  attributes: [
+                    'id',
+                    'firstName',
+                    'lastName',
+                    'email',
+                    'avatar',
+                  ],
+                },
+              ],
+            });
+            console.log(
+              '=== TransferChat findOne: Receivers array updated ===',
+              JSON.stringify(transfer.receivers),
+            );
+            // Update isReceiver flag since user is now in receivers
+            if (!isReceiver) {
+              receiversArray.push(userId);
+            }
+          }
+        } catch (receiverUpdateError) {
+          console.error(
+            '=== TransferChat findOne: Error updating receivers array ===',
+            receiverUpdateError,
+          );
+          // Continue even if update fails - don't break the response
+        }
+
+        // Update isReceiver check after potential receivers update
+        const updatedReceiversArray = transfer.receivers || [];
+        const isUserInReceiversNow = updatedReceiversArray.some(
+          (receiverId: string) => String(receiverId) === String(userId),
+        );
+
         // If user is in the receivers array, add them to the reader array if not already present
         // This is similar to how regular chat works - when a user opens the transfer chat, mark them as having read it
-        if (isReceiver) {
+        if (isUserInReceiversNow) {
           try {
             const currentReaders = transfer.reader || [];
             console.log(

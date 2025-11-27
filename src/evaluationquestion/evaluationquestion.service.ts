@@ -381,7 +381,7 @@ export class EvaluationQuestionService {
         return Responder({
           status: HttpStatusCode.Forbidden,
           customMessage:
-            "Cette évaluation a été corrigée et soumise au secrétariat.",
+            'Cette évaluation a été corrigée et soumise au secrétariat.',
         });
       }
 
@@ -418,7 +418,7 @@ export class EvaluationQuestionService {
       if (now > submissionDate) {
         return Responder({
           status: HttpStatusCode.Forbidden,
-          customMessage: 'This evaluation has expired',
+          customMessage: 'Cette évaluation est expirée.',
         });
       }
 
