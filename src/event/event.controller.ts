@@ -28,7 +28,7 @@ import { JwtAuthGuardAsSuperviseur } from 'src/guard/guard.assuperviseur';
 import { JwtAuthGuardAsInstructor } from 'src/guard/guard.asinstructor';
 import { JwtAuthGuardAsStudent } from 'src/guard/guard.asstudent';
 import { JwtAuthGuardAsStudentInSession } from 'src/guard/guard.asstudentinsession';
-import { JwtAuthGuardMultiRole } from 'src/guard/guard.multi-role';
+import { JwtAuthGuardMultiRole, JwtAuthGuardAdminOrSecretary } from 'src/guard/guard.multi-role';
 import { MultiRole } from 'src/guard/decorators/multi-role.decorator';
 import { IJwtSignin } from 'src/interface/interface.payloadjwtsignin';
 import { EventSwagger } from './swagger.event';
@@ -134,7 +134,7 @@ export class EventController {
   }
 
   @Get('getall')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuardAdminOrSecretary)
   @ApiBearerAuth()
   @ApiOperation({
     summary: EventSwagger.findAll.summary,
@@ -142,8 +142,76 @@ export class EventController {
   })
   @ApiResponse(EventSwagger.findAll.responses[200])
   @ApiResponse(EventSwagger.findAll.responses[401])
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or Secretary role required' })
   findAll() {
     return this.eventService.findAll();
+  }
+
+  @Get('secretary/:id')
+  @UseGuards(JwtAuthGuardAsSecretary)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get event by ID (Secretary access)',
+    description:
+      'Retrieve a specific event by its ID with all related entities and participation information. Includes all students in the session with their participation status.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Event UUID',
+    type: 'string',
+    format: 'uuid',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Event retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'number', example: 200 },
+        message: { type: 'string', example: 'Event retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            title: { type: 'string' },
+            description: { type: 'string' },
+            sessionId: { type: 'string', format: 'uuid', nullable: true },
+            participationInfo: {
+              type: 'object',
+              properties: {
+                students: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      firstName: { type: 'string' },
+                      lastName: { type: 'string' },
+                      email: { type: 'string' },
+                      phone: { type: 'string', nullable: true },
+                      avatar: { type: 'string', nullable: true },
+                      userInSessionId: { type: 'string', format: 'uuid' },
+                      status: { type: 'string' },
+                      participated: { type: 'boolean' },
+                    },
+                  },
+                },
+                totalInSession: { type: 'number' },
+                participantsCount: { type: 'number' },
+                absentCount: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Secretary role required' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  findOneForSecretary(@Param('id') id: string) {
+    return this.eventService.findOneForSecretary(id);
   }
 
   @Get('training/:trainingId')

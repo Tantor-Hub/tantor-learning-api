@@ -331,7 +331,8 @@ export const EventSwagger = {
 
   findAll: {
     summary: 'Get all events',
-    description: 'Retrieve all events with their related entities',
+    description:
+      'Retrieve all events with their related entities. Each event includes participation information showing all students in the session and their participation status.',
     responses: {
       200: {
         status: 200,
@@ -347,7 +348,7 @@ export const EventSwagger = {
               id_cible_training: ['550e8400-e29b-41d4-a716-446655440000'],
               id_cible_session: '3f51f834-7a3f-41c7-83ad-2da85589f503',
               id_cible_cours: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
-              id_cible_lesson: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              id_cible_lesson: ['a1b2c3d4-e5f6-7890-abcd-ef1234567890'],
               begining_date: '2025-02-01T00:00:00.000Z',
               beginning_hour: '09:00',
               ending_hour: '17:00',
@@ -365,9 +366,52 @@ export const EventSwagger = {
                 id: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
                 title: 'React Fundamentals Course',
               },
-              lesson: {
-                id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-                title: 'Introduction to React',
+              lessons: [
+                {
+                  id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                  title: 'Introduction to React',
+                },
+              ],
+              sessionId: '3f51f834-7a3f-41c7-83ad-2da85589f503',
+              participationInfo: {
+                students: [
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440001',
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'john.doe@example.com',
+                    phone: '+1234567890',
+                    avatar: 'https://example.com/avatars/john.jpg',
+                    userInSessionId: 'userinsession-uuid-1',
+                    status: 'in',
+                    participated: true,
+                  },
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440002',
+                    firstName: 'Jane',
+                    lastName: 'Smith',
+                    email: 'jane.smith@example.com',
+                    phone: '+1234567891',
+                    avatar: 'https://example.com/avatars/jane.jpg',
+                    userInSessionId: 'userinsession-uuid-2',
+                    status: 'in',
+                    participated: true,
+                  },
+                  {
+                    id: '550e8400-e29b-41d4-a716-446655440003',
+                    firstName: 'Bob',
+                    lastName: 'Johnson',
+                    email: 'bob.johnson@example.com',
+                    phone: '+1234567892',
+                    avatar: null,
+                    userInSessionId: 'userinsession-uuid-3',
+                    status: 'in',
+                    participated: false,
+                  },
+                ],
+                totalInSession: 3,
+                participantsCount: 2,
+                absentCount: 1,
               },
               createdAt: '2025-01-15T10:30:00.000Z',
               updatedAt: '2025-01-15T10:30:00.000Z',
@@ -376,6 +420,10 @@ export const EventSwagger = {
         },
       },
       401: { status: 401, description: 'Unauthorized' },
+      403: {
+        status: 403,
+        description: 'Forbidden - Admin or Secretary role required',
+      },
     },
   },
 
@@ -745,6 +793,105 @@ export const EventSwagger = {
         },
       },
       401: { status: 401, description: 'Unauthorized' },
+      404: { status: 404, description: 'Event not found' },
+    },
+  },
+
+  findOneForSecretary: {
+    summary: 'Get event by ID (Secretary access)',
+    description:
+      'Retrieve a specific event by its ID with all related entities and participation information. Includes all students in the session with their participation status. Only secretaries can access this endpoint.',
+    param: {
+      name: 'id',
+      description: 'Event UUID',
+      example: '550e8400-e29b-41d4-a716-446655440000',
+    },
+    responses: {
+      200: {
+        status: 200,
+        description: 'Event retrieved successfully with participation information',
+        example: {
+          status: 200,
+          message: 'Event retrieved successfully',
+          data: {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            title: 'React Training Workshop',
+            description: 'A comprehensive workshop on React fundamentals',
+            id_cible_training: ['550e8400-e29b-41d4-a716-446655440000'],
+            id_cible_session: '3f51f834-7a3f-41c7-83ad-2da85589f503',
+            id_cible_cours: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+            id_cible_lesson: ['a1b2c3d4-e5f6-7890-abcd-ef1234567890'],
+            begining_date: '2025-02-01T00:00:00.000Z',
+            beginning_hour: '09:00',
+            ending_hour: '17:00',
+            trainings: [
+              {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                title: 'React Fundamentals',
+              },
+            ],
+            trainingSession: {
+              id: '3f51f834-7a3f-41c7-83ad-2da85589f503',
+              title: 'React Training Session 2025',
+            },
+            sessionCours: {
+              id: 'dc22d5a5-4ab5-4691-97b0-31228c94cb67',
+              title: 'React Fundamentals Course',
+            },
+            lessons: [
+              {
+                id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+                title: 'Introduction to React',
+              },
+            ],
+            sessionId: '3f51f834-7a3f-41c7-83ad-2da85589f503',
+            participationInfo: {
+              students: [
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440001',
+                  firstName: 'John',
+                  lastName: 'Doe',
+                  email: 'john.doe@example.com',
+                  phone: '+1234567890',
+                  avatar: 'https://example.com/avatars/john.jpg',
+                  userInSessionId: 'userinsession-uuid-1',
+                  status: 'in',
+                  participated: true,
+                },
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440002',
+                  firstName: 'Jane',
+                  lastName: 'Smith',
+                  email: 'jane.smith@example.com',
+                  phone: '+1234567891',
+                  avatar: 'https://example.com/avatars/jane.jpg',
+                  userInSessionId: 'userinsession-uuid-2',
+                  status: 'in',
+                  participated: true,
+                },
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440003',
+                  firstName: 'Bob',
+                  lastName: 'Johnson',
+                  email: 'bob.johnson@example.com',
+                  phone: '+1234567892',
+                  avatar: null,
+                  userInSessionId: 'userinsession-uuid-3',
+                  status: 'in',
+                  participated: false,
+                },
+              ],
+              totalInSession: 3,
+              participantsCount: 2,
+              absentCount: 1,
+            },
+            createdAt: '2025-01-15T10:30:00.000Z',
+            updatedAt: '2025-01-15T10:30:00.000Z',
+          },
+        },
+      },
+      401: { status: 401, description: 'Unauthorized' },
+      403: { status: 403, description: 'Forbidden - Secretary role required' },
       404: { status: 404, description: 'Event not found' },
     },
   },

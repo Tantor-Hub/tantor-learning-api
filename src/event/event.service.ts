@@ -55,6 +55,126 @@ export class EventService {
     });
   }
 
+  /**
+   * Helper method to determine session ID from an event
+   * Checks id_cible_session, id_cible_cours, and id_cible_lesson in priority order
+   */
+  private async getSessionIdFromEvent(event: Event): Promise<string | null> {
+    // Priority 1: Check if event has a direct session reference
+    if (event.id_cible_session) {
+      return event.id_cible_session;
+    }
+    // Priority 2: Get session from id_cible_cours
+    if (event.id_cible_cours) {
+      const sessionCours = await this.sessionCoursModel.findByPk(
+        event.id_cible_cours,
+        {
+          attributes: ['id', 'id_session'],
+        },
+      );
+      if (sessionCours && sessionCours.id_session) {
+        return sessionCours.id_session;
+      }
+    }
+    // Priority 3: Get session from id_cible_lesson
+    if (event.id_cible_lesson && event.id_cible_lesson.length > 0) {
+      const lesson = await this.lessonModel.findByPk(event.id_cible_lesson[0], {
+        attributes: ['id', 'id_cours'],
+      });
+
+      if (lesson && lesson.id_cours) {
+        const sessionCours = await this.sessionCoursModel.findByPk(
+          lesson.id_cours,
+          {
+            attributes: ['id', 'id_session'],
+          },
+        );
+
+        if (sessionCours && sessionCours.id_session) {
+          return sessionCours.id_session;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Helper method to get students in session with participation status
+   */
+  private async getStudentsWithParticipationStatus(
+    sessionId: string | null,
+    eventParticipants: string[] = [],
+  ): Promise<{
+    students: Array<{
+      id: string;
+      firstName: string | undefined;
+      lastName: string | undefined;
+      email: string;
+      phone?: string;
+      avatar?: string;
+      userInSessionId: string;
+      status: string;
+      participated: boolean;
+    }>;
+    totalInSession: number;
+    participantsCount: number;
+    absentCount: number;
+  }> {
+    if (!sessionId) {
+      return {
+        students: [],
+        totalInSession: 0,
+        participantsCount: 0,
+        absentCount: 0,
+      };
+    }
+
+    // Get all users in the session from UserInSession
+    const usersInSession = await this.userInSessionModel.findAll({
+      where: {
+        id_session: sessionId,
+      },
+      include: [
+        {
+          model: Users,
+          as: 'user',
+          required: true,
+          attributes: [
+            'id',
+            'firstName',
+            'lastName',
+            'email',
+            'phone',
+            'avatar',
+          ],
+        },
+      ],
+    });
+
+    // Map users with participation status
+    const students = usersInSession.map((userInSession) => ({
+      id: userInSession.user.id,
+      firstName: userInSession.user.firstName,
+      lastName: userInSession.user.lastName,
+      email: userInSession.user.email,
+      phone: userInSession.user.phone,
+      avatar: userInSession.user.avatar,
+      userInSessionId: userInSession.id,
+      status: userInSession.status,
+      participated: eventParticipants.includes(userInSession.id_user),
+    }));
+
+    const participantsCount = students.filter((s) => s.participated).length;
+    const absentCount = students.filter((s) => !s.participated).length;
+
+    return {
+      students,
+      totalInSession: usersInSession.length,
+      participantsCount,
+      absentCount,
+    };
+  }
+
   async createForLesson(
     createEventDto: CreateEventDto,
   ): Promise<ResponseServer> {
@@ -260,20 +380,39 @@ export class EventService {
         order: [['begining_date', 'ASC']],
       });
 
-      // Manually fetch lessons for all events
-      const eventsWithLessons = await Promise.all(
+      // Manually fetch lessons and participation info for all events
+      const eventsWithLessonsAndParticipation = await Promise.all(
         events.map(async (event) => {
           const lessons = await this.fetchLessonsForEvent(event);
+          const sessionId = await this.getSessionIdFromEvent(event);
+          const participants = event.participant || [];
+          const participationInfo =
+            await this.getStudentsWithParticipationStatus(
+              sessionId,
+              participants,
+            );
+
+          const eventData = event.toJSON();
+          // Remove participant field since we have participationInfo
+          delete eventData.participant;
+
           return {
-            ...event.toJSON(),
+            ...eventData,
             lessons: lessons,
+            sessionId: sessionId,
+            participationInfo: {
+              students: participationInfo.students,
+              totalInSession: participationInfo.totalInSession,
+              participantsCount: participationInfo.participantsCount,
+              absentCount: participationInfo.absentCount,
+            },
           };
         }),
       );
 
       return Responder({
         status: HttpStatusCode.Ok,
-        data: eventsWithLessons,
+        data: eventsWithLessonsAndParticipation,
         customMessage: 'Events retrieved successfully',
       });
     } catch (error) {
@@ -340,6 +479,87 @@ export class EventService {
       });
     } catch (error) {
       console.error('Error retrieving event:', error);
+      return Responder({
+        status: HttpStatusCode.InternalServerError,
+        customMessage: 'Error retrieving event',
+      });
+    }
+  }
+
+  async findOneForSecretary(id: string): Promise<ResponseServer> {
+    try {
+      const event = await this.eventModel.findByPk(id, {
+        include: [
+          {
+            model: Training,
+            as: 'trainings',
+            attributes: ['id', 'title'],
+          },
+          {
+            model: TrainingSession,
+            as: 'trainingSession',
+            attributes: ['id', 'title'],
+          },
+          {
+            model: SessionCours,
+            as: 'sessionCours',
+            attributes: ['id', 'title'],
+          },
+          {
+            model: Users,
+            as: 'users',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+          {
+            model: Users,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+          },
+        ],
+      });
+
+      if (!event) {
+        return Responder({
+          status: HttpStatusCode.NotFound,
+          customMessage: 'Event not found',
+        });
+      }
+
+      // Manually fetch lessons based on id_cible_lesson array
+      const lessons = await this.fetchLessonsForEvent(event);
+
+      // Get session ID and participation info
+      const sessionId = await this.getSessionIdFromEvent(event);
+      const participants = event.participant || [];
+      const participationInfo = await this.getStudentsWithParticipationStatus(
+        sessionId,
+        participants,
+      );
+
+      const eventData = event.toJSON();
+      // Remove participant field since we have participationInfo
+      delete eventData.participant;
+
+      // Add lessons, sessionId, and participationInfo to the event data
+      const eventDataWithParticipation = {
+        ...eventData,
+        lessons: lessons,
+        sessionId: sessionId,
+        participationInfo: {
+          students: participationInfo.students,
+          totalInSession: participationInfo.totalInSession,
+          participantsCount: participationInfo.participantsCount,
+          absentCount: participationInfo.absentCount,
+        },
+      };
+
+      return Responder({
+        status: HttpStatusCode.Ok,
+        data: eventDataWithParticipation,
+        customMessage: 'Event retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error retrieving event for secretary:', error);
       return Responder({
         status: HttpStatusCode.InternalServerError,
         customMessage: 'Error retrieving event',

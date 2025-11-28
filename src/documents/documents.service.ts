@@ -701,6 +701,20 @@ export class DocumentsService {
 
   async getDocumentInstanceByIdForSecretary(id: string) {
     const instance = await this.instanceModel.findByPk(id, {
+      attributes: [
+        'id',
+        'templateId',
+        'userId',
+        'filledContent',
+        'variableValues',
+        'is_published',
+        'status',
+        'comment',
+        'signature',
+        'updatedBy',
+        'createdAt',
+        'updatedAt',
+      ],
       include: [
         {
           model: DocumentTemplate,
@@ -742,6 +756,17 @@ export class DocumentsService {
     if (!instance) {
       throw new NotFoundException('Document instance not found');
     }
+
+    // Log for debugging
+    console.log('[DOCUMENTS SERVICE] 📄 Retrieved instance:', {
+      id: instance.id,
+      hasFilledContent: !!instance.filledContent,
+      filledContentType: typeof instance.filledContent,
+      filledContentKeys: instance.filledContent
+        ? Object.keys(instance.filledContent)
+        : [],
+      filledContentValue: instance.filledContent,
+    });
 
     return {
       status: 200,
