@@ -26,7 +26,7 @@ async function tantorAPP() {
   const allowedOrigins = [
     'https://tantorlearning.com',
     'https://www.tantorlearning.com',
-    'https://address-headline-drawings-solely.trycloudflare.com',
+    'https://frequency-heath-effect-computation.trycloudflare.com',
 
     'http://localhost:3000',
     'http://localhost:3001',

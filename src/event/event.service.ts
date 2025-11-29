@@ -631,6 +631,15 @@ export class EventService {
         });
       }
 
+      // Check if event has participants
+      if (event.participant && event.participant.length > 0) {
+        return Responder({
+          status: HttpStatusCode.BadRequest,
+          customMessage:
+            "Impossible de supprimer un événement avec des participants. Veuillez retirer tous les participants avant de supprimer l'événement.",
+        });
+      }
+
       await event.destroy();
 
       return Responder({
