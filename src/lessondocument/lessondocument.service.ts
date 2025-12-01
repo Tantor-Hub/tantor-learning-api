@@ -515,6 +515,28 @@ export class LessondocumentService {
         });
       }
 
+      // Convert ispublish to proper boolean (form data sends strings)
+      // Important: "false" as a string is truthy, so we need explicit conversion
+      let ispublishValue = false;
+      const ispublishInput: any = documentData.ispublish;
+      if (ispublishInput !== undefined && ispublishInput !== null) {
+        if (typeof ispublishInput === 'boolean') {
+          ispublishValue = ispublishInput;
+        } else if (typeof ispublishInput === 'string') {
+          // Convert string "true" or "false" to actual boolean
+          ispublishValue = ispublishInput.toLowerCase() === 'true';
+        } else {
+          // For any other type, convert to boolean
+          ispublishValue = Boolean(ispublishInput);
+        }
+      }
+
+      console.log('[SERVICE CREATE] ispublish conversion:', {
+        received: documentData.ispublish,
+        type: typeof documentData.ispublish,
+        converted: ispublishValue,
+      });
+
       // Create the lesson document
       const lessondocument = await this.lessondocumentModel.create({
         file_name: documentData.file_name,
@@ -524,8 +546,13 @@ export class LessondocumentService {
         description: documentData.description,
         id_lesson: documentData.id_lesson,
         createdBy: user.id_user,
-        ispublish: documentData.ispublish ?? false, // Use provided value or default to false
+        ispublish: ispublishValue, // Use converted boolean value
       });
+
+      console.log(
+        '[SERVICE CREATE] Created document with ispublish:',
+        lessondocument.ispublish,
+      );
 
       // Fetch the created lesson document with its relationships
       const createdLessondocument = await this.lessondocumentModel.findByPk(
@@ -621,7 +648,35 @@ export class LessondocumentService {
         }
       }
 
-      await lessondocument.update(updateLessondocumentDto);
+      // Ensure ispublish is properly converted to boolean if provided
+      const updateData: any = { ...updateLessondocumentDto };
+      const ispublishInput: any = updateData.ispublish;
+      if (ispublishInput !== undefined && ispublishInput !== null) {
+        if (typeof ispublishInput === 'boolean') {
+          // Already a boolean, use it as-is
+          updateData.ispublish = ispublishInput;
+        } else if (typeof ispublishInput === 'string') {
+          // Convert string "true" or "false" to actual boolean
+          updateData.ispublish = ispublishInput.toLowerCase() === 'true';
+        } else {
+          // For any other type, convert to boolean
+          updateData.ispublish = Boolean(ispublishInput);
+        }
+      }
+
+      console.log('[SERVICE UPDATE] ispublish value:', {
+        received: updateLessondocumentDto.ispublish,
+        type: typeof updateLessondocumentDto.ispublish,
+        converted: updateData.ispublish,
+        currentValue: lessondocument.ispublish,
+      });
+
+      await lessondocument.update(updateData);
+
+      console.log(
+        '[SERVICE UPDATE] Updated document with ispublish:',
+        (await this.lessondocumentModel.findByPk(id))?.ispublish,
+      );
 
       // Fetch the updated lesson document with its relationships
       const updatedLessondocument = await this.lessondocumentModel.findByPk(

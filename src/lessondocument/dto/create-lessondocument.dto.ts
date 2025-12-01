@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class CreateLessondocumentDto {
   @ApiProperty({
@@ -45,6 +46,25 @@ export class CreateLessondocumentDto {
       'Whether the lesson document is published and visible to students',
     required: false,
     default: false,
+  })
+  @Transform(({ value }) => {
+    // Handle undefined/null
+    if (value === undefined || value === null) return false;
+    
+    // Handle boolean values
+    if (typeof value === 'boolean') return value;
+    
+    // Handle string values
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase().trim();
+      if (lowerValue === 'true') return true;
+      if (lowerValue === 'false') return false;
+      // For any other string, default to false
+      return false;
+    }
+    
+    // For any other type, convert to boolean
+    return Boolean(value);
   })
   @IsBoolean()
   @IsOptional()

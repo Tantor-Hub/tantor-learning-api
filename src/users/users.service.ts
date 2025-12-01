@@ -422,7 +422,7 @@ export class UsersService {
         phone: phone ?? '',
         dateBirth: dateBirth ?? '',
         verification_code: verif_code,
-        is_verified: false,
+        is_verified: true,
         role: UserRole.STUDENT,
       } as any)
       .then((student) => {
@@ -490,7 +490,7 @@ export class UsersService {
           firstName: escape,
           lastName: escape,
           verification_code: verif_code,
-          is_verified: false,
+          is_verified: true,
           role: UserRole.STUDENT,
         })
         .then(async (u) => {
@@ -583,7 +583,7 @@ export class UsersService {
         phone: phone || '',
         dateBirth: dateBirth || '',
         verification_code: verif_code,
-        is_verified: id_role && id_role === 4 ? false : true,
+        is_verified: true,
         role: UserRole.STUDENT,
       } as any)
       .then((student) => {
@@ -1013,11 +1013,11 @@ export class UsersService {
           const updateData = { ...profile };
           // Remove as_avatar from updateData (it's not a database column)
           delete updateData.as_avatar;
-          
+
           // Check if firstName or lastName are being updated
           const isUpdatingFirstName = updateData.firstName !== undefined;
           const isUpdatingLastName = updateData.lastName !== undefined;
-          
+
           if (isUpdatingFirstName || isUpdatingLastName) {
             // Check if user has any validated document instance with signature
             const validatedDocumentWithSignature =
@@ -1035,15 +1035,21 @@ export class UsersService {
               );
             }
           }
-          
+
           if (
             profile['as_avatar'] !== undefined &&
             profile['as_avatar'] !== null
           ) {
-            console.log('[AVATAR UPDATE] Setting avatar to:', profile['as_avatar']);
+            console.log(
+              '[AVATAR UPDATE] Setting avatar to:',
+              profile['as_avatar'],
+            );
             updateData.avatar = profile['as_avatar'];
           }
-          console.log('[AVATAR UPDATE] Update data:', JSON.stringify(updateData, null, 2));
+          console.log(
+            '[AVATAR UPDATE] Update data:',
+            JSON.stringify(updateData, null, 2),
+          );
           await student.update(updateData);
           await student.reload(); // Reload to get the updated data from database
           console.log('[AVATAR UPDATE] Avatar after reload:', student.avatar);
@@ -1107,9 +1113,7 @@ export class UsersService {
     if (existingUser) {
       return Responder({
         status: HttpStatusCode.Conflict,
-        data: {
-          message: `[Email]: ${email} est déjà utilisé`,
-        },
+        customMessage: `Cet email est déjà utilisé. Veuillez utiliser un autre email ou vous connecter.`,
       });
     }
 
@@ -1125,8 +1129,8 @@ export class UsersService {
         country,
         city,
         dateBirth: dateBirth ?? '',
+        is_verified: true,
         role: UserRole.STUDENT,
-        is_verified: false,
       } as any);
 
       // Create OTP record in the new OTP table
@@ -1747,10 +1751,10 @@ export class UsersService {
             email,
             lastName: lastName,
             firstName: firstName,
-            is_verified: false,
             avatar: picture,
             phone: email,
             verification_code: verif_code,
+            is_verified: true,
             role: UserRole.STUDENT,
           } as any,
         })

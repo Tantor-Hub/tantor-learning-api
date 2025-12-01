@@ -43,7 +43,7 @@ export class Lessondocument extends Model {
   description: string;
 
   @AllowNull(false)
-  @Column(DataType.BOOLEAN)
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
   ispublish: boolean;
 
   @ForeignKey(() => Lesson)

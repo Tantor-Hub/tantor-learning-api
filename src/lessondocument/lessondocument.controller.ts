@@ -547,6 +547,30 @@ export class LessondocumentController {
         else fileType = 'OTHER';
       }
 
+      // Get ispublish from raw request body (multipart/form-data sends strings)
+      // The DTO Transform may not work correctly with multipart, so use raw body
+      let ispublishValue = false;
+      const rawIspublish: any = req.body?.ispublish;
+
+      if (rawIspublish !== undefined && rawIspublish !== null) {
+        if (typeof rawIspublish === 'boolean') {
+          ispublishValue = rawIspublish;
+        } else if (typeof rawIspublish === 'string') {
+          // Convert string "true" or "false" to actual boolean
+          ispublishValue = rawIspublish.toLowerCase().trim() === 'true';
+        } else {
+          ispublishValue = Boolean(rawIspublish);
+        }
+      }
+
+      console.log('[CONTROLLER] ispublish conversion:', {
+        raw: rawIspublish,
+        rawType: typeof rawIspublish,
+        dto: createLessondocumentDto.ispublish,
+        dtoType: typeof createLessondocumentDto.ispublish,
+        converted: ispublishValue,
+      });
+
       // Create lesson document with uploaded file info
       const documentData = {
         file_name: file.originalname,
@@ -555,7 +579,7 @@ export class LessondocumentController {
         title: createLessondocumentDto.title,
         description: createLessondocumentDto.description,
         id_lesson: createLessondocumentDto.id_lesson,
-        ispublish: createLessondocumentDto.ispublish ?? false,
+        ispublish: ispublishValue,
       };
 
       return this.lessondocumentService.create(user, documentData);
@@ -1334,6 +1358,7 @@ export class LessondocumentController {
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() updateLessondocumentDto: UpdateLessondocumentDto,
+    @Req() req: any,
   ) {
     try {
       console.log('Updating lesson document:', id, 'for user:', user.id_user);
@@ -1404,10 +1429,39 @@ export class LessondocumentController {
         }
       }
 
+      // Get ispublish from raw request body (multipart/form-data sends strings)
+      // The DTO Transform may not work correctly with multipart, so use raw body
+      let ispublishValue: boolean | undefined = undefined;
+      const rawIspublish: any = req.body?.ispublish;
+
+      if (rawIspublish !== undefined && rawIspublish !== null) {
+        if (typeof rawIspublish === 'boolean') {
+          ispublishValue = rawIspublish;
+        } else if (typeof rawIspublish === 'string') {
+          // Convert string "true" or "false" to actual boolean
+          ispublishValue = rawIspublish.toLowerCase().trim() === 'true';
+        } else {
+          ispublishValue = Boolean(rawIspublish);
+        }
+      }
+
+      console.log('[CONTROLLER UPDATE] ispublish conversion:', {
+        raw: rawIspublish,
+        rawType: typeof rawIspublish,
+        dto: updateLessondocumentDto.ispublish,
+        dtoType: typeof updateLessondocumentDto.ispublish,
+        converted: ispublishValue,
+      });
+
       // Prepare update data
       const updateData: any = {
         ...updateLessondocumentDto,
       };
+
+      // Override ispublish with the correctly converted value from raw body
+      if (ispublishValue !== undefined) {
+        updateData.ispublish = ispublishValue;
+      }
 
       // Add file-related data if file was uploaded
       if (file && uploadResult) {
