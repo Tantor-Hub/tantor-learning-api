@@ -32,6 +32,7 @@ export class EvaluationQuestion extends Model<EvaluationQuestion> {
   id: string;
 
   @AllowNull(false)
+  @ForeignKey(() => Studentevaluation)
   @Column(DataType.UUID)
   evaluationId: string;
 

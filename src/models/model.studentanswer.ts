@@ -30,14 +30,17 @@ export class StudentAnswer extends Model<StudentAnswer> {
   id: string;
 
   @AllowNull(false)
+  @ForeignKey(() => EvaluationQuestion)
   @Column(DataType.UUID)
   questionId: string;
 
   @AllowNull(false)
+  @ForeignKey(() => Users)
   @Column(DataType.UUID)
   studentId: string;
 
   @AllowNull(false)
+  @ForeignKey(() => Studentevaluation)
   @Column(DataType.UUID)
   evaluationId: string;
 
@@ -78,9 +81,7 @@ export class StudentAnswer extends Model<StudentAnswer> {
   })
   evaluation?: Studentevaluation;
 
-  @HasMany(() => StudentAnswerOption, {
-    foreignKey: 'questionId',
-    sourceKey: 'questionId',
-  })
-  selectedOptions?: StudentAnswerOption[];
+  // Note: StudentAnswerOption.questionId references EvaluationQuestion.id, not StudentAnswer.id
+  // If you need to get options for a student answer, query by questionId and studentId
+  // selectedOptions?: StudentAnswerOption[];
 }

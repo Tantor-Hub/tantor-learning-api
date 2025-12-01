@@ -26,6 +26,7 @@ export class EvaluationQuestionOption extends Model<EvaluationQuestionOption> {
   id: string;
 
   @AllowNull(false)
+  @ForeignKey(() => EvaluationQuestion)
   @Column(DataType.UUID)
   questionId: string;
 

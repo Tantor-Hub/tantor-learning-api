@@ -26,14 +26,17 @@ export class StudentAnswerOption extends Model<StudentAnswerOption> {
   id: string;
 
   @AllowNull(false)
+  @ForeignKey(() => EvaluationQuestionOption)
   @Column(DataType.UUID)
   optionId: string;
 
   @AllowNull(false)
+  @ForeignKey(() => EvaluationQuestion)
   @Column(DataType.UUID)
   questionId: string;
 
   @AllowNull(false)
+  @ForeignKey(() => Users)
   @Column(DataType.UUID)
   studentId: string;
 
