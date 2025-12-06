@@ -19,13 +19,29 @@ async function tantorAPP() {
   console.log('[MAIN] 🚀 Starting TANTOR APP...');
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('TANTORPORT', 3000);
+  const port = configService.get<number>('TANTORPORT', 3737);
   console.log('[MAIN] 📡 Port configured:', port);
 
   // ✅ CORS setup for credentials & custom headers
   const allowedOrigins = [
+    // Main domain
     'https://tantorlearning.com',
+    'http://tantorlearning.com',
     'https://www.tantorlearning.com',
+    'http://www.tantorlearning.com',
+
+    // Dev subdomain
+    'https://dev.tantorlearning.com',
+    'http://dev.tantorlearning.com',
+    'https://www.dev.tantorlearning.com',
+    'http://www.dev.tantorlearning.com',
+
+    // Direct IP access for testing
+    'http://72.61.160.172:3000',
+    'https://72.61.160.172:3000', // in case https is used
+    'http://www.72.61.160.172:3000', // optional but safe
+    'https://www.72.61.160.172:3000',
+
     'https://frequency-heath-effect-computation.trycloudflare.com',
 
     'http://localhost:3000',
